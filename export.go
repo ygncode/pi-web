@@ -128,6 +128,10 @@ func generateExportHtml(session sessions.Session, showButtons bool) string {
 	html = strings.Replace(html, "{{CSS}}", css, 1)
 	html = strings.Replace(html, "{{SESSION_DATA}}", dataBase64, 1)
 
+	bodyAttrs := ""
+	if session.SessionUUID != "" {
+		bodyAttrs = ` data-session-uuid="` + session.SessionUUID + `"`
+	}
 	if showButtons {
 		html = strings.Replace(html, "{{SESSION_SCRIPT}}", `<script type="module" src="`+template.HTMLEscapeString(sessionScriptPath)+`"></script>`, 1)
 		btns := `<div class="session-actions">
@@ -135,11 +139,12 @@ func generateExportHtml(session sessions.Session, showButtons bool) string {
 <button id="share-btn" class="session-action" title="Share session as GitHub Gist">↗ Share</button>
 <button id="resume-btn" class="session-action" title="Copy pi --session command to clipboard">Terminal</button>
 </div>`
-		html = strings.Replace(html, "<body>", "<body>"+btns, 1)
+		html = strings.Replace(html, "<body>", "<body"+bodyAttrs+">"+btns, 1)
 		html = strings.Replace(html, "{{CHAT_COMPOSER}}", chatComposerHtmlForSession(session), 1)
 	} else {
 		inlineScript := "<script>\n" + markedJs + "\n</script>\n<script>\n" + hljsJs + "\n</script>\n<script>\n" + templateJs + "\n</script>"
 		html = strings.Replace(html, "{{SESSION_SCRIPT}}", inlineScript, 1)
+		html = strings.Replace(html, "<body>", "<body"+bodyAttrs+">", 1)
 		html = strings.Replace(html, "{{CHAT_COMPOSER}}", "", 1)
 	}
 

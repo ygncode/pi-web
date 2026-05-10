@@ -15,6 +15,7 @@ import (
 
 type SessionSummary struct {
 	ID                 string
+	SessionUUID        string
 	Filename           string
 	Project            string
 	LastActivity       string
@@ -116,6 +117,9 @@ func ParseSummary(path, dirName, fileName string) (SessionSummary, error) {
 			}
 			if cwd, _ := raw["cwd"].(string); cwd != "" {
 				headerCwd = cwd
+			}
+			if sid, _ := raw["id"].(string); sid != "" {
+				s.SessionUUID = sid
 			}
 			continue
 		}

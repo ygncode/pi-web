@@ -221,6 +221,22 @@ func TestParseSummaryFallsBackToFilename(t *testing.T) {
 	}
 }
 
+func TestParseSummaryExtractsSessionUUID(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "s.jsonl")
+	content := `{"type":"session","id":"019e122d-bcc4-7308-8a30-7ef83dae1983","timestamp":"2026-05-08T10:00:00Z"}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := ParseSummary(path, "--proj--", "s.jsonl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.SessionUUID != "019e122d-bcc4-7308-8a30-7ef83dae1983" {
+		t.Errorf("SessionUUID = %q, want %q", s.SessionUUID, "019e122d-bcc4-7308-8a30-7ef83dae1983")
+	}
+}
+
 func TestParseSummaryAccumulatesUsage(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "s.jsonl")

@@ -735,9 +735,7 @@
   var resumeBtn = document.getElementById('resume-btn');
   if (resumeBtn) {
     resumeBtn.addEventListener('click', function() {
-      var resumeSessionArg = decodeURIComponent(sessId).replace(/\.jsonl$/, '');
-      var underscore = resumeSessionArg.indexOf('_');
-      if (underscore !== -1) resumeSessionArg = resumeSessionArg.substring(underscore + 1);
+      var resumeSessionArg = document.body.dataset.sessionUuid;
       var cmd = 'pi --session ' + resumeSessionArg;
       var hideTimer;
       function showCopiedNotice() {

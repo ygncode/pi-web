@@ -79,13 +79,16 @@ func TestGenerateExportHtmlOmitsChatComposerForShare(t *testing.T) {
 }
 
 func TestGenerateExportHtmlIncludesResumeButtonWhenButtonsShown(t *testing.T) {
-	session := sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Filename: "s.jsonl"}, Entries: []map[string]any{{"id": "aaaaaaaa"}}}
+	session := sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Filename: "s.jsonl", SessionUUID: "019e122d-bcc4-7308-8a30-7ef83dae1983"}, Entries: []map[string]any{{"id": "aaaaaaaa"}}}
 	html := generateExportHtml(session, true)
 	if !strings.Contains(html, `id="resume-btn"`) {
 		t.Fatalf("resume button missing from local session page")
 	}
 	if !strings.Contains(html, `Terminal`) {
 		t.Fatalf("resume button text missing from local session page")
+	}
+	if !strings.Contains(html, `data-session-uuid="019e122d-bcc4-7308-8a30-7ef83dae1983"`) {
+		t.Fatalf("real session UUID missing from body data attribute")
 	}
 }
 
@@ -122,11 +125,11 @@ func TestResumeButtonShowsToastWithoutChangingButtonText(t *testing.T) {
 	if !strings.Contains(liveReloadJsBody, `Copied`) || !strings.Contains(liveReloadJsBody, `background:var(--accent);color:var(--body-bg)`) {
 		t.Fatalf("resume copy should show an accent-colored toast notification")
 	}
+	if !strings.Contains(liveReloadJsBody, `document.body.dataset.sessionUuid`) {
+		t.Fatalf("resume copy should read real session UUID from body data attribute")
+	}
 	if !strings.Contains(liveReloadJsBody, `resumeSessionArg`) {
 		t.Fatalf("resume copy should derive UUID-only session argument")
-	}
-	if !strings.Contains(liveReloadJsBody, `substring(underscore + 1)`) {
-		t.Fatalf("resume copy should strip timestamp prefix from session filename")
 	}
 }
 
