@@ -73,4 +73,124 @@ describe('createSessionsPage scalable state', () => {
     page.cleanup();
     expect(cleanup).toHaveBeenCalled();
   });
+
+  it('debounces reload on session file change messages', () => {
+    const timers = [];
+    const setTimeoutImpl = vi.fn((fn, ms) => {
+      const id = timers.length + 1;
+      timers.push({ id, fn, ms });
+      return id;
+    });
+    const clearTimeoutImpl = vi.fn((id) => {
+      const idx = timers.findIndex(t => t.id === id);
+      if (idx !== -1) timers.splice(idx, 1);
+    });
+    const reload = vi.fn();
+
+    let onMessageHandler;
+    const createStatusEvents = vi.fn((options) => {
+      onMessageHandler = options.onMessage;
+      return { connect: vi.fn(), cleanup: vi.fn() };
+    });
+
+    const page = createSessionsPage({ createStatusEvents, reload, setTimeoutImpl, clearTimeoutImpl });
+    page.subscribe();
+
+    onMessageHandler('reload');
+    expect(timers.length).toBe(1);
+    expect(timers[0].ms).toBe(5000);
+    expect(reload).not.toHaveBeenCalled();
+
+    // Fire the timer
+    timers[0].fn();
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets reload debounce when multiple reload messages arrive', () => {
+    const timers = [];
+    let nextId = 1;
+    const setTimeoutImpl = vi.fn((fn, ms) => {
+      const id = nextId++;
+      timers.push({ id, fn, ms });
+      return id;
+    });
+    const clearTimeoutImpl = vi.fn((id) => {
+      const idx = timers.findIndex(t => t.id === id);
+      if (idx !== -1) timers.splice(idx, 1);
+    });
+    const reload = vi.fn();
+
+    let onMessageHandler;
+    const createStatusEvents = vi.fn((options) => {
+      onMessageHandler = options.onMessage;
+      return { connect: vi.fn(), cleanup: vi.fn() };
+    });
+
+    const page = createSessionsPage({ createStatusEvents, reload, setTimeoutImpl, clearTimeoutImpl });
+    page.subscribe();
+
+    onMessageHandler('reload');
+    expect(timers.length).toBe(1);
+    const firstId = timers[0].id;
+
+    onMessageHandler('reload');
+    expect(clearTimeoutImpl).toHaveBeenCalledWith(firstId);
+    expect(timers.length).toBe(1); // old removed, new added
+    expect(timers[0].id).toBeGreaterThan(firstId);
+  });
+
+  it('does not schedule reload while modal is open or search is active', () => {
+    const setTimeoutImpl = vi.fn();
+    const clearTimeoutImpl = vi.fn();
+    const reload = vi.fn();
+
+    let onMessageHandler;
+    const createStatusEvents = vi.fn((options) => {
+      onMessageHandler = options.onMessage;
+      return { connect: vi.fn(), cleanup: vi.fn() };
+    });
+
+    const page = createSessionsPage({ createStatusEvents, reload, setTimeoutImpl, clearTimeoutImpl });
+    page.subscribe();
+
+    page.modal = true;
+    onMessageHandler('reload');
+    expect(setTimeoutImpl).not.toHaveBeenCalled();
+
+    page.modal = false;
+    page.query = 'searching';
+    onMessageHandler('reload');
+    expect(setTimeoutImpl).not.toHaveBeenCalled();
+
+    page.query = '';
+    onMessageHandler('reload');
+    expect(setTimeoutImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels pending reload on cleanup', () => {
+    const timers = [];
+    const setTimeoutImpl = vi.fn((fn, ms) => {
+      const id = timers.length + 1;
+      timers.push({ id, fn, ms });
+      return id;
+    });
+    const clearTimeoutImpl = vi.fn();
+    const reload = vi.fn();
+
+    let onMessageHandler;
+    const createStatusEvents = vi.fn((options) => {
+      onMessageHandler = options.onMessage;
+      return { connect: vi.fn(), cleanup: vi.fn() };
+    });
+
+    const page = createSessionsPage({ createStatusEvents, reload, setTimeoutImpl, clearTimeoutImpl });
+    page.subscribe();
+
+    onMessageHandler('reload');
+    expect(timers.length).toBe(1);
+
+    page.cleanup();
+    expect(clearTimeoutImpl).toHaveBeenCalledWith(timers[0].id);
+    expect(page._reloadTimer).toBeNull();
+  });
 });

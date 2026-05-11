@@ -2,6 +2,7 @@ export function createSessionEntryRenderer({
   entries,
   header,
   toolCallMap,
+  renderedTools = null,
   currentLeafIdRef = () => '',
   escapeHtml,
   shortenPath,

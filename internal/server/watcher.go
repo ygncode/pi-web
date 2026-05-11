@@ -77,6 +77,7 @@ func (s *Server) recordModTime(sessID string, mod time.Time) {
 	s.fileModMu.Unlock()
 	if known && mod.After(lastMod) {
 		s.broadcast(sessID, "reload")
+		s.broadcast(globalSessID, "reload")
 	}
 	// Always recompute status for this session — the running state depends
 	// on the live mtime regardless of whether reload was emitted (e.g. the

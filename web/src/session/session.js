@@ -98,6 +98,7 @@ export function runSessionApp({ target = window } = {}) {
     entries: dataModel.entries,
     header: dataModel.header,
     toolCallMap: dataModel.toolCallMap,
+    renderedTools: dataModel.renderedTools,
     currentLeafIdRef: () => currentLeafId,
     escapeHtml: sessionFormat.escapeHtml,
     shortenPath,

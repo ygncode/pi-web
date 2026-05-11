@@ -101,12 +101,16 @@ func TestRecordModTimeBroadcastsStatusDelta(t *testing.T) {
 	// Advance modtime to "now"; this is a recent-activity flip from idle to running.
 	s.recordModTime("session.jsonl", time.Now())
 
-	// __all__ subscriber should receive a status-delta. (recordModTime also
-	// broadcasts "reload" but to sessID="session.jsonl", a different topic.)
+	// __all__ subscriber now also receives "reload" for any existing-session
+	// modification, followed by the status-delta.
+	if !drainBroadcast(t, c, time.Second) {
+		t.Fatalf("expected reload broadcast on __all__")
+	}
+
 	select {
 	case msg := <-c.ch:
 		if !strings.Contains(msg, "status-delta") || !strings.Contains(msg, "session.jsonl") || !strings.Contains(msg, "true") {
-			t.Fatalf("unexpected first msg: %q", msg)
+			t.Fatalf("unexpected msg after reload: %q", msg)
 		}
 	case <-time.After(time.Second):
 		t.Fatalf("expected status-delta on __all__")

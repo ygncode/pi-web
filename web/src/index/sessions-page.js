@@ -38,7 +38,9 @@ export function createSessionsPage({
   createSession = (path) => postJSON('/api/new-session', { path }),
   createStatusEvents = defaultCreateStatusEvents,
   reload = defaultReload,
-  navigate = defaultNavigate
+  navigate = defaultNavigate,
+  setTimeoutImpl = setTimeout,
+  clearTimeoutImpl = clearTimeout
 } = {}) {
   return {
     query: '',
@@ -49,6 +51,7 @@ export function createSessionsPage({
     error: '',
     runningSessionIds: new Set(),
     _statusEvents: null,
+    _reloadTimer: null,
 
     sessionCards() {
       return sessionCards(root);
@@ -92,7 +95,24 @@ export function createSessionsPage({
       }
     },
 
+    scheduleReload() {
+      if (this._reloadTimer) {
+        clearTimeoutImpl(this._reloadTimer);
+        this._reloadTimer = null;
+      }
+      if (this.modal) return;
+      if (this.query && this.query.trim() !== '') return;
+      this._reloadTimer = setTimeoutImpl(() => {
+        this._reloadTimer = null;
+        reload();
+      }, 5000);
+    },
+
     cleanup() {
+      if (this._reloadTimer) {
+        clearTimeoutImpl(this._reloadTimer);
+        this._reloadTimer = null;
+      }
       if (this._statusEvents) {
         this._statusEvents.cleanup();
         this._statusEvents = null;
@@ -107,6 +127,7 @@ export function createSessionsPage({
           onDelta: ({ id, running }) => this.setSessionRunning(id, running),
           onMessage: (message) => {
             if (message === 'new-session') reload();
+            if (message === 'reload') this.scheduleReload();
           }
         });
         this._statusEvents.connect();

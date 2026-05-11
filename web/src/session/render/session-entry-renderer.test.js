@@ -31,6 +31,33 @@ describe('session entry renderer', () => {
     expect(r.renderEntry({ id: 'a', type: 'message', message: { role: 'assistant', content: [{ type: 'text', text: 'hi' }] } })).toContain('assistant-message');
   });
 
+  it('renders custom tool calls without pre-rendered tool data', () => {
+    const r = renderer();
+    const html = r.renderEntry({
+      id: 'a',
+      type: 'message',
+      message: {
+        role: 'assistant',
+        content: [{ type: 'toolCall', id: 'call-1', name: 'custom_tool', arguments: { value: '<x>' } }]
+      }
+    });
+    expect(html).toContain('custom_tool');
+    expect(html).toContain('&lt;x&gt;');
+  });
+
+  it('renders custom tool calls with pre-rendered tool data', () => {
+    const r = renderer({ renderedTools: { 'call-1': { callHtml: '<span>custom rendered</span>' } } });
+    const html = r.renderEntry({
+      id: 'a',
+      type: 'message',
+      message: {
+        role: 'assistant',
+        content: [{ type: 'toolCall', id: 'call-1', name: 'custom_tool', arguments: {} }]
+      }
+    });
+    expect(html).toContain('custom rendered');
+  });
+
   it('builds share urls with current leaf id', () => {
     const r = renderer();
     expect(r.buildShareUrl('target')).toContain('leafId=leaf');

@@ -99,7 +99,7 @@ func ParseSummary(path, dirName, fileName string) (SessionSummary, error) {
 		ChatAvailable: true,
 	}
 
-	var headerName, firstUserText, headerCwd string
+	var headerName, sessionInfoName, firstUserText, headerCwd string
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
 	for scanner.Scan() {
@@ -120,6 +120,12 @@ func ParseSummary(path, dirName, fileName string) (SessionSummary, error) {
 			}
 			if sid, _ := raw["id"].(string); sid != "" {
 				s.SessionUUID = sid
+			}
+			continue
+		}
+		if raw["type"] == "session_info" {
+			if n, _ := raw["name"].(string); n != "" {
+				sessionInfoName = n
 			}
 			continue
 		}
@@ -160,6 +166,8 @@ func ParseSummary(path, dirName, fileName string) (SessionSummary, error) {
 	}
 
 	switch {
+	case sessionInfoName != "":
+		s.Name = sessionInfoName
 	case headerName != "":
 		s.Name = headerName
 	case firstUserText != "":
