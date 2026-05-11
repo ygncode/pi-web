@@ -1,8 +1,4 @@
-// ============================================================
-// HEADER / STATS
-// ============================================================
-
-function computeStats(entryList) {
+export function computeSessionStats(entryList = []) {
   let userMessages = 0, assistantMessages = 0, toolResults = 0;
   let customMessages = 0, compactions = 0, branchSummaries = 0, toolCalls = 0;
   const tokens = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
@@ -28,7 +24,7 @@ function computeStats(entryList) {
             cost.cacheWrite += msg.usage.cost.cacheWrite || 0;
           }
         }
-        toolCalls += msg.content.filter(c => c.type === 'toolCall').length;
+        toolCalls += (msg.content || []).filter(c => c.type === 'toolCall').length;
       }
       if (msg.role === 'toolResult') toolResults++;
     } else if (entry.type === 'compaction') {
@@ -43,24 +39,23 @@ function computeStats(entryList) {
   return { userMessages, assistantMessages, toolResults, customMessages, compactions, branchSummaries, toolCalls, tokens, cost, models: Array.from(models) };
 }
 
-const globalStats = computeStats(entries);
-
-function renderHeader() {
-  const totalCost = globalStats.cost.input + globalStats.cost.output + globalStats.cost.cacheRead + globalStats.cost.cacheWrite;
+export function renderSessionHeader({ header, entries = [], systemPrompt = '', tools = [], escapeHtml, formatTokens }) {
+  const stats = computeSessionStats(entries);
+  const totalCost = stats.cost.input + stats.cost.output + stats.cost.cacheRead + stats.cost.cacheWrite;
 
   const tokenParts = [];
-  if (globalStats.tokens.input) tokenParts.push(`↑${formatTokens(globalStats.tokens.input)}`);
-  if (globalStats.tokens.output) tokenParts.push(`↓${formatTokens(globalStats.tokens.output)}`);
-  if (globalStats.tokens.cacheRead) tokenParts.push(`R${formatTokens(globalStats.tokens.cacheRead)}`);
-  if (globalStats.tokens.cacheWrite) tokenParts.push(`W${formatTokens(globalStats.tokens.cacheWrite)}`);
+  if (stats.tokens.input) tokenParts.push(`↑${formatTokens(stats.tokens.input)}`);
+  if (stats.tokens.output) tokenParts.push(`↓${formatTokens(stats.tokens.output)}`);
+  if (stats.tokens.cacheRead) tokenParts.push(`R${formatTokens(stats.tokens.cacheRead)}`);
+  if (stats.tokens.cacheWrite) tokenParts.push(`W${formatTokens(stats.tokens.cacheWrite)}`);
 
   const msgParts = [];
-  if (globalStats.userMessages) msgParts.push(`${globalStats.userMessages} user`);
-  if (globalStats.assistantMessages) msgParts.push(`${globalStats.assistantMessages} assistant`);
-  if (globalStats.toolResults) msgParts.push(`${globalStats.toolResults} tool results`);
-  if (globalStats.customMessages) msgParts.push(`${globalStats.customMessages} custom`);
-  if (globalStats.compactions) msgParts.push(`${globalStats.compactions} compactions`);
-  if (globalStats.branchSummaries) msgParts.push(`${globalStats.branchSummaries} branch summaries`);
+  if (stats.userMessages) msgParts.push(`${stats.userMessages} user`);
+  if (stats.assistantMessages) msgParts.push(`${stats.assistantMessages} assistant`);
+  if (stats.toolResults) msgParts.push(`${stats.toolResults} tool results`);
+  if (stats.customMessages) msgParts.push(`${stats.customMessages} custom`);
+  if (stats.compactions) msgParts.push(`${stats.compactions} compactions`);
+  if (stats.branchSummaries) msgParts.push(`${stats.branchSummaries} branch summaries`);
 
   let html = `
     <div class="header">
@@ -76,15 +71,14 @@ function renderHeader() {
       </div>
       <div class="header-info">
         <div class="info-item"><span class="info-label">Date:</span><span class="info-value">${header?.timestamp ? new Date(header.timestamp).toLocaleString() : 'unknown'}</span></div>
-        <div class="info-item"><span class="info-label">Models:</span><span class="info-value">${globalStats.models.join(', ') || 'unknown'}</span></div>
+        <div class="info-item"><span class="info-label">Models:</span><span class="info-value">${stats.models.join(', ') || 'unknown'}</span></div>
         <div class="info-item"><span class="info-label">Messages:</span><span class="info-value">${msgParts.join(', ') || '0'}</span></div>
-        <div class="info-item"><span class="info-label">Tool Calls:</span><span class="info-value">${globalStats.toolCalls}</span></div>
+        <div class="info-item"><span class="info-label">Tool Calls:</span><span class="info-value">${stats.toolCalls}</span></div>
         <div class="info-item"><span class="info-label">Tokens:</span><span class="info-value">${tokenParts.join(' ') || '0'}</span></div>
         <div class="info-item"><span class="info-label">Cost:</span><span class="info-value">$${totalCost.toFixed(3)}</span></div>
       </div>
     </div>`;
 
-  // Render system prompt (user's base prompt, applies to all providers)
   if (systemPrompt) {
     const lines = systemPrompt.split('\n');
     const previewLines = 10;
@@ -123,9 +117,7 @@ function renderHeader() {
             const typeStr = prop.type || 'any';
             const reqLabel = isRequired ? '<span class="tool-param-required">required</span>' : '<span class="tool-param-optional">optional</span>';
             paramsHtml += `<div class="tool-param"><span class="tool-param-name">${escapeHtml(name)}</span> <span class="tool-param-type">${escapeHtml(typeStr)}</span> ${reqLabel}`;
-            if (prop.description) {
-              paramsHtml += `<div class="tool-param-desc">${escapeHtml(prop.description)}</div>`;
-            }
+            if (prop.description) paramsHtml += `<div class="tool-param-desc">${escapeHtml(prop.description)}</div>`;
             paramsHtml += `</div>`;
           }
           return `<div class="tool-item" onclick="if(window.getSelection().toString())return;this.classList.toggle('params-expanded')"><span class="tool-item-name">${escapeHtml(t.name)}</span> - <span class="tool-item-desc">${escapeHtml(t.description)}</span> <span class="tool-params-hint"></span><div class="tool-params-content">${paramsHtml}</div></div>`;

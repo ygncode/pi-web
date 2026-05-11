@@ -50,9 +50,11 @@ Session frontend modules are split by ownership:
 
 - `web/src/session/data/` — initial payload decoding, URL params, lookup maps
 - `web/src/session/tree/` — tree building, filtering, flattening, tree DOM rendering
-- `web/src/session/render/` — formatting helpers
+- `web/src/session/render/` — formatting helpers plus message/header renderers
 - `web/src/session/navigation/` — session path rendering, header/message navigation, copy-link wiring
-- `web/src/session/legacy/` — remaining compatibility sources for render-entry/header/ui/chat while they are incrementally modularized
+- `web/src/session/chat/` — chat composer, attachments, model and thinking controls
+- `web/src/session/live/` — session SSE/live reload behavior
+- `web/src/session/ui/` — session page interaction wiring and sidebar behavior
 
 `export/app/*.js` is not the source of live interactive session runtime behavior. It is kept only for static/share exports.
 
@@ -68,7 +70,7 @@ This keeps exported/shared HTML independent from the Go server and Vite assets.
 
 ## Live Reload
 
-Interactive session live reload is bundled by the Vite `session` entrypoint. The legacy live source is currently imported into that bundle while it is being modularized.
+Interactive session live reload is bundled directly by the Vite `session` entrypoint via modular `web/src/session/live/` helpers.
 
 The session page listens to `/events?id=<sessionId>` for:
 

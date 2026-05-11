@@ -5,13 +5,30 @@ import { loadSessionData } from './data/session-data.js';
 import { buildActivePathIds as buildActivePathIdsForModel, buildTree as buildTreeForModel, buildTreeNodeMap, buildTreePrefix, findNewestLeaf as findNewestLeafInTree, flattenTree, getPath as getPathForModel } from './tree/session-tree.js';
 import { extractContent, filterNodes as filterNodesForState, getSearchableText, hasTextContent, recalculateVisualStructure } from './tree/session-filter.js';
 import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml as getTreeNodeDisplayHtmlForState, shortenPath, truncate } from './render/session-format.js';
+import { configureSessionMarkdown, safeMarkedParse } from './render/markdown.js';
+import * as sessionHeaderRenderer from './render/session-header-renderer.js';
+import * as sessionEntryRenderer from './render/session-entry-renderer.js';
 import { createTreeRenderer } from './tree/tree-renderer.js';
-import renderEntryJs from './legacy/render-entry.js?raw';
-import headerJs from './legacy/header.js?raw';
 import { createSessionNavigator } from './navigation/session-navigation.js';
-import uiJs from './legacy/ui.js?raw';
-import chatJs from './legacy/chat.js?raw';
-import liveReloadJs from './legacy/live_reload.js?raw';
+import * as toggleStateApi from './ui/toggle-state.js';
+import * as sidebarApi from './ui/sidebar.js';
+import * as searchFiltersApi from './ui/search-filters.js';
+import { setupSessionUi } from './ui/session-ui-runner.js';
+import * as chatComposerRunner from './chat/chat-composer-runner.js';
+import * as chatApi from './chat/chat-api.js';
+import * as chatSelectors from './chat/chat-selectors.js';
+import * as thinkingSelector from './chat/thinking-selector.js';
+import * as modelSelector from './chat/model-selector.js';
+import * as liveReloadRunner from './live/live-reload-runner.js';
+import * as liveScroll from './live/live-scroll.js';
+import * as liveStats from './live/live-stats.js';
+import * as liveEntries from './live/live-entries.js';
+import * as chatPreview from './live/chat-preview.js';
+import * as updateIndicator from './live/update-indicator.js';
+import * as shareOverlay from './live/share-overlay.js';
+import * as resumeButton from './live/resume-button.js';
+import * as liveEvents from './live/live-events.js';
+import * as liveRenderer from './live/live-renderer.js';
 export { buildSessionLookups, createSessionDataModel, decodeBase64JSON, getSessionSearchParams, loadSessionData, readSessionPayload } from './data/session-data.js';
 export { buildActivePathIds, buildTree, buildTreeNodeMap, buildTreePrefix, findNewestLeaf, flattenTree, getPath } from './tree/session-tree.js';
 export { createTreeRenderer } from './tree/tree-renderer.js';
@@ -21,146 +38,194 @@ export { escapeHtml, formatToolCall, getTreeNodeDisplayHtml, shortenPath, trunca
 
 export const sessionEntrypointLoaded = true;
 
-export const sessionDataPrelude = `
-const __piSessionData = window.__piSessionDataModel;
-const data = __piSessionData.payload;
-const urlParams = __piSessionData.params;
-const header = __piSessionData.header;
-const entries = __piSessionData.entries;
-const defaultLeafId = __piSessionData.defaultLeafId;
-const urlLeafId = __piSessionData.urlLeafId;
-const urlTargetId = __piSessionData.urlTargetId;
-const leafId = __piSessionData.leafId;
-const systemPrompt = __piSessionData.systemPrompt;
-const tools = __piSessionData.tools;
-const renderedTools = __piSessionData.renderedTools;
-const byId = __piSessionData.byId;
-const toolCallMap = __piSessionData.toolCallMap;
-const labelMap = __piSessionData.labelMap;
-function buildTree() { return window.__piSessionTree.buildTree(); }
-function buildActivePathIds(targetId) { return window.__piSessionTree.buildActivePathIds(targetId); }
-function getPath(targetId) { return window.__piSessionTree.getPath(targetId); }
-let treeNodeMap = null;
-function findNewestLeaf(nodeId) { return window.__piSessionTree.findNewestLeaf(nodeId); }
-const flattenTree = window.__piSessionTree.flattenTree;
-const buildTreePrefix = window.__piSessionTree.buildTreePrefix;
-let filterMode = 'default';
-let searchQuery = '';
-window.__piFilterState = { filterMode, searchQuery };
-const hasTextContent = window.__piSessionFilter.hasTextContent;
-const extractContent = window.__piSessionFilter.extractContent;
-const getSearchableText = window.__piSessionFilter.getSearchableText;
-const recalculateVisualStructure = window.__piSessionFilter.recalculateVisualStructure;
-function filterNodes(flatNodes, currentLeafId) { return window.__piSessionFilter.filterNodes(flatNodes, currentLeafId, { filterMode, searchQuery }); }
-const shortenPath = window.__piSessionFormat.shortenPath;
-const formatToolCall = window.__piSessionFormat.formatToolCall;
-const escapeHtml = window.__piSessionFormat.escapeHtml;
-const truncate = window.__piSessionFormat.truncate;
-function getTreeNodeDisplayHtml(entry, label) { return window.__piSessionFormat.getTreeNodeDisplayHtml(entry, label); }
-const __piTreeRenderer = window.__piTreeRenderer;
-let currentLeafId = __piTreeRenderer.currentLeafId;
-let currentTargetId = __piTreeRenderer.currentTargetId;
-function __syncTreeRendererState() { window.__piFilterState.filterMode = filterMode; window.__piFilterState.searchQuery = searchQuery; __piTreeRenderer.currentLeafId = currentLeafId; __piTreeRenderer.currentTargetId = currentTargetId; }
-function renderTree() { __syncTreeRendererState(); return __piTreeRenderer.renderTree(); }
-function forceTreeRerender() { __syncTreeRendererState(); return __piTreeRenderer.forceTreeRerender(); }
-function __getPiSessionNavigator() {
-  if (!window.__piSessionNavigator) {
-    window.__piSessionNavigator = window.__createSessionNavigator({
-      documentImpl: document,
-      windowImpl: window,
-      getPath,
-      renderTree,
-      renderHeader,
-      attachHeaderHandlers,
-      renderEntry,
-      buildShareUrl,
-      copyToClipboard,
-      onNavigate: (leaf, targetId) => {
-        currentLeafId = leaf;
-        currentTargetId = targetId;
-        __piTreeRenderer.currentLeafId = leaf;
-        __piTreeRenderer.currentTargetId = targetId;
-      }
-    });
-  }
-  return window.__piSessionNavigator;
-}
-function renderEntryToNode(entry) { return __getPiSessionNavigator().renderEntryToNode(entry); }
-function navigateTo(targetId, scrollMode = 'target', scrollToEntryId = null) { return __getPiSessionNavigator().navigateTo(targetId, scrollMode, scrollToEntryId); }
-`;
+export const sessionCompatibilitySources = [];
+export const liveReloadSource = '';
 
-export const legacySessionSources = [
-  renderEntryJs,
-  headerJs,
-  uiJs,
-  chatJs
-];
-
-export const liveReloadSource = liveReloadJs;
-
-export function runLegacySessionApp({ target = window } = {}) {
+export function runSessionApp({ target = window } = {}) {
+  const documentImpl = target.document;
   target.marked = target.marked || marked;
   target.hljs = target.hljs || hljs;
-  target.__piSessionDataModel = target.__piSessionDataModel || loadSessionData({
-    documentImpl: target.document,
+  const dataModel = target.__piSessionDataModel || loadSessionData({
+    documentImpl,
     windowImpl: target,
     atobImpl: target.atob?.bind(target)
   });
-  target.__piSessionFormat = target.__piSessionFormat || {
+  target.__piSessionDataModel = dataModel;
+
+  let filterMode = 'default';
+  let searchQuery = '';
+  target.__piFilterState = { filterMode, searchQuery };
+
+  const sessionFormat = {
     shortenPath,
     formatToolCall,
-    escapeHtml: (text) => escapeHtml(text, { documentImpl: target.document }),
+    escapeHtml: (text) => escapeHtml(text, { documentImpl }),
     truncate,
     getTreeNodeDisplayHtml: (entry, label) => getTreeNodeDisplayHtmlForState(entry, label, {
       extractContent,
-      toolCallMap: target.__piSessionDataModel.toolCallMap,
-      escapeHtmlImpl: (text) => escapeHtml(text, { documentImpl: target.document })
+      toolCallMap: dataModel.toolCallMap,
+      escapeHtmlImpl: (text) => escapeHtml(text, { documentImpl })
     })
   };
-  target.__piSessionFilter = target.__piSessionFilter || {
-    hasTextContent,
-    extractContent,
-    getSearchableText,
-    recalculateVisualStructure,
-    filterNodes: filterNodesForState
-  };
-  target.__piSessionTree = target.__piSessionTree || {
-    buildTree: () => buildTreeForModel(target.__piSessionDataModel.entries, target.__piSessionDataModel.labelMap),
-    buildActivePathIds: (targetId) => buildActivePathIdsForModel(targetId, target.__piSessionDataModel.byId),
-    getPath: (targetId) => getPathForModel(targetId, target.__piSessionDataModel.byId),
+
+  const sessionTree = {
+    buildTree: () => buildTreeForModel(dataModel.entries, dataModel.labelMap),
+    buildActivePathIds: (targetId) => buildActivePathIdsForModel(targetId, dataModel.byId),
+    getPath: (targetId) => getPathForModel(targetId, dataModel.byId),
     findNewestLeaf: (nodeId) => {
-      const roots = buildTreeForModel(target.__piSessionDataModel.entries, target.__piSessionDataModel.labelMap);
+      const roots = buildTreeForModel(dataModel.entries, dataModel.labelMap);
       return findNewestLeafInTree(nodeId, buildTreeNodeMap(roots));
     },
     flattenTree,
     buildTreePrefix
   };
-  target.__createSessionNavigator = createSessionNavigator;
-  target.__piTreeRenderer = target.__piTreeRenderer || createTreeRenderer({
-    documentImpl: target.document,
+
+  let currentLeafId = dataModel.leafId;
+  let currentTargetId = dataModel.urlTargetId || dataModel.leafId;
+  let treeRenderer;
+  let navigatorInstance;
+
+  const syncTreeRendererState = () => {
+    target.__piFilterState.filterMode = filterMode;
+    target.__piFilterState.searchQuery = searchQuery;
+    treeRenderer.currentLeafId = currentLeafId;
+    treeRenderer.currentTargetId = currentTargetId;
+  };
+  const renderTree = () => { syncTreeRendererState(); return treeRenderer.renderTree(); };
+  const forceTreeRerender = () => { syncTreeRendererState(); return treeRenderer.forceTreeRerender(); };
+
+  const entryRenderer = sessionEntryRenderer.createSessionEntryRenderer({
+    entries: dataModel.entries,
+    header: dataModel.header,
+    toolCallMap: dataModel.toolCallMap,
+    currentLeafIdRef: () => currentLeafId,
+    escapeHtml: sessionFormat.escapeHtml,
+    shortenPath,
+    formatToolCall,
+    safeMarkedParse: (text) => safeMarkedParse(text, { marked }),
+    hljs,
+    documentImpl,
     windowImpl: target,
-    initialLeafId: target.__piSessionDataModel.leafId,
-    initialTargetId: target.__piSessionDataModel.urlTargetId || target.__piSessionDataModel.leafId,
-    buildTree: target.__piSessionTree.buildTree,
-    buildActivePathIds: target.__piSessionTree.buildActivePathIds,
-    flattenTree,
-    filterNodes: (flatNodes, currentLeafId) => target.__piSessionFilter.filterNodes(flatNodes, currentLeafId, { filterMode: target.__piFilterState?.filterMode || 'default', searchQuery: target.__piFilterState?.searchQuery || '' }),
-    buildTreePrefix,
-    getTreeNodeDisplayHtml: target.__piSessionFormat.getTreeNodeDisplayHtml,
-    findNewestLeaf: target.__piSessionTree.findNewestLeaf,
-    navigateTo: (...args) => target.navigateTo?.(...args),
-    isMobileLayout: () => target.isMobileLayout?.() || false,
-    closeSidebar: () => target.closeSidebar?.()
+    navigatorImpl: target.navigator,
+    URLImpl: target.URL,
+    BlobImpl: target.Blob
   });
-  const bundle = `(function() {\n'use strict';\n${sessionDataPrelude}\n${legacySessionSources.join('\n')}\n})();\n${liveReloadJs}`;
-  // Execute the legacy bundle as an inline script instead of using the
-  // Function constructor. This preserves the shared IIFE scope the legacy
-  // sources depend on while eliminating the eval-like pattern.
-  const script = target.document.createElement('script');
-  script.textContent = bundle;
-  target.document.head.appendChild(script);
+  target.downloadSessionJson = entryRenderer.downloadSessionJson;
+
+  const renderHeader = () => sessionHeaderRenderer.renderSessionHeader({
+    header: dataModel.header,
+    entries: dataModel.entries,
+    systemPrompt: dataModel.systemPrompt,
+    tools: dataModel.tools,
+    escapeHtml: sessionFormat.escapeHtml,
+    formatTokens: entryRenderer.formatTokens
+  });
+
+  const ui = setupSessionUi({
+    documentImpl,
+    windowImpl: target,
+    storage: target.localStorage,
+    marked,
+    hljs,
+    escapeHtml: sessionFormat.escapeHtml,
+    markdownApi: { configureSessionMarkdown, safeMarkedParse },
+    searchFiltersApi,
+    sidebarApi,
+    toggleStateApi,
+    getLeafId: () => dataModel.leafId,
+    setSearchQuery: (value) => { searchQuery = value; },
+    setFilterMode: (value) => { filterMode = value; },
+    forceTreeRerender,
+    navigateTo: (...args) => navigateTo(...args)
+  });
+
+  const navigateTo = (targetId, scrollMode = 'target', scrollToEntryId = null) => navigatorInstance.navigateTo(targetId, scrollMode, scrollToEntryId);
+  const renderEntryToNode = (entry) => navigatorInstance.renderEntryToNode(entry);
+
+  treeRenderer = createTreeRenderer({
+    documentImpl,
+    windowImpl: target,
+    initialLeafId: currentLeafId,
+    initialTargetId: currentTargetId,
+    buildTree: sessionTree.buildTree,
+    buildActivePathIds: sessionTree.buildActivePathIds,
+    flattenTree,
+    filterNodes: (flatNodes, leaf) => filterNodesForState(flatNodes, leaf, { filterMode, searchQuery }),
+    buildTreePrefix,
+    getTreeNodeDisplayHtml: sessionFormat.getTreeNodeDisplayHtml,
+    findNewestLeaf: sessionTree.findNewestLeaf,
+    navigateTo,
+    isMobileLayout: ui.isMobileLayout,
+    closeSidebar: ui.closeSidebar
+  });
+
+  navigatorInstance = createSessionNavigator({
+    documentImpl,
+    windowImpl: target,
+    getPath: sessionTree.getPath,
+    renderTree,
+    renderHeader,
+    attachHeaderHandlers: ui.attachHeaderHandlers,
+    renderEntry: entryRenderer.renderEntry,
+    buildShareUrl: entryRenderer.buildShareUrl,
+    copyToClipboard: entryRenderer.copyToClipboard,
+    onNavigate: (leaf, targetId) => {
+      currentLeafId = leaf;
+      currentTargetId = targetId;
+      treeRenderer.currentLeafId = leaf;
+      treeRenderer.currentTargetId = targetId;
+    }
+  });
+
+  target.navigateTo = navigateTo;
+  target.renderEntryToNode = renderEntryToNode;
+  target.__piTreeRenderer = treeRenderer;
+  target.__piSessionNavigator = navigatorInstance;
+
+  chatComposerRunner.runChatComposer({
+    documentImpl,
+    windowImpl: target,
+    locationImpl: target.location,
+    localEntries: dataModel.entries,
+    leafId: dataModel.leafId,
+    urlTargetId: dataModel.urlTargetId,
+    byId: dataModel.byId,
+    navigateTo,
+    escapeHtml: sessionFormat.escapeHtml,
+    chatApi,
+    chatSelectors,
+    modelSelector,
+    thinkingSelector,
+    FormDataImpl: target.FormData,
+    URLSearchParamsImpl: target.URLSearchParams,
+    CustomEventImpl: target.CustomEvent,
+    setIntervalImpl: target.setInterval.bind(target)
+  });
+
+  liveReloadRunner.runLiveReload({
+    documentImpl,
+    windowImpl: target,
+    locationImpl: target.location,
+    navigatorImpl: target.navigator,
+    markedImpl: marked,
+    fetchImpl: target.fetch.bind(target),
+    EventSourceImpl: target.EventSource,
+    requestAnimationFrameImpl: target.requestAnimationFrame.bind(target),
+    setTimeoutImpl: target.setTimeout.bind(target),
+    clearTimeoutImpl: target.clearTimeout.bind(target),
+    liveEntries,
+    liveRenderer,
+    liveScroll,
+    liveStats,
+    liveEvents,
+    updateIndicator,
+    chatPreview,
+    shareOverlay,
+    resumeButton
+  });
 }
 
+
 if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.getElementById('session-data')) {
-  runLegacySessionApp();
+  runSessionApp();
 }

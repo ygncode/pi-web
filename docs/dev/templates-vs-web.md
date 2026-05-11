@@ -33,7 +33,7 @@ The live app is the browser UI served by the local Go server.
 
 ### Live reload / SSE
 
-- `web/src/session/session.js` imports `live_templates/live_reload.js` as raw source while that code is being modularized.
+- `web/src/session/live/live-reload.js` is bundled by the Vite session entrypoint while the SSE/live-update behavior is being decomposed into smaller modules.
 - The live session page uses server APIs and SSE (`/events?id=...`) for reloads, chat previews, and running-state updates.
 
 ## Standalone Export / Share
