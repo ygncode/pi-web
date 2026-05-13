@@ -231,6 +231,42 @@ export function runChatComposer({
       }
     });
 
+    textarea.addEventListener('paste', (event) => {
+      const data = event.clipboardData;
+      if (!data) return;
+      const seen = new Set(selectedChatFiles.map(fileKey));
+      let added = false;
+
+      if (data.items) {
+        for (const item of data.items) {
+          if (item.kind === 'file' && item.type && item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (file && !seen.has(fileKey(file))) {
+              selectedChatFiles.push(file);
+              seen.add(fileKey(file));
+              added = true;
+            }
+          }
+        }
+      }
+
+      if (!added && data.files) {
+        for (const file of data.files) {
+          if (file.type && file.type.startsWith('image/') && !seen.has(fileKey(file))) {
+            selectedChatFiles.push(file);
+            seen.add(fileKey(file));
+            added = true;
+          }
+        }
+      }
+
+      if (added) {
+        event.preventDefault();
+        renderAttachments();
+        textarea.focus();
+      }
+    });
+
     async function sendChatMessage(message, files = selectedChatFiles) {
       if (!message && files.length === 0) {
         setStatus('message or image required', 'error');
