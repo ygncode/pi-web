@@ -1162,7 +1162,7 @@
     }
 
     .markdown-content {
-      overflow-wrap: break-word;
+      overflow-wrap: anywhere;
       min-width: 0;
     }
 
@@ -1207,6 +1207,7 @@
       margin: var(--line-height) 0;
       overflow-x: auto;
       max-width: 100%;
+      box-sizing: border-box;
     }
 
     .markdown-content pre code {
@@ -1344,7 +1345,7 @@
         display: flex;
         flex-direction: column;
         height: 100vh;
-        height: 100dvh;
+        height: 100svh;
         overflow: hidden;
       }
 
@@ -1362,7 +1363,7 @@
         top: 0;
         bottom: 0;
         height: 100vh;
-        height: 100dvh;
+        height: 100svh;
         z-index: 99;
         transform: translateX(-100%);
         transition: transform 0.3s;
@@ -1388,6 +1389,7 @@
         min-height: 0;
         padding: calc(var(--line-height) * 3) 16px var(--line-height);
         -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
       }
 
       #content > * {
