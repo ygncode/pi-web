@@ -711,7 +711,6 @@
       white-space: pre-wrap;
       word-wrap: break-word;
       overflow-wrap: break-word;
-      word-break: break-word;
     }
 
     .tool-output {
@@ -719,7 +718,6 @@
       color: var(--toolOutput);
       word-wrap: break-word;
       overflow-wrap: break-word;
-      word-break: break-word;
       font-family: inherit;
       overflow-x: auto;
     }
@@ -1199,7 +1197,6 @@
       border-radius: 3px;
       font-family: inherit;
       overflow-wrap: break-word;
-      word-break: break-word;
     }
 
     .markdown-content pre {
