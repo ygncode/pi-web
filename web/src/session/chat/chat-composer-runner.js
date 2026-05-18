@@ -261,7 +261,10 @@ export function runChatComposer({
       }
 
       if (added) {
-        event.preventDefault();
+        const pastedText = data.getData?.('text/plain') || '';
+        if (!pastedText) {
+          event.preventDefault();
+        }
         renderAttachments();
         textarea.focus();
       }
