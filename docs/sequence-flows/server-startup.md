@@ -67,17 +67,18 @@ open := flag.Bool("o", false, "auto-open browser")
 insecure := flag.Bool("insecure", false, "allow non-loopback bind without PI_WEB_TOKEN")
 ```
 
-### 2. Sessions Directory Validation
+### 2. Agent & Sessions Directory
 
 ```go
-sessionsDir := filepath.Join(os.Getenv("HOME"), ".pi", "agent", "sessions")
+agentDir := piAgentDir()  // respects PI_CODING_AGENT_DIR, falls back to ~/.pi/agent
+sessionsDir := filepath.Join(agentDir, "sessions")
 if _, err := os.Stat(sessionsDir); os.IsNotExist(err) {
     fmt.Fprintf(os.Stderr, "sessions directory not found: %s\n", sessionsDir)
     os.Exit(1)
 }
 ```
 
-Exits early if the user hasn't run `pi` yet (which creates this directory).
+`piAgentDir()` checks `PI_CODING_AGENT_DIR` first, then falls back to `~/.pi/agent`. Exits early if the sessions directory doesn't exist (the user hasn't run `pi` yet).
 
 ### 3. Host Selection
 
@@ -108,6 +109,7 @@ Non-loopback binds **require** `PI_WEB_TOKEN` to prevent unauthorized access ove
 
 ```go
 srv := server.New(server.Deps{
+    AgentDir:      agentDir,
     SessionsDir:   sessionsDir,
     Auth:          authMiddleware,
     ChatSender:    workers.NewManager(func(sessionID, sessionPath string) (workers.ChatWorker, error) {
@@ -153,14 +155,14 @@ if scriptPath, js, err := loadIndexScript(distFS()); err == nil {
 
 Reads Vite manifest to discover the hashed filename of the index bundle.
 
-### 8. Pidfile
+### 8. State File
 
 ```go
-writeStateFile(bindHost, port, tailscaleServe, tailscaleURL)
-// → ~/.pi/agent/pi-web-state.json
+writeStateFile(agentDir, bindHost, port, tailscaleServe, tailscaleURL)
+// → ~/.pi/agent/pi-web/pi-web-state.json
 ```
 
-Contains PID, port, host, Tailscale Serve flag/URL, and start time. Cleaned up on shutdown.
+Contains PID, port, host, Tailscale Serve flag/URL, and start time. Cleaned up on shutdown. On first run, migrates from the old `~/.pi/agent/pi-web-state.json` location.
 
 ### 9. Model Cache Warming
 

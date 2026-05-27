@@ -106,16 +106,19 @@ name, while pi-web itself continues listening only on localhost.
 ## Session Directory Layout
 
 ```
-~/.pi/agent/sessions/
-├── --project-name--/
-│   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl
-│   ├── 2026-01-15T11-00-00.000Z_e5f6g7h8.jsonl
+~/.pi/agent/
+├── sessions/
+│   ├── --project-name--/
+│   │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl
+│   │   ├── 2026-01-15T11-00-00.000Z_e5f6g7h8.jsonl
+│   │   └── …
+│   └── --another--project--/
+│       └── …
+├── session-status/
+│   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here
 │   └── …
-├── --another--project--/
-│   └── …
-└── session-status/
-    ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here
-    └── …
+└── pi-web/
+    └── pi-web-state.json   ← server state file
 ```
 
 ## Startup Order
@@ -129,7 +132,7 @@ name, while pi-web itself continues listening only on localhost.
 7. Register routes on `http.ServeMux`
 8. Load Vite manifest and register static assets
 9. Optionally configure Tailscale Serve HTTPS for localhost
-10. Write state file to `~/.pi/agent/pi-web-state.json` (with flock)
+10. Write state file to `~/.pi/agent/pi-web/pi-web-state.json` (with flock)
 11. Optionally open browser
 12. Warm models cache (async)
 13. Start `http.Server` with timeouts; graceful shutdown on `SIGINT`/`SIGTERM`

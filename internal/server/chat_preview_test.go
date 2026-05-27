@@ -8,7 +8,7 @@ import (
 )
 
 func TestBroadcastChatPreviewSendsNamedSSEToSession(t *testing.T) {
-	s := New(Deps{})
+	s := New(Deps{AgentDir: t.TempDir()})
 	defer s.Shutdown()
 	client := s.addClient("a.jsonl")
 	defer s.removeClient(client)
@@ -29,7 +29,7 @@ func TestBroadcastChatPreviewSendsNamedSSEToSession(t *testing.T) {
 }
 
 func TestBroadcastChatPreviewDoesNotSendToGlobalTopic(t *testing.T) {
-	s := New(Deps{})
+	s := New(Deps{AgentDir: t.TempDir()})
 	defer s.Shutdown()
 	client := s.addClient(globalSessID)
 	defer s.removeClient(client)

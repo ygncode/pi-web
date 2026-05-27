@@ -318,7 +318,7 @@ func TestHandleWorkerStatusUsesSessionStatusFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s := &Server{sessionsDir: sessionsDir, chatSender: &fakeSender{}}
+	s := &Server{agentDir: root, sessionsDir: sessionsDir, chatSender: &fakeSender{}}
 	req := httptest.NewRequest(http.MethodGet, "/api/worker-status?id="+sessionID, nil)
 	w := httptest.NewRecorder()
 	s.handleWorkerStatus(w, req)
@@ -380,7 +380,7 @@ func TestHandleWorkerStatusFallsThroughForIdleStatusFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s := &Server{sessionsDir: sessionsDir, chatSender: &fakeSender{}}
+	s := &Server{agentDir: root, sessionsDir: sessionsDir, chatSender: &fakeSender{}}
 	req := httptest.NewRequest(http.MethodGet, "/api/worker-status?id="+sessionID, nil)
 	w := httptest.NewRecorder()
 	s.handleWorkerStatus(w, req)

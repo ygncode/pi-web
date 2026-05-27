@@ -47,6 +47,7 @@ func newBenchServer(b *testing.B, numSessions, messagesPerSession int) (*Server,
 	}
 
 	srv := New(Deps{
+		AgentDir:    dir,
 		SessionsDir: dir,
 		Auth:        auth.New(""),
 		Cache:       sessions.NewCache(),

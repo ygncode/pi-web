@@ -39,16 +39,28 @@ type vapidFile struct {
 }
 
 // NewPushManager loads/creates VAPID keys and subscription store under
-// ~/.pi/agent/web/. Returns a manager ready to register HTTP handlers.
-func NewPushManager() (*PushManager, error) {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-	dir := filepath.Join(home, ".pi", "agent", "web")
+// <agentDir>/pi-web/. Returns a manager ready to register HTTP handlers.
+func NewPushManager(agentDir string) (*PushManager, error) {
+	dir := filepath.Join(agentDir, "pi-web")
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}
+
+	// Migrate old push data from pre-pi-web directory layout.
+	oldDir := filepath.Join(agentDir, "web")
+	if info, err := os.Stat(oldDir); err == nil && info.IsDir() {
+		for _, name := range []string{"vapid.json", "push-subs.json"} {
+			oldPath := filepath.Join(oldDir, name)
+			newPath := filepath.Join(dir, name)
+			if _, err := os.Stat(oldPath); err == nil {
+				if _, err := os.Stat(newPath); os.IsNotExist(err) {
+					_ = os.Rename(oldPath, newPath)
+				}
+			}
+		}
+		_ = os.Remove(oldDir)
+	}
+
 	m := &PushManager{
 		storeDir: dir,
 		subs:     make(map[string]pushSub),

@@ -21,6 +21,7 @@ func TestSessionStatusWatcherEmitsDelta(t *testing.T) {
 	}
 
 	s := &Server{
+		agentDir:    root,
 		sessionsDir: sessionsDir,
 		clients:     make([]*sseClient, 0),
 		lastKnown:   make(map[string]struct{}),

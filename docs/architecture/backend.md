@@ -51,6 +51,7 @@ Central state holder. Created once at startup, lives for the process lifetime.
 
 ```go
 type Server struct {
+    agentDir      string          // ~/.pi/agent (respects PI_CODING_AGENT_DIR)
     sessionsDir   string          // ~/.pi/agent/sessions
     clients       []*sseClient    // active SSE connections
     clientsMu     sync.RWMutex
@@ -196,7 +197,7 @@ Broadcasting is fire-and-forget with a buffered channel (16). If the client is s
 
 Three signals are OR'd together to determine if a session is "running":
 
-1. **session-status file** (`~/.pi/agent/sessions/../session-status/<id>`): written by the terminal pi process
+1. **session-status file** (`~/.pi/agent/session-status/<id>`): written by the terminal pi process
 2. **In-process chat worker**: `chatSender.Status(id).State == running`
 3. **Recent file activity**: modtime within 3 seconds
 

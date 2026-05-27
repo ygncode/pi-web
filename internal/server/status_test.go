@@ -25,7 +25,7 @@ func TestComputeRunningStatusFromStatusFile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s := &Server{sessionsDir: sessionsDir, chatSender: &fakeSender{}}
+	s := &Server{agentDir: root, sessionsDir: sessionsDir, chatSender: &fakeSender{}}
 	if !s.computeRunningStatus("session.jsonl") {
 		t.Fatalf("expected running=true from session-status file")
 	}

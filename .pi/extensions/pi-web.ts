@@ -26,6 +26,12 @@ interface PiWebState {
   startedAt: string;
 }
 
+function agentDir(): string {
+  const env = process.env["PI_CODING_AGENT_DIR"];
+  if (env) return env;
+  return `${homedir()}/.pi/agent`;
+}
+
 async function detectHostPort(
   pi: ExtensionAPI,
 ): Promise<{
@@ -34,27 +40,32 @@ async function detectHostPort(
   tailscale: boolean;
   tailscaleUrl?: string;
 } | null> {
-  // 1. Try pidfile
-  try {
-    const path = `${homedir()}/.pi/agent/pi-web-state.json`;
-    const raw = readFileSync(path, "utf-8");
-    const state: PiWebState = JSON.parse(raw);
-
-    // Validate PID is still alive
+  // 1. Try pidfile (new path first, then old for migration compat)
+  const candidates = [
+    `${agentDir()}/pi-web/pi-web-state.json`,
+    `${agentDir()}/pi-web-state.json`,
+  ];
+  for (const path of candidates) {
     try {
-      process.kill(state.pid, 0);
-    } catch {
-      throw new Error("stale pi-web pidfile");
-    }
+      const raw = readFileSync(path, "utf-8");
+      const state: PiWebState = JSON.parse(raw);
 
-    return {
-      host: state.host,
-      port: state.port,
-      tailscale: state.tailscale,
-      tailscaleUrl: state.tailscaleUrl,
-    };
-  } catch {
-    // fall through
+      // Validate PID is still alive
+      try {
+        process.kill(state.pid, 0);
+      } catch {
+        continue;
+      }
+
+      return {
+        host: state.host,
+        port: state.port,
+        tailscale: state.tailscale,
+        tailscaleUrl: state.tailscaleUrl,
+      };
+    } catch {
+      // try next candidate
+    }
   }
 
   // 2. Process fallback (macOS / Linux)

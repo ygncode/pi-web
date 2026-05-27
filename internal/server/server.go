@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -29,6 +30,7 @@ const globalSessID = "__all__"
 // list (which depends on a process-wide cache), and the chat sender (which
 // owns rpc workers).
 type Deps struct {
+	AgentDir            string
 	SessionsDir         string
 	Auth                *auth.Middleware
 	ChatSender          ChatSender
@@ -43,6 +45,7 @@ type Deps struct {
 // Server holds runtime state — connected SSE clients and last-seen modtimes
 // per session file. Construct via New; register HTTP routes via Register.
 type Server struct {
+	agentDir            string
 	sessionsDir         string
 	clients             []*sseClient
 	clientsMu           sync.RWMutex
@@ -70,7 +73,12 @@ func New(deps Deps) *Server {
 	if now == nil {
 		now = time.Now
 	}
+	agentDir := deps.AgentDir
+	if agentDir == "" {
+		agentDir = filepath.Join(os.Getenv("HOME"), ".pi", "agent")
+	}
 	s := &Server{
+		agentDir:            agentDir,
 		sessionsDir:         deps.SessionsDir,
 		clients:             make([]*sseClient, 0),
 		fileMod:             make(map[string]time.Time),
@@ -85,7 +93,7 @@ func New(deps Deps) *Server {
 		lastKnown:           make(map[string]struct{}),
 		stopCh:              make(chan struct{}),
 	}
-	if pm, err := NewPushManager(); err != nil {
+	if pm, err := NewPushManager(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "push notifications unavailable: %v\n", err)
 	} else {
 		s.push = pm

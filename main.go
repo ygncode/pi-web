@@ -50,7 +50,8 @@ func main() {
 		os.Exit(0)
 	}
 
-	sessionsDir := filepath.Join(os.Getenv("HOME"), ".pi", "agent", "sessions")
+	agentDir := piAgentDir()
+	sessionsDir := filepath.Join(agentDir, "sessions")
 	if _, err := os.Stat(sessionsDir); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "sessions directory not found: %s\n", sessionsDir)
 		os.Exit(1)
@@ -77,6 +78,7 @@ func main() {
 		})
 	})
 	srv = server.New(server.Deps{
+		AgentDir:            agentDir,
 		SessionsDir:         sessionsDir,
 		Auth:                authMiddleware,
 		ChatSender:          manager,
@@ -134,7 +136,7 @@ func main() {
 		fmt.Printf("Auth: disabled — set %s to require a token for access.\n", tokenEnvVar)
 	}
 
-	stateFilePath, err := writeStateFile(bindHost, *port, tailscaleServe, tailscaleURL)
+	stateFilePath, err := writeStateFile(agentDir, bindHost, *port, tailscaleServe, tailscaleURL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
@@ -198,20 +200,42 @@ func openBrowser(url string) {
 	exec.Command(cmd, args...).Start()
 }
 
+// piAgentDir returns the Pi agent config directory.
+// It respects the PI_CODING_AGENT_DIR environment variable, falling back to
+// ~/.pi/agent.
+func piAgentDir() string {
+	if dir := os.Getenv("PI_CODING_AGENT_DIR"); dir != "" {
+		return dir
+	}
+	home, _ := os.UserHomeDir()
+	if home == "" {
+		home = os.Getenv("HOME")
+	}
+	return filepath.Join(home, ".pi", "agent")
+}
+
+// piWebDir returns the pi-web data directory inside the Pi agent dir.
+func piWebDir() string {
+	return filepath.Join(piAgentDir(), "pi-web")
+}
+
 // stateFile is held open for the lifetime of the process so the flock stays
 // in effect. Closing it releases the lock.
 var stateFile *os.File
 
-func writeStateFile(host, port string, tailscale bool, tailscaleURL string) (string, error) {
-	home := os.Getenv("HOME")
-	if home == "" {
-		return "", fmt.Errorf("HOME not set")
-	}
-	agentDir := filepath.Join(home, ".pi", "agent")
-	if err := os.MkdirAll(agentDir, 0755); err != nil {
+func writeStateFile(agentDir, host, port string, tailscale bool, tailscaleURL string) (string, error) {
+	webDir := filepath.Join(agentDir, "pi-web")
+	if err := os.MkdirAll(webDir, 0755); err != nil {
 		return "", err
 	}
-	path := filepath.Join(agentDir, "pi-web-state.json")
+	path := filepath.Join(webDir, "pi-web-state.json")
+
+	// Migrate old state file from pre-pi-web directory layout.
+	oldPath := filepath.Join(agentDir, "pi-web-state.json")
+	if _, err := os.Stat(oldPath); err == nil {
+		_ = os.Rename(oldPath, path)
+	}
+
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		return "", err

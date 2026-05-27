@@ -15,6 +15,7 @@ func newTestServer(t *testing.T) *Server {
 	t.Helper()
 	dir := t.TempDir()
 	return New(Deps{
+		AgentDir:      dir,
 		SessionsDir:   dir,
 		Auth:          auth.New(""),
 		Cache:         sessions.NewCache(),

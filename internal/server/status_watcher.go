@@ -12,7 +12,7 @@ import (
 // status files into. Mirrors readSessionStatus's path computation so a
 // single change keeps both callers consistent.
 func (s *Server) sessionStatusDir() string {
-	return filepath.Join(s.sessionsDir, "..", "session-status")
+	return filepath.Join(s.agentDir, "session-status")
 }
 
 // startSessionStatusWatcher watches the session-status/ directory for

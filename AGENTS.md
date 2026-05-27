@@ -97,4 +97,4 @@ make check    # test + build + vet
 2. **Existing session data is append-only for rename.** Browser chat goes to a `pi --mode rpc` worker, which writes conversation entries. pi-web otherwise watches and broadcasts; its only direct write to existing session files is appending `session_info` for browser rename. New-session creation may write initial implicit `model_change` / `thinking_level_change` entries in the fresh file.
 3. **One worker per session.** Reused for subsequent messages. Crashed = evicted + replaced. Idle workers reaped after 10 min.
 4. **SSE topics:** `globalSessID = "__all__"` for index-wide events; session ID for per-session events.
-5. **Default port:** `31415`. State file: `~/.pi/agent/pi-web-state.json`.
+5. **Default port:** `31415`. State file: `~/.pi/agent/pi-web/pi-web-state.json`.
