@@ -231,9 +231,15 @@ func writeStateFile(agentDir, host, port string, tailscale bool, tailscaleURL st
 	path := filepath.Join(webDir, "pi-web-state.json")
 
 	// Migrate old state file from pre-pi-web directory layout.
+	// Only migrate when the new path does not already exist; otherwise
+	// os.Rename would unlink a destination inode that another pi-web
+	// process may already hold a flock on, defeating the single-instance
+	// lock.
 	oldPath := filepath.Join(agentDir, "pi-web-state.json")
 	if _, err := os.Stat(oldPath); err == nil {
-		_ = os.Rename(oldPath, path)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			_ = os.Rename(oldPath, path)
+		}
 	}
 
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644)

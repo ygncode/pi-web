@@ -238,7 +238,7 @@ setup_macos() {
     while IFS='=' read -r key value; do
       [[ -z "$key" || "$key" == \#* ]] && continue
       case "$key" in
-        PI_WEB_TOKEN|PATH) ;;
+        PI_WEB_TOKEN|PI_CODING_AGENT_DIR|PATH) ;;
         *) continue ;;
       esac
       value="$(printf '%s' "$value" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g')"
@@ -356,6 +356,11 @@ setup_env() {
     set_env_var "$env_file" "PI_WEB_TOKEN" "$token"
     info "Generated PI_WEB_TOKEN in ${env_file}"
     warn "Use this token when opening pi-web from another device: ${token}"
+  fi
+
+  # Persist PI_CODING_AGENT_DIR so auto-started pi-web finds the right sessions.
+  if [[ -n "${PI_CODING_AGENT_DIR:-}" ]]; then
+    set_env_var "$env_file" "PI_CODING_AGENT_DIR" "${PI_CODING_AGENT_DIR}"
   fi
 
   # Services launched by systemd/launchd often have a minimal PATH. Preserve the
