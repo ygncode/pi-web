@@ -102,7 +102,7 @@ func TestGenerateExportHtmlIncludesChatComposerWhenButtonsShown(t *testing.T) {
 
 func TestGenerateExportHtmlOmitsChatComposerForShare(t *testing.T) {
 	session := sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Filename: "s.jsonl"}, Entries: []map[string]any{{"id": "aaaaaaaa"}}}
-	html := renderExportSessionPage(session)
+	html := RenderExportSessionPage(session, "dark")
 	if strings.Contains(html, `id="pi-chat-composer"`) {
 		t.Fatalf("chat composer should not be included in share export")
 	}
@@ -200,7 +200,7 @@ func TestResumeButtonShowsToastWithoutChangingButtonText(t *testing.T) {
 
 func TestGenerateExportHtmlOmitsResumeButtonForShare(t *testing.T) {
 	session := sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Filename: "s.jsonl"}, Entries: []map[string]any{{"id": "aaaaaaaa"}}}
-	html := renderExportSessionPage(session)
+	html := RenderExportSessionPage(session, "dark")
 	if strings.Contains(html, `id="resume-btn"`) {
 		t.Fatalf("resume button should not be included in share export")
 	}
@@ -227,3 +227,28 @@ func TestGenerateExportHtmlShowsDisabledChatNoticeForBrokenSession(t *testing.T)
 		t.Fatalf("broken session should disable chat controls")
 	}
 }
+
+func TestSanitizeTheme(t *testing.T) {
+	valid := []string{"dark", "light", "nord", "dracula", "custom"}
+	for _, theme := range valid {
+		if got := sanitizeTheme(theme); got != theme {
+			t.Errorf("sanitizeTheme(%q) = %q, want %q", theme, got, theme)
+		}
+	}
+
+	// Anything outside the allowlist must return "dark" to prevent
+	// user-controlled cookie values from being injected into the export <script>.
+	malicious := []string{
+		"'; alert(1); //",
+		"dark\"; alert(1); //",
+		"unknown",
+		"",
+		"DARK",
+	}
+	for _, theme := range malicious {
+		if got := sanitizeTheme(theme); got != "dark" {
+			t.Errorf("sanitizeTheme(%q) = %q, want \"dark\"", theme, got)
+		}
+	}
+}
+

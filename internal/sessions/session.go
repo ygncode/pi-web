@@ -2,7 +2,6 @@ package sessions
 
 import (
 	"bufio"
-	"bytes"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
@@ -171,12 +170,12 @@ func ParseSummary(path, dirName, fileName string) (SessionSummary, error) {
 	scanner := bufio.NewScanner(f)
 	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
 	for scanner.Scan() {
-		line := bytes.TrimSpace(scanner.Bytes())
+		line := strings.TrimSpace(scanner.Text())
 		if len(line) == 0 {
 			continue
 		}
 		var raw summaryLine
-		if err := json.Unmarshal(line, &raw); err != nil {
+		if err := json.Unmarshal([]byte(line), &raw); err != nil {
 			continue
 		}
 		switch raw.Type {
@@ -502,26 +501,56 @@ func sessionHeaderKey(raw map[string]any) string {
 	return id + "\x00" + timestamp + "\x00" + cwd
 }
 
+// cleanProjectName reverses EncodeProjectName for display purposes.
+// It handles both the new escape-based encoding (using _ as sentinel) and
+// the legacy encoding (where - stood for /).
 func cleanProjectName(dirName string) string {
 	s := strings.TrimPrefix(dirName, "--")
 	s = strings.TrimSuffix(s, "--")
-	s = strings.ReplaceAll(s, "--", "/")
+	s = decodeProjectBody(s)
 	return s
 }
 
+// EncodeProjectName converts an absolute filesystem path into a safe
+// directory name by escaping / and _. The result is wrapped with "--"
+// so callers can recognise encoded project directories.
+//
+//	/home/user/my-project → --home_-user_-my-project--
+//	/home/user/_cache    → --home_-user_-__cache--
 func EncodeProjectName(path string) string {
 	s := strings.TrimSpace(path)
 	s = strings.Trim(s, "/")
-	s = strings.ReplaceAll(s, "/", "-")
+	// Escape _ first, then /.  Order matters: we must double _ before we
+	// introduce any new _ in the / escape sequence.
+	s = strings.ReplaceAll(s, "_", "__")
+	s = strings.ReplaceAll(s, "/", "_-")
 	return "--" + s + "--"
 }
 
+// DecodeProjectName reverses EncodeProjectName.  It accepts both the
+// new escape-based encoding and the legacy encoding (where - meant /)
+// so that existing session directories continue to work.
 func DecodeProjectName(dirName string) string {
 	s := strings.TrimPrefix(dirName, "--")
 	s = strings.TrimSuffix(s, "--")
-	s = strings.ReplaceAll(s, "-", "/")
+	s = decodeProjectBody(s)
 	if s != "" && !strings.HasPrefix(s, "/") {
 		s = "/" + s
+	}
+	return s
+}
+
+// decodeProjectBody decodes the content between the "--" wrappers.
+// New format (contains _):  __ → _,  _- → /
+// Legacy format (no _):     -  → /
+func decodeProjectBody(s string) string {
+	if strings.Contains(s, "_") {
+		// New escape-based encoding.  Order: unescape / first, then _.
+		s = strings.ReplaceAll(s, "_-", "/")
+		s = strings.ReplaceAll(s, "__", "_")
+	} else {
+		// Legacy encoding: every - was a /.
+		s = strings.ReplaceAll(s, "-", "/")
 	}
 	return s
 }
@@ -556,7 +585,7 @@ func ListRecentLocations(sessionsDir string) ([]string, error) {
 	locations := make([]string, 0, maxRecentLocations)
 	seen := make(map[string]bool)
 	for _, dir := range dirs {
-		loc := DecodeProjectName(dir.name)
+		loc := resolveLocation(sessionsDir, dir.name)
 		if loc == "" || seen[loc] {
 			continue
 		}
@@ -567,6 +596,66 @@ func ListRecentLocations(sessionsDir string) ([]string, error) {
 		}
 	}
 	return locations, nil
+}
+
+// resolveLocation returns the projects absolute path for the given
+// project directory name.  It first tries DecodeProjectName; if the
+// result exists on disk it is returned directly.  Otherwise it falls
+// back to reading the cwd from a session JSONL file inside the
+// directory — this recovers legacy-encoded directories whose names
+// contain literal hyphens that DecodeProjectName misinterprets as
+// path separators.
+func resolveLocation(sessionsDir, dirName string) string {
+	loc := DecodeProjectName(dirName)
+	if loc != "" {
+		if info, err := os.Stat(loc); err == nil && info.IsDir() {
+			return loc
+		}
+	}
+	// Decoded path doesn't exist (or decoded to empty).  Try to recover
+	// the real cwd from a session file inside the project directory.
+	cwd := readSessionCWD(filepath.Join(sessionsDir, dirName))
+	if cwd != "" {
+		return cwd
+	}
+	return loc
+}
+
+// readSessionCWD opens a *.jsonl file in dir, reads its session header
+// line, and returns the cwd field.  Returns "" on any error.  Any file
+// in the directory will do — all sessions in the same project share
+// the same cwd.
+func readSessionCWD(dir string) string {
+	matches, err := filepath.Glob(filepath.Join(dir, "*.jsonl"))
+	if err != nil || len(matches) == 0 {
+		return ""
+	}
+	f, err := os.Open(matches[0])
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 64*1024), 1*1024*1024)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if len(line) == 0 {
+			continue
+		}
+		var raw struct {
+			Type string `json:"type"`
+			CWD  string `json:"cwd"`
+		}
+		if err := json.Unmarshal([]byte(line), &raw); err != nil {
+			continue
+		}
+		if raw.Type == "session" && raw.CWD != "" {
+			return raw.CWD
+		}
+		// Only the first (session) line matters.
+		break
+	}
+	return ""
 }
 
 type InitialSettings struct {

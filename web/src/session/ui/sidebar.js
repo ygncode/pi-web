@@ -3,6 +3,9 @@ export const SIDEBAR_COLLAPSED_STORAGE_KEY = 'pi-share:v1:sidebar-collapsed';
 export const MIN_CONTENT_WIDTH = 320;
 
 export function isMobileLayout({ windowImpl = window } = {}) {
+  if (!windowImpl || typeof windowImpl.matchMedia !== 'function') {
+    return false;
+  }
   return windowImpl.matchMedia('(max-width: 900px)').matches;
 }
 
@@ -74,17 +77,23 @@ export function saveSidebarCollapsed(collapsed, { storage = globalThis.localStor
   }
 }
 
-export function setSidebarCollapsed(collapsed, { documentImpl = document } = {}) {
+export function setSidebarCollapsed(collapsed, { documentImpl = document, windowImpl = window } = {}) {
   const hamburger = documentImpl.getElementById('hamburger');
   documentImpl.body?.classList.toggle('sidebar-collapsed', collapsed);
-  if (hamburger) hamburger.style.display = collapsed ? '' : 'none';
+  if (hamburger) {
+    if (isMobileLayout({ windowImpl })) {
+      hamburger.style.display = '';
+    } else {
+      hamburger.style.display = collapsed ? '' : 'none';
+    }
+  }
 }
 
 export function setupSidebarCollapse({ documentImpl = document, windowImpl = window, storage = globalThis.localStorage } = {}) {
   const env = { documentImpl, windowImpl, storage };
   const collapsed = loadSidebarCollapsed({ storage });
   if (!isMobileLayout({ windowImpl })) {
-    setSidebarCollapsed(collapsed, { documentImpl });
+    setSidebarCollapsed(collapsed, { documentImpl, windowImpl });
   }
 
   const hamburger = documentImpl.getElementById('hamburger');
@@ -95,18 +104,20 @@ export function setupSidebarCollapse({ documentImpl = document, windowImpl = win
       setSidebarOpen(true, { documentImpl });
       return;
     }
-    setSidebarCollapsed(false, { documentImpl });
+    setSidebarCollapsed(false, { documentImpl, windowImpl });
     saveSidebarCollapsed(false, { storage });
   });
 
-  hideBtn?.addEventListener('click', () => {
+  const closeSidebar = () => {
     if (isMobileLayout({ windowImpl })) {
       setSidebarOpen(false, { documentImpl });
       return;
     }
-    setSidebarCollapsed(true, { documentImpl });
+    setSidebarCollapsed(true, { documentImpl, windowImpl });
     saveSidebarCollapsed(true, { storage });
-  });
+  };
+
+  hideBtn?.addEventListener('click', closeSidebar);
 
 
 }
@@ -184,7 +195,7 @@ export function setupSidebarResize({ documentImpl = document, windowImpl = windo
       if (hamburger) hamburger.style.display = '';
     } else {
       const collapsed = loadSidebarCollapsed({ storage });
-      setSidebarCollapsed(collapsed, { documentImpl });
+      setSidebarCollapsed(collapsed, { documentImpl, windowImpl });
     }
   });
 }

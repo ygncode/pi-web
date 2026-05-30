@@ -21,7 +21,7 @@ func newTestServer(t *testing.T) *Server {
 		Cache:         sessions.NewCache(),
 		RenderIndex:   func(w io.Writer, _ []sessions.SessionSummary) error { return nil },
 		RenderLiveSession:   func(s sessions.Session) string { return "" },
-		RenderExportSession: func(s sessions.Session) string { return "" },
+		RenderExportSession: func(s sessions.Session, theme string) string { return "" },
 		Models:        func(ctx context.Context) (json.RawMessage, error) { return nil, nil },
 	})
 }

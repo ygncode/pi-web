@@ -67,7 +67,7 @@ export function createSessionEntryRenderer({
     for (const entry of entries) {
       if (entry.type === 'message' && entry.message.role === 'toolResult') {
         if (entry.message.toolCallId === toolCallId) {
-          return entry.message;
+          return entry;
         }
       }
     }
@@ -203,7 +203,8 @@ export function createSessionEntryRenderer({
   }
 
   function renderToolCall(call) {
-    const result = findToolResult(call.id);
+    const resultEntry = findToolResult(call.id);
+    const result = resultEntry?.message;
     const isError = result?.isError || false;
     const statusClass = result ? (isError ? 'error' : 'success') : 'pending';
 
@@ -226,7 +227,8 @@ export function createSessionEntryRenderer({
         '</div>';
     };
 
-    let html = `<div class="tool-execution ${statusClass}">`;
+    const containerId = resultEntry ? ` id="entry-${resultEntry.id}"` : '';
+    let html = `<div class="tool-execution ${statusClass}"${containerId}>`;
     const args = call.arguments || {};
     const name = call.name;
 

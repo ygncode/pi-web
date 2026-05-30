@@ -1,101 +1,59 @@
-# `internal/ui/export/`, `internal/ui/live_templates/`, and `web/`
+# UI Rendering & Frontend Architecture (`internal/ui/` and `web/`)
 
-> This repo used to put export files, live Go templates, vendored JS, and Vite-owned frontend code under one overloaded `templates/` directory. That split is now explicit.
+This document explains the unified architecture of our HTML template layouts, stylesheet subsystems, and Vite-built frontend runtimes. 
 
 ## Short Version
 
-| Directory | Purpose |
-|-----------|---------|
-| `web/` | The **live app runtime** — Vite-built ES modules served from `/static/assets/...` |
-| `internal/ui/live_templates/` | Thin **live app HTML/template shells** embedded by Go |
-| `internal/ui/export/` | The **standalone share/export app** — self-contained HTML/CSS/JS for Gist uploads |
+| Layer / Directory | Purpose |
+|-------------------|---------|
+| `web/` | **Client Runtime Source** — Vite-managed ES modules compiled into production assets (`web/dist/`) and served as `/static/assets/...` |
+| `internal/ui/live_templates/` | **Unified HTML Shells & Style Tokens** — Core Go-embedded template shells (`session.html`) and theme stylesheets (`styles/session.css`) |
 
-## ⚠️ Live App vs. Export — Separate Products
+---
 
-**These are not the same thing. Do not mix them up.**
+## 🎨 Unified Layout Architecture (Single HTML Shell)
 
-The live app is a dynamic web UI served by the Go server. The export is a frozen, serverless HTML file uploaded to GitHub Gist. They share some CSS and DOM structure, but they have **separate HTML shells, separate JS runtimes, and separate Go rendering code**.
+Historically, this codebase maintained separate template layouts for the **Live Local App** and **Standalone Gist Exports**. They are now unified under one robust, flexible layout engine:
 
-| | Live App (`/session`) | Export/Share (Gist) |
-|---|---|---|
-| Go renderer | `internal/ui/session_page.go` | `internal/ui/export.go` |
-| HTML shell | `internal/ui/live_templates/session.html` | `internal/ui/export/index.html` |
-| JS runtime | `web/src/session/` (Vite) | `internal/ui/export/app/*.js` + `internal/ui/export/vendor/` |
-| CSS | `internal/ui/live_templates/session.css` | `internal/ui/export/template.css` |
-| Chat composer | Yes | No |
-| Action buttons | Yes (baked into template) | No |
-| SSE/API | Yes | No |
-| Needs server | Yes | No — fully self-contained |
+- **Unified Template File**: `internal/ui/live_templates/session.html`
+- **Unified Style Tokens**: `internal/ui/live_templates/styles/session.css`
 
-### Live App
+By using Go's `html/template` conditional checks (`{{if .IsLive}} ... {{else}} ... {{end}}`), the same layout shell dynamically adapts to serve both environments:
 
-The live app is the browser UI served by the local Go server. Index and session pages keep separate page bodies and Vite entrypoints, but share common document chrome (doctype/head/PWA tags/theme boot/service-worker registration) through `internal/ui/live_page.go`.
+| Feature / UI Component | Live App (`/session`) | Standalone Export (Share Gist) |
+|------------------------|------------------------|-------------------------------|
+| **Go Renderer** | `internal/ui/session_page.go` | `internal/ui/export.go` |
+| **HTML Layout Shell** | `live_templates/session.html` (`IsLive: true`) | `live_templates/session.html` (`IsLive: false`) |
+| **Styling Stylesheet** | `live_templates/styles/session.css` | `live_templates/styles/session.css` |
+| **Theme Cycling Menu** | Yes (Desktop/Mobile dropdowns) | No (Top-right standalone toggle) |
+| **Back Link & popover** | Yes (Desktop command menus) | No |
+| **Chat Composer** | Yes (Server-plumbed input composer) | No |
+| **Javascript Delivery**| Vite script modules (`/static/assets/...`)| Embedded inline IIFE (marked + highlight + runtime)|
+| **Network Requirements**| Yes (Requires local Go RPC server) | No (Fully standalone, serverless HTML)|
 
-#### Index page (`/`)
+---
 
-- Go renders `internal/ui/live_templates/index.html`.
-- The template injects the Vite index module path via `indexScript`.
-- The interactive code lives in `web/src/index/`.
+## 🛠️ Unified CSS Variables Theme Engine
 
-#### Session page (`/session?id=...`)
+Our styling is based on a **Unified CSS Custom Properties (Variables) design system** in `styles/session.css`. 
 
-- Go renders `internal/ui/live_templates/session.html`.
-- The template includes action buttons (Sessions, Share, Terminal) and a chat composer placeholder.
-- The page loads the Vite session module with `<script type="module" src="/static/assets/session-*.js">`.
-- Interactive session behavior lives in `web/src/session/`.
-- `internal/ui/export/app/*.js` is **not** used by the live session page.
+In both Live and Export environments, changing the theme simply toggles the `data-theme` attribute on the `<html>` root node:
+- **Obsidian Dark** (`dark`)
+- **Warm Linen Light** (`light`)
+- **Arctic Frost Nord** (`nord`)
+- **Cyberpunk Dracula** (`dracula`)
+- **User Custom taste** (`custom` — serves custom colors loaded from `~/.pi/agent/pi-web/custom-themes.css`)
 
-#### Live reload / SSE
+For export snapshots, the `exportThemeBootScript()` inlines a highly optimized theme toggle and cookie/localStorage boot engine that stays completely active.
 
-- `web/src/session/live/live-reload.js` is bundled by the Vite session entrypoint.
-- The live session page uses server APIs and SSE (`/events?id=...`) for reloads, chat previews, and running-state updates.
+---
 
-### Standalone Export / Share
+## 🚀 Shared Code & Remaining Separation
 
-The export is a frozen, server-independent session snapshot uploaded by the Share flow.
-
-When you click **"↗ Share"**:
-
-1. The server calls `renderExportSessionPage(session)` in `internal/ui/export.go`.
-2. Go renders `internal/ui/export/index.html` with `internal/ui/export/template.css`.
-3. Go inlines the export runtime JS:
-   - `internal/ui/export/vendor/marked.min.js`
-   - `internal/ui/export/vendor/highlight.min.js`
-   - `internal/ui/export/app/*.js` concatenated in lexical order and wrapped in one IIFE
-   - `internal/ui/export/template.css` styles
-4. The resulting single HTML file is uploaded as a private Gist with `gh gist create --public=false`.
-
-The export intentionally has no chat composer, no action buttons, no SSE, no API calls, and no external asset dependency.
-
-### What Not To Do
-
-- **Do not** use `internal/ui/export/index.html` for the live session page. It has no buttons, no chat composer placeholder, and no Vite module hook.
-- **Do not** inject live-only chrome (buttons, chat composer) into `internal/ui/export/index.html`. The export must remain server-independent.
-- **Do not** use `internal/ui/export/app/*.js` for the live app. The live app uses Vite-built `web/src/session/`.
-- **Do not** point the live page at `internal/ui/export/template.css`. Live and export CSS are separate; keep shared visual changes intentionally mirrored when both products need them.
-
-## Why the Split Exists
-
-The live app and export are **different products** with different constraints:
-
-| | Live App | Export |
-|---|---|---|
-| Needs Go server? | Yes | No |
-| Chat? | Yes | No |
-| Action buttons? | Yes | No |
-| API/SSE? | Yes | No |
-| JS delivery | Vite assets (`/static/assets/...`) | Inline JS (no external requests) |
-| State | Live/updating | Frozen snapshot |
-| HTML shell | `internal/ui/live_templates/session.html` | `internal/ui/export/index.html` |
-| Go renderer | `internal/ui/session_page.go` | `internal/ui/export.go` |
-
-They share `prepareSessionPageData()` because both need the same base64-encoded session data and theme variable injection. Their CSS files are separate because the live page includes server-only chrome such as chat controls, action buttons, and overlays. Everything else is separate.
-
-## Remaining Duplication
-
-There is still duplicated session rendering logic between:
-
-- `web/src/session/` for the live app
-- `internal/ui/export/app/*.js` for standalone exports
-
-That duplication is deliberate for now. The next safe cleanup would be extracting small pure formatting/tree helpers that can be shared without forcing the export path to depend on live-only chat, SSE, or API behavior.
+While our layouts and styling are consolidated:
+1. **Client Runtimes** remain separated by environment requirements:
+   - Live app (`web/src/session/`): Handles SSE dynamic watchers, real-time message streams, chat composition, and service worker push updates.
+   - Export app (`internal/ui/live_templates/export/app/*.js`): Performs static offline client rendering for tree building and list filters.
+2. **Icons & Favicons**:
+   - The live app loads dynamic vector files from `/icon.svg`.
+   - The standalone export snapshot embeds a self-contained base64-encoded SVG favicon so it displays beautifully on all platforms without external network requests.

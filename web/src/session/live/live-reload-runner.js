@@ -76,7 +76,6 @@ export function runLiveReload({
 
     function showFollowButton() {
       if (followBtn) {
-        followBtn.textContent = '↓ ' + pendingCount + ' new' + (pendingCount > 1 ? 's' : '');
         return;
       }
       followBtn = __piLiveScroll.createFollowButton({ documentImpl: document, requestAnimationFrameImpl: requestAnimationFrame, onClick: function() {
@@ -94,18 +93,64 @@ export function runLiveReload({
       followBtn = null;
     }
 
+    var lastScrollTop = 0;
+    var contentEl = document.getElementById('content');
+
+    function getScrollPosition() {
+      var scrolled = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop;
+      if (contentEl && contentEl.scrollHeight > contentEl.clientHeight) {
+        scrolled = Math.max(scrolled, contentEl.scrollTop);
+      }
+      return scrolled;
+    }
+
+    if (typeof document !== 'undefined') {
+      lastScrollTop = getScrollPosition();
+    }
+
+    function disableFollowOnUserInteraction(e) {
+      if (e.type === 'keydown') {
+        var scrollingKeys = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '];
+        if (scrollingKeys.indexOf(e.key) === -1) return;
+      }
+      forcePreviewFollowUntil = 0;
+      if (isAtBottom()) {
+        FOLLOW = true;
+        hideFollowButton();
+      } else {
+        FOLLOW = false;
+        showFollowButton();
+      }
+    }
+
     function onScroll() {
-      var wasFollowing = FOLLOW;
+      var currentScroll = getScrollPosition();
+      var scrolledUp = currentScroll < lastScrollTop;
+      lastScrollTop = currentScroll;
+
       FOLLOW = isAtBottom();
-      if (FOLLOW && followBtn) {
+
+      if (scrolledUp) {
+        // User manually scrolled up; immediately release the forced follow behavior
+        // so they can read previous messages without being yanked back down.
+        forcePreviewFollowUntil = 0;
+        FOLLOW = false;
+      }
+
+      if (FOLLOW) {
         hideFollowButton();
         pendingCount = 0;
+      } else {
+        showFollowButton();
       }
     }
 
     window.addEventListener('scroll', onScroll, { passive: true });
-    var contentEl = document.getElementById('content');
     if (contentEl) contentEl.addEventListener('scroll', onScroll, { passive: true });
+
+    window.addEventListener('wheel', disableFollowOnUserInteraction, { passive: true });
+    window.addEventListener('touchmove', disableFollowOnUserInteraction, { passive: true });
+    window.addEventListener('keydown', disableFollowOnUserInteraction, { passive: true });
 
     function scrollAfterLayout(smooth, target) {
       requestAnimationFrame(function() {
@@ -189,7 +234,14 @@ export function runLiveReload({
     var CHAT_PREVIEW_STATE = { chatPreviewEl: null, pendingUserEl: null };
 
     function clearChatPreview() {
-      return __piChatPreview.clearChatPreview(CHAT_PREVIEW_STATE);
+      var statusEl = document.getElementById('pi-chat-status');
+      var isChatRunning = statusEl && statusEl.classList.contains('running');
+      var hasDoneClass = CHAT_PREVIEW_STATE.chatPreviewEl && CHAT_PREVIEW_STATE.chatPreviewEl.classList.contains('done');
+      var keepAssistant = !!(isChatRunning && !hasDoneClass);
+
+      return __piChatPreview.clearChatPreview(CHAT_PREVIEW_STATE, {
+        keepAssistant: keepAssistant
+      });
     }
 
     function finishChatPreview() {

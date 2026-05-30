@@ -30,7 +30,16 @@ export function appendEntry(entry, allEntries, state, env = {}) {
   const node = buildEntryNode(entry, allEntries, env);
   state.seen.add(entry.id);
   if (!node) return false;
-  container.appendChild(node);
+
+  const pendingUser = documentImpl.getElementById('chat-pending-user');
+  const previewStream = documentImpl.getElementById('chat-preview-stream');
+  const insertBeforeNode = pendingUser || previewStream;
+  if (insertBeforeNode && insertBeforeNode.parentNode === container) {
+    container.insertBefore(node, insertBeforeNode);
+  } else {
+    container.appendChild(node);
+  }
+
   state.liveRendered.add(entry.id);
   highlightNewEntry(node, env);
   return true;

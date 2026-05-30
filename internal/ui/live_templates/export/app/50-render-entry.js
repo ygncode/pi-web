@@ -44,7 +44,7 @@ function findToolResult(toolCallId) {
   for (const entry of entries) {
     if (entry.type === 'message' && entry.message.role === 'toolResult') {
       if (entry.message.toolCallId === toolCallId) {
-        return entry.message;
+        return entry;
       }
     }
   }
@@ -178,7 +178,8 @@ function renderAskUserQuestionTool(args, result) {
 }
 
 function renderToolCall(call) {
-  const result = findToolResult(call.id);
+  const resultEntry = findToolResult(call.id);
+  const result = resultEntry?.message;
   const isError = result?.isError || false;
   const statusClass = result ? (isError ? 'error' : 'success') : 'pending';
 
@@ -201,7 +202,8 @@ function renderToolCall(call) {
       '</div>';
   };
 
-  let html = `<div class="tool-execution ${statusClass}">`;
+  const containerId = resultEntry ? ` id="entry-${resultEntry.id}"` : '';
+  let html = `<div class="tool-execution ${statusClass}"${containerId}>`;
   const args = call.arguments || {};
   const name = call.name;
 

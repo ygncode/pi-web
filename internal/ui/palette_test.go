@@ -7,19 +7,19 @@ import (
 
 func TestRenderPalette_Index(t *testing.T) {
 	html := string(renderPalette(paletteData{
-		ID:       "commandPalette",
-		Label:    "Search sessions",
-		SearchID: "search",
+		ID:       "sessionPalette",
+		Label:    "List sessions",
+		SearchID: "session-palette-search",
 		Actions:  true,
 	}))
 
-	if !strings.Contains(html, `id="commandPalette"`) {
+	if !strings.Contains(html, `id="sessionPalette"`) {
 		t.Error("missing palette id")
 	}
-	if !strings.Contains(html, `id="search"`) {
+	if !strings.Contains(html, `id="session-palette-search"`) {
 		t.Error("missing search input id")
 	}
-	if !strings.Contains(html, `aria-label="Search sessions"`) {
+	if !strings.Contains(html, `aria-label="List sessions"`) {
 		t.Error("missing aria label")
 	}
 	if !strings.Contains(html, "Actions") {

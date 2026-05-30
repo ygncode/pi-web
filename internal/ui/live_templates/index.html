@@ -13,7 +13,7 @@
     <div class="header-top">
       <h1><span class="pi-logo-mark" aria-hidden="true"></span><span>Sessions</span></h1>
       <div class="header-actions">
-        <button class="nav-search-btn" id="open-search" type="button" aria-haspopup="dialog" aria-controls="commandPalette"><span>Search sessions...</span><kbd>⌘K</kbd></button>
+        <button class="nav-search-btn" id="open-search" type="button" aria-haspopup="dialog" aria-controls="sessionPalette"><span>Search sessions...</span><kbd>⌘K</kbd></button>
         <button class="nav-menu-btn" id="web-menu-btn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="web-menu">⋯</button>
       </div>
     </div>
@@ -86,112 +86,7 @@
     <div class="modal-error" id="modalError"></div>
   </div>
 </div>
-<script>
-(function() {
-  function formatRelativeTime(date) {
-    var seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
-    var units = [
-      ['year', 31536000], ['month', 2592000], ['week', 604800],
-      ['day', 86400], ['hour', 3600], ['minute', 60]
-    ];
-    for (var i = 0; i < units.length; i++) {
-      var count = Math.floor(seconds / units[i][1]);
-      if (count >= 1) return count + ' ' + units[i][0] + (count === 1 ? '' : 's') + ' ago';
-    }
-    return 'just now';
-  }
-  function updateRelativeTimes() {
-    document.querySelectorAll('[data-timestamp]').forEach(function(el) {
-      var ts = el.dataset.timestamp;
-      if (!ts) return;
-      var d = new Date(ts);
-      if (isNaN(d)) return;
-      el.title = d.toLocaleString();
-      el.textContent = formatRelativeTime(d);
-    });
-  }
-  setTimeout(function tickRelativeTimes() {
-    updateRelativeTimes();
-    setTimeout(tickRelativeTimes, 60000);
-  }, 60000);
 
-  var STORAGE_KEY = 'pi-sessions:collapsed-projects';
-  function readCollapsed() {
-    try {
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return {};
-      var parsed = JSON.parse(raw);
-      return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (_) { return {}; }
-  }
-  function writeCollapsed(state) {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
-  }
-  function initProjectGroups() {
-    var collapsed = readCollapsed();
-    var groups = document.querySelectorAll('.project-group');
-    groups.forEach(function(group) {
-      var project = group.dataset.project || '';
-      var toggle = group.querySelector('.project-toggle');
-      var countEl = group.querySelector('[data-project-count]');
-      var total = group.querySelectorAll('.session-card').length;
-      if (countEl) {
-        countEl.dataset.total = String(total);
-        countEl.textContent = total + ' sessions';
-      }
-      if (collapsed[project]) {
-        group.classList.add('collapsed');
-        if (toggle) toggle.setAttribute('aria-expanded', 'false');
-      }
-      if (toggle) {
-        toggle.addEventListener('click', function() {
-          var willCollapse = !group.classList.contains('collapsed');
-          group.classList.toggle('collapsed', willCollapse);
-          toggle.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
-          var state = readCollapsed();
-          if (willCollapse) state[project] = 1; else delete state[project];
-          writeCollapsed(state);
-        });
-      }
-    });
-  }
-  function updateRunningCounts() {
-    var total = 0;
-    document.querySelectorAll('.project-group').forEach(function(group) {
-      var running = group.querySelectorAll('.session-card--running').length;
-      total += running;
-      var countEl = group.querySelector('[data-project-count]');
-      if (countEl) {
-        countEl.setAttribute('data-running', String(running));
-        var total = countEl.dataset.total || String(group.querySelectorAll('.session-card').length);
-        countEl.textContent = running > 0 ? '(' + running + ' active)' : total + ' sessions';
-      }
-    });
-    document.querySelectorAll('[data-running-count]').forEach(function(countEl) {
-      countEl.textContent = String(total);
-    });
-    document.querySelectorAll('[data-running-stat]').forEach(function(statEl) {
-      statEl.classList.toggle('visible', total > 0);
-    });
-  }
-  var runningObserver = null;
-  function start() {
-    initProjectGroups();
-    updateRunningCounts();
-    if (runningObserver) runningObserver.disconnect();
-    runningObserver = new MutationObserver(updateRunningCounts);
-    document.querySelectorAll('.session-card').forEach(function(card) {
-      runningObserver.observe(card, { attributes: true, attributeFilter: ['class'] });
-    });
-  }
-  document.addEventListener('pi-index-sessions-rendered', start);
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
-  } else {
-    start();
-  }
-})();
-</script>
 {{ liveServiceWorkerScript }}
 <script type="module" src="{{ indexScript }}"></script>
 {{ liveDocumentEnd }}

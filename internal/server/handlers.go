@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -322,4 +323,16 @@ func isBrokenPipe(err error) bool {
 	}
 	msg := err.Error()
 	return strings.Contains(msg, "broken pipe") || strings.Contains(msg, "connection reset by peer")
+}
+
+func (s *Server) handleCustomThemes(w http.ResponseWriter, r *http.Request) {
+	path := filepath.Join(s.agentDir, "pi-web", "custom-themes.css")
+	w.Header().Set("Content-Type", "text/css; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	if _, err := os.Stat(path); err == nil {
+		http.ServeFile(w, r, path)
+	} else {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("/* No custom themes configured */"))
+	}
 }

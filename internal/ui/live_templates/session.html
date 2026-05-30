@@ -2,6 +2,7 @@
   {{.ThemeBoot}}
   {{.ServiceWorker}}
 
+  {{if .IsLive}}
   <!-- Hidden buttons for backward-compat JS handlers -->
   <div style="display:none">
     <button id="theme-toggle" title="Toggle light/dark theme">Theme</button>
@@ -25,8 +26,14 @@
   {{.MobileCommandMenu}}
 
   {{.SessionPalette}}
-
+  {{else}}
+  <button id="theme-toggle" class="theme-toggle-btn" title="Toggle light/dark theme" style="position:fixed;top:10px;right:10px;z-index:102;padding:4px 10px;font-size:11px;font-family:inherit;background:var(--container-bg);color:var(--muted);border:1px solid var(--dim);border-radius:3px;cursor:pointer;"><span data-theme-icon>◐</span>Theme</button>
+  <div class="session-header-bar export-only">
+    <span class="session-header-title" id="session-header-title">{{.Title}}</span>
+  </div>
   <button id="hamburger" title="Open sidebar"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><rect x="5" y="6" width="2" height="12"/><path d="M6 12h10c1 0 2 0 2-2V8"/></svg></button>
+  {{end}}
+
   <div id="sidebar-overlay"></div>
   <div id="app">
     <aside id="sidebar">
@@ -85,5 +92,7 @@
   <script id="session-data" type="application/json">{{.SessionData}}</script>
 
 {{.SessionScript}}
+{{if .IsLive}}
 {{.ChatComposer}}
+{{end}}
 {{.LiveDocumentEnd}}

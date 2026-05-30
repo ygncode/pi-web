@@ -6,18 +6,30 @@ export function chatComposerHeight({ documentImpl = document } = {}) {
 export function isAtBottom({ documentImpl = document, windowImpl = window, threshold = 80 } = {}) {
   const de = documentImpl.documentElement;
   const body = documentImpl.body;
+  const content = documentImpl.getElementById('content');
+
+  // If the window has scrollable height, the main window is the active scroll container (Desktop).
+  // Otherwise, #content is the active scroll container (Mobile).
+  const isWindowScrollable = de.scrollHeight > windowImpl.innerHeight;
+
+  if (isWindowScrollable) {
+    const docHeight = Math.max(de.scrollHeight, body.scrollHeight);
+    const scrolled = windowImpl.scrollY || windowImpl.pageYOffset || de.scrollTop || body.scrollTop;
+    const viewport = windowImpl.innerHeight;
+    const remaining = docHeight - scrolled - viewport;
+    return remaining < threshold;
+  }
+
+  if (content && content.scrollHeight > content.clientHeight) {
+    const contentRemaining = content.scrollHeight - content.scrollTop - content.clientHeight;
+    return contentRemaining < threshold;
+  }
+
+  // Fallback to window measurements if content is not scrollable/present
   const docHeight = Math.max(de.scrollHeight, body.scrollHeight);
   const scrolled = windowImpl.scrollY || windowImpl.pageYOffset || de.scrollTop || body.scrollTop;
   const viewport = windowImpl.innerHeight;
-  let remaining = docHeight - scrolled - viewport;
-
-  const content = documentImpl.getElementById('content');
-  if (content && content.scrollHeight > content.clientHeight) {
-    const contentRemaining = content.scrollHeight - content.scrollTop - content.clientHeight;
-    remaining = Math.max(remaining, contentRemaining);
-  }
-
-  return remaining < threshold;
+  return (docHeight - scrolled - viewport) < threshold;
 }
 
 export function scrollToBottom(smooth, { documentImpl = document, windowImpl = window } = {}) {
@@ -53,19 +65,16 @@ export function scrollElementAboveComposer(el, smooth, { documentImpl = document
 export function createFollowButton({ documentImpl = document, requestAnimationFrameImpl = requestAnimationFrame, onClick } = {}) {
   const button = documentImpl.createElement('button');
   button.className = 'follow-button';
-  const content = documentImpl.getElementById('content');
-  if (content) {
-    content.appendChild(button);
-  } else {
-    documentImpl.body.appendChild(button);
-  }
+  button.setAttribute('aria-label', 'Scroll to bottom');
+  button.innerHTML = '<span style="font-size: 16px; font-weight: bold; line-height: 1;">↓</span>';
+  documentImpl.body.appendChild(button);
   requestAnimationFrameImpl(() => { button.classList.add('visible'); });
   if (onClick) button.addEventListener('click', onClick);
   return button;
 }
 
 export function setFollowButtonText(button, pendingCount) {
-  if (button) button.textContent = '↓ ' + pendingCount + ' new' + (pendingCount > 1 ? 's' : '');
+  if (button) button.innerHTML = '<span style="font-size: 16px; font-weight: bold; line-height: 1;">↓</span>';
 }
 
 export function removeFollowButton(button, { windowImpl = window } = {}) {

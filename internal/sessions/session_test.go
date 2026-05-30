@@ -14,10 +14,13 @@ func TestEncodeProjectName(t *testing.T) {
 		input    string
 		expected string
 	}{
-		{"/Users/setkyar/pi-web", "--Users-setkyar-pi-web--"},
-		{"/Users/setkyar", "--Users-setkyar--"},
-		{"/home/user/project", "--home-user-project--"},
-		{"/a/b/c/d", "--a-b-c-d--"},
+		{"/Users/setkyar", "--Users_-setkyar--"},
+		{"/home/user/project", "--home_-user_-project--"},
+		{"/a/b/c/d", "--a_-b_-c_-d--"},
+		{"/Users/setkyar/pi-web", "--Users_-setkyar_-pi-web--"},
+		{"/Users/setkyar/my-project", "--Users_-setkyar_-my-project--"},
+		{"/Users/setkyar/_cache", "--Users_-setkyar_-__cache--"},
+		{"/a/_b/_c", "--a_-__b_-__c--"},
 	}
 	for _, tt := range tests {
 		got := EncodeProjectName(tt.input)
@@ -32,6 +35,13 @@ func TestDecodeProjectName(t *testing.T) {
 		input    string
 		expected string
 	}{
+		// New format
+		{"--Users_-setkyar--", "/Users/setkyar"},
+		{"--home_-user_-project--", "/home/user/project"},
+		{"--a_-b_-c_-d--", "/a/b/c/d"},
+		{"--Users_-setkyar_-my-project--", "/Users/setkyar/my-project"},
+		{"--Users_-setkyar_-__cache--", "/Users/setkyar/_cache"},
+		// Legacy format (no _ in body) — backward compatible.
 		{"--Users-setkyar--", "/Users/setkyar"},
 		{"--home-user-project--", "/home/user/project"},
 		{"--a-b-c-d--", "/a/b/c/d"},
@@ -49,6 +59,11 @@ func TestEncodeDecodeRoundTrip(t *testing.T) {
 		"/Users/setkyar",
 		"/home/user/project",
 		"/a/b/c/d",
+		"/Users/setkyar/my-project",
+		"/Users/setkyar/_cache",
+		"/a/_b/_c",
+		"/project-with-hyphens/sub_dir",
+		"/underscore_test/path",
 	}
 	for _, p := range paths {
 		encoded := EncodeProjectName(p)
@@ -148,6 +163,62 @@ func TestListRecentLocationsReturnsNewestBoundedLocations(t *testing.T) {
 	}
 	if locations[9] != "/tmp/project05" {
 		t.Fatalf("expected tenth newest project last, got %q", locations[9])
+	}
+}
+
+func TestListRecentLocationsRecoversLegacyHyphenatedPaths(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Simulate a legacy-encoded directory for a path that contains
+	// literal hyphens: /tmp/my-project  →  --tmp-my-project--
+	legacyDir := filepath.Join(tmp, "--tmp-my-project--")
+	if err := os.MkdirAll(legacyDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Write a session file with the real cwd in the header.
+	sessionPath := filepath.Join(legacyDir, "2026-05-08T10-00-00.000Z_abc.jsonl")
+	content := `{"type":"session","version":3,"id":"abc","timestamp":"2026-05-08T10:00:00Z","cwd":"/tmp/my-project"}` + "\n"
+	if err := os.WriteFile(sessionPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	locations, err := ListRecentLocations(tmp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locations) == 0 {
+		t.Fatal("expected at least 1 location")
+	}
+	if locations[0] != "/tmp/my-project" {
+		t.Fatalf("expected recovered path /tmp/my-project, got %q", locations[0])
+	}
+}
+
+func TestResolveLocationReturnsDecodedPathWhenOnDisk(t *testing.T) {
+	tmp := t.TempDir()
+
+	// Create a real project directory so os.Stat succeeds.
+	realPath := filepath.Join(tmp, "my-project")
+	if err := os.MkdirAll(realPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create the new-format encoded directory under a sessions root.
+	sessionsDir := filepath.Join(tmp, "sessions")
+	encodedDir := filepath.Join(sessionsDir, EncodeProjectName(realPath))
+	if err := os.MkdirAll(encodedDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	locations, err := ListRecentLocations(sessionsDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(locations) == 0 {
+		t.Fatal("expected at least 1 location")
+	}
+	if locations[0] != realPath {
+		t.Fatalf("expected %q, got %q", realPath, locations[0])
 	}
 }
 
@@ -512,12 +583,13 @@ func TestParseSummaryFallsBackToDirNameWhenCwdMissing(t *testing.T) {
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
-	s, err := ParseSummary(path, "--Users-setkyar--pi--web--", "s.jsonl")
+	// dir name as produced by EncodeProjectName for /Users/setkyar/pi/web.
+	s, err := ParseSummary(path, "--Users_-setkyar_-pi_-web--", "s.jsonl")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if s.Project != "Users-setkyar/pi/web" {
-		t.Errorf("Project = %q, want %q", s.Project, "Users-setkyar/pi/web")
+	if s.Project != "Users/setkyar/pi/web" {
+		t.Errorf("Project = %q, want %q", s.Project, "Users/setkyar/pi/web")
 	}
 }
 
