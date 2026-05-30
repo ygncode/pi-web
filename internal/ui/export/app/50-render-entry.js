@@ -114,7 +114,7 @@ function renderAskUserQuestionTool(args, result) {
   const questionToolFailed = result?.isError === true;
   const canClick = !result || questionToolFailed;
   const isInteractive = canClick || cancelled;
-  const isMulti = questions.length > 1;
+  const isMulti = questions.length > 1 || questions.some(q => q.multiSelect);
 
   let html = `<div class="ask-question-card" data-question-count="${questions.length}">`;
   html += '<div class="ask-question-title">Question for you</div>';
@@ -136,7 +136,8 @@ function renderAskUserQuestionTool(args, result) {
     const questionText = typeof q.question === 'string' ? q.question : `Question ${qIndex + 1}`;
     const answer = answers[questionText];
     const options = Array.isArray(q.options) ? q.options : [];
-    html += `<div class="ask-question-block" data-question-text="${escapeHtml(questionText)}">`;
+    const qMultiple = q.multiSelect === true;
+    html += `<div class="ask-question-block" data-question-text="${escapeHtml(questionText)}" data-multiple="${qMultiple}">`;
     if (q.header) html += `<div class="ask-question-header">${escapeHtml(String(q.header))}</div>`;
     html += `<div class="ask-question-text">${escapeHtml(questionText)}</div>`;
     if (options.length > 0) {
@@ -148,7 +149,8 @@ function renderAskUserQuestionTool(args, result) {
         const tag = isInteractive ? 'button' : 'div';
         const actionClass = isInteractive ? ' ask-question-option-action' : '';
         const dataAttrs = isInteractive ? ` type="button" data-question="${escapeHtml(questionText)}" data-answer="${escapeHtml(label)}"` : '';
-        html += `<${tag} class="ask-question-option${selected ? ' selected' : ''}${actionClass}"${dataAttrs}>`;
+        const multiSelectClass = qMultiple ? ' ask-question-multiselect' : '';
+        html += `<${tag} class="ask-question-option${selected ? ' selected' : ''}${actionClass}${multiSelectClass}"${dataAttrs}>`;
         html += `<div class="ask-question-option-label">${selected ? '✓ ' : ''}${escapeHtml(label)}</div>`;
         if (description) html += `<div class="ask-question-option-desc">${escapeHtml(description)}</div>`;
         html += `</${tag}>`;
