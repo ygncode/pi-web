@@ -79,7 +79,6 @@ export function setupThinkingLevelSelector({
         if (gen !== cycleGeneration) return;
         setKnownThinkingLevel(effectiveLevel);
         setThinkingLabel(effectiveLevel);
-        setChatStatus('thinking: ' + effectiveLevel, 'ok');
       } catch (err) {
         if (gen !== cycleGeneration) return;
         setKnownThinkingLevel(confirmedThinkingLevel);
@@ -124,7 +123,6 @@ export function setupThinkingLevelSelector({
         if (gen !== cycleGeneration) return; // stale — a newer cycle has started
         setKnownThinkingLevel(effectiveLevel);
         setThinkingLabel(effectiveLevel);
-        setChatStatus('thinking: ' + effectiveLevel, 'ok');
       } catch (err) {
         if (gen !== cycleGeneration) return; // stale — a newer cycle has started
         // Revert to the last level confirmed by the backend, not an optimistic value.

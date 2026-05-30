@@ -23,9 +23,12 @@ export function setupSessionSearchAndFilters({
 
   return {
     clearAndNavigateBottom() {
+      const hasQuery = searchInput && searchInput.value;
       if (searchInput) searchInput.value = '';
       setSearchQuery('');
-      navigateTo(getLeafId(), 'bottom');
+      if (hasQuery) {
+        navigateTo(getLeafId(), 'bottom');
+      }
     }
   };
 }
@@ -49,6 +52,10 @@ export function setupSessionKeyboardShortcuts({
 } = {}) {
   documentImpl.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
+      const active = documentImpl.activeElement;
+      if (isEditableTargetImpl(active) && active !== documentImpl.getElementById('tree-search')) {
+        return;
+      }
       clearSearch();
     }
 

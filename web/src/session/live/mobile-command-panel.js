@@ -66,6 +66,8 @@ export function setupMobileCommandPanel({
 
   documentImpl.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && panel.classList.contains('open')) {
+      e.preventDefault();
+      e.stopPropagation();
       closePanel();
     }
   });

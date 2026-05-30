@@ -231,6 +231,8 @@ export function setupSessionListPalette({
 
     keydownHandler = (e) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
         close();
         return;
       }

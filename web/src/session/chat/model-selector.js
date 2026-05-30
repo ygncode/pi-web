@@ -101,6 +101,8 @@ export function setupModelSelector({
       if (popupActive >= 0 && items[popupActive]) items[popupActive].click();
       return;
     } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
       closePopup();
       modelLabelBtn?.focus();
       return;
@@ -126,7 +128,6 @@ export function setupModelSelector({
       const newLabel = modelDisplayLabel(model || { provider, id: modelId, name: modelId });
       setKnownModelLabel(newLabel);
       setModelLabel(newLabel);
-      setChatStatus('switched', 'ok');
     } catch (err) {
       setChatStatus(err.message || String(err), 'error');
     }

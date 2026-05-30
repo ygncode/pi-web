@@ -178,6 +178,8 @@ export function setupCommandMenu({
 
   documentImpl.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && open) {
+      e.preventDefault();
+      e.stopPropagation();
       closeMenu();
     }
   });

@@ -260,7 +260,11 @@ export function showSheet({
 
   // Escape key
   function onKey(e) {
-    if (closeOnEscape && e.key === 'Escape') closeSheet();
+    if (closeOnEscape && e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      closeSheet();
+    }
   }
   if (closeOnEscape) {
     documentImpl.addEventListener('keydown', onKey);
