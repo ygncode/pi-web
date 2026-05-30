@@ -2745,3 +2745,53 @@
     .pi-sheet-panel.pi-sheet-mobile .fork-palette-footer {
       display: none;
     }
+
+    .pi-command-suggestions {
+      position: fixed;
+      max-height: 250px;
+      overflow-y: auto;
+      background: var(--container-bg, #1a1a2e);
+      border: 1px solid var(--dim, #333);
+      border-radius: 8px;
+      box-shadow: 0 -12px 32px rgba(0,0,0,0.5);
+      z-index: 99999;
+      display: none;
+      pointer-events: auto;
+    }
+
+    .pi-command-suggestion-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 12px;
+      border-bottom: 1px solid color-mix(in srgb, var(--dim) 30%, transparent);
+    }
+
+    .pi-command-suggestion-item:last-child {
+      border-bottom: none;
+    }
+
+    .pi-command-suggestion-item:hover,
+    .pi-command-suggestion-item.selected {
+      background: color-mix(in srgb, var(--accent, #6366f1) 20%, var(--container-bg, #1a1a2e));
+    }
+
+    .pi-command-suggestion-name {
+      font-weight: bold;
+      color: var(--text, #fff);
+    }
+
+    .pi-command-suggestion-desc {
+      color: var(--muted, #888);
+      font-size: 11px;
+      margin-left: 12px;
+      text-align: right;
+    }
+
+    @media (max-height: 600px) {
+      .pi-command-suggestions {
+        max-height: 160px;
+      }
+    }

@@ -842,6 +842,26 @@ export default function (pi: ExtensionAPI) {
       // Keep startup quiet; /remote and /refresh show actionable errors if needed.
     });
 
+  // Write commands list for pi-web server to serve
+  // Delay 3s to allow other extensions to register their commands first
+  const writeCommands = () => {
+    try {
+      const allCommands = pi.getCommands();
+      const commandsJson = Array.from(allCommands.values()).map((cmd) => ({
+        name: cmd.name.startsWith('/') ? cmd.name : `/${cmd.name}`,
+        description: cmd.description || '',
+      }));
+      const piWebDir = `${agentDir()}/pi-web`;
+      mkdirSync(piWebDir, { recursive: true });
+      writeFileSync(`${piWebDir}/commands.json`, JSON.stringify(commandsJson, null, 2));
+    } catch {
+      // Best effort — command palette falls back to defaults
+    }
+  };
+  setTimeout(writeCommands, 3000);
+  // Refresh every 5 minutes to pick up new commands
+  setInterval(writeCommands, 5 * 60 * 1000);
+
   // ── /pi-web ───────────────────────────────────────────────────────
   pi.registerCommand("pi-web", {
     description: "Manage pi-web: status, token, start, stop, restart, remote, update",

@@ -1,3 +1,5 @@
+import { setupCommandPalette } from './command-palette.js';
+
 export function runChatComposer({
   documentImpl = document,
   windowImpl = window,
@@ -584,14 +586,29 @@ export function runChatComposer({
     return true;
   }
 
+  function setupCommandPaletteForSession() {
+    const chatEl = documentImpl.getElementById('pi-chat-message');
+    if (!chatEl) return null;
+    const sessionId = new URLSearchParams(windowImpl.location.search).get('id') || '';
+    return setupCommandPalette({
+      chatInput: chatEl,
+      documentImpl,
+      windowImpl,
+      fetchImpl: __piChatApi?.fetch || (typeof fetch !== 'undefined' ? fetch : undefined),
+      sessionId,
+    });
+  }
+
   let _modelSelectorApi = null;
   let _thinkingSelectorApi = null;
+  let _commandPaletteApi = null;
 
   function initPiChatControls() {
     setupCwdCopy();
     if (!setupPiChatComposer()) return;
     _modelSelectorApi = loadModelSelector();
     _thinkingSelectorApi = setupThinkingLevelSelector();
+    _commandPaletteApi = setupCommandPaletteForSession();
   }
 
   if (document.readyState === 'loading') {

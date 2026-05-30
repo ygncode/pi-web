@@ -139,6 +139,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/clone-session", s.auth.Wrap(s.handleApiCloneSession))
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
 	mux.HandleFunc("/api/recent-locations", s.auth.Wrap(s.handleRecentLocations))
+	mux.HandleFunc("/api/commands", s.auth.Wrap(s.handleCommands))
 	if s.push != nil {
 		s.push.Register(mux, s.auth.Wrap)
 	}
