@@ -38,4 +38,14 @@ describe('live entry DOM helpers', () => {
     refreshEntriesAffectedByToolResult(entries[1], entries, state, env(dom));
     expect(dom.window.document.getElementById('entry-assistant').textContent).toBe('assistant');
   });
+
+  it('appends entries before optimistic chat-pending-user or chat-preview-stream if they exist', () => {
+    const dom = new JSDOM('<div id="messages"><div id="chat-pending-user">pending user</div><div id="chat-preview-stream">preview stream</div></div>');
+    const state = { seen: new Set(), liveRendered: new Set() };
+    expect(appendEntry({ id: 'a' }, [{ id: 'a' }], state, env(dom))).toBe(true);
+    const messages = dom.window.document.getElementById('messages');
+    expect(messages.children[0].id).toBe('entry-a');
+    expect(messages.children[1].id).toBe('chat-pending-user');
+    expect(messages.children[2].id).toBe('chat-preview-stream');
+  });
 });

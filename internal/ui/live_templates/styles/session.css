@@ -1004,7 +1004,7 @@
     .chat-preview-stream .preview-label {
       color: var(--muted);
       font-size: 11px;
-      padding: 0 var(--line-height) var(--line-height);
+      padding: calc(var(--line-height) / 2) var(--line-height) var(--line-height);
     }
 
     .chat-preview-stream.done .preview-label {
@@ -2468,32 +2468,34 @@
     /* Follow button */
     .follow-button {
       position: fixed;
-      bottom: 90px;
-      right: 20px;
+      bottom: calc(var(--pi-chat-composer-height, 120px) + 16px);
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
       z-index: 100;
-      padding: 6px 14px;
-      font-size: 11px;
-      font-family: inherit;
-      background: var(--accent);
-      color: var(--body-bg);
-      border: none;
-      border-radius: 4px;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--body-bg);
+      color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      border-radius: 50%;
       cursor: pointer;
       opacity: 0;
-      transition: opacity 0.2s;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      transition: opacity 0.2s, transform 0.2s, background-color 0.2s, border-color 0.2s;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .follow-button:hover {
+      background: var(--accent);
+      color: var(--body-bg);
+      border-color: var(--accent);
     }
 
     .follow-button.visible {
       opacity: 1;
-    }
-
-    #content > .follow-button {
-      width: auto;
-      max-width: none;
-      align-self: flex-end;
-      margin-bottom: 7em;
-      min-width: 8em;
+      transform: translateX(-50%) scale(1);
     }
 
     /* New entry highlight */

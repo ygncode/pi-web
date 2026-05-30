@@ -30,7 +30,7 @@ describe('chat preview', () => {
       shouldFollow: () => false
     });
     expect(state.chatPreviewEl.classList.contains('done')).toBe(true);
-    expect(state.chatPreviewEl.textContent).not.toContain('working');
+    expect(state.chatPreviewEl.textContent.toLowerCase()).not.toContain('working');
 
     clearChatPreview(state);
     expect(dom.window.document.getElementById('chat-preview-stream')).toBe(null);
@@ -52,7 +52,7 @@ describe('chat preview', () => {
     expect(dom.window.document.getElementById('chat-pending-user')).toBeTruthy();
     expect(dom.window.document.getElementById('chat-pending-user').textContent).toContain('hello **pi**');
     expect(dom.window.document.getElementById('chat-preview-stream')).toBeTruthy();
-    expect(dom.window.document.getElementById('chat-preview-stream').textContent).toContain('working');
+    expect(dom.window.document.getElementById('chat-preview-stream').textContent.toLowerCase()).toContain('working');
     expect(forceFollowToBottom).toHaveBeenCalledWith(false);
 
     clearChatPreview(state);
@@ -71,7 +71,34 @@ describe('chat preview', () => {
 
     expect(finishChatPreview(state)).toBe(true);
     expect(dom.window.document.getElementById('chat-preview-stream').textContent).toContain('final answer');
-    expect(dom.window.document.getElementById('chat-preview-stream').textContent).not.toContain('working');
+    expect(dom.window.document.getElementById('chat-preview-stream').textContent.toLowerCase()).not.toContain('working');
     expect(state.chatPreviewEl.classList.contains('done')).toBe(true);
   });
+
+  it('clears pending user but keeps assistant preview when keepAssistant option is true', () => {
+    const dom = new JSDOM('<body><div id="messages"></div></body>');
+    const state = { chatPreviewEl: null, pendingUserEl: null };
+
+    renderPendingChat('hello pi', state, {
+      documentImpl: dom.window.document,
+      renderMarkdown: (text) => text,
+    });
+
+    expect(dom.window.document.getElementById('chat-pending-user')).toBeTruthy();
+    expect(dom.window.document.getElementById('chat-preview-stream')).toBeTruthy();
+
+    clearChatPreview(state, { keepAssistant: true });
+    // pending user element should be removed from the DOM and cleared
+    expect(dom.window.document.getElementById('chat-pending-user')).toBeNull();
+    expect(state.pendingUserEl).toBeNull();
+    // assistant preview should still be in the DOM and NOT cleared
+    expect(dom.window.document.getElementById('chat-preview-stream')).toBeTruthy();
+    expect(state.chatPreviewEl).toBeTruthy();
+
+    // And clearing it without keepAssistant removes it
+    clearChatPreview(state, { keepAssistant: false });
+    expect(dom.window.document.getElementById('chat-preview-stream')).toBeNull();
+    expect(state.chatPreviewEl).toBeNull();
+  });
 });
+
