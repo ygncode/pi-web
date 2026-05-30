@@ -101,7 +101,6 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, toggleID, themeIconClass, 
 				{Label: "<span>Appearance</span>", Suffix: template.HTML("<span class=\"" + themeIconClass + "\" data-command-theme-icon>◐</span>"), Attrs: `data-action="theme"`},
 				{Label: "<span>Notifications</span>", Suffix: template.HTML("<span class=\"" + toggleClass + "\" id=\"" + toggleID + "\">OFF</span>"), ExtraClass: itemClass + "-toggle", Attrs: `data-action="notifications"`},
 				{Label: "<span>Spinner</span>", Suffix: template.HTML("<span class=\"" + toggleClass + "\" id=\"" + strings.Replace(toggleID, "notify", "spinner", 1) + "\">RUNCAT</span>"), ExtraClass: itemClass + "-toggle", Attrs: `data-action="spinner"`},
-				{Label: "<span>Settings</span>", Suffix: "<span>›</span>", Muted: true, Attrs: `role="menuitem"`},
 			}},
 			{Title: "Development", Items: []liveMenuItem{
 				{Label: "Resume via Terminal", Attrs: `data-action="terminal"`},
@@ -114,6 +113,9 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, toggleID, themeIconClass, 
 			{Title: "Resources", Items: []liveMenuItem{
 				{Label: "Documentation", Href: "https://github.com/ygncode/pi-web/tree/main/docs", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
 				{Label: "GitHub", Href: "https://github.com/ygncode/pi-web", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
+			}},
+			{Items: []liveMenuItem{
+				{Label: "<span>Settings</span>", Suffix: "<span>›</span>", Muted: true, Attrs: `role="menuitem"`},
 			}},
 		},
 	})
