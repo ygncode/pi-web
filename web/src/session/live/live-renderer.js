@@ -137,6 +137,15 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
       var qaCancelled = result && result.details && result.details.cancelled === true;
       var qaFailed = !!(result && result.isError);
       var qaInteractive = !result || qaFailed || qaCancelled;
+      // Detect free-text options: option labels that represent custom/free-text input
+      function isFreeTextOption(label) {
+        if (label === 'Type something.') return true;
+        var lower = label.toLowerCase();
+        if (lower.indexOf('其他') >= 0 || lower.indexOf('other') >= 0) return true;
+        if (lower.indexOf('自定义') >= 0 || lower.indexOf('custom') >= 0) return true;
+        if (lower.indexOf('自行输入') >= 0 || lower.indexOf('自由输入') >= 0 || lower.indexOf('enter your') >= 0) return true;
+        return false;
+      }
       var qaMulti = questions.length > 1 || questions.some(function(q) { return q.multiSelect === true; });
       html = '<div class="tool-execution '+status+'">';
       html += '<div class="ask-question-card" data-question-count="'+questions.length+'">';
@@ -161,11 +170,11 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
         if (options.length > 0) {
           html += '<div class="ask-question-options">';
           // For multiSelect: detect Type something. option (will be rendered as freetext input)
-          var hasTypeSomething = false;
+          var hasFreeText = false;
           options.forEach(function(opt) {
             var label = (opt && typeof opt.label === 'string') ? opt.label : String(opt||'');
-            // Skip Type something. for multi-select (render as freetext instead)
-            if (qMultiple && label === 'Type something.') { hasTypeSomething = true; return; }
+            // Skip free-text options for multi-select (render as freetext input instead)
+            if (qMultiple && isFreeTextOption(label)) { hasFreeText = true; return; }
             var desc = (opt && typeof opt.description === 'string') ? opt.description : '';
             var sel = answer === label || (typeof answer === 'string' && answer.split(', ').indexOf(label) >= 0);
             var tag = qaInteractive ? 'button' : 'div';
@@ -177,8 +186,8 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
             if (desc) html += '<div class="ask-question-option-desc">'+escapeHtml(desc)+'</div>';
             html += '</'+tag+'>';
           });
-          // Freetext input: always for single-select, or when multi-select has Type something.
-          if (!qMultiple || hasTypeSomething) {
+          // Freetext input: always for single-select, or when multi-select has free-text option
+          if (!qMultiple || hasFreeText) {
             html += '<div class="ask-question-freetext">';
             html += '<input type="text" class="ask-question-freetext-input" placeholder="Type something..."'+(qaInteractive?'':' disabled')+' data-question="'+escapeHtml(questionText)+'">';
             html += '</div>';

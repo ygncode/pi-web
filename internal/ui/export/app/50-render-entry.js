@@ -128,6 +128,16 @@ function renderAskUserQuestionTool(args, result) {
     html += '<div class="ask-question-state pending">waiting for response</div>';
   }
 
+  // Detect free-text options: option labels that represent custom/free-text input
+  function isFreeTextOption(label) {
+    if (label === 'Type something.') return true;
+    const lower = label.toLowerCase();
+    if (lower.includes('其他') || lower.includes('other')) return true;
+    if (lower.includes('自定义') || lower.includes('custom')) return true;
+    if (lower.includes('自行输入') || lower.includes('自由输入') || lower.includes('enter your')) return true;
+    return false;
+  }
+
   if (questions.length === 0) {
     html += '<div class="ask-question-text">No question payload provided.</div>';
   }
@@ -142,10 +152,10 @@ function renderAskUserQuestionTool(args, result) {
     html += `<div class="ask-question-text">${escapeHtml(questionText)}</div>`;
     if (options.length > 0) {
       html += '<div class="ask-question-options">';
-      let hasTypeSomething = false;
+      let hasFreeText = false;
       options.forEach((option) => {
         const label = typeof option?.label === 'string' ? option.label : String(option || '');
-        if (qMultiple && label === 'Type something.') { hasTypeSomething = true; return; }
+        if (qMultiple && isFreeTextOption(label)) { hasFreeText = true; return; }
         const description = typeof option?.description === 'string' ? option.description : '';
         const selected = answer === label || (typeof answer === 'string' && answer.split(', ').includes(label));
         const tag = isInteractive ? 'button' : 'div';
@@ -157,7 +167,7 @@ function renderAskUserQuestionTool(args, result) {
         if (description) html += `<div class="ask-question-option-desc">${escapeHtml(description)}</div>`;
         html += `</${tag}>`;
       });
-      if (!qMultiple || hasTypeSomething) {
+      if (!qMultiple || hasFreeText) {
         html += '<div class="ask-question-freetext">';
         html += `<input type="text" class="ask-question-freetext-input" placeholder="Type something..."${isInteractive ? '' : ' disabled'} data-question="${escapeHtml(questionText)}">`;
         html += '</div>';
