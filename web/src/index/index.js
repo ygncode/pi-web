@@ -39,6 +39,8 @@ export function runIndexPage({
   const modalError = documentImpl.getElementById('modalError');
   const notifyToggle = documentImpl.getElementById('index-notify-toggle');
   const notifyStatus = documentImpl.getElementById('index-notify-status');
+  const spinnerToggle = documentImpl.getElementById('index-spinner-toggle');
+  const spinnerStatus = documentImpl.getElementById('index-spinner-status');
   const layoutBtns = Array.from(documentImpl.querySelectorAll('[data-layout-btn]'));
   const layoutStorageKey = 'pi-sessions:view-layout';
 
@@ -162,6 +164,24 @@ export function runIndexPage({
         if (granted) await registerPushSubscription({ windowImpl });
       }
       syncNotifyMenuItem();
+    });
+  }
+
+  function syncSpinnerMenuItem() {
+    if (!spinnerToggle || !spinnerStatus) return;
+    const isRuncat = windowImpl.localStorage.getItem('pi-sessions:spinner-style') !== 'braille';
+    spinnerStatus.textContent = isRuncat ? 'RUNCAT' : 'BRAILLE';
+    spinnerStatus.classList.toggle('on', isRuncat);
+    spinnerToggle.setAttribute('aria-pressed', isRuncat ? 'true' : 'false');
+  }
+
+  if (spinnerToggle) {
+    syncSpinnerMenuItem();
+    spinnerToggle.addEventListener('click', () => {
+      const current = windowImpl.localStorage.getItem('pi-sessions:spinner-style') === 'braille' ? 'braille' : 'runcat';
+      const next = current === 'runcat' ? 'braille' : 'runcat';
+      windowImpl.localStorage.setItem('pi-sessions:spinner-style', next);
+      syncSpinnerMenuItem();
     });
   }
 

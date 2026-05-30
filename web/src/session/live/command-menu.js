@@ -85,11 +85,23 @@ export function setupCommandMenu({
     });
   }
 
+  function syncSpinnerToggle() {
+    const isRuncat = windowImpl.localStorage.getItem('pi-sessions:spinner-style') !== 'braille';
+    const mobileStatus = documentImpl.getElementById('mobile-command-spinner-status');
+    const desktopStatus = documentImpl.getElementById('command-menu-spinner-status');
+    [mobileStatus, desktopStatus].forEach((el) => {
+      if (!el) return;
+      el.textContent = isRuncat ? 'RUNCAT' : 'BRAILLE';
+      el.classList.toggle('on', isRuncat);
+    });
+  }
+
   function openMobilePanel() {
     if (!mobileBackdrop || !mobilePanel) return;
     mobileBackdrop.style.display = '';
     mobilePanel.style.display = '';
     syncNotifyToggle();
+    syncSpinnerToggle();
     syncThemeIcons(documentImpl);
     requestAnimationFrame(() => {
       mobileBackdrop.classList.add('open');
@@ -112,6 +124,7 @@ export function setupCommandMenu({
   function openDesktopPopover() {
     if (!desktopPopover) return;
     syncNotifyToggle();
+    syncSpinnerToggle();
     syncThemeIcons(documentImpl);
     desktopPopover.style.display = '';
     requestAnimationFrame(() => {
@@ -181,6 +194,14 @@ export function setupCommandMenu({
         clickHiddenButton('notify-toggle', documentImpl);
         syncNotifyToggle();
         windowImpl.setTimeout(syncNotifyToggle, 400);
+        break;
+      }
+      case 'spinner': {
+        const current = windowImpl.localStorage.getItem('pi-sessions:spinner-style') === 'braille' ? 'braille' : 'runcat';
+        const next = current === 'runcat' ? 'braille' : 'runcat';
+        windowImpl.localStorage.setItem('pi-sessions:spinner-style', next);
+        syncSpinnerToggle();
+        showToast(`Spinner set to ${next.toUpperCase()}`, documentImpl, windowImpl);
         break;
       }
       case 'share': {
