@@ -64,7 +64,7 @@ func TestHomePageNewSessionEntryPointsExist(t *testing.T) {
 	}
 	// palette is rendered via {{ paletteHTML }} — check rendered output
 	paletteChecks := []string{
-		`id="commandPalette"`,
+		`id="sessionPalette"`,
 		`id="web-menu"`,
 	}
 	for _, check := range paletteChecks {
@@ -125,7 +125,7 @@ func TestCommandPaletteSearchExists(t *testing.T) {
 	html := buf.String()
 	checks := []string{
 		`id="open-search"`,
-		`id="search"`,
+		`id="session-palette-search"`,
 		`Search sessions...`,
 		`⌘K`,
 	}

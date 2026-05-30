@@ -29,7 +29,7 @@ body.pi-palette-open { overflow: hidden; }
     background: var(--palette-surface);
     border: 1px solid var(--dim);
     box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-family: var(--font-sans);
     font-size: 13px;
     color: var(--text);
     -webkit-font-smoothing: antialiased;
@@ -81,13 +81,18 @@ body.pi-palette-open { overflow: hidden; }
     padding: 8px 10px;
     text-align: left;
     display: block;
+    border-radius: 6px;
+    transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.15s ease, 
+                transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .palette-result:hover,
 .palette-result:focus-visible,
 .palette-result--selected {
-    background: var(--palette-surface-2);
-    color: var(--text);
+    background: var(--pi-menu-hover-bg);
+    color: var(--pi-menu-item-hover-color);
     outline: none;
+    transform: translateX(3px);
 }
 .palette-result-title {
     display: block;
@@ -113,10 +118,11 @@ body.pi-palette-open { overflow: hidden; }
     font-size: 11px;
 }
 .palette-action {
-    width: 100%;
+    width: calc(100% - 12px);
+    margin: 2px 6px;
     border: 0;
     background: transparent;
-    color: var(--palette-text-soft);
+    color: var(--pi-menu-item-color);
     text-decoration: none;
     cursor: pointer;
     display: flex;
@@ -125,14 +131,20 @@ body.pi-palette-open { overflow: hidden; }
     padding: 8px 10px;
     text-align: left;
     font-size: 13px;
+    border-radius: 6px;
+    transition: background 0.15s cubic-bezier(0.4, 0, 0.2, 1), 
+                color 0.15s ease, 
+                transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.palette-action:hover {
-    background: var(--palette-surface-2);
-    color: var(--text);
+.palette-action:hover,
+.palette-action:focus-visible {
+    background: var(--pi-menu-hover-bg);
+    color: var(--pi-menu-item-hover-color);
     outline: none;
+    transform: translateX(3px);
 }
-.palette-action.muted { color: var(--muted); }
-.palette-action:disabled { color: var(--dim); cursor: default; opacity: 0.6; }
+.palette-action.muted { color: var(--pi-menu-muted-color); }
+.palette-action:disabled { color: var(--dim); cursor: default; opacity: 0.6; transform: none; }
 .command-palette .palette-action { padding: 8px 16px; }
 .command-palette .palette-action:last-child { margin-bottom: 8px; }
 

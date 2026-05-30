@@ -102,7 +102,7 @@ func sanitizeTheme(t string) string {
 }
 
 func RenderExportSessionPage(session sessions.Session, theme string) string {
-	dataBase64, css, bodyAttrs := prepareSessionPageData(session, liveSessionCss)
+	dataBase64, css, bodyAttrs := prepareSessionPageData(session, liveThemeCss+"\n"+liveSessionCss)
 
 	styles := "<style>\n" + css + "\n</style>"
 	inlineScript := "<script>\n" + markedJs + "\n</script>\n<script>\n" + hljsJs + "\n</script>\n<script>\n" + exportJs + "\n</script>"

@@ -66,9 +66,9 @@ var funcMap = template.FuncMap{
 	"homeMenu": homeMenuHTML,
 	"paletteHTML": func() template.HTML {
 		return renderPalette(paletteData{
-			ID:       "commandPalette",
-			Label:    "Search sessions",
-			SearchID: "search",
+			ID:       "sessionPalette",
+			Label:    "List sessions",
+			SearchID: "session-palette-search",
 			Actions:  true,
 		})
 	},

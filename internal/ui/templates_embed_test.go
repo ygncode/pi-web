@@ -86,7 +86,7 @@ func TestIndexTemplateLoadedFromEmbeddedFile(t *testing.T) {
 	}
 	rendered := buf.String()
 	for _, marker := range []string{
-		`id="commandPalette"`,
+		`id="sessionPalette"`,
 		`id="modalOverlay"`,
 		`session-active-status`,
 	} {

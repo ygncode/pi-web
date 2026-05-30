@@ -1,0 +1,369 @@
+/* ── Unified CSS Variables Theme Engine ── */
+
+:root {
+    --font-sans: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    --palette-surface: var(--surface);
+    --palette-surface-2: var(--surface-2);
+    --palette-text-soft: var(--text-soft);
+}
+
+:root,
+[data-theme="dark"] {
+    /* ── Typography & Layout ── */
+    --line-height: 1.5;
+
+    /* ── Color Palette (Obsidian / Carbon Dark) ── */
+    --body-bg: #111116;
+    --surface: #15151b;
+    --surface-2: #191920;
+    --text: #e6e7eb;
+    --text-soft: #b7bbc4;
+    --muted: #858a96;
+    --dim: #292a33;
+    --dim-2: #20212a;
+    --accent: #9cc7c0;
+    --border-accent: #9cc7c0;
+    --danger: #ef767a;
+
+    --pi-menu-bg: var(--surface);
+    --pi-menu-border: var(--dim);
+    --pi-menu-item-color: var(--text-soft);
+    --pi-menu-item-hover-color: var(--text);
+    --pi-menu-muted-color: var(--muted);
+    --pi-menu-accent-color: var(--accent);
+    --pi-menu-hover-bg: var(--surface-2);
+
+    /* ── Workspace / Session Visual Tokens ── */
+    --container-bg: var(--surface);
+    --info-bg: #3c3728;
+    --hover: color-mix(in srgb, var(--selectedBg) 50%, transparent);
+
+    --cyan: #00d7ff;
+    --blue: #5f87ff;
+    --green: #b5bd68;
+    --red: #cc6666;
+    --yellow: #ffff00;
+    --gray: #808080;
+    --dimGray: #666666;
+    --darkGray: #505050;
+    --accent-color: #8abeb7;
+    --selectedBg: #3a3a4a;
+    --userMessageBg: #343541;
+    --toolPendingBg: #282832;
+    --toolSuccessBg: #283228;
+    --toolErrorBg: #3c2828;
+    --customMessageBg: #2d2838;
+    --customMessageLabel: #9575cd;
+    --thinkingText: #808080;
+    --mdHeading: #f0c674;
+    --mdLink: #81a2be;
+    --mdLinkUrl: #666666;
+    --mdCode: #8abeb7;
+    --mdCodeBlock: #b5bd68;
+    --mdCodeBlockBorder: #808080;
+    --mdQuote: #808080;
+    --mdQuoteBorder: #808080;
+    --mdHr: #808080;
+    --mdListBullet: #8abeb7;
+    --toolDiffAdded: #b5bd68;
+    --toolDiffRemoved: #cc6666;
+    --toolDiffContext: #808080;
+    --syntaxComment: #6A9955;
+    --syntaxKeyword: #569CD6;
+    --syntaxFunction: #DCDCAA;
+    --syntaxVariable: #9CDCFE;
+    --syntaxString: #CE9178;
+    --syntaxNumber: #B5CEA8;
+    --syntaxType: #4EC9B0;
+    --syntaxOperator: #D4D4D4;
+    --syntaxPunctuation: #D4D4D4;
+    --thinkingOff: #505050;
+    --thinkingMinimal: #6e6e6e;
+    --thinkingLow: #5f87af;
+    --thinkingMedium: #81a2be;
+    --thinkingHigh: #b294bb;
+    --thinkingXhigh: #d183e8;
+    --bashMode: #b5bd68;
+    --success: #b5bd68;
+    --error: #cc6666;
+    --warning: #ffff00;
+    --border: #5f87ff;
+    --borderAccent: #00d7ff;
+    --borderMuted: #505050;
+    --toolOutput: #808080;
+    --bg: var(--body-bg);
+    --selected-bg: #3a3a4a;
+    --border-accent: #00d7ff;
+    --userMessageText: #d4d4d4;
+    --customMessageText: #d4d4d4;
+}
+
+[data-theme="light"] {
+    /* ── Typography & Layout ── */
+    --line-height: 1.5;
+
+    /* ── Color Palette (Warm Linen Light) ── */
+    --body-bg: #f6f5f2;
+    --surface: #ffffff;
+    --surface-2: #f1f0ec;
+    --text: #1f2328;
+    --text-soft: #3f4650;
+    --muted: #747b85;
+    --dim: #d8d5cc;
+    --dim-2: #e8e5dc;
+    --accent: #496f69;
+    --border-accent: #496f69;
+    --danger: #b23b42;
+
+    --pi-menu-bg: var(--surface);
+    --pi-menu-border: var(--dim);
+    --pi-menu-item-color: var(--text-soft);
+    --pi-menu-item-hover-color: var(--text);
+    --pi-menu-muted-color: var(--muted);
+    --pi-menu-accent-color: var(--accent);
+    --pi-menu-hover-bg: var(--surface-2);
+
+    /* ── Workspace / Session Visual Tokens ── */
+    --container-bg: var(--surface);
+    --info-bg: #fffae6;
+    --hover: color-mix(in srgb, var(--selectedBg) 50%, transparent);
+
+    --cyan: #5a8080;
+    --blue: #547da7;
+    --green: #588458;
+    --red: #aa5555;
+    --yellow: #9a7326;
+    --gray: #6c6c6c;
+    --dimGray: #767676;
+    --darkGray: #b0b0b0;
+    --accent-color: #5a8080;
+    --selectedBg: #d0d0e0;
+    --userMessageBg: #e8e8e8;
+    --toolPendingBg: #e8e8f0;
+    --toolSuccessBg: #e8f0e8;
+    --toolErrorBg: #f0e8e8;
+    --customMessageBg: #ede7f6;
+    --customMessageLabel: #7e57c2;
+    --thinkingText: #6c6c6c;
+    --mdHeading: #9a7326;
+    --mdLink: #547da7;
+    --mdLinkUrl: #767676;
+    --mdCode: #5a8080;
+    --mdCodeBlock: #588458;
+    --mdCodeBlockBorder: #6c6c6c;
+    --mdQuote: #6c6c6c;
+    --mdQuoteBorder: #6c6c6c;
+    --mdHr: #6c6c6c;
+    --mdListBullet: #588458;
+    --toolDiffAdded: #588458;
+    --toolDiffRemoved: #aa5555;
+    --toolDiffContext: #6c6c6c;
+    --syntaxComment: #008000;
+    --syntaxKeyword: #0000FF;
+    --syntaxFunction: #795E26;
+    --syntaxVariable: #001080;
+    --syntaxString: #A31515;
+    --syntaxNumber: #098658;
+    --syntaxType: #267F99;
+    --syntaxOperator: #000000;
+    --syntaxPunctuation: #000000;
+    --thinkingOff: #b0b0b0;
+    --thinkingMinimal: #767676;
+    --thinkingLow: #547da7;
+    --thinkingMedium: #5a8080;
+    --thinkingHigh: #875f87;
+    --thinkingXhigh: #8b008b;
+    --bashMode: #588458;
+    --success: #588458;
+    --error: #aa5555;
+    --warning: #9a7326;
+    --border: #547da7;
+    --borderAccent: #5a8080;
+    --borderMuted: #b0b0b0;
+    --toolOutput: #6c6c6c;
+    --bg: var(--body-bg);
+    --selected-bg: #d0d0e0;
+    --border-accent: #5a8080;
+    --userMessageText: #1f2328;
+    --customMessageText: #1f2328;
+}
+
+[data-theme="nord"] {
+    /* ── Typography & Layout ── */
+    --line-height: 1.5;
+
+    /* ── Color Palette (Arctic Frost Nord) ── */
+    --body-bg: #2e3440;
+    --surface: #3b4252;
+    --surface-2: #434c5e;
+    --text: #d8dee9;
+    --text-soft: #e5e9f0;
+    --muted: #88c0d0;
+    --dim: #4c566a;
+    --dim-2: #3b4252;
+    --accent: #88c0d0;
+    --border-accent: #88c0d0;
+    --danger: #bf616a;
+
+    --pi-menu-bg: var(--surface);
+    --pi-menu-border: var(--dim);
+    --pi-menu-item-color: var(--text-soft);
+    --pi-menu-item-hover-color: var(--text);
+    --pi-menu-muted-color: var(--muted);
+    --pi-menu-accent-color: var(--accent);
+    --pi-menu-hover-bg: var(--surface-2);
+
+    /* ── Workspace / Session Visual Tokens ── */
+    --container-bg: var(--surface);
+    --info-bg: #434c5e;
+    --hover: color-mix(in srgb, var(--selectedBg) 50%, transparent);
+
+    --cyan: #8fbcbb;
+    --blue: #81a1c1;
+    --green: #a3be8c;
+    --red: #bf616a;
+    --yellow: #ebcb8b;
+    --gray: #d8dee9;
+    --dimGray: #4c566a;
+    --darkGray: #3b4252;
+    --accent-color: #88c0d0;
+    --selectedBg: #434c5e;
+    --userMessageBg: #3b4252;
+    --toolPendingBg: #434c5e;
+    --toolSuccessBg: #434c5e;
+    --toolErrorBg: #4c566a;
+    --customMessageBg: #434c5e;
+    --customMessageLabel: #b48ead;
+    --thinkingText: #d8dee9;
+    --mdHeading: #81a1c1;
+    --mdLink: #88c0d0;
+    --mdLinkUrl: #4c566a;
+    --mdCode: #8fbcbb;
+    --mdCodeBlock: #a3be8c;
+    --mdCodeBlockBorder: #4c566a;
+    --mdQuote: #d8dee9;
+    --mdQuoteBorder: #4c566a;
+    --mdHr: #4c566a;
+    --mdListBullet: #88c0d0;
+    --toolDiffAdded: #a3be8c;
+    --toolDiffRemoved: #bf616a;
+    --toolDiffContext: #4c566a;
+    --syntaxComment: #4c566a;
+    --syntaxKeyword: #81a1c1;
+    --syntaxFunction: #88c0d0;
+    --syntaxVariable: #d8dee9;
+    --syntaxString: #a3be8c;
+    --syntaxNumber: #b48ead;
+    --syntaxType: #8fbcbb;
+    --syntaxOperator: #81a1c1;
+    --syntaxPunctuation: #eceff4;
+    --thinkingOff: #4c566a;
+    --thinkingMinimal: #434c5e;
+    --thinkingLow: #81a1c1;
+    --thinkingMedium: #88c0d0;
+    --thinkingHigh: #b48ead;
+    --thinkingXhigh: #b48ead;
+    --bashMode: #a3be8c;
+    --success: #a3be8c;
+    --error: #bf616a;
+    --warning: #ebcb8b;
+    --border: #81a1c1;
+    --borderAccent: #88c0d0;
+    --borderMuted: #4c566a;
+    --toolOutput: #d8dee9;
+    --bg: var(--body-bg);
+    --selected-bg: #434c5e;
+    --border-accent: #88c0d0;
+    --userMessageText: #d8dee9;
+    --customMessageText: #d8dee9;
+}
+
+[data-theme="dracula"] {
+    /* ── Typography & Layout ── */
+    --line-height: 1.5;
+
+    /* ── Color Palette (Cyberpunk Dracula) ── */
+    --body-bg: #282a36;
+    --surface: #1e1f29;
+    --surface-2: #343746;
+    --text: #f8f8f2;
+    --text-soft: #eaeaea;
+    --muted: #6272a4;
+    --dim: #44475a;
+    --dim-2: #1d1f27;
+    --accent: #ff79c6;
+    --border-accent: #ff79c6;
+    --danger: #ff5555;
+
+    --pi-menu-bg: var(--surface);
+    --pi-menu-border: var(--dim);
+    --pi-menu-item-color: var(--text-soft);
+    --pi-menu-item-hover-color: var(--text);
+    --pi-menu-muted-color: var(--muted);
+    --pi-menu-accent-color: var(--accent);
+    --pi-menu-hover-bg: var(--surface-2);
+
+    /* ── Workspace / Session Visual Tokens ── */
+    --container-bg: var(--surface);
+    --info-bg: #343746;
+    --hover: color-mix(in srgb, var(--selectedBg) 50%, transparent);
+
+    --cyan: #8be9fd;
+    --blue: #8be9fd;
+    --green: #50fa7b;
+    --red: #ff5555;
+    --yellow: #f1fa8c;
+    --gray: #f8f8f2;
+    --dimGray: #6272a4;
+    --darkGray: #44475a;
+    --accent-color: #ff79c6;
+    --selectedBg: #44475a;
+    --userMessageBg: #1e1f29;
+    --toolPendingBg: #343746;
+    --toolSuccessBg: #343746;
+    --toolErrorBg: #44475a;
+    --customMessageBg: #343746;
+    --customMessageLabel: #bd93f9;
+    --thinkingText: #f8f8f2;
+    --mdHeading: #bd93f9;
+    --mdLink: #ff79c6;
+    --mdLinkUrl: #6272a4;
+    --mdCode: #8be9fd;
+    --mdCodeBlock: #50fa7b;
+    --mdCodeBlockBorder: #6272a4;
+    --mdQuote: #f8f8f2;
+    --mdQuoteBorder: #6272a4;
+    --mdHr: #6272a4;
+    --mdListBullet: #ff79c6;
+    --toolDiffAdded: #50fa7b;
+    --toolDiffRemoved: #ff5555;
+    --toolDiffContext: #6272a4;
+    --syntaxComment: #6272a4;
+    --syntaxKeyword: #ff79c6;
+    --syntaxFunction: #50fa7b;
+    --syntaxVariable: #f8f8f2;
+    --syntaxString: #f1fa8c;
+    --syntaxNumber: #bd93f9;
+    --syntaxType: #8be9fd;
+    --syntaxOperator: #ff79c6;
+    --syntaxPunctuation: #f8f8f2;
+    --thinkingOff: #6272a4;
+    --thinkingMinimal: #44475a;
+    --thinkingLow: #8be9fd;
+    --thinkingMedium: #ff79c6;
+    --thinkingHigh: #bd93f9;
+    --thinkingXhigh: #bd93f9;
+    --bashMode: #50fa7b;
+    --success: #50fa7b;
+    --error: #ff5555;
+    --warning: #f1fa8c;
+    --border: #bd93f9;
+    --borderAccent: #ff79c6;
+    --borderMuted: #6272a4;
+    --toolOutput: #f8f8f2;
+    --bg: var(--body-bg);
+    --selected-bg: #44475a;
+    --border-accent: #ff79c6;
+    --userMessageText: #f8f8f2;
+    --customMessageText: #f8f8f2;
+}

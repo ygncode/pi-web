@@ -409,7 +409,7 @@
     }
 
     body {
-      font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+      font-family: var(--font-sans);
       font-size: 12px;
       line-height: var(--line-height);
       color: var(--text);

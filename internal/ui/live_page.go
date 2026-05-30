@@ -109,7 +109,8 @@ func liveServiceWorkerScript() template.HTML {
 func liveDocumentEnd() template.HTML { return template.HTML("</body>\n</html>") }
 
 func indexStylesheets() template.HTML {
-	return template.HTML(`<link rel="stylesheet" href="/index.css">
+	return template.HTML(`<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/index.css">
 <link rel="stylesheet" href="/menu.css">
 <link rel="stylesheet" href="/palette.css">`)
 }

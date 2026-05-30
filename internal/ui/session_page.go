@@ -16,6 +16,9 @@ var liveSessionHtml string
 
 var liveSessionTmpl = template.Must(template.New("live_session").Parse(liveSessionHtml))
 
+//go:embed live_templates/styles/theme.css
+var liveThemeCss string
+
 //go:embed live_templates/styles/session.css
 var liveSessionCss string
 
@@ -65,7 +68,7 @@ func prepareSessionPageData(session sessions.Session, cssTemplate string) (dataB
 // renderLiveSessionPage renders the interactive session viewer served at
 // /session. It loads the Vite-built session module and includes the chat composer.
 func RenderLiveSessionPage(session sessions.Session) string {
-	dataBase64, css, bodyAttrs := prepareSessionPageData(session, liveSessionCss+"\n"+liveMenuCss+"\n"+livePaletteCss)
+	dataBase64, css, bodyAttrs := prepareSessionPageData(session, liveThemeCss+"\n"+liveSessionCss+"\n"+liveMenuCss+"\n"+livePaletteCss)
 
 	scriptSrc := template.HTMLEscapeString(sessionScriptPath)
 	preload := `<link rel="modulepreload" href="` + scriptSrc + `">`

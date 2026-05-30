@@ -107,8 +107,6 @@ export function runIndexPage({
   sessionPalette = setupSessionListPalette({
     documentImpl,
     windowImpl,
-    overlayId: 'commandPalette',
-    searchInputId: 'search',
     onQueryChange: (query) => {
       page.query = query;
       page.filter();
@@ -231,7 +229,7 @@ export function runIndexPage({
       return;
     }
     if (e.key === 'Escape') {
-      const paletteOverlay = documentImpl.getElementById('commandPalette');
+      const paletteOverlay = documentImpl.getElementById('sessionPalette');
       if (paletteOverlay?.classList.contains('open')) closePalette();
       else if (webMenu && !webMenu.hidden) closeMenu();
       else if (page.modal) hideModal();
@@ -403,7 +401,7 @@ export function runIndexPage({
   start();
 }
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.getElementById('search')) {
+if (typeof window !== 'undefined' && typeof document !== 'undefined' && (document.getElementById('session-palette-search') || document.getElementById('search') || document.querySelector('[data-sessions-content]'))) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => runIndexPage());
   } else {
