@@ -160,8 +160,12 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
         html += '<div class="ask-question-text">'+escapeHtml(questionText)+'</div>';
         if (options.length > 0) {
           html += '<div class="ask-question-options">';
+          // For multiSelect: detect Type something. option (will be rendered as freetext input)
+          var hasTypeSomething = false;
           options.forEach(function(opt) {
             var label = (opt && typeof opt.label === 'string') ? opt.label : String(opt||'');
+            // Skip Type something. for multi-select (render as freetext instead)
+            if (qMultiple && label === 'Type something.') { hasTypeSomething = true; return; }
             var desc = (opt && typeof opt.description === 'string') ? opt.description : '';
             var sel = answer === label || (typeof answer === 'string' && answer.split(', ').indexOf(label) >= 0);
             var tag = qaInteractive ? 'button' : 'div';
@@ -173,6 +177,12 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
             if (desc) html += '<div class="ask-question-option-desc">'+escapeHtml(desc)+'</div>';
             html += '</'+tag+'>';
           });
+          // Freetext input: always for single-select, or when multi-select has Type something.
+          if (!qMultiple || hasTypeSomething) {
+            html += '<div class="ask-question-freetext">';
+            html += '<input type="text" class="ask-question-freetext-input" placeholder="Type something..."'+(qaInteractive?'':' disabled')+' data-question="'+escapeHtml(questionText)+'">';
+            html += '</div>';
+          }
           html += '</div>';
         }
         if (answer) html += '<div class="ask-question-answer"><span>Answer:</span> '+escapeHtml(String(answer))+'</div>';

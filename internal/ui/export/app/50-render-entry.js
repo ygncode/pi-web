@@ -142,8 +142,10 @@ function renderAskUserQuestionTool(args, result) {
     html += `<div class="ask-question-text">${escapeHtml(questionText)}</div>`;
     if (options.length > 0) {
       html += '<div class="ask-question-options">';
+      let hasTypeSomething = false;
       options.forEach((option) => {
         const label = typeof option?.label === 'string' ? option.label : String(option || '');
+        if (qMultiple && label === 'Type something.') { hasTypeSomething = true; return; }
         const description = typeof option?.description === 'string' ? option.description : '';
         const selected = answer === label || (typeof answer === 'string' && answer.split(', ').includes(label));
         const tag = isInteractive ? 'button' : 'div';
@@ -155,6 +157,11 @@ function renderAskUserQuestionTool(args, result) {
         if (description) html += `<div class="ask-question-option-desc">${escapeHtml(description)}</div>`;
         html += `</${tag}>`;
       });
+      if (!qMultiple || hasTypeSomething) {
+        html += '<div class="ask-question-freetext">';
+        html += `<input type="text" class="ask-question-freetext-input" placeholder="Type something..."${isInteractive ? '' : ' disabled'} data-question="${escapeHtml(questionText)}">`;
+        html += '</div>';
+      }
       html += '</div>';
     }
     if (answer) {

@@ -983,6 +983,31 @@
       font-weight: bold;
     }
 
+    .ask-question-freetext {
+      padding: 4px 0;
+    }
+
+    .ask-question-freetext-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--body-bg);
+      border: 1px dashed var(--dim);
+      border-radius: 4px;
+      outline: none;
+    }
+
+    .ask-question-freetext-input:focus {
+      border-color: var(--accent);
+    }
+
+    .ask-question-freetext-input::placeholder {
+      color: var(--muted);
+    }
+
     .ask-question-option-desc,
     .ask-question-hint {
       color: var(--muted);
