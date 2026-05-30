@@ -289,4 +289,173 @@ describe('chat composer runner', () => {
     expect(open).toHaveBeenCalledTimes(1);
     expect(event.defaultPrevented).toBe(true);
   });
+
+  it('updates circular context usage based on entries and active model', () => {
+    const dom = new JSDOM('<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div></form></body>');
+    const mockEntries = [
+      {
+        type: 'message',
+        message: {
+          role: 'assistant',
+          usage: {
+            input: 8000,
+            output: 2000,
+            cacheRead: 0,
+            cacheWrite: 0
+          }
+        }
+      }
+    ];
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      localEntries: mockEntries,
+      chatApi: {
+        getWorkerStatus: () => Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            state: 'idle',
+            model: 'gpt-4o',
+            modelProvider: 'openai'
+          })
+        })
+      },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: {
+        setupModelSelector: vi.fn((opts) => {
+          opts.setKnownModelLabel('gpt-4o @ openai');
+          return { open: vi.fn() };
+        })
+      },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+      setIntervalImpl: () => {}
+    });
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+
+    // Check if the container is visible and displays correct percentage
+    const el = dom.window.document.getElementById('pi-chat-context-usage');
+    expect(el.style.display).not.toBe('none');
+    const text = el.querySelector('.pi-context-text');
+    expect(text.textContent).toBe('8%'); // 10000 / 128000 = 7.8% => 8%
+
+    const fill = el.querySelector('.pi-context-fill');
+    expect(fill.getAttribute('stroke-dasharray')).toBe('8, 100');
+  });
+
+  it('toggles detailed context usage popover and formats values correctly', () => {
+    const dom = new JSDOM('<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><div class="pi-chat-shell"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div><div id="pi-chat-context-popover" style="display:none"><div class="pi-popover-arrow"></div><span class="pi-popover-used"></span><span class="pi-popover-limit"></span><div class="pi-popover-progress-bar"></div><span id="pi-popover-val-input"></span><span id="pi-popover-val-cache-read"></span><span id="pi-popover-val-cache-write"></span><span id="pi-popover-val-output"></span><span id="pi-popover-val-total"></span></div></div></form></body>');
+    const mockEntries = [
+      {
+        type: 'message',
+        message: {
+          role: 'assistant',
+          usage: {
+            input: 11200,
+            output: 1000,
+            cacheRead: 5400,
+            cacheWrite: 0
+          }
+        }
+      }
+    ];
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      localEntries: mockEntries,
+      chatApi: {
+        getWorkerStatus: () => Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            state: 'idle',
+            model: 'gemini-1.5-flash',
+            modelProvider: 'google'
+          })
+        })
+      },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: {
+        setupModelSelector: vi.fn((opts) => {
+          opts.setKnownModelLabel('gemini-1.5-flash @ google');
+          return { open: vi.fn() };
+        })
+      },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+      setIntervalImpl: () => {}
+    });
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+
+    const el = dom.window.document.getElementById('pi-chat-context-usage');
+    const popover = dom.window.document.getElementById('pi-chat-context-popover');
+    expect(popover.style.display).toBe('none');
+
+    // Click capsule to open
+    el.click();
+    expect(popover.style.display).toBe('block');
+
+    // Verify detailed values formatting
+    expect(dom.window.document.getElementById('pi-popover-val-input').textContent).toBe('11.2k');
+    expect(dom.window.document.getElementById('pi-popover-val-cache-read').textContent).toBe('5.4k');
+    expect(dom.window.document.getElementById('pi-popover-val-cache-write').textContent).toBe('0');
+    expect(dom.window.document.getElementById('pi-popover-val-output').textContent).toBe('1.0k');
+    expect(dom.window.document.getElementById('pi-popover-val-total').textContent).toBe('17.6k');
+
+    expect(popover.querySelector('.pi-popover-used').textContent).toBe('17.6k');
+    expect(popover.querySelector('.pi-popover-limit').textContent).toBe('1.0M'); // gemini-1.5-flash is 1M limit
+  });
+
+  it('loads dynamic context limits from chatApi.listModels()', async () => {
+    const dom = new JSDOM('<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div><div id="pi-chat-context-popover" style="display:none"><span class="pi-popover-used"></span><span class="pi-popover-limit"></span><div class="pi-popover-progress-bar"></div></div></form></body>');
+    const mockEntries = [
+      {
+        type: 'message',
+        message: {
+          role: 'assistant',
+          usage: { input: 1000, output: 500, cacheRead: 0, cacheWrite: 0 }
+        }
+      }
+    ];
+
+    const listModelsMock = vi.fn(() => Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({
+        models: [
+          { id: 'DEEPSEEK-V4-PRO', provider: 'DEEPSEEK', contextWindow: 1234567 }
+        ]
+      })
+    }));
+
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      localEntries: mockEntries,
+      chatApi: {
+        getWorkerStatus: () => Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            state: 'idle',
+            model: 'DEEPSEEK-V4-PRO',
+            modelProvider: 'DEEPSEEK'
+          })
+        }),
+        listModels: listModelsMock
+      },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: {
+        setupModelSelector: vi.fn((opts) => {
+          opts.setKnownModelLabel('DEEPSEEK-V4-PRO @ DEEPSEEK');
+          return { open: vi.fn() };
+        })
+      },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+      setIntervalImpl: () => {}
+    });
+
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+
+    // Wait for the async listModels promise and status checks to resolve
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    const popover = dom.window.document.getElementById('pi-chat-context-popover');
+    expect(popover.querySelector('.pi-popover-limit').textContent).toBe('1.2M'); // 1,234,567 formats to 1.2M
+  });
 });

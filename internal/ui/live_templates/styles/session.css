@@ -3376,6 +3376,238 @@
         font-size: 14px;
         font-weight: 600;
         letter-spacing: 0;
+    }
+
+    /* Context Usage Circular Progress Indicator */
+    .pi-chat-context-usage {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 7px 2px 6px;
+      background: color-mix(in srgb, var(--dim) 35%, transparent);
+      border: 1px solid color-mix(in srgb, var(--dim) 50%, transparent);
+      border-radius: 12px;
+      font-size: 10px;
+      font-family: inherit;
+      color: var(--muted);
+      flex-shrink: 0;
+      height: 20px;
+      box-sizing: border-box;
+      transition: all 0.2s ease;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .pi-chat-context-usage:hover {
+      background: color-mix(in srgb, var(--dim) 55%, transparent);
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--dim));
+      color: var(--text);
+    }
+
+    .pi-chat-context-usage svg.pi-context-circle {
+      width: 12px;
+      height: 12px;
+      transform: rotate(-90deg);
+      display: block;
+    }
+
+    .pi-chat-context-usage svg.pi-context-circle path.pi-context-bg {
+      fill: none;
+      stroke: color-mix(in srgb, var(--dim) 80%, transparent);
+      stroke-width: 3.5;
+    }
+
+    .pi-chat-context-usage svg.pi-context-circle path.pi-context-fill {
+      fill: none;
+      stroke: var(--accent, #8abeb7);
+      stroke-width: 3.8;
+      stroke-linecap: round;
+      transition: stroke-dasharray 0.3s ease;
+    }
+
+    .pi-chat-context-usage .pi-context-text {
+      font-weight: 600;
+      font-size: 9.5px;
+      line-height: 1;
+    }
+
+    .pi-chat-context-usage.warning svg.pi-context-circle path.pi-context-fill {
+      stroke: var(--warning, #f0c674);
+    }
+
+    .pi-chat-context-usage.danger svg.pi-context-circle path.pi-context-fill {
+      stroke: var(--error, #cc6666);
+    }
+
+    /* Detailed Context Usage Popover */
+    .pi-chat-context-popover {
+      position: absolute;
+      width: 200px;
+      background: color-mix(in srgb, var(--container-bg, #1e1e24) 88%, transparent);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid color-mix(in srgb, var(--dim) 40%, transparent);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      z-index: 1000;
+      padding: 12px;
+      box-sizing: border-box;
+      animation: pi-popover-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-origin: bottom center;
+      cursor: default;
+    }
+
+    @keyframes pi-popover-fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.96);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
       }
     }
+
+    .pi-chat-context-popover .pi-popover-arrow {
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%) rotate(45deg);
+      width: 10px;
+      height: 10px;
+      background: color-mix(in srgb, var(--container-bg, #1e1e24) 100%, transparent);
+      border-right: 1px solid color-mix(in srgb, var(--dim) 40%, transparent);
+      border-bottom: 1px solid color-mix(in srgb, var(--dim) 40%, transparent);
+      z-index: 1;
+    }
+
+    .pi-chat-context-popover .pi-popover-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .pi-chat-context-popover .pi-popover-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+
+    .pi-chat-context-popover .pi-popover-close {
+      font-size: 14px;
+      color: var(--muted);
+      cursor: pointer;
+      line-height: 1;
+      padding: 2px;
+      margin-top: -3px;
+      transition: color 0.1s;
+    }
+
+    .pi-chat-context-popover .pi-popover-close:hover {
+      color: var(--text);
+    }
+
+    .pi-chat-context-popover .pi-popover-hero {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+      margin-bottom: 6px;
+    }
+
+    .pi-chat-context-popover .pi-popover-used {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .pi-chat-context-popover .pi-popover-divider {
+      font-size: 10px;
+      color: var(--muted);
+      margin: 0 1px;
+    }
+
+    .pi-chat-context-popover .pi-popover-limit {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    .pi-chat-context-popover .pi-popover-progress-container {
+      width: 100%;
+      height: 4px;
+      background: color-mix(in srgb, var(--dim) 30%, transparent);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .pi-chat-context-popover .pi-popover-progress-bar {
+      height: 100%;
+      background: var(--accent, #8abeb7);
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    .pi-chat-context-popover.warning .pi-popover-progress-bar {
+      background: var(--warning, #f0c674);
+    }
+
+    .pi-chat-context-popover.danger .pi-popover-progress-bar {
+      background: var(--error, #cc6666);
+    }
+
+    .pi-chat-context-popover .pi-popover-details {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .pi-chat-context-popover .pi-popover-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+    }
+
+    .pi-chat-context-popover .pi-row-label {
+      color: var(--muted);
+    }
+
+    .pi-chat-context-popover .pi-row-value {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .pi-chat-context-popover .pi-popover-separator {
+      height: 1px;
+      background: color-mix(in srgb, var(--dim) 40%, transparent);
+      margin: 5px 0;
+    }
+
+    .pi-chat-context-popover .pi-popover-total {
+      font-size: 10px;
+    }
+
+    .pi-chat-context-popover .pi-popover-total .pi-row-label {
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .pi-chat-context-popover .pi-popover-total .pi-row-value {
+      font-weight: 700;
+      color: var(--accent, #8abeb7);
+    }
+
+    .pi-chat-context-popover.warning .pi-popover-total .pi-row-value {
+      color: var(--warning, #f0c674);
+    }
+
+    .pi-chat-context-popover.danger .pi-popover-total .pi-row-value {
+      color: var(--error, #cc6666);
+    }
+
+
 
