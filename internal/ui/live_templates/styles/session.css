@@ -963,6 +963,21 @@
       background: color-mix(in srgb, var(--accent) 16%, var(--body-bg));
     }
 
+    .ask-question-option.multiselect {
+      cursor: pointer;
+      border-style: dashed;
+    }
+
+    .ask-question-option.multiselect.selected::before {
+      content: '☑ ';
+      color: var(--accent);
+    }
+
+    .ask-question-option.multiselect:not(.selected)::before {
+      content: '☐ ';
+      color: var(--dim);
+    }
+
     .ask-question-option-label {
       color: var(--text);
       font-weight: bold;
