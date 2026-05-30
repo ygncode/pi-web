@@ -425,7 +425,9 @@
       line-height: var(--line-height);
       color: var(--text);
       background: var(--body-bg);
-      min-height: 100vh;
+      /* Lock the outer page so each column scrolls independently */
+      height: 100vh;
+      overflow: hidden;
     }
 
     body.pi-sheet-open {
@@ -445,7 +447,10 @@
 
     #app {
       display: flex;
-      min-height: 100vh;
+      /* Fill exactly the viewport below the fixed 52px header */
+      height: calc(100vh - 52px);
+      margin-top: 52px;
+      overflow: hidden;
     }
 
     /* Sidebar */
@@ -457,18 +462,15 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      position: sticky;
-      top: 52px;
-      height: calc(100vh - 52px);
+      /* Height comes from #app flex container — no sticky needed */
+      height: 100%;
       border-right: 1px solid var(--dim);
     }
 
     #sidebar-resizer {
       width: var(--sidebar-resizer-width);
       flex-shrink: 0;
-      position: sticky;
-      top: 52px;
-      height: calc(100vh - 52px);
+      height: 100%;
       cursor: col-resize;
       touch-action: none;
       background: transparent;
@@ -512,9 +514,7 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      position: sticky;
-      top: 52px;
-      height: calc(100vh - 52px);
+      height: 100%;
       border-left: 1px solid var(--dim);
       transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease, opacity 0.2s ease;
       overflow: hidden;
@@ -528,9 +528,7 @@
     .right-sidebar-resizer {
       width: var(--sidebar-resizer-width);
       flex-shrink: 0;
-      position: sticky;
-      top: 52px;
-      height: calc(100vh - 52px);
+      height: 100%;
       cursor: col-resize;
       touch-action: none;
       background: transparent;
@@ -836,12 +834,14 @@
       flex-shrink: 0;
     }
 
-    /* Main content */
+    /* Main content — scrolls independently inside #app */
     #content {
       flex: 1;
       min-width: 0;
+      height: 100%;
       overflow-y: auto;
-      padding: calc(52px + var(--line-height)) calc(var(--line-height) * 2) var(--line-height);
+      /* No top padding offset needed: #app already starts below the fixed header */
+      padding: var(--line-height) calc(var(--line-height) * 2) var(--line-height);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -2041,6 +2041,10 @@
       #app {
         flex: 1;
         min-height: 0;
+        /* Reset desktop values — mobile body is a flex column, not window-height locked */
+        height: auto;
+        margin-top: 0;
+        overflow: visible;
       }
 
       #sidebar {
@@ -2086,7 +2090,9 @@
       }
 
       #content {
+        height: auto;
         min-height: 0;
+        /* Restore 52px header offset (mobile #app has no margin-top) */
         padding: calc(52px + env(safe-area-inset-top) + var(--line-height)) 16px calc(var(--pi-chat-composer-height, 0px) + var(--line-height));
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
