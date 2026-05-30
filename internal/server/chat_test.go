@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"pi-web/internal/chat"
+	"pi-web/internal/sessions"
 	"pi-web/internal/workers"
 )
 
@@ -497,7 +498,7 @@ func TestHandleNewSessionPreinitializesWorker(t *testing.T) {
 	}
 
 	// Verify file was created
-	projectDir := filepath.Join(root, "--tmp-test-project--")
+	projectDir := filepath.Join(root, sessions.EncodeProjectName("/tmp/test-project"))
 	entries, err := os.ReadDir(projectDir)
 	if err != nil {
 		t.Fatalf("expected project dir to exist: %v", err)
@@ -536,7 +537,7 @@ func TestHandleNewSessionCopiesSourceModelAndThinking(t *testing.T) {
 	if fake.setModelSessionID != "" || fake.setThinkingSessionID != "" {
 		t.Fatalf("new session initialization should not append visible setting changes, got setModel=%q setThinking=%q", fake.setModelSessionID, fake.setThinkingSessionID)
 	}
-	projectDir := filepath.Join(root, "--tmp-test-project--")
+	projectDir := filepath.Join(root, sessions.EncodeProjectName("/tmp/test-project"))
 	data, err := os.ReadFile(filepath.Join(projectDir, id))
 	if err != nil {
 		t.Fatal(err)

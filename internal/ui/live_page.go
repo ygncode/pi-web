@@ -35,6 +35,7 @@ func renderLiveDocumentStart(data liveDocumentData) string {
 		b.WriteString(string(data.Styles))
 		b.WriteByte('\n')
 	}
+	b.WriteString("<link rel=\"stylesheet\" href=\"/custom-themes.css\">\n")
 	b.WriteString("</head>\n<body")
 	if data.BodyAttrs != "" {
 		b.WriteString(string(data.BodyAttrs))
@@ -55,17 +56,31 @@ func liveThemeBootScript() template.HTML {
 	return template.HTML(`<script>
 (function(){
   var STORAGE_KEY = 'pi-web-theme';
+  var themes = ['dark', 'light', 'nord', 'dracula', 'custom'];
   function applyTheme(t){ document.documentElement.dataset.theme = t || 'dark'; }
   function currentTheme(){ return document.documentElement.dataset.theme || 'dark'; }
   function updateBtn(){
-    var isDark = currentTheme() === 'dark';
-    document.querySelectorAll('[data-theme-icon]').forEach(function(icon){ icon.textContent = isDark ? '☀' : '◐'; });
-    document.querySelectorAll('[data-command-theme-icon]').forEach(function(icon){ icon.textContent = isDark ? '☀' : '◐'; });
+    var t = currentTheme();
+    var icon = '◐';
+    if(t === 'light') icon = '☀';
+    else if(t === 'nord') icon = '❄';
+    else if(t === 'dracula') icon = '🧛';
+    else if(t === 'custom') icon = '⚙';
+    document.querySelectorAll('[data-theme-icon]').forEach(function(el){ el.textContent = icon; });
+    document.querySelectorAll('[data-command-theme-icon]').forEach(function(el){ el.textContent = icon; });
     var meta = document.querySelector('meta[name="theme-color"]');
-    if(meta) meta.content = isDark ? '#0e0e13' : '#f6f5f2';
+    if(meta) {
+      var color = '#111116';
+      if(t === 'light') color = '#f6f5f2';
+      else if(t === 'nord') color = '#2e3440';
+      else if(t === 'dracula') color = '#282a36';
+      meta.content = color;
+    }
   }
   function toggleTheme(){
-    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    var idx = themes.indexOf(currentTheme());
+    if(idx === -1) idx = 0;
+    var next = themes[(idx + 1) % themes.length];
     applyTheme(next);
     try{ localStorage.setItem(STORAGE_KEY, next); }catch(e){}
     try{ document.cookie = 'pi-web-theme=' + next + ';path=/;SameSite=Lax;max-age=31536000'; }catch(e){}
@@ -94,7 +109,8 @@ func liveServiceWorkerScript() template.HTML {
 func liveDocumentEnd() template.HTML { return template.HTML("</body>\n</html>") }
 
 func indexStylesheets() template.HTML {
-	return template.HTML(`<link rel="stylesheet" href="/index.css">
+	return template.HTML(`<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/index.css">
 <link rel="stylesheet" href="/menu.css">
 <link rel="stylesheet" href="/palette.css">`)
 }

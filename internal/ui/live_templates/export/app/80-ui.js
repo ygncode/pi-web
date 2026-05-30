@@ -114,6 +114,9 @@ const SIDEBAR_WIDTH_STORAGE_KEY = 'pi-share:v1:sidebar-width';
 const MIN_CONTENT_WIDTH = 320;
 
 function isMobileLayout() {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
   return window.matchMedia('(max-width: 900px)').matches;
 }
 
@@ -210,12 +213,43 @@ function setupSidebarResize() {
   });
 
   window.addEventListener('resize', () => {
-    if (isMobileLayout()) return;
+    if (isMobileLayout()) {
+      document.body.classList.remove('sidebar-collapsed');
+      hamburger.style.display = '';
+      return;
+    }
     applySidebarWidth(sidebar.getBoundingClientRect().width);
+    const collapsed = loadSidebarCollapsed();
+    setSidebarCollapsed(collapsed);
   });
 }
 
 setupSidebarResize();
+
+const SIDEBAR_COLLAPSED_STORAGE_KEY = 'pi-share:v1:sidebar-collapsed';
+
+function loadSidebarCollapsed() {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function saveSidebarCollapsed(collapsed) {
+  try {
+    localStorage.setItem(SIDEBAR_COLLAPSED_STORAGE_KEY, String(collapsed));
+  } catch {}
+}
+
+function setSidebarCollapsed(collapsed) {
+  document.body.classList.toggle('sidebar-collapsed', collapsed);
+  if (isMobileLayout()) {
+    hamburger.style.display = '';
+  } else {
+    hamburger.style.display = collapsed ? '' : 'none';
+  }
+}
 
 function setSidebarOpen(open) {
   sidebar.classList.toggle('open', open);
@@ -224,16 +258,43 @@ function setSidebarOpen(open) {
   hamburger.style.display = open ? 'none' : '';
 }
 
-hamburger.addEventListener('click', () => {
-  setSidebarOpen(true);
-});
+function setupSidebarCollapse() {
+  const collapsed = loadSidebarCollapsed();
+  if (!isMobileLayout()) {
+    setSidebarCollapsed(collapsed);
+  }
 
-const closeSidebar = () => {
-  setSidebarOpen(false);
-};
+  hamburger.addEventListener('click', () => {
+    if (isMobileLayout()) {
+      setSidebarOpen(true);
+      return;
+    }
+    setSidebarCollapsed(false);
+    saveSidebarCollapsed(false);
+  });
 
-overlay.addEventListener('click', closeSidebar);
-document.getElementById('sidebar-close').addEventListener('click', closeSidebar);
+  const closeSidebar = () => {
+    if (isMobileLayout()) {
+      setSidebarOpen(false);
+      return;
+    }
+    setSidebarCollapsed(true);
+    saveSidebarCollapsed(true);
+  };
+
+  overlay.addEventListener('click', closeSidebar);
+  overlay.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    closeSidebar();
+  }, { passive: false });
+
+  const hideSidebarBtn = document.getElementById('hide-sidebar');
+  if (hideSidebarBtn) {
+    hideSidebarBtn.addEventListener('click', closeSidebar);
+  }
+}
+
+setupSidebarCollapse();
 
 // Toggle states
 const TOGGLE_STATE_STORAGE_KEY = 'pi.sessionDetail.toggleState';

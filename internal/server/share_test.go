@@ -33,7 +33,7 @@ func newShareTestServer(t *testing.T, runner shareCmdRunner) (*Server, string) {
 		sessionsDir:   root,
 		cache:         sessions.NewCache(),
 		shareRunner:   runner,
-		renderExportSession: func(sess sessions.Session) string { return "<html></html>" },
+		renderExportSession: func(sess sessions.Session, theme string) string { return "<html></html>" },
 	}
 	return s, root
 }

@@ -31,7 +31,14 @@ export function setupSessionUi({
   sidebarApi.setupSidebarResize({ documentImpl, windowImpl, storage });
   sidebarApi.setupSidebarCollapse({ documentImpl, windowImpl, storage });
   const closeSidebar = () => sidebarApi.setSidebarOpen(false, { documentImpl });
-  documentImpl.getElementById('sidebar-overlay')?.addEventListener('click', closeSidebar);
+  const overlayEl = documentImpl.getElementById('sidebar-overlay');
+  if (overlayEl) {
+    overlayEl.addEventListener('click', closeSidebar);
+    overlayEl.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      closeSidebar();
+    }, { passive: false });
+  }
 
   const toggleController = toggleStateApi.createToggleController({ documentImpl, storage });
   windowImpl.sessionToggleState = toggleController;

@@ -86,7 +86,7 @@ func TestIndexTemplateLoadedFromEmbeddedFile(t *testing.T) {
 	}
 	rendered := buf.String()
 	for _, marker := range []string{
-		`id="commandPalette"`,
+		`id="sessionPalette"`,
 		`id="modalOverlay"`,
 		`session-active-status`,
 	} {
@@ -124,7 +124,7 @@ func TestRenderedSessionPagesReplaceKnownPlaceholders(t *testing.T) {
 	}
 	for name, html := range map[string]string{
 		"live":   renderLiveSessionPage(session),
-		"export": renderExportSessionPage(session),
+		"export": RenderExportSessionPage(session, "dark"),
 	} {
 		for _, placeholder := range placeholders {
 			if strings.Contains(html, placeholder) {
@@ -139,7 +139,7 @@ func TestRenderedSessionCSSDefinesUsedCustomProperties(t *testing.T) {
 	session := sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Name: "Session"}}
 	for name, html := range map[string]string{
 		"live":   renderLiveSessionPage(session),
-		"export": renderExportSessionPage(session),
+		"export": RenderExportSessionPage(session, "dark"),
 	} {
 		assertCSSCustomPropertiesDefined(t, name, html)
 	}
@@ -164,9 +164,9 @@ func assertCSSCustomPropertiesDefined(t *testing.T, name, html string) {
 }
 
 func TestExportAppJSManifestMatchesEmbeddedFiles(t *testing.T) {
-	entries, err := appJsFS.ReadDir("export/app")
+	entries, err := appJsFS.ReadDir("live_templates/export/app")
 	if err != nil {
-		t.Fatalf("read export/app: %v", err)
+		t.Fatalf("read live_templates/export/app: %v", err)
 	}
 	files := map[string]bool{}
 	for _, entry := range entries {
@@ -181,7 +181,7 @@ func TestExportAppJSManifestMatchesEmbeddedFiles(t *testing.T) {
 		delete(files, name)
 	}
 	if len(files) > 0 {
-		t.Fatalf("export/app has JS files missing from exportAppJSFiles manifest: %#v", files)
+		t.Fatalf("live_templates/export/app has JS files missing from exportAppJSFiles manifest: %#v", files)
 	}
 }
 
@@ -206,7 +206,7 @@ func TestSessionPageUsesViteModuleForInteractiveViewer(t *testing.T) {
 }
 
 func TestStaticExportKeepsInlineSessionRenderer(t *testing.T) {
-	html := renderExportSessionPage(sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Name: "Session"}})
+	html := RenderExportSessionPage(sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Name: "Session"}}, "dark")
 	if !strings.Contains(html, "function renderTree()") {
 		t.Fatal("static export missing inline legacy session renderer")
 	}

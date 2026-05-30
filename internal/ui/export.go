@@ -1,10 +1,11 @@
 package ui
 
 import (
+	"bytes"
 	"embed"
-	_ "embed"
 	"fmt"
 	"html/template"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -12,19 +13,13 @@ import (
 	"pi-web/internal/sessions"
 )
 
-//go:embed export/index.html
-var exportHtml string
-
-//go:embed export/template.css
-var exportSessionCss string
-
-//go:embed export/app/*.js
+//go:embed live_templates/export/app/*.js
 var appJsFS embed.FS
 
-//go:embed export/vendor/marked.min.js
+//go:embed live_templates/export/vendor/marked.min.js
 var markedJs string
 
-//go:embed export/vendor/highlight.min.js
+//go:embed live_templates/export/vendor/highlight.min.js
 var hljsJs string
 
 // Explicit export app JS manifest. The static export runtime is intentionally
@@ -52,7 +47,7 @@ func buildExportJsBundle() string {
 	var b strings.Builder
 	b.WriteString("(function() {\n'use strict';\n")
 	for _, name := range exportAppJSFiles {
-		body, err := appJsFS.ReadFile("export/app/" + name)
+		body, err := appJsFS.ReadFile("live_templates/export/app/" + name)
 		if err != nil {
 			panic(fmt.Errorf("read %s: %w", name, err))
 		}
@@ -65,9 +60,9 @@ func buildExportJsBundle() string {
 }
 
 func verifyExportAppManifest() {
-	entries, err := appJsFS.ReadDir("export/app")
+	entries, err := appJsFS.ReadDir("live_templates/export/app")
 	if err != nil {
-		panic(fmt.Errorf("read export/app: %w", err))
+		panic(fmt.Errorf("read live_templates/export/app: %w", err))
 	}
 
 	seen := make(map[string]bool, len(entries))
@@ -95,24 +90,134 @@ func verifyExportAppManifest() {
 // renderExportSessionPage renders a self-contained HTML snapshot suitable for
 // GitHub Gist sharing. All JS is inlined and server-dependent chrome (buttons,
 // chat composer) is stripped.
-func RenderExportSessionPage(session sessions.Session) string {
-	dataBase64, css, bodyAttrs := prepareSessionPageData(session, exportSessionCss)
-
-	html := exportHtml
-	html = replaceRequired(html, "{{TITLE}}", template.HTMLEscapeString(session.Name))
-	html = replaceRequired(html, "{{CSS}}", css)
-	html = replaceRequired(html, "{{BODY_ATTRS}}", bodyAttrs)
-	html = replaceRequired(html, "{{SESSION_DATA}}", dataBase64)
-
-	inlineScript := "<script>\n" + markedJs + "\n</script>\n<script>\n" + hljsJs + "\n</script>\n<script>\n" + exportJs + "\n</script>"
-	html = replaceRequired(html, "{{SESSION_SCRIPT}}", inlineScript)
-	html = replaceRequired(html, "{{CHAT_COMPOSER}}", "")
-
-	return html
+// sanitizeTheme returns the theme name if it is one of the recognised built-in
+// values, or "dark" as a safe default. This prevents a user-controlled cookie
+// value from being interpolated verbatim into the export <script> block.
+func sanitizeTheme(t string) string {
+	switch t {
+	case "dark", "light", "nord", "dracula", "custom":
+		return t
+	}
+	return "dark"
 }
 
-func renderExportSessionPage(session sessions.Session) string {
-	return RenderExportSessionPage(session)
+func RenderExportSessionPage(session sessions.Session, theme string) string {
+	dataBase64, css, bodyAttrs := prepareSessionPageData(session, liveThemeCss+"\n"+liveSessionCss)
+
+	styles := "<style>\n" + css + "\n</style>"
+	inlineScript := "<script>\n" + markedJs + "\n</script>\n<script>\n" + hljsJs + "\n</script>\n<script>\n" + exportJs + "\n</script>"
+
+	data := struct {
+		IsLive             bool
+		Title              string
+		LiveDocumentStart  template.HTML
+		ThemeBoot          template.HTML
+		ServiceWorker      template.HTML
+		SessionCommandMenu template.HTML
+		MobileCommandMenu  template.HTML
+		SessionPalette     template.HTML
+		SessionData        template.JS
+		SessionScript      template.HTML
+		FirstMessageStub   template.HTML
+		ChatComposer       template.HTML
+		LiveDocumentEnd    template.HTML
+	}{
+		IsLive:             false,
+		Title:              session.Name,
+		LiveDocumentStart:  renderExportDocumentStart(session.Name, styles, bodyAttrs),
+		ThemeBoot:          exportThemeBootScript(sanitizeTheme(theme)),
+		ServiceWorker:      "",
+		SessionCommandMenu: "",
+		MobileCommandMenu:  "",
+		SessionPalette:     "",
+		SessionData:        template.JS(dataBase64),
+		SessionScript:      template.HTML(inlineScript),
+		FirstMessageStub:   "",
+		ChatComposer:       "",
+		LiveDocumentEnd:    template.HTML("</body>\n</html>"),
+	}
+
+	var buf bytes.Buffer
+	if err := liveSessionTmpl.Execute(&buf, data); err != nil {
+		log.Printf("export: template execution failed for session %q: %v", session.ID, err)
+		return ""
+	}
+	return buf.String()
+}
+
+func renderExportDocumentStart(title string, styles string, bodyAttrs string) template.HTML {
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1\">\n")
+	b.WriteString("<title>")
+	b.WriteString(template.HTMLEscapeString(title))
+	b.WriteString("</title>\n")
+	b.WriteString("<link rel=\"icon\" type=\"image/svg+xml\" href=\"data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA4MDAgODAwIj48cGF0aCBmaWxsPSIjMDBkN2ZmIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xNjUuMjkgMTY1LjI5IEg1MTcuMzYgVjQwMCBINDAwIFY1MTcuMzYgSDI4Mi42NSBWNjM0LjcyIEgxNjUuMjkgWiBNMjgyLjY1IDI4Mi42NSBWNDAwIEg0MDAgVjI4Mi42NSBaIi8+PHBhdGggZmlsbD0iIzAwZDdmZiIgZD0iTTUxNy4zNiA0MDAgSDYzNC43MiBWNjM0LjcyIEg1MTcuMzYgWiIvPjwvc3ZnPg==\">\n")
+	if styles != "" {
+		b.WriteString(styles)
+		b.WriteByte('\n')
+	}
+	b.WriteString("</head>\n<body")
+	if bodyAttrs != "" {
+		b.WriteString(bodyAttrs)
+	}
+	b.WriteString(">\n")
+	return template.HTML(b.String())
+}
+
+func exportThemeBootScript(defaultTheme string) template.HTML {
+	if defaultTheme == "" {
+		defaultTheme = "dark"
+	}
+	return template.HTML(fmt.Sprintf(`<script>
+(function(){
+  var STORAGE_KEY = 'pi-web-theme';
+  var themes = ['dark', 'light', 'nord', 'dracula', 'custom'];
+  function applyTheme(t){ document.documentElement.dataset.theme = t || 'dark'; }
+  function currentTheme(){ return document.documentElement.dataset.theme || 'dark'; }
+  function updateBtn(){
+    var t = currentTheme();
+    var icon = '◐';
+    if(t === 'light') icon = '☀';
+    else if(t === 'nord') icon = '❄';
+    else if(t === 'dracula') icon = '🧛';
+    else if(t === 'custom') icon = '⚙';
+    document.querySelectorAll('[data-theme-icon]').forEach(function(el){ el.textContent = icon; });
+    document.querySelectorAll('[data-command-theme-icon]').forEach(function(el){ el.textContent = icon; });
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if(meta) {
+      var color = '#111116';
+      if(t === 'light') color = '#f6f5f2';
+      else if(t === 'nord') color = '#2e3440';
+      else if(t === 'dracula') color = '#282a36';
+      meta.content = color;
+    }
+  }
+  function toggleTheme(){
+    var idx = themes.indexOf(currentTheme());
+    if(idx === -1) idx = 0;
+    var next = themes[(idx + 1) %% themes.length];
+    applyTheme(next);
+    try{ localStorage.setItem(STORAGE_KEY, next); }catch(e){}
+    try{ document.cookie = 'pi-web-theme=' + next + ';path=/;SameSite=Lax;max-age=31536000'; }catch(e){}
+    updateBtn();
+  }
+  var defaultTheme = '%s';
+  try{ applyTheme(localStorage.getItem(STORAGE_KEY) || defaultTheme); }catch(e){ applyTheme(defaultTheme); }
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', function(){
+      updateBtn();
+      var btn = document.getElementById('theme-toggle');
+      if(btn) btn.addEventListener('click', toggleTheme);
+    });
+  } else {
+    updateBtn();
+    var btn = document.getElementById('theme-toggle');
+    if(btn) btn.addEventListener('click', toggleTheme);
+  }
+})();
+</script>`, defaultTheme))
 }
 
 func serveStaticJS(body string) http.HandlerFunc {

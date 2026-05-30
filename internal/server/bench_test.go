@@ -55,7 +55,7 @@ func newBenchServer(b *testing.B, numSessions, messagesPerSession int) (*Server,
 		RenderLiveSession: func(s sessions.Session) string {
 			return fmt.Sprintf("<html><body>%d entries</body></html>", len(s.Entries))
 		},
-		RenderExportSession: func(s sessions.Session) string { return "" },
+		RenderExportSession: func(s sessions.Session, theme string) string { return "" },
 		Models:              func(ctx context.Context) (json.RawMessage, error) { return nil, nil },
 	})
 	return srv, lastID

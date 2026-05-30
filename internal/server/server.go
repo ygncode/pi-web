@@ -37,7 +37,7 @@ type Deps struct {
 	Cache               *sessions.Cache
 	RenderIndex         func(w io.Writer, summaries []sessions.SessionSummary) error
 	RenderLiveSession   func(s sessions.Session) string
-	RenderExportSession func(s sessions.Session) string
+	RenderExportSession func(s sessions.Session, theme string) string
 	Models              func(ctx context.Context) (json.RawMessage, error)
 	Now                 func() time.Time
 }
@@ -58,7 +58,7 @@ type Server struct {
 	now                 func() time.Time
 	renderIndex         func(w io.Writer, summaries []sessions.SessionSummary) error
 	renderLiveSession   func(s sessions.Session) string
-	renderExportSession func(s sessions.Session) string
+	renderExportSession func(s sessions.Session, theme string) string
 	models              func(ctx context.Context) (json.RawMessage, error)
 	lastKnown           map[string]struct{} // session ids currently broadcast as running
 	lastKnownMu         sync.Mutex
@@ -139,6 +139,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/clone-session", s.auth.Wrap(s.handleApiCloneSession))
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
 	mux.HandleFunc("/api/recent-locations", s.auth.Wrap(s.handleRecentLocations))
+	mux.HandleFunc("/custom-themes.css", s.auth.Wrap(s.handleCustomThemes))
 	if s.push != nil {
 		s.push.Register(mux, s.auth.Wrap)
 	}

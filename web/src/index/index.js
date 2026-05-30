@@ -107,8 +107,6 @@ export function runIndexPage({
   sessionPalette = setupSessionListPalette({
     documentImpl,
     windowImpl,
-    overlayId: 'commandPalette',
-    searchInputId: 'search',
     onQueryChange: (query) => {
       page.query = query;
       page.filter();
@@ -231,7 +229,7 @@ export function runIndexPage({
       return;
     }
     if (e.key === 'Escape') {
-      const paletteOverlay = documentImpl.getElementById('commandPalette');
+      const paletteOverlay = documentImpl.getElementById('sessionPalette');
       if (paletteOverlay?.classList.contains('open')) closePalette();
       else if (webMenu && !webMenu.hidden) closeMenu();
       else if (page.modal) hideModal();
@@ -287,9 +285,123 @@ export function runIndexPage({
   } else {
     markLayoutReady();
   }
+
+  // ── Integrated design system helpers (originally inlined in HTML) ──
+
+  function formatRelativeTime(date) {
+    const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+    const units = [
+      ['year', 31536000], ['month', 2592000], ['week', 604800],
+      ['day', 86400], ['hour', 3600], ['minute', 60]
+    ];
+    for (let i = 0; i < units.length; i++) {
+      const count = Math.floor(seconds / units[i][1]);
+      if (count >= 1) return count + ' ' + units[i][0] + (count === 1 ? '' : 's') + ' ago';
+    }
+    return 'just now';
+  }
+
+  function updateRelativeTimes() {
+    documentImpl.querySelectorAll('[data-timestamp]').forEach((el) => {
+      const ts = el.dataset.timestamp;
+      if (!ts) return;
+      const d = new Date(ts);
+      if (isNaN(d)) return;
+      el.title = d.toLocaleString();
+      el.textContent = formatRelativeTime(d);
+    });
+  }
+
+  setTimeoutImpl(function tickRelativeTimes() {
+    updateRelativeTimes();
+    setTimeoutImpl(tickRelativeTimes, 60000);
+  }, 60000);
+
+  const COLLAPSED_STORAGE_KEY = 'pi-sessions:collapsed-projects';
+  function readCollapsed() {
+    try {
+      const raw = windowImpl.localStorage.getItem(COLLAPSED_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) { return {}; }
+  }
+
+  function writeCollapsed(state) {
+    try { windowImpl.localStorage.setItem(COLLAPSED_STORAGE_KEY, JSON.stringify(state)); } catch (_) {}
+  }
+
+  function initProjectGroups() {
+    const collapsed = readCollapsed();
+    const groups = documentImpl.querySelectorAll('.project-group');
+    groups.forEach((group) => {
+      const project = group.dataset.project || '';
+      const toggle = group.querySelector('.project-toggle');
+      const countEl = group.querySelector('[data-project-count]');
+      const total = group.querySelectorAll('.session-card').length;
+      if (countEl) {
+        countEl.dataset.total = String(total);
+        countEl.textContent = `${total} sessions`;
+      }
+      if (collapsed[project]) {
+        group.classList.add('collapsed');
+        if (toggle) toggle.setAttribute('aria-expanded', 'false');
+      }
+      if (toggle) {
+        // Remove existing listener to prevent duplicate binding
+        const newToggle = toggle.cloneNode(true);
+        toggle.parentNode.replaceChild(newToggle, toggle);
+        newToggle.addEventListener('click', () => {
+          const willCollapse = !group.classList.contains('collapsed');
+          group.classList.toggle('collapsed', willCollapse);
+          newToggle.setAttribute('aria-expanded', willCollapse ? 'false' : 'true');
+          const state = readCollapsed();
+          if (willCollapse) state[project] = 1; else delete state[project];
+          writeCollapsed(state);
+        });
+      }
+    });
+  }
+
+  function updateRunningCounts() {
+    let total = 0;
+    documentImpl.querySelectorAll('.project-group').forEach((group) => {
+      const running = group.querySelectorAll('.session-card--running').length;
+      total += running;
+      const countEl = group.querySelector('[data-project-count]');
+      if (countEl) {
+        countEl.setAttribute('data-running', String(running));
+        const totalVal = countEl.dataset.total || String(group.querySelectorAll('.session-card').length);
+        countEl.textContent = running > 0 ? `(${running} active)` : `${totalVal} sessions`;
+      }
+    });
+    documentImpl.querySelectorAll('[data-running-count]').forEach((countEl) => {
+      countEl.textContent = String(total);
+    });
+    documentImpl.querySelectorAll('[data-running-stat]').forEach((statEl) => {
+      statEl.classList.toggle('visible', total > 0);
+    });
+  }
+
+  let runningObserver = null;
+  function start() {
+    initProjectGroups();
+    updateRunningCounts();
+    updateRelativeTimes();
+    if (runningObserver) runningObserver.disconnect();
+    if (typeof windowImpl.MutationObserver !== 'undefined') {
+      runningObserver = new windowImpl.MutationObserver(updateRunningCounts);
+      documentImpl.querySelectorAll('.session-card').forEach((card) => {
+        runningObserver.observe(card, { attributes: true, attributeFilter: ['class'] });
+      });
+    }
+  }
+
+  documentImpl.addEventListener('pi-index-sessions-rendered', start);
+  start();
 }
 
-if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.getElementById('search')) {
+if (typeof window !== 'undefined' && typeof document !== 'undefined' && (document.getElementById('session-palette-search') || document.getElementById('search') || document.querySelector('[data-sessions-content]'))) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => runIndexPage());
   } else {

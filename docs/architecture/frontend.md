@@ -56,15 +56,15 @@ Session frontend modules are split by ownership:
 - `web/src/session/live/` — session SSE/live reload behavior
 - `web/src/session/ui/` — session page interaction wiring and sidebar behavior
 
-`internal/ui/export/app/*.js` is not the source of live interactive session runtime behavior. It is kept only for static/share exports.
+`internal/ui/live_templates/export/app/*.js` is not the source of live interactive session runtime behavior. It is kept only for static/share exports.
 
 ## Static / Share Export
 
 When `renderExportSessionPage(session)` creates self-contained exported HTML, it inlines:
 
-- `internal/ui/export/app/*.js`
-- `internal/ui/export/vendor/marked.min.js`
-- `internal/ui/export/vendor/highlight.min.js`
+- `internal/ui/live_templates/export/app/*.js`
+- `internal/ui/live_templates/export/vendor/marked.min.js`
+- `internal/ui/live_templates/export/vendor/highlight.min.js`
 
 This keeps exported/shared HTML independent from the Go server and Vite assets.
 
@@ -92,8 +92,8 @@ The session page listens to `/events?id=<sessionId>` for:
 | Vite index bundle | `web/dist/assets/index-*.js` | `/static/assets/index-*.js` |
 | Vite session bundle | `web/dist/assets/session-*.js` | `/static/assets/session-*.js` |
 | Vite live bundle | `web/dist/assets/live-*.js` | `/static/assets/live-*.js` |
-| Static export JS | `internal/ui/export/app/*.js` + vendors | inline in exported HTML |
+| Static export JS | `internal/ui/live_templates/export/app/*.js` + vendors | inline in exported HTML |
 
 ## Theme System
 
-Session colors are still defined by `computeThemeVars()` in `internal/ui/session_page.go` and injected into both `internal/ui/live_templates/session.css` and `internal/ui/export/template.css`. Moving live CSS into Vite-owned files is a remaining cleanup step.
+Session colors are still defined by `computeThemeVars()` in `internal/ui/session_page.go` and injected into `internal/ui/live_templates/styles/session.css`. The style system is completely unified.

@@ -11,4 +11,3 @@ web/dist/
 
 node_modules/
 tmp/
-data/*.sqlite

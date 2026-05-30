@@ -23,6 +23,9 @@ var piLogoSVG string
 //go:embed live_templates/assets/done.mp3
 var doneMP3 []byte
 
+//go:embed live_templates/styles/theme.css
+var themeCSS string
+
 //go:embed live_templates/styles/index.css
 var indexCSS string
 
@@ -68,6 +71,11 @@ func RegisterPWAHandlers(mux *http.ServeMux) {
 		w.Header().Set("Content-Type", "audio/mpeg")
 		w.Header().Set("Cache-Control", "public, max-age=86400")
 		_, _ = w.Write(doneMP3)
+	})
+	mux.HandleFunc("/theme.css", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/css; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-cache")
+		_, _ = w.Write([]byte(themeCSS))
 	})
 	mux.HandleFunc("/index.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")

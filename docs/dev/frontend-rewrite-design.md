@@ -6,7 +6,7 @@
 > that was evaluated and rejected.
 
 ## Agreed direction
-Rewrite the whole app frontend, not just the sessions index. Today the live frontend is mixed across Go templates, live template CSS, raw live reload code, and Vite entrypoints, while standalone export code lives separately under `internal/ui/export/`. The target is a cohesive live frontend that is built by Vite and embedded into the Go binary.
+Rewrite the whole app frontend, not just the sessions index. Today the live frontend is mixed across Go templates, live template CSS, raw live reload code, and Vite entrypoints, while standalone export code lives under `internal/ui/live_templates/export/`. The target is a cohesive live frontend that is built by Vite and embedded into the Go binary.
 
 The rewrite should preserve current user-visible behavior and visual design first. Architecture comes before redesign. New packages are allowed when they solve a clear problem, but the app must remain self-contained and embeddable in Go.
 
@@ -26,7 +26,7 @@ The rewrite should preserve current user-visible behavior and visual design firs
 - No runtime dependency on external CDNs or unembedded assets.
 
 ## Current problems
-- Standalone export behavior is split across many ordered files in `internal/ui/export/app/*.js`, while live session behavior is Vite-owned.
+- Standalone export behavior is split across many ordered files in `internal/ui/live_templates/export/app/*.js`, while live session behavior is Vite-owned.
 - CSS is concentrated in large template files, making shared tokens/components hard to evolve.
 - Index, live, session viewer, and chat have different frontend ownership patterns.
 - Inline template JavaScript makes testing, bundling, and dependency management harder.
@@ -52,7 +52,7 @@ web/src/
 
 ### Go/template boundary
 - Go templates should emit page shells and serialized initial data only.
-- Avoid large inline scripts in `internal/ui/live_templates/index.html` and `internal/ui/export/index.html`.
+- Avoid large inline scripts in `internal/ui/live_templates/index.html` and `internal/ui/live_templates/session.html`.
 - Vite entrypoints should own frontend behavior:
   - `src/index/index.js`
   - `src/session/session.js`

@@ -26,8 +26,6 @@ func TestHomePageRunningCountHasWorkspaceSummary(t *testing.T) {
 	htmlChecks := []string{
 		`<div class="workspace-summary">`,
 		`<span class="stat-running" id="statRunning" data-running-stat>`,
-		"document.querySelectorAll('[data-running-count]')",
-		"document.querySelectorAll('[data-running-stat]')",
 	}
 	for _, check := range htmlChecks {
 		if !strings.Contains(html, check) {
@@ -66,7 +64,7 @@ func TestHomePageNewSessionEntryPointsExist(t *testing.T) {
 	}
 	// palette is rendered via {{ paletteHTML }} — check rendered output
 	paletteChecks := []string{
-		`id="commandPalette"`,
+		`id="sessionPalette"`,
 		`id="web-menu"`,
 	}
 	for _, check := range paletteChecks {
@@ -127,7 +125,7 @@ func TestCommandPaletteSearchExists(t *testing.T) {
 	html := buf.String()
 	checks := []string{
 		`id="open-search"`,
-		`id="search"`,
+		`id="session-palette-search"`,
 		`Search sessions...`,
 		`⌘K`,
 	}
