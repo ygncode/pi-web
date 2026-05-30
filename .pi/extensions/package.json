@@ -1,6 +1,9 @@
 {
   "name": "pi-web-extension",
   "private": true,
+  "pi": {
+    "extensions": ["./pi-web.ts"]
+  },
   "dependencies": {
     "qrcode": "^1.5.4",
     "typebox": "^1.1.38"
