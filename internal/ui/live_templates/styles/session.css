@@ -445,10 +445,12 @@
 
     #app {
       display: flex;
-      min-height: 100vh;
+      align-items: stretch;
+      height: calc(100vh - 52px);
+      margin-top: 52px;
     }
 
-    /* Sidebar */
+    /* Sidebar — height comes from #app's fixed height */
     #sidebar {
       width: var(--sidebar-width);
       min-width: var(--sidebar-width);
@@ -457,18 +459,12 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      position: sticky;
-      top: 52px;
-      height: calc(100vh - 52px);
       border-right: 1px solid var(--dim);
     }
 
     #sidebar-resizer {
       width: var(--sidebar-resizer-width);
       flex-shrink: 0;
-      position: sticky;
-      top: 52px;
-      height: calc(100vh - 52px);
       cursor: col-resize;
       touch-action: none;
       background: transparent;
@@ -512,9 +508,6 @@
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      position: sticky;
-      top: 52px;
-      height: calc(100vh - 52px);
       border-left: 1px solid var(--dim);
       transition: width 0.2s ease, min-width 0.2s ease, max-width 0.2s ease, opacity 0.2s ease;
       overflow: hidden;
@@ -528,9 +521,6 @@
     .right-sidebar-resizer {
       width: var(--sidebar-resizer-width);
       flex-shrink: 0;
-      position: sticky;
-      top: 52px;
-      height: calc(100vh - 52px);
       cursor: col-resize;
       touch-action: none;
       background: transparent;
@@ -836,10 +826,11 @@
       flex-shrink: 0;
     }
 
-    /* Main content */
+    /* Main content — scrolls independently within #app's fixed height */
     #content {
       flex: 1;
       min-width: 0;
+      min-height: 0;
       overflow-y: auto;
       padding: calc(52px + var(--line-height)) calc(var(--line-height) * 2) var(--line-height);
       display: flex;
