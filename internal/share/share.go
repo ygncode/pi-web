@@ -1,13 +1,13 @@
 package share
 
 import (
-	"encoding/json"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
+	"pi-web/internal/render"
 	"pi-web/internal/sessions"
 )
 
@@ -119,9 +119,7 @@ func Handle(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 
 	stdout, stderr, err := runner.CreateGist(tmpFile)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(map[string]any{"error": "failed to create gist", "stderr": stderr})
+		render.WriteJSON(w, http.StatusInternalServerError, map[string]any{"error": "failed to create gist", "stderr": stderr})
 		return
 	}
 
@@ -131,8 +129,7 @@ func Handle(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		gistId = parts[len(parts)-1]
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{
+	render.WriteJSON(w, 0, map[string]any{
 		"gistUrl":    gistUrl,
 		"gistId":     gistId,
 		"previewUrl": "https://pi.dev/session/#" + gistId,
@@ -140,7 +137,5 @@ func Handle(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 }
 
 func writeJSONError(w http.ResponseWriter, status int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]any{"error": message})
+	render.WriteJSONError(w, status, message)
 }

@@ -167,57 +167,7 @@ func renderExportDocumentStart(title string, styles string, bodyAttrs string) te
 }
 
 func exportThemeBootScript(defaultTheme string) template.HTML {
-	if defaultTheme == "" {
-		defaultTheme = "dark"
-	}
-	return template.HTML(fmt.Sprintf(`<script>
-(function(){
-  var STORAGE_KEY = 'pi-web-theme';
-  var themes = ['dark', 'light', 'nord', 'dracula', 'custom'];
-  function applyTheme(t){ document.documentElement.dataset.theme = t || 'dark'; }
-  function currentTheme(){ return document.documentElement.dataset.theme || 'dark'; }
-  function updateBtn(){
-    var t = currentTheme();
-    var icon = '◐';
-    if(t === 'light') icon = '☀';
-    else if(t === 'nord') icon = '❄';
-    else if(t === 'dracula') icon = '🧛';
-    else if(t === 'custom') icon = '⚙';
-    document.querySelectorAll('[data-theme-icon]').forEach(function(el){ el.textContent = icon; });
-    document.querySelectorAll('[data-command-theme-icon]').forEach(function(el){ el.textContent = icon; });
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if(meta) {
-      var color = '#111116';
-      if(t === 'light') color = '#f6f5f2';
-      else if(t === 'nord') color = '#2e3440';
-      else if(t === 'dracula') color = '#282a36';
-      meta.content = color;
-    }
-  }
-  function toggleTheme(){
-    var idx = themes.indexOf(currentTheme());
-    if(idx === -1) idx = 0;
-    var next = themes[(idx + 1) %% themes.length];
-    applyTheme(next);
-    try{ localStorage.setItem(STORAGE_KEY, next); }catch(e){}
-    try{ document.cookie = 'pi-web-theme=' + next + ';path=/;SameSite=Lax;max-age=31536000'; }catch(e){}
-    updateBtn();
-  }
-  var defaultTheme = '%s';
-  try{ applyTheme(localStorage.getItem(STORAGE_KEY) || defaultTheme); }catch(e){ applyTheme(defaultTheme); }
-  if(document.readyState === 'loading'){
-    document.addEventListener('DOMContentLoaded', function(){
-      updateBtn();
-      var btn = document.getElementById('theme-toggle');
-      if(btn) btn.addEventListener('click', toggleTheme);
-    });
-  } else {
-    updateBtn();
-    var btn = document.getElementById('theme-toggle');
-    if(btn) btn.addEventListener('click', toggleTheme);
-  }
-})();
-</script>`, defaultTheme))
+	return themeBootScript(defaultTheme)
 }
 
 func serveStaticJS(body string) http.HandlerFunc {

@@ -172,6 +172,7 @@ func Main(version string) {
 		defer cancel()
 		_ = httpServer.Shutdown(shutdownCtx)
 		srv.Shutdown()
+		_ = manager.Close()
 	}()
 
 	serveErr := httpServer.ListenAndServe()
