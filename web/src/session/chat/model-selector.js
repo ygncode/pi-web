@@ -107,7 +107,7 @@ export function setupModelSelector({
     }
     if (popupList) popupList.dataset.activeIndex = popupActive;
     items.forEach((item, i) => item.classList.toggle('active', i === popupActive));
-    if (items[popupActive]) items[popupActive].scrollIntoView({ block: 'nearest' });
+    items[popupActive]?.scrollIntoView?.({ block: 'nearest' });
   });
 
   popupList?.addEventListener('click', async (e) => {

@@ -64,7 +64,7 @@ export function createSessionNavigator({
         const scrollTargetId = scrollToEntryId || targetId;
         const targetEl = documentImpl.getElementById(`entry-${scrollTargetId}`);
         if (targetEl) {
-          targetEl.scrollIntoView({ block: 'center' });
+          targetEl?.scrollIntoView?.({ block: 'center' });
           if (scrollToEntryId) {
             targetEl.classList.add('highlight');
             setTimeout(() => targetEl.classList.remove('highlight'), 2000);

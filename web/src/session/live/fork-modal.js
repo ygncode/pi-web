@@ -208,11 +208,11 @@ export function showForkModal({
         if (e.key === 'ArrowDown') {
           e.preventDefault();
           setSelected(selectedIndex + 1, { focus: false });
-          rowButtons.get(filteredMessages[selectedIndex]?.entryId)?.scrollIntoView({ block: 'nearest' });
+          rowButtons.get(filteredMessages[selectedIndex]?.entryId)?.scrollIntoView?.({ block: 'nearest' });
         } else if (e.key === 'ArrowUp') {
           e.preventDefault();
           setSelected(selectedIndex - 1, { focus: false });
-          rowButtons.get(filteredMessages[selectedIndex]?.entryId)?.scrollIntoView({ block: 'nearest' });
+          rowButtons.get(filteredMessages[selectedIndex]?.entryId)?.scrollIntoView?.({ block: 'nearest' });
         } else if (e.key === 'Enter') {
           e.preventDefault();
           const msg = filteredMessages[selectedIndex];
