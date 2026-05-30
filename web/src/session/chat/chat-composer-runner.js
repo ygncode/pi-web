@@ -478,8 +478,17 @@ export function runChatComposer({
         const parts = [];
         card.querySelectorAll('.ask-question-block').forEach(block => {
           const questionText = block.dataset.questionText || '';
-          const sel = block.querySelector('.ask-question-option-action.selected');
-          if (sel && questionText) parts.push(`"${questionText}" = "${sel.dataset.answer || ''}"`);
+          const blockMultiple = block.dataset.multiple === 'true';
+          if (blockMultiple) {
+            const selected = block.querySelectorAll('.ask-question-option-action.selected');
+            const answers = Array.from(selected).map(sel => sel.dataset.answer || '');
+            if (answers.length > 0 && questionText) {
+              parts.push(`"${questionText}" = "${answers.join(', ')}"`);
+            }
+          } else {
+            const sel = block.querySelector('.ask-question-option-action.selected');
+            if (sel && questionText) parts.push(`"${questionText}" = "${sel.dataset.answer || ''}"`);
+          }
         });
         if (parts.length === 0) return;
         card.querySelectorAll('.ask-question-option-action').forEach(b => { b.disabled = true; });
@@ -501,8 +510,10 @@ export function runChatComposer({
       const block = option.closest('.ask-question-block');
       const questionCount = parseInt(card?.dataset.questionCount || '1', 10);
 
-      if (questionCount === 1) {
-        // Single question: send immediately
+      const qMultiple = block?.dataset.multiple === 'true';
+
+      if (questionCount === 1 && !qMultiple) {
+        // Single question, single select: send immediately
         const question = option.dataset.question || 'Question';
         const answer = option.dataset.answer || option.textContent.trim();
         option.disabled = true;
@@ -511,8 +522,10 @@ export function runChatComposer({
         return;
       }
 
-      // Multi-question: mark selection, show submit button
-      if (block) {
+      // Multi-question or multi-select: toggle selection
+      if (qMultiple) {
+        option.classList.toggle('selected');
+      } else if (block) {
         block.querySelectorAll('.ask-question-option-action').forEach(b => b.classList.remove('selected'));
         option.classList.add('selected');
       }

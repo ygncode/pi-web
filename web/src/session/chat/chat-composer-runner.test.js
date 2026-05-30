@@ -289,4 +289,90 @@ describe('chat composer runner', () => {
     expect(open).toHaveBeenCalledTimes(1);
     expect(event.defaultPrevented).toBe(true);
   });
+
+  describe('AskUserQuestion multiSelect', () => {
+    it('toggles selection on multi-select option click instead of sending immediately', () => {
+      const html = `
+        <div class="ask-question-card" data-question-count="1">
+          <div class="ask-question-block" data-question-text="Pick many" data-multiple="true">
+            <div class="ask-question-options">
+              <button class="ask-question-option ask-question-option-action ask-question-multiselect" type="button" data-question="Pick many" data-answer="A">A</button>
+              <button class="ask-question-option ask-question-option-action ask-question-multiselect" type="button" data-question="Pick many" data-answer="B">B</button>
+            </div>
+          </div>
+          <div class="ask-question-actions" style="display:none"><button type="button" class="ask-question-submit-btn">Send answers</button></div>
+        </div>
+        <form id="pi-chat-composer" data-chat-available="true" data-session-id="s1">
+          <div class="pi-chat-shell">
+            <textarea id="pi-chat-message"></textarea>
+            <input id="pi-chat-images"><button id="pi-chat-attach"></button>
+            <div id="pi-chat-attachments"></div>
+            <button id="pi-chat-cancel" style="display:none"></button>
+            <button id="pi-chat-send"></button><span id="pi-chat-status"></span>
+          </div>
+        </form>`;
+      const dom = new JSDOM(html, { url: 'https://example.test' });
+      const sendChat = vi.fn(async () => new Response(JSON.stringify({ status: 'queued' }), { status: 200 }));
+      runChatComposer({
+        documentImpl: dom.window.document,
+        windowImpl: dom.window,
+        chatApi: { getWorkerStatus: () => Promise.resolve(new Response('{}', { status: 500 })), cancelChat: vi.fn(), sendChat },
+        chatSelectors: { THINKING_LEVELS: [] },
+        modelSelector: { setupModelSelector: vi.fn() },
+        thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+        setIntervalImpl: () => {}
+      });
+      dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+      const optA = dom.window.document.querySelector('[data-answer="A"]');
+      optA.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+      expect(sendChat).not.toHaveBeenCalled();
+      expect(optA.classList.contains('selected')).toBe(true);
+      optA.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+      expect(optA.classList.contains('selected')).toBe(false);
+    });
+
+    it('collects multi-select answers with comma-separated values', async () => {
+      const html = `
+        <div class="ask-question-card" data-question-count="1">
+          <div class="ask-question-block" data-question-text="Pick many" data-multiple="true">
+            <div class="ask-question-options">
+              <button class="ask-question-option ask-question-option-action ask-question-multiselect selected" type="button" data-question="Pick many" data-answer="React">React</button>
+              <button class="ask-question-option ask-question-option-action ask-question-multiselect selected" type="button" data-question="Pick many" data-answer="Vue">Vue</button>
+              <button class="ask-question-option ask-question-option-action ask-question-multiselect" type="button" data-question="Pick many" data-answer="Svelte">Svelte</button>
+            </div>
+          </div>
+          <div class="ask-question-actions"><button type="button" class="ask-question-submit-btn">Send answers</button></div>
+        </div>
+        <form id="pi-chat-composer" data-chat-available="true" data-session-id="s1">
+          <div class="pi-chat-shell">
+            <textarea id="pi-chat-message"></textarea>
+            <input id="pi-chat-images"><button id="pi-chat-attach"></button>
+            <div id="pi-chat-attachments"></div>
+            <button id="pi-chat-cancel" style="display:none"></button>
+            <button id="pi-chat-send"></button><span id="pi-chat-status"></span>
+          </div>
+        </form>`;
+      const dom = new JSDOM(html, { url: 'https://example.test' });
+      const sendChat = vi.fn(async () => new Response(JSON.stringify({ status: 'queued' }), { status: 200 }));
+      runChatComposer({
+        documentImpl: dom.window.document,
+        windowImpl: dom.window,
+        chatApi: { getWorkerStatus: () => Promise.resolve(new Response('{}', { status: 500 })), cancelChat: vi.fn(), sendChat },
+        chatSelectors: { THINKING_LEVELS: [] },
+        modelSelector: { setupModelSelector: vi.fn() },
+        thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+        setIntervalImpl: () => {}
+      });
+      dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+      const submitBtn = dom.window.document.querySelector('.ask-question-submit-btn');
+      submitBtn.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }));
+      // Allow async sendChatMessage to resolve
+      await new Promise(r => setTimeout(r, 0));
+      expect(sendChat).toHaveBeenCalledTimes(1);
+      const call = sendChat.mock.calls[0];
+      expect(call[0]).toBe('s1'); // sessionId
+      const body = call[1]; // FormData
+      expect(body.get('message')).toBe('"Pick many" = "React, Vue"');
+    });
+  });
 });
