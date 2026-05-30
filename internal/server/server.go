@@ -6,6 +6,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,6 +20,8 @@ import (
 	"pi-web/internal/render"
 	"pi-web/internal/rpc"
 	"pi-web/internal/sessions"
+
+	_ "modernc.org/sqlite"
 )
 
 // globalSessID is the sentinel SSE topic for events that are not tied to a
@@ -67,6 +70,7 @@ type Server struct {
 	stopCh              chan struct{}
 	stopOnce            sync.Once
 	wg                  sync.WaitGroup
+	db                  *sql.DB
 }
 
 func New(deps Deps) *Server {
@@ -78,6 +82,29 @@ func New(deps Deps) *Server {
 	if agentDir == "" {
 		agentDir = filepath.Join(os.Getenv("HOME"), ".pi", "agent")
 	}
+
+	// Ensure the agentDir exists
+	if err := os.MkdirAll(agentDir, 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create agent directory %s: %v\n", agentDir, err)
+	}
+
+	var db *sql.DB
+	dbPath := filepath.Join(agentDir, "pi-web.sqlite")
+	var dbErr error
+	db, dbErr = sql.Open("sqlite", dbPath)
+	if dbErr != nil {
+		fmt.Fprintf(os.Stderr, "failed to open sqlite database: %v\n", dbErr)
+	} else {
+		_, err := db.Exec(`CREATE TABLE IF NOT EXISTS scratchpads (
+			project_path TEXT PRIMARY KEY,
+			content TEXT,
+			updated_at DATETIME
+		)`)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create scratchpads table: %v\n", err)
+		}
+	}
+
 	s := &Server{
 		agentDir:            agentDir,
 		sessionsDir:         deps.SessionsDir,
@@ -93,6 +120,7 @@ func New(deps Deps) *Server {
 		models:              deps.Models,
 		lastKnown:           make(map[string]struct{}),
 		stopCh:              make(chan struct{}),
+		db:                  db,
 	}
 	if pm, err := NewPushManager(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "push notifications unavailable: %v\n", err)
@@ -116,6 +144,9 @@ func New(deps Deps) *Server {
 func (s *Server) Shutdown() {
 	s.stopOnce.Do(func() {
 		close(s.stopCh)
+		if s.db != nil {
+			s.db.Close()
+		}
 	})
 	s.wg.Wait()
 }
@@ -141,6 +172,13 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
 	mux.HandleFunc("/api/recent-locations", s.auth.Wrap(s.handleRecentLocations))
 	mux.HandleFunc("/custom-themes.css", s.auth.Wrap(s.handleCustomThemes))
+	mux.HandleFunc("/api/scratchpad", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			s.auth.Wrap(s.handleSaveScratchpad)(w, r)
+		} else {
+			s.auth.Wrap(s.handleGetScratchpad)(w, r)
+		}
+	})
 	if s.push != nil {
 		s.push.Register(mux, s.auth.Wrap)
 	}

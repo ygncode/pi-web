@@ -1,3 +1,5 @@
+import { setupRightSidebar } from './right-sidebar.js';
+
 export function setupSessionUi({
   documentImpl = document,
   windowImpl = window,
@@ -13,7 +15,8 @@ export function setupSessionUi({
   setSearchQuery,
   setFilterMode,
   forceTreeRerender,
-  navigateTo
+  navigateTo,
+  projectPath = '',
 } = {}) {
   markdownApi.configureSessionMarkdown({ marked, hljs, escapeHtml });
   const safeMarkedParse = (text) => markdownApi.safeMarkedParse(text, { marked });
@@ -40,6 +43,8 @@ export function setupSessionUi({
     }, { passive: false });
   }
 
+  const rightSidebar = setupRightSidebar({ documentImpl, windowImpl, storage, projectPath });
+
   const toggleController = toggleStateApi.createToggleController({ documentImpl, storage });
   windowImpl.sessionToggleState = toggleController;
   windowImpl.applyToggleStateToNode = (node) => toggleController.applyToNode(node);
@@ -62,6 +67,7 @@ export function setupSessionUi({
     isMobileLayout,
     closeSidebar,
     attachHeaderHandlers,
-    toggleController
+    toggleController,
+    toggleRightSidebar: rightSidebar?.toggleSidebar ?? (() => {}),
   };
 }

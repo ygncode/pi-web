@@ -203,7 +203,8 @@ export function runSessionApp({ target = window } = {}) {
     setSearchQuery: (value) => { searchQuery = value; },
     setFilterMode: (value) => { filterMode = value; },
     forceTreeRerender,
-    navigateTo: (...args) => navigateTo(...args)
+    navigateTo: (...args) => navigateTo(...args),
+    projectPath: dataModel.header?.cwd || ''
   });
 
   const navigateTo = (targetId, scrollMode = 'target', scrollToEntryId = null) => navigatorInstance.navigateTo(targetId, scrollMode, scrollToEntryId);
@@ -392,6 +393,14 @@ export function runSessionApp({ target = window } = {}) {
       syncThemeIcons(documentImpl);
     }
   }, { capture: true });
+
+  // Cmd+Shift+N keyboard shortcut to toggle scratchpad (right sidebar)
+  target.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
+      e.preventDefault();
+      ui.toggleRightSidebar();
+    }
+  });
 
   // Cmd+/ keyboard shortcut to show keyboard shortcuts help modal
   target.addEventListener('keydown', (e) => {

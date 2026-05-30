@@ -48,6 +48,7 @@ These work on both index and session pages when focus is **not** in an input, te
 | `⌘K` / `Ctrl+K` | Page-level | Open session list palette |
 | `⌘T` / `Ctrl+T` | Page-level | New session |
 | `⌘⇧L` / `Ctrl+Shift+L` | Page-level | Toggle system theme (light/dark) |
+| `⌘⇧N` / `Ctrl+Shift+N` | Page-level | Toggle scratchpad / notes sidebar |
 
 > `⌘K` and `⌘T` are also browser shortcuts (focus address bar / new tab). The browser may intercept them unless focus is inside a text input.
 
