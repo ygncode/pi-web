@@ -22,4 +22,30 @@ describe('live renderer', () => {
     expect(html).toContain('$ echo ok');
     expect(html).toContain('ok');
   });
+
+  it('renders data-multiple="true" when multiSelect is true', () => {
+    const dom = new JSDOM('<body></body>');
+    const renderer = createLiveRenderer({ documentImpl: dom.window.document, markedImpl: marked });
+    const html = renderer.renderEntry({
+      id: 'q1',
+      type: 'message',
+      message: {
+        role: 'assistant',
+        content: [{
+          type: 'toolCall',
+          id: 'call-1',
+          name: 'ask_user_question',
+          arguments: {
+            questions: [{
+              question: 'Pick many',
+              multiSelect: true,
+              options: [{ label: 'A' }, { label: 'B' }]
+            }]
+          }
+        }]
+      }
+    }, []);
+    expect(html).toContain('data-multiple="true"');
+    expect(html).toContain('ask-question-multiselect');
+  });
 });

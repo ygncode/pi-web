@@ -137,7 +137,7 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
       var qaCancelled = result && result.details && result.details.cancelled === true;
       var qaFailed = !!(result && result.isError);
       var qaInteractive = !result || qaFailed || qaCancelled;
-      var qaMulti = questions.length > 1;
+      var qaMulti = questions.length > 1 || questions.some(function(q) { return q.multiSelect === true; });
       html = '<div class="tool-execution '+status+'">';
       html += '<div class="ask-question-card" data-question-count="'+questions.length+'">';
       html += '<div class="ask-question-title">Question for you</div>';
@@ -154,7 +154,8 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
         var questionText = typeof q.question === 'string' ? q.question : 'Question '+(qi+1);
         var answer = qaAnswers[questionText];
         var options = Array.isArray(q.options) ? q.options : [];
-        html += '<div class="ask-question-block" data-question-text="'+escapeHtml(questionText)+'">';
+        var qMultiple = q.multiSelect === true;
+        html += '<div class="ask-question-block" data-question-text="'+escapeHtml(questionText)+'" data-multiple="'+qMultiple+'">';
         if (q.header) html += '<div class="ask-question-header">'+escapeHtml(String(q.header))+'</div>';
         html += '<div class="ask-question-text">'+escapeHtml(questionText)+'</div>';
         if (options.length > 0) {
@@ -164,7 +165,8 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
             var desc = (opt && typeof opt.description === 'string') ? opt.description : '';
             var sel = answer === label || (typeof answer === 'string' && answer.split(', ').indexOf(label) >= 0);
             var tag = qaInteractive ? 'button' : 'div';
-            var cls = 'ask-question-option'+(sel?' selected':'')+(qaInteractive?' ask-question-option-action':'');
+            var multiCls = qMultiple ? ' ask-question-multiselect' : '';
+            var cls = 'ask-question-option'+(sel?' selected':'')+(qaInteractive?' ask-question-option-action':'')+multiCls;
             var dAttrs = qaInteractive ? ' type="button" data-question="'+escapeHtml(questionText)+'" data-answer="'+escapeHtml(label)+'"' : '';
             html += '<'+tag+' class="'+cls+'"'+dAttrs+'>';
             html += '<div class="ask-question-option-label">'+(sel?'✓ ':'')+escapeHtml(label)+'</div>';

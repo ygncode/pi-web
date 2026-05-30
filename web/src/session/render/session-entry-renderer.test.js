@@ -72,6 +72,80 @@ describe('session entry renderer', () => {
     expect(url).toContain('targetId=target');
   });
 
+  it('renders data-multiple="true" on a question block when multiSelect is true', () => {
+    const r = renderer();
+    const html = r.renderEntry({
+      id: 'q1',
+      type: 'message',
+      message: {
+        role: 'assistant',
+        content: [{
+          type: 'toolCall',
+          id: 'call-1',
+          name: 'ask_user_question',
+          arguments: {
+            questions: [{
+              question: 'Pick frameworks',
+              multiSelect: true,
+              options: [
+                { label: 'React' },
+                { label: 'Vue' },
+                { label: 'Svelte' }
+              ]
+            }]
+          }
+        }]
+      }
+    });
+    expect(html).toContain('data-multiple="true"');
+    expect(html).toContain('ask-question-multiselect');
+  });
+
+  it('renders data-multiple="false" by default when multiSelect is absent', () => {
+    const r = renderer();
+    const html = r.renderEntry({
+      id: 'q1',
+      type: 'message',
+      message: {
+        role: 'assistant',
+        content: [{
+          type: 'toolCall',
+          id: 'call-1',
+          name: 'ask_user_question',
+          arguments: {
+            questions: [{ question: 'Pick one', options: [{ label: 'A' }, { label: 'B' }] }]
+          }
+        }]
+      }
+    });
+    expect(html).toContain('data-multiple="false"');
+    expect(html).not.toContain('ask-question-multiselect');
+  });
+
+  it('shows submit button for single question with multiSelect', () => {
+    const r = renderer();
+    const html = r.renderEntry({
+      id: 'q1',
+      type: 'message',
+      message: {
+        role: 'assistant',
+        content: [{
+          type: 'toolCall',
+          id: 'call-1',
+          name: 'ask_user_question',
+          arguments: {
+            questions: [{
+              question: 'Pick many',
+              multiSelect: true,
+              options: [{ label: 'A' }, { label: 'B' }]
+            }]
+          }
+        }]
+      }
+    });
+    expect(html).toContain('ask-question-submit-btn');
+  });
+
   it('copies with clipboard feedback', async () => {
     const dom = new JSDOM('<body><button>copy</button></body>');
     const writeText = vi.fn(() => Promise.resolve());
