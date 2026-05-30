@@ -11,6 +11,8 @@ func TestAskUserQuestionToolHasDedicatedRenderer(t *testing.T) {
 		"renderAskUserQuestionTool(args, result)",
 		"ask-question-card",
 		"ask-question-option",
+		"data-multiple",
+		"ask-question-multiselect",
 	}
 	for _, check := range checks {
 		if !strings.Contains(exportJs+liveSessionCss, check) {
