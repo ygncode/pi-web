@@ -3081,3 +3081,33 @@
     .pi-sheet-panel.pi-sheet-mobile .fork-palette-footer {
       display: none;
     }
+
+    /* Model Usage desktop custom styles matching cmd+k command-palette */
+    @media (min-width: 901px) {
+      .pi-sheet-backdrop.mu-sheet-backdrop {
+        background: rgba(0, 0, 0, 0.28);
+        align-items: flex-start;
+        padding-top: 14vh;
+        z-index: 1200;
+      }
+      .pi-sheet-panel.mu-sheet-panel {
+        max-width: 520px;
+        width: 100%;
+        box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+        background: var(--palette-surface, var(--container-bg));
+        border-color: var(--dim);
+        border-radius: 8px;
+      }
+      .pi-sheet-panel.mu-sheet-panel .pi-sheet-header {
+        padding: 0 14px;
+        height: 48px;
+        min-height: 48px;
+        border-bottom: 1px solid var(--dim);
+        background: transparent;
+      }
+      .pi-sheet-panel.mu-sheet-panel .pi-sheet-back {
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0;
+      }
+    }
