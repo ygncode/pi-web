@@ -34,6 +34,10 @@ export function runChatComposer({
   let knownThinkingLevel = '';
   let currentModelForThinking = null;
 
+  function isMobileTextInputMode() {
+    return !!(window.matchMedia && window.matchMedia('(max-width: 900px)').matches);
+  }
+
   function setChatStatus(text, cls) {
     const status = document.getElementById('pi-chat-status');
     const cancelButton = document.getElementById('pi-chat-cancel');
@@ -59,6 +63,11 @@ export function runChatComposer({
       btn.textContent = 'Model';
       btn.style.display = '';
     }
+    if (isMobileTextInputMode()) {
+      btn.setAttribute('title', 'Switch model');
+    } else {
+      btn.setAttribute('title', 'Switch model (Ctrl+I)');
+    }
   }
 
   const THINKING_LEVELS = __piChatSelectors.THINKING_LEVELS;
@@ -80,6 +89,11 @@ export function runChatComposer({
       btn.className = 'pi-chat-thinking-label thinking-' + level;
     } else {
       btn.style.display = 'none';
+    }
+    if (isMobileTextInputMode()) {
+      btn.setAttribute('title', 'Switch effort');
+    } else {
+      btn.setAttribute('title', 'Switch effort (Shift+Tab)');
     }
   }
 
@@ -250,10 +264,6 @@ export function runChatComposer({
       return [file.name, file.size, file.lastModified].join(':');
     }
 
-    function isMobileTextInputMode() {
-      return !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
-    }
-
     function getAttachmentObjectUrl(file) {
       if (!file.type || !file.type.startsWith('image/')) return '';
       const urlApi = window.URL || window.webkitURL;
@@ -362,8 +372,8 @@ export function runChatComposer({
           _thinkingSelectorApi.cycle();
         }
       }
-      // Ctrl+L: open model selector, focus returns to textarea after selection
-      if (event.ctrlKey && event.key.toLowerCase() === 'l') {
+      // Ctrl+I or Ctrl+L: open model selector, focus returns to textarea after selection
+      if (event.ctrlKey && (event.key.toLowerCase() === 'i' || event.key.toLowerCase() === 'l')) {
         event.preventDefault();
         if (_modelSelectorApi && _modelSelectorApi.open) {
           _modelSelectorApi.open();
@@ -590,6 +600,25 @@ export function runChatComposer({
   function initPiChatControls() {
     setupCwdCopy();
     if (!setupPiChatComposer()) return;
+
+    // Immediately set correct tooltips on load
+    const modelBtn = document.getElementById('pi-chat-model-label');
+    if (modelBtn) {
+      if (isMobileTextInputMode()) {
+        modelBtn.setAttribute('title', 'Switch model');
+      } else {
+        modelBtn.setAttribute('title', 'Switch model (Ctrl+I)');
+      }
+    }
+    const thinkingBtn = document.getElementById('pi-chat-thinking-label');
+    if (thinkingBtn) {
+      if (isMobileTextInputMode()) {
+        thinkingBtn.setAttribute('title', 'Switch effort');
+      } else {
+        thinkingBtn.setAttribute('title', 'Switch effort (Shift+Tab)');
+      }
+    }
+
     _modelSelectorApi = loadModelSelector();
     _thinkingSelectorApi = setupThinkingLevelSelector();
   }

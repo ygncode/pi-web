@@ -15,7 +15,10 @@
   <div class="session-header-bar">
     <a href="/" class="session-header-back"><span>←</span> Sessions</a>
     <span class="session-header-title" id="session-header-title">{{.Title}}</span>
-    <button id="command-menu-btn" class="session-header-actions" aria-label="Session actions" aria-haspopup="menu" aria-expanded="false" aria-controls="command-menu-popover">⋯</button>
+    <div class="session-header-right">
+      <button id="shortcuts-help-btn" class="session-header-shortcuts-help" title="Show keyboard shortcuts (⌘/)">⌘/</button>
+      <button id="command-menu-btn" class="session-header-actions" aria-label="Session actions" aria-haspopup="menu" aria-expanded="false" aria-controls="command-menu-popover">⋯</button>
+    </div>
   </div>
 
   <!-- Desktop popover menu -->

@@ -9,7 +9,8 @@ export function createSessionNavigator({
   buildShareUrl,
   copyToClipboard,
   applyToggleStateToNode = (node) => windowImpl.sessionToggleState?.applyToNode(node),
-  onNavigate = () => {}
+  onNavigate = () => {},
+  onFork = null
 } = {}) {
   const entryCache = new Map();
 
@@ -51,6 +52,16 @@ export function createSessionNavigator({
           e.stopPropagation();
           const entryId = btn.dataset.entryId;
           copyToClipboard(buildShareUrl(entryId), btn);
+        });
+      });
+
+      messagesEl.querySelectorAll('.fork-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const entryId = btn.dataset.entryId;
+          if (typeof onFork === 'function') {
+            onFork(entryId, btn);
+          }
         });
       });
     }

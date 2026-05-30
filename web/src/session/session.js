@@ -1,6 +1,6 @@
 import { marked } from 'marked';
 
-import { buildSessionLookups, loadSessionData } from './data/session-data.js';
+import { buildSessionLookups, loadSessionData, getSessionSearchParams } from './data/session-data.js';
 import { buildActivePathIds as buildActivePathIdsForModel, buildTree as buildTreeForModel, buildTreeNodeMap, buildTreePrefix, findNewestLeaf as findNewestLeafInTree, flattenTree, getPath as getPathForModel } from './tree/session-tree.js';
 import { extractContent, filterNodes as filterNodesForState, getSearchableText, hasTextContent, recalculateVisualStructure } from './tree/session-filter.js';
 import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml as getTreeNodeDisplayHtmlForState, shortenPath, truncate } from './render/session-format.js';
@@ -34,6 +34,7 @@ import { setupCommandMenu } from './live/command-menu.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
+import { showShortcutsModal } from './live/shortcuts-modal.js';
 export { buildSessionLookups, createSessionDataModel, decodeBase64JSON, getSessionSearchParams, loadSessionData, readSessionPayload } from './data/session-data.js';
 export { buildActivePathIds, buildTree, buildTreeNodeMap, buildTreePrefix, findNewestLeaf, flattenTree, getPath } from './tree/session-tree.js';
 export { createTreeRenderer } from './tree/tree-renderer.js';
@@ -68,6 +69,7 @@ export function runSessionApp({ target = window } = {}) {
     atobImpl: target.atob?.bind(target)
   });
   target.__piSessionDataModel = dataModel;
+  const sessionId = getSessionSearchParams(target.location).get('id') || '';
   const hljs = null; // loaded lazily after initial render via applyLazyHighlighting
 
   let filterMode = 'default';
@@ -239,6 +241,43 @@ export function runSessionApp({ target = window } = {}) {
       currentTargetId = targetId;
       treeRenderer.currentLeafId = leaf;
       treeRenderer.currentTargetId = targetId;
+    },
+    onFork: (entryId, btn) => {
+      if (!target.confirm('Are you sure you want to fork a new session starting from this message?')) {
+        return;
+      }
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `<svg class="spinner" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite;"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>`;
+      btn.disabled = true;
+
+      const url = `?id=${encodeURIComponent(sessionId)}`;
+      target.fetch(`/api/fork-session${url}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entryId }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.id) {
+            target.location.href = '/session?id=' + encodeURIComponent(data.id);
+          } else {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+            let notice = documentImpl.getElementById('command-menu-toast');
+            if (notice) {
+              notice.textContent = data.error || 'Fork failed';
+              notice.classList.add('visible');
+              setTimeout(() => notice.classList.remove('visible'), 1500);
+            } else {
+              target.alert(data.error || 'Fork failed');
+            }
+          }
+        })
+        .catch((err) => {
+          btn.innerHTML = originalHtml;
+          btn.disabled = false;
+          target.alert('Fork failed');
+        });
     }
   });
 
@@ -353,6 +392,22 @@ export function runSessionApp({ target = window } = {}) {
       syncThemeIcons(documentImpl);
     }
   }, { capture: true });
+
+  // Cmd+/ keyboard shortcut to show keyboard shortcuts help modal
+  target.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+      e.preventDefault();
+      showShortcutsModal({ documentImpl, windowImpl: target });
+    }
+  });
+
+  const shortcutsBtn = documentImpl.getElementById('shortcuts-help-btn');
+  if (shortcutsBtn) {
+    shortcutsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showShortcutsModal({ documentImpl, windowImpl: target });
+    });
+  }
 
   // Initialize chat after live reload so the optimistic "message sent" event
   // has a listener before the user can submit. Otherwise cold-start sends can
