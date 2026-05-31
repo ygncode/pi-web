@@ -75,6 +75,7 @@
     <main id="content">
       <div id="header-container"></div>
       <div id="messages">{{.FirstMessageStub}}</div>
+      {{if .IsLive}}{{.ChatComposer}}{{end}}
     </main>
     {{if .IsLive}}
     <div id="right-sidebar-resizer" class="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize scratchpad sidebar"></div>
@@ -129,7 +130,4 @@
   <script id="session-data" type="application/json">{{.SessionData}}</script>
 
 {{.SessionScript}}
-{{if .IsLive}}
-{{.ChatComposer}}
-{{end}}
 {{.LiveDocumentEnd}}
