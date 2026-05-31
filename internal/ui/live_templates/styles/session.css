@@ -2193,8 +2193,11 @@
       width: 100%;
       box-sizing: border-box;
       display: block;
-      padding: 18px 14px calc(14px + env(safe-area-inset-bottom));
-      background: var(--chrome-bg);
+      padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+      /* Share the reading column's surface so there's no hard seam between the
+         message stream and the composer — the shell card below is the only
+         visible frame. */
+      background: var(--body-bg);
     }
 
     /* Git branch + Create PR row beneath the input box. */
@@ -2364,14 +2367,15 @@
       overflow: visible;
       background: var(--input-bg);
       border: 1px solid var(--dim);
-      border-radius: 6px;
+      border-radius: 10px;
       position: relative;
       padding: 3px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
       transition: border-color 0.15s, box-shadow 0.2s;
     }
     .pi-chat-shell:focus-within {
       border-color: color-mix(in srgb, var(--accent, #8abeb7) 60%, var(--dim));
-      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.14);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
     }
 
     .pi-chat-model-popup {
