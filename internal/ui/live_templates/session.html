@@ -1,4 +1,4 @@
-{{.LiveDocumentStart}}  <script>try{const c=localStorage.getItem('pi-share:v1:sidebar-collapsed');if(c==='true')document.body.classList.add('sidebar-collapsed');}catch(e){}</script>
+{{.LiveDocumentStart}}  <script>try{const c=localStorage.getItem('pi-share:v1:sidebar-collapsed');if(c==='true')document.body.classList.add('sidebar-collapsed');}catch(e){}try{const rc=localStorage.getItem('pi-web:v1:right-sidebar-collapsed');if(rc!=='false')document.body.classList.add('right-sidebar-collapsed');}catch(e){}</script>
   {{.ThemeBoot}}
   {{.ServiceWorker}}
 
@@ -15,7 +15,16 @@
   <div class="session-header-bar">
     <a href="/" class="session-header-back"><span>←</span> Sessions</a>
     <span class="session-header-title" id="session-header-title">{{.Title}}</span>
-    <button id="command-menu-btn" class="session-header-actions" aria-label="Session actions" aria-haspopup="menu" aria-expanded="false" aria-controls="command-menu-popover">⋯</button>
+    <div class="session-header-right">
+      <button id="shortcuts-help-btn" class="session-header-shortcuts-help" title="Show keyboard shortcuts (⌘/)">⌘/</button>
+      <button id="toggle-right-sidebar-btn" class="session-header-actions" title="Toggle scratchpad (⌘⇧N)" aria-label="Toggle scratchpad">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+      </button>
+      <button id="command-menu-btn" class="session-header-actions" aria-label="Session actions" aria-haspopup="menu" aria-expanded="false" aria-controls="command-menu-popover">⋯</button>
+    </div>
   </div>
 
   <!-- Desktop popover menu -->
@@ -63,10 +72,41 @@
       <div class="tree-status" id="tree-status"></div>
     </aside>
     <div id="sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize session tree sidebar"></div>
-    <main id="content">
-      <div id="header-container"></div>
-      <div id="messages">{{.FirstMessageStub}}</div>
-    </main>
+    <div id="content-container" class="content-container">
+      <main id="content">
+        <div id="header-container"></div>
+        <div id="messages">{{.FirstMessageStub}}</div>
+      </main>
+      {{if .IsLive}}{{.ChatComposer}}{{end}}
+    </div>
+    {{if .IsLive}}
+    <div id="right-sidebar-resizer" class="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize scratchpad sidebar"></div>
+    <aside id="right-sidebar" class="right-sidebar">
+      <div class="right-sidebar-header">
+        <h3>Scratchpad</h3>
+        <div class="right-sidebar-actions">
+          <button id="expand-right-sidebar" class="right-sidebar-btn" title="Expand scratchpad">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
+            </svg>
+          </button>
+          <button id="close-right-sidebar" class="right-sidebar-btn" title="Hide scratchpad (⌘⇧N)">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="right-sidebar-content">
+        <textarea id="scratchpad-textarea" class="scratchpad-textarea" placeholder="Write project-level notes, scratchpad, tasks..."></textarea>
+      </div>
+      <div class="right-sidebar-footer">
+        <span id="scratchpad-status" class="scratchpad-status">Saved</span>
+      </div>
+    </aside>
+    <div id="right-sidebar-backdrop" class="right-sidebar-backdrop"></div>
+    {{end}}
     <div id="image-modal" class="image-modal">
       <img id="modal-image" src="" alt="">
     </div>
@@ -92,7 +132,4 @@
   <script id="session-data" type="application/json">{{.SessionData}}</script>
 
 {{.SessionScript}}
-{{if .IsLive}}
-{{.ChatComposer}}
-{{end}}
 {{.LiveDocumentEnd}}

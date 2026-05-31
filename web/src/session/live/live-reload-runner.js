@@ -253,6 +253,7 @@ export function runLiveReload({
     function renderChatPreview(payload) {
       return __piChatPreview.renderChatPreview(payload, CHAT_PREVIEW_STATE, {
         documentImpl: document,
+        windowImpl: window,
         renderMarkdown: renderMarkdown,
         shouldFollow: function() { return FOLLOW || Date.now() < forcePreviewFollowUntil; },
         forceFollowToBottom: forceFollowToBottom,
@@ -263,6 +264,7 @@ export function runLiveReload({
     function renderPendingChat(message) {
       return __piChatPreview.renderPendingChat(message, CHAT_PREVIEW_STATE, {
         documentImpl: document,
+        windowImpl: window,
         renderMarkdown: renderMarkdown,
         shouldFollow: function() { return FOLLOW || Date.now() < forcePreviewFollowUntil; },
         forceFollowToBottom: forceFollowToBottom,

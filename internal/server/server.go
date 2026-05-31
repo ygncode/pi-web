@@ -6,6 +6,7 @@ package server
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,8 +17,11 @@ import (
 	"time"
 
 	"pi-web/internal/auth"
+	"pi-web/internal/render"
 	"pi-web/internal/rpc"
 	"pi-web/internal/sessions"
+
+	_ "modernc.org/sqlite"
 )
 
 // globalSessID is the sentinel SSE topic for events that are not tied to a
@@ -66,6 +70,7 @@ type Server struct {
 	stopCh              chan struct{}
 	stopOnce            sync.Once
 	wg                  sync.WaitGroup
+	db                  *sql.DB
 }
 
 func New(deps Deps) *Server {
@@ -77,6 +82,29 @@ func New(deps Deps) *Server {
 	if agentDir == "" {
 		agentDir = filepath.Join(os.Getenv("HOME"), ".pi", "agent")
 	}
+
+	// Ensure the agentDir exists
+	if err := os.MkdirAll(agentDir, 0755); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to create agent directory %s: %v\n", agentDir, err)
+	}
+
+	var db *sql.DB
+	dbPath := filepath.Join(agentDir, "pi-web.sqlite")
+	var dbErr error
+	db, dbErr = sql.Open("sqlite", dbPath)
+	if dbErr != nil {
+		fmt.Fprintf(os.Stderr, "failed to open sqlite database: %v\n", dbErr)
+	} else {
+		_, err := db.Exec(`CREATE TABLE IF NOT EXISTS scratchpads (
+			project_path TEXT PRIMARY KEY,
+			content TEXT,
+			updated_at DATETIME
+		)`)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create scratchpads table: %v\n", err)
+		}
+	}
+
 	s := &Server{
 		agentDir:            agentDir,
 		sessionsDir:         deps.SessionsDir,
@@ -92,6 +120,7 @@ func New(deps Deps) *Server {
 		models:              deps.Models,
 		lastKnown:           make(map[string]struct{}),
 		stopCh:              make(chan struct{}),
+		db:                  db,
 	}
 	if pm, err := NewPushManager(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "push notifications unavailable: %v\n", err)
@@ -115,6 +144,9 @@ func New(deps Deps) *Server {
 func (s *Server) Shutdown() {
 	s.stopOnce.Do(func() {
 		close(s.stopCh)
+		if s.db != nil {
+			s.db.Close()
+		}
 	})
 	s.wg.Wait()
 }
@@ -140,9 +172,18 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
 	mux.HandleFunc("/api/recent-locations", s.auth.Wrap(s.handleRecentLocations))
 	mux.HandleFunc("/custom-themes.css", s.auth.Wrap(s.handleCustomThemes))
+	mux.HandleFunc("/api/scratchpad", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			s.auth.Wrap(s.handleSaveScratchpad)(w, r)
+		} else {
+			s.auth.Wrap(s.handleGetScratchpad)(w, r)
+		}
+	})
 	if s.push != nil {
 		s.push.Register(mux, s.auth.Wrap)
 	}
+	mux.HandleFunc("/api/sounds", s.auth.Wrap(s.handleApiSounds))
+	mux.HandleFunc("/sounds/", s.handleSounds)
 }
 
 func (s *Server) loadSummaries() ([]sessions.SessionSummary, error) {
@@ -238,18 +279,12 @@ func (s *Server) broadcast(sessID, msg string) {
 }
 
 func writeJSONError(w http.ResponseWriter, status int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]any{"error": message})
+	render.WriteJSONError(w, status, message)
 }
 
 // writeJSON writes payload as JSON. Pass status=0 to leave the default 200.
 // Encode errors are intentionally discarded — by then headers are sent and
 // the client is the right party to detect transport failure.
 func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	if status != 0 {
-		w.WriteHeader(status)
-	}
-	_ = json.NewEncoder(w).Encode(payload)
+	render.WriteJSON(w, status, payload)
 }

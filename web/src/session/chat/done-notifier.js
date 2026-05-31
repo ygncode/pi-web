@@ -1,4 +1,5 @@
 export const DONE_NOTIFY_STORAGE_KEY = 'pi-share:v1:notify-on-done';
+export const DONE_SOUND_STORAGE_KEY = 'pi-share:v1:done-sound';
 
 export function isDoneNotifyEnabled({ storage = globalThis.localStorage } = {}) {
   try {
@@ -16,11 +17,28 @@ export function setDoneNotifyEnabled(enabled, { storage = globalThis.localStorag
   }
 }
 
-export function playDoneSound({ windowImpl = window, audioSrc = '/done.mp3' } = {}) {
+export function getSelectedSound({ storage = globalThis.localStorage } = {}) {
+  try {
+    return storage?.getItem(DONE_SOUND_STORAGE_KEY) || 'cat.mp3';
+  } catch {
+    return 'cat.mp3';
+  }
+}
+
+export function setSelectedSound(name, { storage = globalThis.localStorage } = {}) {
+  try {
+    storage?.setItem(DONE_SOUND_STORAGE_KEY, name || 'cat.mp3');
+  } catch {
+    // ignore
+  }
+}
+
+export function playDoneSound({ windowImpl = window, audioSrc, storage = globalThis.localStorage } = {}) {
   try {
     const AudioCtor = windowImpl.Audio;
     if (!AudioCtor) return;
-    const audio = new AudioCtor(audioSrc);
+    const src = audioSrc || `/sounds/${getSelectedSound({ storage })}`;
+    const audio = new AudioCtor(src);
     audio.volume = 0.7;
     const p = audio.play();
     if (p && typeof p.catch === 'function') p.catch(() => {});
@@ -28,6 +46,7 @@ export function playDoneSound({ windowImpl = window, audioSrc = '/done.mp3' } = 
     // ignore
   }
 }
+
 
 export function showDoneNotification({ windowImpl = window, documentImpl = document, title = 'pi session', body = 'Response ready' } = {}) {
   try {
@@ -157,6 +176,69 @@ export function setupDoneNotifyToggle({ documentImpl = document, windowImpl = wi
 
 export function notifyDone({ windowImpl = window, documentImpl = document, storage = globalThis.localStorage } = {}) {
   if (!isDoneNotifyEnabled({ storage })) return;
-  playDoneSound({ windowImpl });
+  playDoneSound({ windowImpl, storage });
   showDoneNotification({ windowImpl, documentImpl });
 }
+
+export async function fetchAvailableSounds({ fetchImpl = fetch } = {}) {
+  try {
+    const resp = await fetchImpl('/api/sounds');
+    if (!resp.ok) {
+      return { sounds: ['cat.mp3', 'done.mp3'], default: 'cat.mp3' };
+    }
+    return await resp.json();
+  } catch {
+    return { sounds: ['cat.mp3', 'done.mp3'], default: 'cat.mp3' };
+  }
+}
+
+export async function setupSoundSelector({ documentImpl = document, windowImpl = window, storage = globalThis.localStorage, fetchImpl = (typeof fetch !== 'undefined' ? fetch : null) } = {}) {
+  const selectors = Array.from(documentImpl.querySelectorAll('.sound-selector'));
+  if (selectors.length === 0) return;
+
+  // Prevent event propagation inside the selector from triggering the parent button's click toggle
+  selectors.forEach(sel => {
+    sel.addEventListener('click', (e) => e.stopPropagation());
+    sel.addEventListener('mousedown', (e) => e.stopPropagation());
+  });
+
+  if (!fetchImpl) return;
+
+  // Fetch the available sounds
+  const data = await fetchAvailableSounds({ fetchImpl });
+  const sounds = data.sounds || ['cat.mp3', 'done.mp3'];
+  const activeSound = getSelectedSound({ storage });
+
+  selectors.forEach(sel => {
+    // Clear existing options
+    sel.innerHTML = '';
+    
+    // Add options
+    sounds.forEach(soundName => {
+      const opt = documentImpl.createElement('option');
+      opt.value = soundName;
+      opt.textContent = soundName;
+      if (soundName === activeSound) {
+        opt.selected = true;
+      }
+      sel.appendChild(opt);
+    });
+
+    // When value changes, update localStorage, play preview, and sync other sound selector elements!
+    sel.addEventListener('change', (e) => {
+      const newSound = e.target.value;
+      setSelectedSound(newSound, { storage });
+
+      // Sync all other selectors on the page to the new value
+      selectors.forEach(otherSel => {
+        if (otherSel !== sel) {
+          otherSel.value = newSound;
+        }
+      });
+
+      // Preview the sound
+      playDoneSound({ windowImpl, storage });
+    });
+  });
+}
+

@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"html/template"
 	"strings"
 )
@@ -28,7 +29,7 @@ func renderLiveDocumentStart(data liveDocumentData) string {
 	b.WriteString("<link rel=\"apple-touch-icon\" href=\"/icon.svg\">\n")
 	b.WriteString("<link rel=\"manifest\" href=\"/manifest.webmanifest\">\n")
 	b.WriteString("<meta name=\"theme-color\" content=\"#0e0e13\">\n")
-	b.WriteString("<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\n")
+	b.WriteString("<meta name=\"mobile-web-app-capable\" content=\"yes\">\n")
 	b.WriteString("<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">\n")
 	b.WriteString("<meta name=\"apple-mobile-web-app-title\" content=\"Pi Sessions\">\n")
 	if data.Styles != "" {
@@ -53,7 +54,14 @@ func liveDocumentStart(title string, preload, styles template.HTML) template.HTM
 }
 
 func liveThemeBootScript() template.HTML {
-	return template.HTML(`<script>
+	return themeBootScript("dark")
+}
+
+func themeBootScript(defaultTheme string) template.HTML {
+	if defaultTheme == "" {
+		defaultTheme = "dark"
+	}
+	return template.HTML(fmt.Sprintf(`<script>
 (function(){
   var STORAGE_KEY = 'pi-web-theme';
   var themes = ['dark', 'light', 'nord', 'dracula', 'custom'];
@@ -80,13 +88,14 @@ func liveThemeBootScript() template.HTML {
   function toggleTheme(){
     var idx = themes.indexOf(currentTheme());
     if(idx === -1) idx = 0;
-    var next = themes[(idx + 1) % themes.length];
+    var next = themes[(idx + 1) %% themes.length];
     applyTheme(next);
     try{ localStorage.setItem(STORAGE_KEY, next); }catch(e){}
     try{ document.cookie = 'pi-web-theme=' + next + ';path=/;SameSite=Lax;max-age=31536000'; }catch(e){}
     updateBtn();
   }
-  try{ applyTheme(localStorage.getItem(STORAGE_KEY)); }catch(e){ applyTheme('dark'); }
+  var defaultTheme = '%s';
+  try{ applyTheme(localStorage.getItem(STORAGE_KEY) || defaultTheme); }catch(e){ applyTheme(defaultTheme); }
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', function(){
       updateBtn();
@@ -99,7 +108,7 @@ func liveThemeBootScript() template.HTML {
     if(btn) btn.addEventListener('click', toggleTheme);
   }
 })();
-</script>`)
+</script>`, defaultTheme))
 }
 
 func liveServiceWorkerScript() template.HTML {

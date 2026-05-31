@@ -178,7 +178,14 @@ export function showModelUsageModal({ entries = [], escapeHtml, formatTokens, do
 
   return showSheet({
     title: 'Usage',
-    renderBody: () => renderModelUsageBody({ stats, escapeHtml, formatTokens }),
+    renderBody: ({ bodyEl }) => {
+      bodyEl.classList?.add('mu-sheet-body');
+      const panel = bodyEl.closest?.('.pi-sheet-panel');
+      panel?.classList?.add('mu-sheet-panel');
+      panel?.closest?.('.pi-sheet-backdrop')?.classList?.add('mu-sheet-backdrop');
+
+      return renderModelUsageBody({ stats, escapeHtml, formatTokens });
+    },
     documentImpl,
     windowImpl,
     requestAnimationFrameImpl,

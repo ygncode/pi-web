@@ -59,7 +59,8 @@ func homeMenuHTML() template.HTML {
 			}},
 			{Items: []liveMenuItem{
 				{Label: "<span>Appearance</span>", Suffix: "<span data-theme-icon>◐</span>", Attrs: `id="theme-toggle" role="menuitem"`},
-				{Label: "<span>Notifications</span>", Suffix: `<span id="index-notify-status">OFF</span>`, Attrs: `id="index-notify-toggle" role="menuitem" aria-pressed="false"`},
+				{Label: "<span>Notifications</span>", Suffix: `<span id="index-notify-status">OFF</span><select class="sound-selector" style="display: none;" data-action="select-sound"></select>`, Attrs: `id="index-notify-toggle" role="menuitem" aria-pressed="false"`},
+				{Label: "<span>Spinner</span>", Suffix: `<span id="index-spinner-status">RUNCAT</span>`, Attrs: `id="index-spinner-toggle" role="menuitem" aria-pressed="false"`},
 			}},
 			{Items: []liveMenuItem{
 				{Label: "Active Sessions", Muted: true, Attrs: `role="menuitem"`},
@@ -98,7 +99,8 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, toggleID, themeIconClass, 
 			}},
 			{Title: "Preferences", Items: []liveMenuItem{
 				{Label: "<span>Appearance</span>", Suffix: template.HTML("<span class=\"" + themeIconClass + "\" data-command-theme-icon>◐</span>"), Attrs: `data-action="theme"`},
-				{Label: "<span>Notifications</span>", Suffix: template.HTML("<span class=\"" + toggleClass + "\" id=\"" + toggleID + "\">OFF</span>"), ExtraClass: itemClass + "-toggle", Attrs: `data-action="notifications"`},
+				{Label: "<span>Notifications</span>", Suffix: template.HTML("<span class=\"" + toggleClass + "\" id=\"" + toggleID + "\">OFF</span><select class=\"sound-selector\" style=\"display: none;\" data-action=\"select-sound\"></select>"), ExtraClass: itemClass + "-toggle", Attrs: `data-action="notifications"`},
+				{Label: "<span>Spinner</span>", Suffix: template.HTML("<span class=\"" + toggleClass + "\" id=\"" + strings.Replace(toggleID, "notify", "spinner", 1) + "\">RUNCAT</span>"), ExtraClass: itemClass + "-toggle", Attrs: `data-action="spinner"`},
 			}},
 			{Title: "Development", Items: []liveMenuItem{
 				{Label: "Resume via Terminal", Attrs: `data-action="terminal"`},
@@ -107,6 +109,13 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, toggleID, themeIconClass, 
 			}},
 			{Title: "Insights", Items: []liveMenuItem{
 				{Label: "Model Usage", Attrs: `data-action="model-usage"`},
+			}},
+			{Title: "Resources", Items: []liveMenuItem{
+				{Label: "Documentation", Href: "https://github.com/ygncode/pi-web/tree/main/docs", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
+				{Label: "GitHub", Href: "https://github.com/ygncode/pi-web", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
+			}},
+			{Items: []liveMenuItem{
+				{Label: "<span>Settings</span>", Suffix: "<span>›</span>", Muted: true, Attrs: `role="menuitem"`},
 			}},
 		},
 	})

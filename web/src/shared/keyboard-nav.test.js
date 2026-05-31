@@ -54,12 +54,16 @@ describe('setupKeyboardNav', () => {
     };
   }
 
-  function createMockDocument(activeElement = null, queryResult = null) {
+  function createMockDocument(activeElement = null, queryResult = null, contentElement = null) {
     const listeners = [];
     const doc = {
       activeElement,
       documentElement: { scrollHeight: 5000 },
       querySelector: vi.fn(() => queryResult),
+      getElementById: vi.fn((id) => {
+        if (id === 'content') return contentElement;
+        return null;
+      }),
       addEventListener(type, handler, options) {
         listeners.push({ type, handler, options });
       },
@@ -307,5 +311,64 @@ describe('setupKeyboardNav', () => {
 
     expect(doc.querySelector).toHaveBeenCalledWith('#search');
     expect(focus).toHaveBeenCalled();
+  });
+
+  describe('when #content is present', () => {
+    function createMockContent() {
+      return {
+        scrollBy: vi.fn(),
+        scrollTo: vi.fn(),
+        scrollHeight: 8000,
+      };
+    }
+
+    it('scrolls down #content on j', () => {
+      const content = createMockContent();
+      const doc = createMockDocument(null, null, content);
+      const win = createMockWindow();
+
+      setupKeyboardNav({ windowImpl: win, documentImpl: doc });
+      doc._dispatch('keydown', { key: 'j' });
+
+      expect(content.scrollBy).toHaveBeenCalledWith({ top: 300, behavior: 'instant' });
+      expect(win.scrollBy).not.toHaveBeenCalled();
+    });
+
+    it('scrolls up #content on k', () => {
+      const content = createMockContent();
+      const doc = createMockDocument(null, null, content);
+      const win = createMockWindow();
+
+      setupKeyboardNav({ windowImpl: win, documentImpl: doc });
+      doc._dispatch('keydown', { key: 'k' });
+
+      expect(content.scrollBy).toHaveBeenCalledWith({ top: -300, behavior: 'instant' });
+      expect(win.scrollBy).not.toHaveBeenCalled();
+    });
+
+    it('scrolls #content to top on double-tap gg', () => {
+      const content = createMockContent();
+      const doc = createMockDocument(null, null, content);
+      const win = createMockWindow();
+
+      setupKeyboardNav({ windowImpl: win, documentImpl: doc });
+      doc._dispatch('keydown', { key: 'g' });
+      doc._dispatch('keydown', { key: 'g' });
+
+      expect(content.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+      expect(win.scrollTo).not.toHaveBeenCalled();
+    });
+
+    it('scrolls #content to bottom on G', () => {
+      const content = createMockContent();
+      const doc = createMockDocument(null, null, content);
+      const win = createMockWindow();
+
+      setupKeyboardNav({ windowImpl: win, documentImpl: doc });
+      doc._dispatch('keydown', { key: 'G' });
+
+      expect(content.scrollTo).toHaveBeenCalledWith({ top: 8000, behavior: 'instant' });
+      expect(win.scrollTo).not.toHaveBeenCalled();
+    });
   });
 });

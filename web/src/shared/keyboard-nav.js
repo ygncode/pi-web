@@ -57,27 +57,55 @@ export function setupKeyboardNav({
 
     if (e.key === 'j') {
       e.preventDefault();
-      windowImpl.scrollBy({ top: SCROLL_AMOUNT, behavior: 'instant' });
+      const content = (typeof documentImpl.getElementById === 'function')
+        ? documentImpl.getElementById('content')
+        : null;
+      if (content) {
+        content.scrollBy({ top: SCROLL_AMOUNT, behavior: 'instant' });
+      } else {
+        windowImpl.scrollBy({ top: SCROLL_AMOUNT, behavior: 'instant' });
+      }
     } else if (e.key === 'k') {
       e.preventDefault();
-      windowImpl.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'instant' });
+      const content = (typeof documentImpl.getElementById === 'function')
+        ? documentImpl.getElementById('content')
+        : null;
+      if (content) {
+        content.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'instant' });
+      } else {
+        windowImpl.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'instant' });
+      }
     } else if (e.key === 'g') {
       e.preventDefault();
       if (ggTimer) {
         // Second 'g' within timeout — scroll to top
         clearTimeoutImpl(ggTimer);
         ggTimer = null;
-        windowImpl.scrollTo({ top: 0, behavior: 'instant' });
+        const content = (typeof documentImpl.getElementById === 'function')
+          ? documentImpl.getElementById('content')
+          : null;
+        if (content) {
+          content.scrollTo({ top: 0, behavior: 'instant' });
+        } else {
+          windowImpl.scrollTo({ top: 0, behavior: 'instant' });
+        }
       } else {
         // First 'g' — start the double-tap window
         ggTimer = setTimeoutImpl(() => { ggTimer = null; }, GG_TIMEOUT);
       }
     } else if (e.key === 'G') {
       e.preventDefault();
-      windowImpl.scrollTo({
-        top: documentImpl.documentElement.scrollHeight,
-        behavior: 'instant',
-      });
+      const content = (typeof documentImpl.getElementById === 'function')
+        ? documentImpl.getElementById('content')
+        : null;
+      if (content) {
+        content.scrollTo({ top: content.scrollHeight, behavior: 'instant' });
+      } else {
+        windowImpl.scrollTo({
+          top: documentImpl.documentElement.scrollHeight,
+          behavior: 'instant',
+        });
+      }
     } else if (e.key === 'I') {
       e.preventDefault();
       const el = documentImpl.querySelector(focusSelector);
