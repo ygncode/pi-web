@@ -31,6 +31,7 @@ import * as newSessionButton from './live/new-session-button.js';
 import * as liveEvents from './live/live-events.js';
 import * as liveRenderer from './live/live-renderer.js';
 import { setupCommandMenu } from './live/command-menu.js';
+import { createVersionController } from '../shared/version.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
@@ -324,6 +325,8 @@ export function runSessionApp({ target = window } = {}) {
   });
 
   setupKeyboardNav({ windowImpl: target, documentImpl });
+
+  createVersionController({ documentImpl, windowImpl: target });
 
   setupCommandMenu({
     documentImpl,

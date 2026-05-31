@@ -22,6 +22,7 @@ import (
 	"pi-web/internal/server"
 	"pi-web/internal/sessions"
 	"pi-web/internal/ui"
+	"pi-web/internal/updater"
 	"pi-web/internal/workers"
 	"pi-web/web"
 )
@@ -66,6 +67,8 @@ func Main(version string) {
 	}
 	authMiddleware := auth.New(token)
 
+	versionChecker := updater.New(version)
+
 	var srv *server.Server
 	manager := workers.NewManager(func(sessionID, sessionPath string) (workers.ChatWorker, error) {
 		return rpc.NewPiWorkerWithStream(sessionPath, func(preview rpc.StreamPreview) {
@@ -86,6 +89,9 @@ func Main(version string) {
 		Models: func(ctx context.Context) (json.RawMessage, error) {
 			return defaultModelsCache.get(ctx)
 		},
+		Updater:    versionChecker,
+		RunInstall: runInstall,
+		RunRestart: runRestart,
 	})
 
 	mux := http.NewServeMux()
@@ -169,6 +175,8 @@ func Main(version string) {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	go versionChecker.Start(ctx)
 
 	go func() {
 		<-ctx.Done()

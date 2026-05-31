@@ -20,6 +20,7 @@ import (
 	"pi-web/internal/render"
 	"pi-web/internal/rpc"
 	"pi-web/internal/sessions"
+	"pi-web/internal/updater"
 
 	_ "modernc.org/sqlite"
 )
@@ -44,6 +45,15 @@ type Deps struct {
 	RenderExportSession func(s sessions.Session, theme string) string
 	Models              func(ctx context.Context) (json.RawMessage, error)
 	Now                 func() time.Time
+	// Updater reports current/latest version + changelog. Optional; when nil
+	// the version endpoints are not registered.
+	Updater *updater.Checker
+	// RunInstall installs the latest pi-web package (e.g. `pi install ...`).
+	// Optional; when nil /api/update responds 503.
+	RunInstall func(ctx context.Context) error
+	// RunRestart restarts the pi-web service (detached) so the new binary
+	// takes over. Optional; when nil /api/restart responds 503.
+	RunRestart func() error
 }
 
 // Server holds runtime state — connected SSE clients and last-seen modtimes
@@ -71,6 +81,10 @@ type Server struct {
 	stopOnce            sync.Once
 	wg                  sync.WaitGroup
 	db                  *sql.DB
+	updater             *updater.Checker
+	runInstall          func(ctx context.Context) error
+	runRestart          func() error
+	updateMu            sync.Mutex // serializes install/restart operations
 }
 
 func New(deps Deps) *Server {
@@ -121,6 +135,9 @@ func New(deps Deps) *Server {
 		lastKnown:           make(map[string]struct{}),
 		stopCh:              make(chan struct{}),
 		db:                  db,
+		updater:             deps.Updater,
+		runInstall:          deps.RunInstall,
+		runRestart:          deps.RunRestart,
 	}
 	if pm, err := NewPushManager(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "push notifications unavailable: %v\n", err)
@@ -184,6 +201,12 @@ func (s *Server) Register(mux *http.ServeMux) {
 	}
 	mux.HandleFunc("/api/sounds", s.auth.Wrap(s.handleApiSounds))
 	mux.HandleFunc("/sounds/", s.handleSounds)
+	if s.updater != nil {
+		mux.HandleFunc("/api/version", s.auth.Wrap(s.handleVersion))
+		mux.HandleFunc("/api/check-update", s.auth.Wrap(s.handleCheckUpdate))
+		mux.HandleFunc("/api/update", s.auth.Wrap(s.handleUpdate))
+		mux.HandleFunc("/api/restart", s.auth.Wrap(s.handleRestart))
+	}
 }
 
 func (s *Server) loadSummaries() ([]sessions.SessionSummary, error) {

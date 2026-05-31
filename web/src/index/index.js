@@ -11,6 +11,7 @@ import {
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
+import { createVersionController } from '../shared/version.js';
 
 export { createSessionsPage };
 
@@ -27,6 +28,8 @@ export function runIndexPage({
   });
 
   setupKeyboardNav({ windowImpl, documentImpl });
+
+  createVersionController({ documentImpl, windowImpl });
 
   const openSearchBtn = documentImpl.getElementById('open-search');
   const menuBtn = documentImpl.getElementById('web-menu-btn');

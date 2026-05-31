@@ -2,6 +2,7 @@ import { isDoneNotifyEnabled, setupSoundSelector } from '../chat/done-notifier.j
 import { applyTheme, toggleTheme, syncThemeIcons } from '../../shared/theme.js';
 import { showModelUsageModal } from './model-usage-modal.js';
 import { showForkModal } from './fork-modal.js';
+import { openVersionModal } from '../../shared/version.js';
 
 export { applyTheme, toggleTheme, syncThemeIcons };
 
@@ -333,6 +334,10 @@ export function setupCommandMenu({
           .catch(() => showToast('Clone failed', documentImpl, windowImpl));
         break;
       }
+      case 'version':
+        closeMenu();
+        openVersionModal();
+        break;
       case 'diff':
         showToast('Not yet implemented', documentImpl, windowImpl);
         closeMenu();

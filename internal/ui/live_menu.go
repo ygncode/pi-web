@@ -71,13 +71,18 @@ func homeMenuHTML() template.HTML {
 				{Label: "GitHub", Href: "https://github.com/ygncode/pi-web", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
 			}},
 			{Items: []liveMenuItem{
+				{
+					Label:  "<span>Version</span>",
+					Suffix: `<span class="version-status" data-version-status>…</span>`,
+					Attrs:  `id="index-version-row" data-version-row role="menuitem"`,
+				},
 				{Label: "<span>Settings</span>", Suffix: "<span>›</span>", Muted: true, Attrs: `role="menuitem"`},
 			}},
 		},
 	})
 }
 
-func sessionMenuHTML(id, class, bodyClass, itemClass, toggleID, themeIconClass, toggleClass, containerAttrs string) template.HTML {
+func sessionMenuHTML(id, class, bodyClass, itemClass, toggleID, themeIconClass, toggleClass, versionStatusID, containerAttrs string) template.HTML {
 	return renderLiveMenu(liveMenuData{
 		ID:                id,
 		Class:             class,
@@ -115,6 +120,11 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, toggleID, themeIconClass, 
 				{Label: "GitHub", Href: "https://github.com/ygncode/pi-web", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
 			}},
 			{Items: []liveMenuItem{
+				{
+					Label:  "<span>Version</span>",
+					Suffix: template.HTML("<span class=\"version-status\" id=\"" + versionStatusID + "\" data-version-status>…</span>"),
+					Attrs:  `data-action="version" data-version-row role="menuitem"`,
+				},
 				{Label: "<span>Settings</span>", Suffix: "<span>›</span>", Muted: true, Attrs: `role="menuitem"`},
 			}},
 		},
@@ -130,6 +140,7 @@ func sessionDesktopMenuHTML() template.HTML {
 		"command-menu-notify-status",
 		"command-menu-theme-icon",
 		"command-menu-toggle",
+		"command-menu-version-status",
 		`role="menu" aria-labelledby="command-menu-btn" style="display: none;"`,
 	)
 }
@@ -143,6 +154,7 @@ func sessionMobileMenuHTML() template.HTML {
 		"mobile-command-notify-status",
 		"mobile-command-theme-icon",
 		"mobile-command-toggle",
+		"mobile-command-version-status",
 		`style="display: none;"`,
 	)
 }
