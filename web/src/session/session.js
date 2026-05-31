@@ -441,6 +441,43 @@ export function runSessionApp({ target = window } = {}) {
     CustomEventImpl: target.CustomEvent,
     setIntervalImpl: target.setInterval.bind(target)
   });
+
+  // Handle Visual Viewport changes to prevent mobile browsers from shifting
+  // the top fixed header out of view when the virtual keyboard is open.
+  if (target.visualViewport) {
+    const handleVisualViewportChange = () => {
+      const height = target.visualViewport.height;
+      documentImpl.documentElement.style.setProperty('--viewport-height', `${height}px`);
+
+      // Dynamically adjust the top header's vertical position to offset
+      // layout viewport scroll/shift caused by mobile virtual keyboard.
+      const offsetTop = target.visualViewport.offsetTop;
+      const header = documentImpl.querySelector('.session-header-bar');
+      if (header) {
+        header.style.transform = `translateY(${Math.max(0, offsetTop)}px)`;
+      }
+    };
+    target.visualViewport.addEventListener('resize', handleVisualViewportChange);
+    target.visualViewport.addEventListener('scroll', handleVisualViewportChange);
+    handleVisualViewportChange();
+  }
+
+  // Prevent mobile browser from auto-scrolling the layout viewport when keyboard opens
+  target.addEventListener('scroll', () => {
+    if (target.scrollY !== 0 || target.scrollX !== 0) {
+      target.scrollTo(0, 0);
+    }
+  });
+  documentImpl.addEventListener('scroll', () => {
+    if (documentImpl.documentElement.scrollTop !== 0 || documentImpl.documentElement.scrollLeft !== 0) {
+      documentImpl.documentElement.scrollTop = 0;
+      documentImpl.documentElement.scrollLeft = 0;
+    }
+    if (documentImpl.body.scrollTop !== 0 || documentImpl.body.scrollLeft !== 0) {
+      documentImpl.body.scrollTop = 0;
+      documentImpl.body.scrollLeft = 0;
+    }
+  });
 }
 
 

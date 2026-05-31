@@ -110,6 +110,7 @@ export function setupRightSidebar({
 
   backdrop?.addEventListener('click', () => {
     setExpanded(false);
+    setCollapsed(true);
   });
 
   // ── Keyboard shortcut registered externally in session.js ───────────────

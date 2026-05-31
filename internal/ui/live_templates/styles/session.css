@@ -10,6 +10,7 @@
   --palette-surface: var(--surface);
   --palette-surface-2: var(--surface-2);
   --palette-text-soft: var(--text-soft);
+  --viewport-height: 100svh;
 }
 
     :root, [data-theme="dark"] {
@@ -2050,7 +2051,7 @@
         display: flex;
         flex-direction: column;
         height: 100vh;
-        height: 100svh;
+        height: var(--viewport-height, 100svh);
         overflow: hidden;
       }
 
@@ -2103,7 +2104,7 @@
 
       #content {
         min-height: 0;
-        padding: calc(52px + env(safe-area-inset-top) + var(--line-height)) 16px calc(var(--pi-chat-composer-height, 0px) + var(--line-height));
+        padding: calc(52px + env(safe-area-inset-top) + var(--line-height)) 16px var(--line-height);
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
       }
@@ -2131,8 +2132,44 @@
         display: none;
       }
 
-      /* Right sidebar hidden on mobile */
-      .right-sidebar,
+      /* Premium slide-in mobile notes drawer (scratchpad) */
+      .right-sidebar {
+        display: flex !important;
+        position: fixed !important;
+        right: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: min(320px, 85vw) !important;
+        min-width: min(320px, 85vw) !important;
+        max-width: min(320px, 85vw) !important;
+        height: 100vh !important;
+        height: var(--viewport-height, 100svh) !important;
+        z-index: 1200 !important;
+        background: var(--surface) !important;
+        border-left: 1px solid var(--dim) !important;
+        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4) !important;
+        transform: translateX(100%) !important;
+        transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+      }
+
+      body:not(.right-sidebar-collapsed) .right-sidebar {
+        transform: translateX(0) !important;
+      }
+
+      .right-sidebar-backdrop {
+        display: none !important;
+        position: fixed !important;
+        inset: 0 !important;
+        background: rgba(0, 0, 0, 0.5) !important;
+        z-index: 1199 !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+      }
+
+      body:not(.right-sidebar-collapsed) .right-sidebar-backdrop {
+        display: block !important;
+      }
+
       .right-sidebar-resizer {
         display: none !important;
       }
@@ -3565,6 +3602,7 @@
         font-size: 14px;
         font-weight: 600;
         letter-spacing: 0;
+      }
     }
 
     /* Context Usage Circular Progress Indicator */
