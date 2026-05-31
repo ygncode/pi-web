@@ -5,6 +5,8 @@ import {
   requestNotifyPermission,
   setDoneNotifyEnabled,
   unregisterPushSubscription,
+  setupSoundSelector,
+  playDoneSound,
 } from '../session/chat/done-notifier.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
@@ -29,6 +31,7 @@ export function runIndexPage({
   const openSearchBtn = documentImpl.getElementById('open-search');
   const menuBtn = documentImpl.getElementById('web-menu-btn');
   const webMenu = documentImpl.getElementById('web-menu');
+  const webMenuBackdrop = documentImpl.getElementById('web-menu-backdrop');
   const modalOverlay = documentImpl.getElementById('modalOverlay');
   const newSessionBtns = Array.from(documentImpl.querySelectorAll('[data-new-session-btn]'));
   const modalBackBtn = documentImpl.getElementById('modalBackBtn');
@@ -74,16 +77,59 @@ export function runIndexPage({
     page.modal = false;
   }
 
+  const isMobile = () => windowImpl.matchMedia('(max-width: 900px)').matches;
+
   function closeMenu() {
-    if (webMenu) webMenu.hidden = true;
-    if (menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+    if (!webMenu || !menuBtn) return;
+    if (isMobile()) {
+      if (webMenuBackdrop) webMenuBackdrop.classList.remove('open');
+      webMenu.classList.remove('open');
+      menuBtn.setAttribute('aria-expanded', 'false');
+      setTimeoutImpl(() => {
+        if (!webMenu.classList.contains('open')) {
+          webMenu.hidden = true;
+          if (webMenuBackdrop) webMenuBackdrop.style.display = 'none';
+        }
+      }, 260);
+    } else {
+      webMenu.hidden = true;
+      webMenu.classList.remove('open');
+      if (webMenuBackdrop) {
+        webMenuBackdrop.classList.remove('open');
+        webMenuBackdrop.style.display = 'none';
+      }
+      menuBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  function openMenu() {
+    if (!webMenu || !menuBtn) return;
+    menuBtn.setAttribute('aria-expanded', 'true');
+    if (isMobile()) {
+      webMenu.hidden = false;
+      if (webMenuBackdrop) {
+        webMenuBackdrop.style.display = '';
+      }
+      windowImpl.requestAnimationFrame(() => {
+        if (webMenuBackdrop) webMenuBackdrop.classList.add('open');
+        webMenu.classList.add('open');
+      });
+    } else {
+      webMenu.hidden = false;
+      windowImpl.requestAnimationFrame(() => {
+        webMenu.classList.add('open');
+      });
+    }
   }
 
   function toggleMenu() {
-    if (!webMenu || !menuBtn) return;
-    const willOpen = webMenu.hidden;
-    webMenu.hidden = !willOpen;
-    menuBtn.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    if (!webMenu) return;
+    const isOpen = !webMenu.hidden && webMenu.classList.contains('open');
+    if (isOpen) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
   }
 
   function setLayoutButtonState(layout) {
@@ -138,8 +184,22 @@ export function runIndexPage({
   }
 
   if (webMenu) {
-    webMenu.addEventListener('click', (e) => e.stopPropagation());
+    webMenu.addEventListener('click', (e) => {
+      const item = e.target.closest('.web-menu-item');
+      if (item) {
+        closeMenu();
+      } else {
+        e.stopPropagation();
+      }
+    });
     windowImpl.addEventListener('click', closeMenu);
+  }
+
+  if (webMenuBackdrop) {
+    webMenuBackdrop.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeMenu();
+    });
   }
 
   function syncNotifyMenuItem() {
@@ -148,6 +208,14 @@ export function runIndexPage({
     notifyStatus.textContent = enabled ? 'ON' : 'OFF';
     notifyStatus.classList.toggle('on', enabled);
     notifyToggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+
+    const parent = notifyStatus.parentElement;
+    if (parent) {
+      const selector = parent.querySelector('.sound-selector');
+      if (selector) {
+        selector.style.display = enabled ? '' : 'none';
+      }
+    }
   }
 
   if (notifyToggle) {
@@ -164,6 +232,13 @@ export function runIndexPage({
         if (granted) await registerPushSubscription({ windowImpl });
       }
       syncNotifyMenuItem();
+    });
+
+    setupSoundSelector({
+      documentImpl,
+      windowImpl,
+      storage: windowImpl.localStorage,
+      fetchImpl: fetchImpl || windowImpl.fetch.bind(windowImpl)
     });
   }
 

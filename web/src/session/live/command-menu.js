@@ -1,4 +1,4 @@
-import { isDoneNotifyEnabled } from '../chat/done-notifier.js';
+import { isDoneNotifyEnabled, setupSoundSelector } from '../chat/done-notifier.js';
 import { applyTheme, toggleTheme, syncThemeIcons } from '../../shared/theme.js';
 import { showModelUsageModal } from './model-usage-modal.js';
 import { showForkModal } from './fork-modal.js';
@@ -82,6 +82,14 @@ export function setupCommandMenu({
       if (!el) return;
       el.textContent = enabled ? 'ON' : 'OFF';
       el.classList.toggle('on', enabled);
+
+      const parent = el.parentElement;
+      if (parent) {
+        const selector = parent.querySelector('.sound-selector');
+        if (selector) {
+          selector.style.display = enabled ? '' : 'none';
+        }
+      }
     });
   }
 
@@ -344,4 +352,7 @@ export function setupCommandMenu({
       handleAction(action);
     });
   });
+
+  // Set up the sound selector dropdown
+  setupSoundSelector({ documentImpl, windowImpl, storage: windowImpl.localStorage, fetchImpl });
 }

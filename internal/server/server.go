@@ -182,6 +182,8 @@ func (s *Server) Register(mux *http.ServeMux) {
 	if s.push != nil {
 		s.push.Register(mux, s.auth.Wrap)
 	}
+	mux.HandleFunc("/api/sounds", s.auth.Wrap(s.handleApiSounds))
+	mux.HandleFunc("/sounds/", s.handleSounds)
 }
 
 func (s *Server) loadSummaries() ([]sessions.SessionSummary, error) {
