@@ -75,6 +75,7 @@
     <main id="content">
       <div id="header-container"></div>
       <div id="messages">{{.FirstMessageStub}}</div>
+      {{if .IsLive}}{{.ChatComposer}}{{end}}
     </main>
     {{if .IsLive}}
     <div id="right-sidebar-resizer" class="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize scratchpad sidebar"></div>
@@ -108,8 +109,6 @@
       <img id="modal-image" src="" alt="">
     </div>
   </div>
-
-  {{if .IsLive}}{{.ChatComposer}}{{end}}
 
   <div id="share-overlay" class="share-overlay-backdrop" style="display: none;">
     <div id="share-dialog" class="share-dialog">

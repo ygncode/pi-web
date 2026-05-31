@@ -1,7 +1,4 @@
-export function chatComposerHeight({ documentImpl = document, windowImpl = window } = {}) {
-  if (windowImpl && typeof windowImpl.matchMedia === 'function' && windowImpl.matchMedia('(min-width: 901px)').matches) {
-    return 0;
-  }
+export function chatComposerHeight({ documentImpl = document } = {}) {
   const composer = documentImpl.getElementById('pi-chat-composer');
   return composer ? composer.getBoundingClientRect().height : 0;
 }
@@ -48,7 +45,7 @@ export function scrollElementAboveComposer(el, smooth, { documentImpl = document
     scrollToBottom(smooth, { documentImpl, windowImpl });
     return;
   }
-  const gap = chatComposerHeight({ documentImpl, windowImpl }) + 24;
+  const gap = chatComposerHeight({ documentImpl }) + 24;
   const content = documentImpl.getElementById('content');
   if (content && content.contains(el)) {
     const contentRect = content.getBoundingClientRect();
