@@ -5,6 +5,15 @@
     --palette-surface: var(--surface);
     --palette-surface-2: var(--surface-2);
     --palette-text-soft: var(--text-soft);
+
+    /*
+     * Chrome surfaces (top bar + sidebars + composer bar) sit a touch darker
+     * than the body so the middle reading column reads as "lit up". The chat
+     * input box sits a touch lighter than the body. Both derive from --body-bg
+     * so every theme, including the runtime "custom" theme, gets them for free.
+     */
+    --chrome-bg: color-mix(in srgb, var(--body-bg) 90%, #000);
+    --input-bg: color-mix(in srgb, var(--body-bg) 86%, #fff);
 }
 
 :root,

@@ -454,6 +454,10 @@
       align-items: stretch;
       height: calc(100vh - 52px);
       margin-top: 52px;
+      /* Chrome shell behind the resizer gutters so no body-bg slivers show
+         beside the darker composer / sidebars. The content column re-lights
+         itself with --body-bg below. */
+      background: var(--chrome-bg);
     }
 
     /* Sidebar — height comes from #app's fixed height */
@@ -461,7 +465,7 @@
       width: var(--sidebar-width);
       min-width: var(--sidebar-width);
       max-width: var(--sidebar-width);
-      background: var(--body-bg);
+      background: var(--chrome-bg);
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -510,7 +514,7 @@
       width: var(--right-sidebar-width);
       min-width: var(--right-sidebar-width);
       max-width: var(--right-sidebar-width);
-      background: var(--body-bg);
+      background: var(--chrome-bg);
       flex-shrink: 0;
       display: flex;
       flex-direction: column;
@@ -547,7 +551,7 @@
     .right-sidebar-header {
       padding: 8px 12px;
       flex-shrink: 0;
-      background: var(--body-bg);
+      background: var(--chrome-bg);
       border-bottom: 1px solid var(--dim);
       display: flex;
       align-items: center;
@@ -615,7 +619,7 @@
     }
 
     .scratchpad-textarea::placeholder {
-      color: var(--dim);
+      color: var(--muted);
     }
 
     .right-sidebar-footer {
@@ -672,7 +676,7 @@
     .sidebar-header {
       padding: 8px 12px;
       flex-shrink: 0;
-      background: var(--body-bg);
+      background: var(--chrome-bg);
       border-bottom: 1px solid var(--dim);
     }
 
@@ -689,7 +693,7 @@
       padding: 4px 8px;
       font-size: 11px;
       font-family: inherit;
-      background: var(--body-bg);
+      background: var(--input-bg);
       color: var(--text);
       border: 1px solid var(--dim);
       border-radius: 3px;
@@ -851,6 +855,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      /* The lit reading column on top of the chrome #app shell. */
+      background: var(--body-bg);
     }
 
     #content > * {
@@ -1038,7 +1044,7 @@
       z-index: 101;
       height: 52px;
       padding: 0 18px;
-      background: color-mix(in srgb, var(--body-bg) 92%, transparent);
+      background: color-mix(in srgb, var(--chrome-bg) 92%, transparent);
       border-bottom: 1px solid var(--pi-menu-border);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
@@ -2199,7 +2205,7 @@
       min-width: 0;
       box-sizing: border-box;
       overflow: visible;
-      background: var(--body-bg);
+      background: var(--input-bg);
       border: 1px solid var(--dim);
       border-radius: 6px;
       position: relative;
