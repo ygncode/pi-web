@@ -72,11 +72,13 @@
       <div class="tree-status" id="tree-status"></div>
     </aside>
     <div id="sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize session tree sidebar"></div>
-    <main id="content">
-      <div id="header-container"></div>
-      <div id="messages">{{.FirstMessageStub}}</div>
+    <div id="content-container" class="content-container">
+      <main id="content">
+        <div id="header-container"></div>
+        <div id="messages">{{.FirstMessageStub}}</div>
+      </main>
       {{if .IsLive}}{{.ChatComposer}}{{end}}
-    </main>
+    </div>
     {{if .IsLive}}
     <div id="right-sidebar-resizer" class="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize scratchpad sidebar"></div>
     <aside id="right-sidebar" class="right-sidebar">

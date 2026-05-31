@@ -831,13 +831,22 @@
       border-top: 1px solid var(--dim);
     }
 
+    .content-container {
+      flex: 1;
+      min-width: 0;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
     /* Main content — scrolls independently within #app's fixed height */
     #content {
       flex: 1;
       min-width: 0;
       min-height: 0;
       overflow-y: auto;
-      padding: calc(52px + var(--line-height)) calc(var(--line-height) * 2) calc(var(--pi-chat-composer-height, 120px) + var(--line-height) * 2);
+      padding: calc(52px + var(--line-height)) calc(var(--line-height) * 2) var(--line-height);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -2108,13 +2117,7 @@
         overflow-x: auto;
       }
 
-      .pi-chat-composer {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        flex-shrink: 0;
-      }
+
 
       .session-header-bar {
         padding: env(safe-area-inset-top) 12px 0;
@@ -2143,11 +2146,8 @@
     }
 
     .pi-chat-composer {
-      position: sticky;
-      bottom: 0;
-      z-index: 80;
+      flex-shrink: 0;
       width: 100%;
-      max-width: 100vw;
       box-sizing: border-box;
       display: block;
       padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
@@ -2157,7 +2157,8 @@
 
     .pi-chat-shell {
       width: 100%;
-      max-width: none;
+      max-width: 760px;
+      margin: 0 auto;
       min-width: 0;
       box-sizing: border-box;
       overflow: visible;
