@@ -419,6 +419,11 @@
       --right-sidebar-max-width: 640px;
     }
 
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--dim) transparent;
+    }
+
     body {
       font-family: var(--font-sans);
       font-size: 12px;
@@ -823,6 +828,7 @@
       font-size: 10px;
       color: var(--muted);
       flex-shrink: 0;
+      border-top: 1px solid var(--dim);
     }
 
     /* Main content — scrolls independently within #app's fixed height */
@@ -2001,7 +2007,7 @@
     }
 
     @media (min-width: 901px) {
-      body {
+      html, body {
         height: 100vh;
         overflow: hidden;
       }
