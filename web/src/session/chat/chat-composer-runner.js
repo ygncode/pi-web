@@ -120,8 +120,25 @@ export function runChatComposer({
       }
     });
 
-    const totalTokens = inputTokens + outputTokens + cacheReadTokens + cacheWriteTokens;
-    if (totalTokens <= 0) {
+    const totalIOTokens = inputTokens + outputTokens + cacheReadTokens + cacheWriteTokens;
+
+    // Find the last assistant message with valid usage to compute context window
+    // pressure. Cumulative I/O across all turns double-counts cache reads (each
+    // turn's cacheRead overlaps with prior turns) and inflates the percentage.
+    // pi TUI uses the last assistant's totalTokens to estimate current context
+    // size (see getContextUsage -> estimateContextTokens in pi's compaction code).
+    let contextTokens = 0;
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const entry = entries[i];
+      if (entry?.type !== 'message' || !entry.message) continue;
+      const msg = entry.message;
+      if (msg.role === 'assistant' && msg.usage) {
+        contextTokens = msg.usage.totalTokens || (msg.usage.input || 0) + (msg.usage.output || 0) + (msg.usage.cacheRead || 0) + (msg.usage.cacheWrite || 0);
+        break;
+      }
+    }
+
+    if (contextTokens <= 0 && totalIOTokens <= 0) {
       el.style.display = 'none';
       return;
     }
@@ -129,7 +146,7 @@ export function runChatComposer({
     const modelName = knownModelLabel ? knownModelLabel.split(' @ ')[0].trim() : '';
     const providerName = knownModelLabel && knownModelLabel.includes(' @ ') ? knownModelLabel.split(' @ ')[1].trim() : '';
     const limit = getModelContextLimit(modelName, providerName);
-    const percent = Math.min(100, Math.max(0, Math.round((totalTokens / limit) * 100)));
+    const percent = Math.min(100, Math.max(0, Math.round((contextTokens / limit) * 100)));
 
     const fillPath = el.querySelector('.pi-context-fill');
     const textSpan = el.querySelector('.pi-context-text');
@@ -142,7 +159,7 @@ export function runChatComposer({
     }
 
     const formatNumber = (num) => num.toLocaleString();
-    el.setAttribute('title', `Click for details (${formatNumber(totalTokens)} / ${formatNumber(limit)} tokens)`);
+    el.setAttribute('title', `Click for details (${formatNumber(contextTokens)} / ${formatNumber(limit)} tokens used in context)`);
 
     el.classList.remove('warning', 'danger');
     if (percent >= 90) {
@@ -179,9 +196,9 @@ export function runChatComposer({
     if (valCacheRead) valCacheRead.textContent = formatTokensDetail(cacheReadTokens);
     if (valCacheWrite) valCacheWrite.textContent = formatTokensDetail(cacheWriteTokens);
     if (valOutput) valOutput.textContent = formatTokensDetail(outputTokens);
-    if (valTotal) valTotal.textContent = formatTokensDetail(totalTokens);
+    if (valTotal) valTotal.textContent = formatTokensDetail(totalIOTokens);
 
-    if (usedSpan) usedSpan.textContent = formatTokensDetail(totalTokens);
+    if (usedSpan) usedSpan.textContent = formatTokensDetail(contextTokens);
     if (limitSpan) limitSpan.textContent = formatLimit(limit);
     if (popoverBar) popoverBar.style.width = `${percent}%`;
 

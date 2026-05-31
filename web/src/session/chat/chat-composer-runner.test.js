@@ -403,6 +403,86 @@ describe('chat composer runner', () => {
     expect(popover.querySelector('.pi-popover-limit').textContent).toBe('1.0M'); // gemini-1.5-flash is 1M limit
   });
 
+  it('uses last assistant totalTokens for context window %, not cumulative I/O', () => {
+    // Multi-turn: context % should use the LAST assistant's usage, not sum
+    // across all turns (which double-counts overlapping cacheRead values).
+    const dom = new JSDOM('<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div><div id="pi-chat-context-popover" style="display:none"><div class="pi-popover-arrow"></div><span class="pi-popover-used"></span><span class="pi-popover-limit"></span><div class="pi-popover-progress-bar"></div><span id="pi-popover-val-input"></span><span id="pi-popover-val-cache-read"></span><span id="pi-popover-val-cache-write"></span><span id="pi-popover-val-output"></span><span id="pi-popover-val-total"></span></div></form></body>');
+    const mockEntries = [
+      // Turn 1: assistant processes initial prompt (1000 new tokens, cached)
+      {
+        type: 'message',
+        message: {
+          role: 'assistant',
+          usage: { input: 1000, output: 500, cacheRead: 0, cacheWrite: 1000 }
+        }
+      },
+      // Turn 2: user message (no usage)
+      {
+        type: 'message',
+        message: { role: 'user', content: 'follow-up' }
+      },
+      // Turn 3: assistant reuses 1000 cached tokens + 500 new input
+      // Old bug: cumulative = (1000+500)+(500+300)+(0+1000) = 3300 → 3% (wrong!)
+      // New: contextTokens = last assistant = 500+300+1000 = 1800 → 1%
+      {
+        type: 'message',
+        message: {
+          role: 'assistant',
+          usage: { input: 500, output: 300, cacheRead: 1000, cacheWrite: 0 }
+        }
+      }
+    ];
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      localEntries: mockEntries,
+      chatApi: {
+        getWorkerStatus: () => Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            state: 'idle',
+            model: 'gpt-4o',
+            modelProvider: 'openai'
+          })
+        })
+      },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: {
+        setupModelSelector: vi.fn((opts) => {
+          opts.setKnownModelLabel('gpt-4o @ openai');
+          return { open: vi.fn() };
+        })
+      },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+      setIntervalImpl: () => {}
+    });
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+
+    const el = dom.window.document.getElementById('pi-chat-context-usage');
+    const popover = dom.window.document.getElementById('pi-chat-context-popover');
+
+    // Context window % should use last assistant's usage, not cumulative
+    const text = el.querySelector('.pi-context-text');
+    // contextTokens = 500+300+1000 = 1800; 1800/128000*100 = 1.4% → 1%
+    expect(text.textContent).toBe('1%');
+
+    const fill = el.querySelector('.pi-context-fill');
+    expect(fill.getAttribute('stroke-dasharray')).toBe('1, 100');
+
+    // Cumulative I/O rows should still sum across all turns
+    el.click();
+    expect(popover.style.display).toBe('block');
+    expect(dom.window.document.getElementById('pi-popover-val-input').textContent).toBe('1.5k'); // 1000+500
+    expect(dom.window.document.getElementById('pi-popover-val-output').textContent).toBe('800'); // 500+300
+    expect(dom.window.document.getElementById('pi-popover-val-cache-read').textContent).toBe('1.0k'); // 0+1000
+    expect(dom.window.document.getElementById('pi-popover-val-cache-write').textContent).toBe('1.0k'); // 1000+0
+    expect(dom.window.document.getElementById('pi-popover-val-total').textContent).toBe('4.3k'); // 1500+800+1000+1000
+
+    // Popover hero shows contextTokens (last assistant, not cumulative)
+    expect(popover.querySelector('.pi-popover-used').textContent).toBe('1.8k');
+    expect(popover.querySelector('.pi-popover-limit').textContent).toBe('128k');
+  });
+
   it('loads dynamic context limits from chatApi.listModels()', async () => {
     const dom = new JSDOM('<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div><div id="pi-chat-context-popover" style="display:none"><span class="pi-popover-used"></span><span class="pi-popover-limit"></span><div class="pi-popover-progress-bar"></div></div></form></body>');
     const mockEntries = [

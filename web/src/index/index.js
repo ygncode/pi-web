@@ -238,7 +238,7 @@ export function runIndexPage({
       documentImpl,
       windowImpl,
       storage: windowImpl.localStorage,
-      fetchImpl: fetchImpl || windowImpl.fetch.bind(windowImpl)
+      fetchImpl: windowImpl.fetch.bind(windowImpl)
     });
   }
 
