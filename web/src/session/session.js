@@ -16,6 +16,8 @@ import { setupSessionUi } from './ui/session-ui-runner.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
 import * as chatApi from './chat/chat-api.js';
+import * as gitApi from './chat/git-api.js';
+import { setupGitFooter } from './chat/git-footer.js';
 import * as chatSelectors from './chat/chat-selectors.js';
 import * as thinkingSelector from './chat/thinking-selector.js';
 import * as modelSelector from './chat/model-selector.js';
@@ -440,6 +442,13 @@ export function runSessionApp({ target = window } = {}) {
     URLSearchParamsImpl: target.URLSearchParams,
     CustomEventImpl: target.CustomEvent,
     setIntervalImpl: target.setInterval.bind(target)
+  });
+
+  setupGitFooter({
+    documentImpl,
+    windowImpl: target,
+    sessionId: getSessionSearchParams({ documentImpl, windowImpl: target }).get('id') || '',
+    gitApi
   });
 
   // Handle Visual Viewport changes to prevent mobile browsers from shifting

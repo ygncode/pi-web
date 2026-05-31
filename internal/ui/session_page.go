@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"strings"
 
+	"pi-web/internal/git"
 	"pi-web/internal/sessions"
 )
 
@@ -169,18 +170,39 @@ func chatComposerHtmlForSession(session sessions.Session) string {
 			modelLabel = modelLabel + " @ " + session.ModelProvider
 		}
 	}
+	// Pre-render the branch + the correct action control from fast, local git
+	// calls so the footer doesn't pop in after the async /api/git/info fetch.
+	// PR detection (which can hit the network via gh) stays in that async call.
+	gitIsRepo, gitBranch, gitIsDefault, gitHasChanges := false, "", false, false
+	if cwd != "" {
+		if b, err := git.CurrentBranch(cwd); err == nil {
+			gitIsRepo, gitBranch = true, b
+			if def := git.DefaultBranch(cwd); def != "" && def == b {
+				gitIsDefault = true
+			}
+			gitHasChanges = git.HasLocalChanges(cwd)
+		}
+	}
 	data := struct {
 		SessionID          string
 		ChatAvailable      bool
 		ChatDisabledReason string
 		Cwd                string
 		ModelLabel         string
+		GitIsRepo          bool
+		GitBranch          string
+		GitIsDefault       bool
+		GitHasChanges      bool
 	}{
 		SessionID:          session.ID,
 		ChatAvailable:      chatAvailable,
 		ChatDisabledReason: session.ChatDisabledReason,
 		Cwd:                cwd,
 		ModelLabel:         modelLabel,
+		GitIsRepo:          gitIsRepo,
+		GitBranch:          gitBranch,
+		GitIsDefault:       gitIsDefault,
+		GitHasChanges:      gitHasChanges,
 	}
 	if !data.ChatAvailable && data.ChatDisabledReason == "" {
 		data.ChatDisabledReason = "This session can be viewed, but chat is disabled because its working directory no longer exists."

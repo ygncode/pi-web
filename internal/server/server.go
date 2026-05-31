@@ -171,6 +171,8 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/clone-session", s.auth.Wrap(s.handleApiCloneSession))
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
 	mux.HandleFunc("/api/recent-locations", s.auth.Wrap(s.handleRecentLocations))
+	mux.HandleFunc("/api/git/info", s.auth.Wrap(s.handleGitInfo))
+	mux.HandleFunc("/api/git/rename-branch", s.auth.Wrap(s.handleGitRenameBranch))
 	mux.HandleFunc("/custom-themes.css", s.auth.Wrap(s.handleCustomThemes))
 	mux.HandleFunc("/api/scratchpad", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodPost {

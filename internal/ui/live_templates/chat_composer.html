@@ -229,4 +229,79 @@
             </div>
         </div>
     </div>
+    <div
+        class="pi-git-bar"
+        id="pi-git-bar"
+        data-git-repo="{{.GitIsRepo}}"
+        data-git-branch="{{.GitBranch}}"
+        data-git-default="{{.GitIsDefault}}"
+        data-git-has-changes="{{.GitHasChanges}}"
+        {{if not .GitIsRepo}}hidden{{end}}
+    >
+        <div class="pi-git-branch" id="pi-git-branch">
+            <svg class="pi-git-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M6 3a3 3 0 0 0-1 5.83V15.2A3 3 0 1 0 7 15.2V8.83A3 3 0 0 0 6 3Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0 12a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm12-14a3 3 0 0 0-1 5.83V12a3 3 0 0 1-3 3h-2.17a3 3 0 1 0 0 2H14a5 5 0 0 0 5-5V8.83A3 3 0 0 0 18 3Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2ZM9 17a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/>
+            </svg>
+            <span class="pi-git-branch-name" id="pi-git-branch-name" title="Current branch">{{.GitBranch}}</span>
+            <button
+                type="button"
+                class="pi-git-edit"
+                id="pi-git-branch-edit"
+                title="Rename branch"
+                aria-label="Rename branch"
+                {{if .GitIsDefault}}hidden{{end}}
+            >
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M14.06 4.94l3 3L7.5 17.5 4 18.5l1-3.5 9.06-10.06zm1.42-1.42a1.5 1.5 0 0 1 2.12 0l1.88 1.88a1.5 1.5 0 0 1 0 2.12l-1 1-3-3 1-1z"/>
+                </svg>
+            </button>
+            <input
+                type="text"
+                class="pi-git-branch-input"
+                id="pi-git-branch-input"
+                autocomplete="off"
+                spellcheck="false"
+                aria-label="New branch name"
+                hidden
+            />
+        </div>
+        <!--
+            Initial state is rendered server-side from the fast git facts (no PR
+            detection yet) so the control doesn't flash a wrong label before the
+            JS runs. The async /api/git/info fetch then refines for PR state.
+        -->
+        <div class="pi-git-pr" id="pi-git-pr" {{if and .GitIsDefault (not .GitHasChanges)}}hidden{{end}}>
+            <button type="button" class="pi-git-pr-button pi-git-primary" id="pi-git-primary" {{if and .GitIsDefault (not .GitHasChanges)}}hidden{{end}}>
+                <span id="pi-git-primary-label">{{if .GitIsDefault}}Commit &amp; push{{else}}Create PR{{end}}</span>
+            </button>
+            <button
+                type="button"
+                class="pi-git-pr-button pi-git-caret"
+                id="pi-git-caret"
+                aria-haspopup="true"
+                aria-expanded="false"
+                aria-label="More git actions"
+                {{if .GitIsDefault}}hidden{{end}}
+            >
+                <span aria-hidden="true">▾</span>
+            </button>
+            <div class="pi-git-pr-menu" id="pi-git-pr-menu" role="menu" hidden>
+                <button type="button" class="pi-git-pr-item" id="pi-git-pr-view" role="menuitem" hidden>
+                    View PR ↗
+                </button>
+                <button type="button" class="pi-git-pr-item" id="pi-git-pr-draft" role="menuitem" hidden>
+                    Create Draft PR
+                </button>
+                <button type="button" class="pi-git-pr-item" id="pi-git-pr-manual" role="menuitem" {{if .GitIsDefault}}hidden{{end}}>
+                    Create PR manually ↗
+                </button>
+                <button type="button" class="pi-git-pr-item" id="pi-git-pr-merge" role="menuitem" hidden>
+                    Merge PR
+                </button>
+                <button type="button" class="pi-git-pr-item" id="pi-git-pr-commit" role="menuitem" hidden>
+                    Commit &amp; push
+                </button>
+            </div>
+        </div>
+    </div>
 </form>

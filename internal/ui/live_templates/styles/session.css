@@ -2193,10 +2193,167 @@
       width: 100%;
       box-sizing: border-box;
       display: block;
-      padding: 10px 14px calc(12px + env(safe-area-inset-bottom));
-      background: var(--body-bg);
-      border-top: 1px solid color-mix(in srgb, var(--dim) 55%, transparent);
+      padding: 18px 14px calc(14px + env(safe-area-inset-bottom));
+      background: var(--chrome-bg);
     }
+
+    /* Git branch + Create PR row beneath the input box. */
+    .pi-git-bar {
+      width: 100%;
+      max-width: 760px;
+      margin: 8px auto 0;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 2px;
+      font-size: 11px;
+    }
+    .pi-git-bar[hidden] { display: none; }
+
+    .pi-git-branch {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+      color: var(--muted);
+    }
+    .pi-git-icon {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+    .pi-git-branch-name {
+      max-width: 320px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-soft);
+      font-family: inherit;
+    }
+    .pi-git-edit {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      flex-shrink: 0;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s, color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .pi-git-edit:hover {
+      opacity: 1;
+      color: var(--text);
+      background: var(--hover);
+      border-color: var(--borderMuted);
+    }
+    .pi-git-edit svg { width: 12px; height: 12px; fill: currentColor; }
+
+    .pi-git-branch-input {
+      min-width: 0;
+      flex: 1 1 220px;
+      max-width: 320px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-family: inherit;
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--accent, #8abeb7) 60%, var(--dim));
+      border-radius: 4px;
+      outline: none;
+    }
+    .pi-git-branch-input[hidden] { display: none; }
+
+    .pi-git-actions {
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    .pi-git-actions > [hidden] { display: none; }
+    .pi-git-pr {
+      position: relative;
+      flex-shrink: 0;
+    }
+    .pi-git-pr-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 11px;
+      font-size: 11px;
+      font-family: inherit;
+      background: transparent;
+      color: var(--text-soft);
+      border: 1px solid var(--dim);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .pi-git-pr-button:hover,
+    .pi-git-pr-button[aria-expanded="true"] {
+      color: var(--text);
+      background: var(--hover);
+      border-color: var(--borderMuted);
+    }
+
+    .pi-git-pr-menu {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      right: 0;
+      min-width: 180px;
+      background: var(--container-bg, var(--surface));
+      border: 1px solid var(--dim);
+      border-radius: 6px;
+      box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.28);
+      padding: 4px;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .pi-git-pr-menu[hidden] { display: none; }
+    .pi-git-pr-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 6px 9px;
+      font-size: 11px;
+      font-family: inherit;
+      background: transparent;
+      color: var(--text-soft);
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .pi-git-pr-item:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+    /* The class above sets display:block, which would otherwise defeat the
+       [hidden] attribute — restore hiding for toggled menu items. */
+    .pi-git-pr-item[hidden] { display: none; }
+
+    /* Split button: primary action + caret share a pill, divided by a hairline. */
+    .pi-git-primary {
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    .pi-git-caret {
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-left: 0;
+      padding-left: 7px;
+      padding-right: 7px;
+    }
+    .pi-git-caret[hidden] { display: none; }
 
     .pi-chat-shell {
       width: 100%;
