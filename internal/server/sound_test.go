@@ -88,16 +88,25 @@ func TestHandleSounds(t *testing.T) {
 		t.Fatalf("expected audio/mpeg Content-Type, got %q", w.Header().Get("Content-Type"))
 	}
 
-	// 2. Test serving missing sound (falls back to embedded cat.mp3)
+	// 2. Test serving missing non-default sound returns 404
 	req2 := httptest.NewRequest(http.MethodGet, "/sounds/nonexistent.mp3", nil)
 	w2 := httptest.NewRecorder()
 	s.handleSounds(w2, req2)
 
-	if w2.Code != http.StatusOK {
-		t.Fatalf("expected 200 OK for fallback, got %d", w2.Code)
+	if w2.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 for missing non-default sound, got %d", w2.Code)
 	}
-	if w2.Header().Get("Content-Type") != "audio/mpeg" {
-		t.Fatalf("expected audio/mpeg Content-Type for fallback, got %q", w2.Header().Get("Content-Type"))
+
+	// 2b. Test cat.mp3 falls back to embedded when missing on disk
+	req2b := httptest.NewRequest(http.MethodGet, "/sounds/cat.mp3", nil)
+	w2b := httptest.NewRecorder()
+	s.handleSounds(w2b, req2b)
+
+	if w2b.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for embedded cat.mp3 fallback, got %d", w2b.Code)
+	}
+	if w2b.Header().Get("Content-Type") != "audio/mpeg" {
+		t.Fatalf("expected audio/mpeg Content-Type for cat.mp3 fallback, got %q", w2b.Header().Get("Content-Type"))
 	}
 
 	// 3. Test invalid extension

@@ -219,7 +219,7 @@ export function runChatComposer({
   }
 
   function isMobileTextInputMode() {
-    return !!(window.matchMedia && window.matchMedia('(max-width: 900px)').matches);
+    return !!(window.matchMedia && window.matchMedia('(hover: none) and (pointer: coarse)').matches);
   }
 
   function setChatStatus(text, cls) {

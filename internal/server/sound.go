@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,8 +21,7 @@ func (s *Server) handleApiSounds(w http.ResponseWriter, r *http.Request) {
 	soundsDir := filepath.Join(s.agentDir, "pi-web", "assets")
 	files, err := os.ReadDir(soundsDir)
 	if err != nil {
-		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		writeJSON(w, http.StatusOK, map[string]any{
 			"sounds":  []string{"cat.mp3", "done.mp3"},
 			"default": "cat.mp3",
 		})
@@ -41,9 +39,8 @@ func (s *Server) handleApiSounds(w http.ResponseWriter, r *http.Request) {
 	// If the user deleted all mp3s, we will return empty but sorted.
 	sort.Strings(sounds)
 
-	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-cache")
-	_ = json.NewEncoder(w).Encode(map[string]any{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"sounds":  sounds,
 		"default": "cat.mp3",
 	})
@@ -85,8 +82,13 @@ func (s *Server) handleSounds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Fallback to embedded cat.mp3
-	w.Header().Set("Content-Type", "audio/mpeg")
-	w.Header().Set("Cache-Control", "public, max-age=86400")
-	_, _ = w.Write(ui.CatMP3)
+	// Only fall back to embedded cat.mp3 when that specific file is requested.
+	// For any other missing file, return 404 so callers know it doesn't exist.
+	if name == "cat.mp3" {
+		w.Header().Set("Content-Type", "audio/mpeg")
+		w.Header().Set("Cache-Control", "public, max-age=86400")
+		_, _ = w.Write(ui.CatMP3)
+		return
+	}
+	http.NotFound(w, r)
 }

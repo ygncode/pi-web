@@ -59,7 +59,7 @@ These work on both index and session pages when focus is **not** in an input, te
 | `Enter` | Chat textarea | Submit message |
 | `Shift+Enter` | Chat textarea | Insert newline |
 | `Shift+Tab` | Chat textarea | Cycle to next thinking level (`off` → `minimal` → … → `xhigh` → `off`) |
-| `Ctrl+L` | Chat textarea | Open model selector popup (type to filter, Enter to select, focus returns to textarea) |
+| `Ctrl+I` / `Ctrl+L` | Chat textarea | Open model selector popup (type to filter, Enter to select, focus returns to textarea) |
 
 ### Entry visibility toggles
 
