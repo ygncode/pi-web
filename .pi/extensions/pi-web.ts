@@ -799,14 +799,14 @@ export default function (pi: ExtensionAPI) {
   let lastAutoTitle: string | null = null;
 
   pi.registerTool({
-    name: "set_tab_title",
+    name: "pi_web_set_tab_title",
     label: "Set Tab Title",
     description:
       "Set the Pi/pi-web session title to a concise description of the user's current task.",
     promptSnippet:
       "Update the Pi/pi-web session title when the user's task focus changes.",
     promptGuidelines: [
-      "Use set_tab_title with a short 2-5 word Title Case summary when the user's task focus changes.",
+      "Use pi_web_set_tab_title with a short 2-5 word Title Case summary when the user's task focus changes.",
     ],
     parameters: Type.Object({
       title: Type.String({ description: "Short 2-5 word session title." }),
