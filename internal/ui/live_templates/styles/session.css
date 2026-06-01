@@ -418,6 +418,9 @@
       --right-sidebar-width: 320px;
       --right-sidebar-min-width: 240px;
       --right-sidebar-max-width: 640px;
+      /* Shared height of the three bottom bars (left tree status, middle git/btw
+         action bar, right scratchpad footer) so their top divider lines align. */
+      --session-footer-h: 34px;
     }
 
     * {
@@ -623,7 +626,9 @@
     }
 
     .right-sidebar-footer {
-      padding: 6px 12px;
+      min-height: var(--session-footer-h);
+      box-sizing: border-box;
+      padding: 0 12px;
       border-top: 1px solid var(--dim);
       flex-shrink: 0;
       display: flex;
@@ -829,7 +834,11 @@
     }
 
     .tree-status {
-      padding: 4px 12px;
+      display: flex;
+      align-items: center;
+      min-height: var(--session-footer-h);
+      box-sizing: border-box;
+      padding: 0 12px;
       font-size: 10px;
       color: var(--muted);
       flex-shrink: 0;
@@ -2296,7 +2305,8 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 9px 16px calc(9px + env(safe-area-inset-bottom));
+      min-height: var(--session-footer-h);
+      padding: 0 16px env(safe-area-inset-bottom);
       font-size: 11px;
       background: var(--chrome-bg);
       border-top: 1px solid var(--dim);
