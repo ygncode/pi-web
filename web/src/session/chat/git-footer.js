@@ -30,6 +30,7 @@ export function setupGitFooter({
   const bar = documentImpl.getElementById('pi-git-bar');
   if (!bar || !gitApi) return;
 
+  const branchWrap = documentImpl.getElementById('pi-git-branch');
   const nameEl = documentImpl.getElementById('pi-git-branch-name');
   const editBtn = documentImpl.getElementById('pi-git-branch-edit');
   const input = documentImpl.getElementById('pi-git-branch-input');
@@ -96,9 +97,14 @@ export function setupGitFooter({
 
   function applyInfo(info) {
     if (!info || !info.isRepo || !info.branch) {
-      bar.hidden = true;
+      // Not a git repo: hide the git controls but keep the bar itself visible,
+      // since it also hosts the always-available btw button.
+      show(branchWrap, false);
+      show(prWrap, false);
+      bar.hidden = false;
       return;
     }
+    show(branchWrap, true);
     currentBranch = info.branch;
     prCreateUrl = info.prCreateUrl || '';
     existingPrUrl = info.prUrl || '';

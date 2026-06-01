@@ -40,12 +40,16 @@ afterEach(() => {
 });
 
 describe('setupGitFooter', () => {
-  it('stays hidden when the cwd is not a git repo', async () => {
+  it('hides the git controls but keeps the bar visible (for btw) when the cwd is not a git repo', async () => {
     dom = createDom();
     const gitApi = { getGitInfo: vi.fn().mockResolvedValue({ isRepo: false }) };
     setupGitFooter({ documentImpl: document, windowImpl: window, sessionId: 's', gitApi });
     await flush();
-    expect(id('pi-git-bar').hidden).toBe(true);
+    // Bar stays visible so the always-available btw button remains reachable.
+    expect(id('pi-git-bar').hidden).toBe(false);
+    // Git-specific clusters are hidden.
+    expect(id('pi-git-branch').hidden).toBe(true);
+    expect(id('pi-git-pr').hidden).toBe(true);
   });
 
   it('renders synchronously from data attributes before the async fetch resolves', () => {

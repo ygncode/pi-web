@@ -229,6 +229,11 @@
             </div>
         </div>
     </div>
+    <!--
+        Always rendered: this is the composer's bottom action bar. The git
+        controls inside hide themselves when the cwd is not a repo, but the btw
+        button stays so it is reachable everywhere.
+    -->
     <div
         class="pi-git-bar"
         id="pi-git-bar"
@@ -236,9 +241,8 @@
         data-git-branch="{{.GitBranch}}"
         data-git-default="{{.GitIsDefault}}"
         data-git-has-changes="{{.GitHasChanges}}"
-        {{if not .GitIsRepo}}hidden{{end}}
     >
-        <div class="pi-git-branch" id="pi-git-branch">
+        <div class="pi-git-branch" id="pi-git-branch" {{if not .GitIsRepo}}hidden{{end}}>
             <svg class="pi-git-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <path d="M6 3a3 3 0 0 0-1 5.83V15.2A3 3 0 1 0 7 15.2V8.83A3 3 0 0 0 6 3Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm0 12a1 1 0 1 1 0 2 1 1 0 0 1 0-2Zm12-14a3 3 0 0 0-1 5.83V12a3 3 0 0 1-3 3h-2.17a3 3 0 1 0 0 2H14a5 5 0 0 0 5-5V8.83A3 3 0 0 0 18 3Zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2ZM9 17a1 1 0 1 1 0 2 1 1 0 0 1 0-2Z"/>
             </svg>
@@ -265,12 +269,16 @@
                 hidden
             />
         </div>
+        <div class="pi-git-right">
+        <button type="button" class="pi-git-pr-button pi-btw-button" id="pi-btw-button" title="btw">
+            btw
+        </button>
         <!--
             Initial state is rendered server-side from the fast git facts (no PR
             detection yet) so the control doesn't flash a wrong label before the
             JS runs. The async /api/git/info fetch then refines for PR state.
         -->
-        <div class="pi-git-pr" id="pi-git-pr" {{if and .GitIsDefault (not .GitHasChanges)}}hidden{{end}}>
+        <div class="pi-git-pr" id="pi-git-pr" {{if or (not .GitIsRepo) (and .GitIsDefault (not .GitHasChanges))}}hidden{{end}}>
             <button type="button" class="pi-git-pr-button pi-git-primary" id="pi-git-primary" {{if and .GitIsDefault (not .GitHasChanges)}}hidden{{end}}>
                 <span id="pi-git-primary-label">{{if .GitIsDefault}}Commit &amp; push{{else}}Create PR{{end}}</span>
             </button>
@@ -302,6 +310,7 @@
                     Commit &amp; push
                 </button>
             </div>
+        </div>
         </div>
     </div>
 </form>

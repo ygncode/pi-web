@@ -211,6 +211,8 @@ func (s *Server) Register(mux *http.ServeMux) {
 			s.auth.Wrap(s.handleGetScratchpad)(w, r)
 		}
 	})
+	mux.HandleFunc("/api/btw", s.auth.Wrap(s.handleGetBtw))
+	mux.HandleFunc("/api/btw/new", s.auth.Wrap(s.handleNewBtw))
 	if s.push != nil {
 		s.push.Register(mux, s.auth.Wrap)
 	}
