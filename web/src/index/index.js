@@ -502,7 +502,6 @@ export function runIndexPage({
       row.appendChild(meta);
 
       if (project.source === 'registered') {
-        row.classList.add('has-remove');
         const remove = documentImpl.createElement('button');
         remove.type = 'button';
         remove.className = 'project-row-remove';
