@@ -247,7 +247,7 @@
     --darkGray: #3b4252;
     --accent-color: #88c0d0;
     --selectedBg: #434c5e;
-    --userMessageBg: #3b4252;
+    --userMessageBg: #434c5e;
     --toolPendingBg: #434c5e;
     --toolSuccessBg: #434c5e;
     --toolErrorBg: #4c566a;
@@ -337,7 +337,7 @@
     --darkGray: #44475a;
     --accent-color: #ff79c6;
     --selectedBg: #44475a;
-    --userMessageBg: #1e1f29;
+    --userMessageBg: #343746;
     --toolPendingBg: #343746;
     --toolSuccessBg: #343746;
     --toolErrorBg: #44475a;

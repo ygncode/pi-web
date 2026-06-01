@@ -94,7 +94,6 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, toggleID, themeIconClass, 
 		ItemClass:         itemClass,
 		Sections: []liveMenuSection{
 			{Title: "Session", Items: []liveMenuItem{
-				{Label: "New Session", Suffix: template.HTML("<kbd>⌘T</kbd>"), Attrs: `data-action="new-session"`},
 				{Label: "Search Sessions", Suffix: template.HTML("<kbd>⌘K</kbd>"), Attrs: `data-action="list-sessions"`},
 			}},
 			{Items: []liveMenuItem{

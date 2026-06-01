@@ -13,9 +13,20 @@
   </div>
 
   <div class="session-header-bar">
-    <a href="/" class="session-header-back"><span>←</span> Sessions</a>
+    <div class="session-header-left">
+      <a href="/" class="session-header-back"><span>←</span> Sessions</a>
+      <button id="tree-toggle" class="session-header-actions session-header-tree-toggle" title="Toggle session tree" aria-label="Toggle session tree" aria-pressed="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+          <path d="M9 3v18"></path>
+        </svg>
+      </button>
+    </div>
     <span class="session-header-title" id="session-header-title">{{.Title}}</span>
     <div class="session-header-right">
+      <button id="new-session-header-btn" class="session-header-new" title="New Session (⌘T)" aria-label="Start a new session">
+        <span aria-hidden="true">+</span><span class="session-header-new-label">New</span>
+      </button>
       <button id="shortcuts-help-btn" class="session-header-shortcuts-help" title="Show keyboard shortcuts (⌘/)">⌘/</button>
       <button id="toggle-right-sidebar-btn" class="session-header-actions" title="Toggle scratchpad (⌘⇧N)" aria-label="Toggle scratchpad">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -59,6 +70,7 @@
 
                 <path d="M18 12H8c-1 0-2 0-2-2V8"></path>
               </svg></button>
+          <button id="sidebar-close" class="sidebar-close" title="Close" aria-label="Close session tree">✕</button>
         </div>
         <div class="sidebar-filters">
           <button class="filter-btn active" data-filter="default" title="Hide settings entries">Default</button>

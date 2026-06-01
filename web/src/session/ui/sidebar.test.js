@@ -87,9 +87,11 @@ describe('setupSidebarCollapse', () => {
   function collapseDom() {
     const jsdom = new JSDOM(`<body>
       <button id="hamburger"></button>
+      <button id="tree-toggle" aria-pressed="true"></button>
       <aside id="sidebar"></aside>
       <div id="sidebar-overlay"></div>
       <button id="hide-sidebar" class="hide-sidebar"></button>
+      <button id="sidebar-close" class="sidebar-close"></button>
     </body>`);
     Object.defineProperty(jsdom.window, 'innerWidth', { value: 1200, configurable: true });
     jsdom.window.matchMedia = () => ({ matches: false });
@@ -129,6 +131,36 @@ describe('setupSidebarCollapse', () => {
     expect(storage.setItem).toHaveBeenCalledWith(SIDEBAR_COLLAPSED_STORAGE_KEY, 'true');
   });
 
+  it('sidebar-close click closes the open mobile sidebar', () => {
+    const jsdom = collapseDom();
+    jsdom.window.matchMedia = () => ({ matches: true });
+    const storage = { getItem: () => 'false', setItem: vi.fn() };
+    setupSidebarCollapse({ documentImpl: jsdom.window.document, windowImpl: jsdom.window, storage });
+    const sidebar = jsdom.window.document.getElementById('sidebar');
+    sidebar.classList.add('open');
+    jsdom.window.document.body.classList.add('sidebar-open');
+    jsdom.window.document.getElementById('sidebar-close').click();
+    expect(sidebar.classList.contains('open')).toBe(false);
+    expect(jsdom.window.document.body.classList.contains('sidebar-open')).toBe(false);
+  });
+
+  it('tree-toggle click toggles collapse and reflects aria-pressed', () => {
+    const jsdom = collapseDom();
+    const storage = { getItem: () => 'false', setItem: vi.fn() };
+    setupSidebarCollapse({ documentImpl: jsdom.window.document, windowImpl: jsdom.window, storage });
+    const treeToggle = jsdom.window.document.getElementById('tree-toggle');
+    expect(treeToggle.getAttribute('aria-pressed')).toBe('true');
+
+    treeToggle.click();
+    expect(jsdom.window.document.body.classList.contains('sidebar-collapsed')).toBe(true);
+    expect(treeToggle.getAttribute('aria-pressed')).toBe('false');
+    expect(storage.setItem).toHaveBeenCalledWith(SIDEBAR_COLLAPSED_STORAGE_KEY, 'true');
+
+    treeToggle.click();
+    expect(jsdom.window.document.body.classList.contains('sidebar-collapsed')).toBe(false);
+    expect(treeToggle.getAttribute('aria-pressed')).toBe('true');
+    expect(storage.setItem).toHaveBeenCalledWith(SIDEBAR_COLLAPSED_STORAGE_KEY, 'false');
+  });
 
 });
 
