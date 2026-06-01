@@ -13,6 +13,45 @@ type liveDocumentData struct {
 	BodyAttrs template.HTMLAttr
 }
 
+// wcoBootScript toggles a `wco` class on <html> when the PWA is running with
+// Window Controls Overlay so the app can paint its own header into the OS title
+// bar. Runs in <head> (before <body> exists) so the class is set on the root
+// element with no flash, and tracks runtime changes via geometrychange.
+// wcoBootScript runs in <head> before any CSS loads.
+// It does two things:
+//   1. Sets an inline background-color on <html> from localStorage so the
+//      correct theme colour is present from the very first paint, eliminating
+//      the white/gray flash visible in the WCO title-bar area during navigation.
+//   2. Toggles the `wco` class when Window Controls Overlay is active.
+// wcoBootScript runs in <head> before any CSS loads.
+// It does two things:
+//   1. Sets an inline background-color on <html> matching the current theme
+//      and WCO state so the correct colour is present from the very first
+//      paint, eliminating the white/gray flash in the title-bar area.
+//   2. Toggles the `wco` class when Window Controls Overlay is active.
+const wcoBootScript = `<script>
+(function(){
+  var chromeBgs = {dark:'#0f0f14',light:'#ddddda',nord:'#292f3a',dracula:'#242631'};
+  var bodyBgs   = {dark:'#111116',light:'#f6f5f2',nord:'#2e3440',dracula:'#282a36'};
+  var o = navigator.windowControlsOverlay;
+  function applyBg(){
+    var t = 'dark';
+    try{ t = localStorage.getItem('pi-web-theme') || 'dark'; }catch(e){}
+    var isWCO = o && o.visible;
+    var map = isWCO ? chromeBgs : bodyBgs;
+    document.documentElement.style.backgroundColor = map[t] || map.dark;
+  }
+  applyBg();
+  if(!o) return;
+  function sync(){
+    document.documentElement.classList.toggle('wco', !!o.visible);
+    applyBg();
+  }
+  sync();
+  try{ o.addEventListener('geometrychange', sync); }catch(e){}
+})();
+</script>`
+
 func renderLiveDocumentStart(data liveDocumentData) string {
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n")
@@ -32,6 +71,8 @@ func renderLiveDocumentStart(data liveDocumentData) string {
 	b.WriteString("<meta name=\"mobile-web-app-capable\" content=\"yes\">\n")
 	b.WriteString("<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">\n")
 	b.WriteString("<meta name=\"apple-mobile-web-app-title\" content=\"Pi Sessions\">\n")
+	b.WriteString(wcoBootScript)
+	b.WriteByte('\n')
 	if data.Styles != "" {
 		b.WriteString(string(data.Styles))
 		b.WriteByte('\n')
@@ -76,14 +117,15 @@ func themeBootScript(defaultTheme string) template.HTML {
     else if(t === 'custom') icon = '⚙';
     document.querySelectorAll('[data-theme-icon]').forEach(function(el){ el.textContent = icon; });
     document.querySelectorAll('[data-command-theme-icon]').forEach(function(el){ el.textContent = icon; });
+    var isWCO = navigator.windowControlsOverlay && navigator.windowControlsOverlay.visible;
+    var chromeBg = '#0f0f14', bodyBg = '#111116';
+    if(t === 'light')   { chromeBg = '#ddddda'; bodyBg = '#f6f5f2'; }
+    else if(t === 'nord')    { chromeBg = '#292f3a'; bodyBg = '#2e3440'; }
+    else if(t === 'dracula') { chromeBg = '#242631'; bodyBg = '#282a36'; }
+    var color = isWCO ? chromeBg : bodyBg;
+    document.documentElement.style.backgroundColor = color;
     var meta = document.querySelector('meta[name="theme-color"]');
-    if(meta) {
-      var color = '#111116';
-      if(t === 'light') color = '#f6f5f2';
-      else if(t === 'nord') color = '#2e3440';
-      else if(t === 'dracula') color = '#282a36';
-      meta.content = color;
-    }
+    if(meta) { meta.content = color; }
   }
   function toggleTheme(){
     var idx = themes.indexOf(currentTheme());

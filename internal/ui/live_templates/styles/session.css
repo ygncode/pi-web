@@ -1055,6 +1055,41 @@
       -webkit-backdrop-filter: blur(16px);
     }
 
+    /* Standalone PWA without WCO: the OS draws its own title bar above the
+       page. Make the session header use --body-bg (same as theme-color in
+       this mode) so the OS strip and our header merge into one seamless zone,
+       clearly distinct from the WCO compact look. */
+    @media (display-mode: standalone) {
+      .session-header-bar {
+        background: var(--body-bg);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+    }
+
+    /* Window Controls Overlay (installed PWA): draw the header into the OS
+       title bar. Reserve the inset for the window controls and make the bar
+       draggable, while keeping interactive children clickable. */
+    :root.wco .session-header-bar {
+      /* Stay full-width (base left:0/right:0) so the bottom border spans the
+         whole window; just inset the content past the OS window controls on
+         both sides. Background matches theme-color (== --chrome-bg) so the
+         browser-painted control strip blends seamlessly. */
+      padding-left: calc(env(titlebar-area-x, 0px) + 18px);
+      padding-right: calc(100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100%) + 18px);
+      background: var(--chrome-bg);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+      -webkit-app-region: drag;
+      app-region: drag;
+    }
+
+    :root.wco .session-header-bar a,
+    :root.wco .session-header-bar button {
+      -webkit-app-region: no-drag;
+      app-region: no-drag;
+    }
+
     .session-header-back {
       display: inline-flex;
       align-items: center;

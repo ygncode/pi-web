@@ -1,5 +1,15 @@
 /* ── Unified CSS Variables Theme Engine ── */
 
+/* Smooth cross-fade for MPA navigations (Chrome 126+). Eliminates the
+   hard-cut flash when moving between the index and session pages. */
+@view-transition {
+    navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.12s;
+}
+
 :root {
     --font-sans: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     --palette-surface: var(--surface);
