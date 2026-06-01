@@ -55,6 +55,7 @@ func homeMenuHTML() template.HTML {
 		Sections: []liveMenuSection{
 			{Items: []liveMenuItem{
 				{Label: "New Session", Attrs: `data-new-session-btn role="menuitem"`},
+				{Label: "Manage Projects", Attrs: `id="manage-projects-btn" data-manage-projects-btn role="menuitem"`},
 				{Label: "Import Session", Muted: true, Attrs: `role="menuitem"`},
 			}},
 			{Items: []liveMenuItem{

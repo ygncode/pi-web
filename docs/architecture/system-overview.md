@@ -16,7 +16,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 | Live Updates | Server-Sent Events (SSE) |
 | Chat RPC | JSONL over stdin/stdout via `pi --mode rpc` |
 | Session Storage | JSONL files on disk; pi-web creates new session files and appends `session_info` for browser rename |
-| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads |
+| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads and project visibility prefs |
 | Auth | Token cookie/query/header (optional on localhost) |
 
 ## Component Diagram
@@ -56,6 +56,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   GET  /api/worker-status → handleWorkerStatus                           │
 │   GET  /api/git/info  / POST /api/git/rename-branch                      │
 │   GET/POST /api/scratchpad → scratchpad (SQLite)                         │
+│   GET/POST /api/projects → project visibility prefs (SQLite)             │
 │   GET  /api/sounds  /  GET /sounds/…   (notification sounds)             │
 │   POST /share         →  handleShare         (GitHub Gist)               │
 │   GET  /events        →  handleEvents        (SSE)                       │
@@ -127,13 +128,29 @@ name, while pi-web itself continues listening only on localhost.
 ├── session-status/
 │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here
 │   └── …
-├── pi-web.sqlite           ← scratchpads (and future local state)
+├── pi-web.sqlite           ← scratchpads + project visibility prefs
 └── pi-web/
     ├── pi-web-state.json   ← server state file
     ├── custom-themes.css   ← optional user custom theme
     ├── vapid.json          ← web-push VAPID keys (when push enabled)
     └── push-subs.json      ← web-push subscriptions (when push enabled)
 ```
+
+## Project Visibility (Allowlist)
+
+The index page only renders sessions whose project is **enabled**. Preferences
+live in the `project_prefs` SQLite table (`internal/server/projects.go`) and sync
+across devices since they are server-side.
+
+- **First run** (empty table): every discovered project is seeded enabled, so the
+  homepage looks unchanged until the user curates.
+- **New projects** that appear after the first run default to **disabled** (hidden)
+  — an allowlist, so noise from one-off folders stays out of view.
+- **Registering** a folder path (`action: register`) pre-approves it so sessions
+  that later land there show immediately, even before any session exists.
+- Filtering is applied server-side in both `handleIndex` and `handleApiSessions`
+  (no client flash). Manage projects via the index menu → **Manage Projects**,
+  backed by `GET/POST /api/projects`.
 
 ## Startup Order
 

@@ -72,6 +72,16 @@ a { color: inherit; }
     -webkit-app-region: no-drag;
     app-region: no-drag;
 }
+/* The dropdown menu and modals are layered above the draggable header. Without
+   an explicit no-drag, the OS title-bar drag region swallows clicks on any of
+   their controls that overlap the header band (e.g. the top menu items). */
+:root.wco .web-menu,
+:root.wco .web-menu *,
+:root.wco .modal-overlay,
+:root.wco .modal-overlay * {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+}
 .header-top {
     display: flex;
     align-items: center;
@@ -493,6 +503,145 @@ body.modal-sheet-open { overflow: hidden; }
     transform: scale(0.98);
 }
 .modal-error { color: var(--danger); min-height: 16px; margin-top: 8px; font-size: 11px; }
+
+.modal-hint { color: var(--muted); font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+.projects-toolbar {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.projects-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 36px;
+    box-sizing: border-box;
+    background: var(--body-bg);
+    border: 1px solid var(--dim);
+    color: var(--text);
+    padding: 0 12px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 12px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.projects-search:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.projects-bulk-btn {
+    flex: 0 0 auto;
+    height: 36px;
+    box-sizing: border-box;
+    border: 1px solid var(--dim);
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0 14px;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.projects-bulk-btn:hover:not(:disabled) { color: var(--text); border-color: var(--muted); background: var(--surface-2); }
+.projects-bulk-btn:disabled { opacity: 0.5; cursor: default; }
+.projects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    max-height: 320px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+.projects-empty { color: var(--muted); font-size: 12px; padding: 12px 4px; }
+.project-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px 6px;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+.project-row.has-remove { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.project-row:hover { background: var(--surface-2); }
+.project-row input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border: 1.5px solid var(--muted);
+    border-radius: 5px;
+    background: var(--body-bg);
+    cursor: pointer;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.project-row input[type="checkbox"]:hover { border-color: var(--text-soft); }
+.project-row input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.project-row input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 5px;
+    height: 9px;
+    border: solid var(--body-bg);
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+.project-row input[type="checkbox"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.project-row-name {
+    color: var(--text);
+    font-size: 12px;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    /* Truncate from the left so the distinguishing tail of long, common-prefixed
+       paths (the project folder) stays visible. */
+    direction: rtl;
+    text-align: left;
+}
+.project-row-name bdi { direction: ltr; unicode-bidi: bidi-override; }
+.project-row-count { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.project-row-remove {
+    border: 1px solid var(--dim);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.project-row-remove:hover { color: var(--danger); border-color: var(--danger); }
+.project-row.hidden, .projects-empty.hidden { display: none; }
+.projects-footer {
+    margin-top: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--dim);
+}
+.projects-footer-label {
+    display: block;
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 560;
+    margin-bottom: 8px;
+}
+.projects-footer input { margin-bottom: 0; }
+#projectsModalError { min-height: 0; margin: 8px 0 0; }
+#projectsModalError:empty { display: none; }
+#projectsModalOverlay .modal-actions { margin-top: 14px; }
 
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
