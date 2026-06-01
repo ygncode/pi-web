@@ -10,7 +10,7 @@
 // when the server briefly went down, could surface as "Failed to load
 // module script: text/html" errors on lazy-loaded JS chunks.
 
-const VERSION = 'v3-visible-push-suppression';
+const VERSION = 'v4-no-fetch-handler';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -19,10 +19,6 @@ self.addEventListener('install', () => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
-
-// Empty fetch handler: satisfies the "fetch listener exists" requirement
-// for installability, but does NOT intercept requests.
-self.addEventListener('fetch', () => {});
 
 // Web Push: show a system notification when the server reports the
 // assistant is done. Payload is JSON: { title, body, sessionId, type }.

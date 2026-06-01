@@ -40,7 +40,7 @@ The Go template still renders the live HTML shell, CSS, chat form shell, and ser
 renderLiveSessionPage(session)
        │
        ├──▶ internal/ui/live_templates/session.html
-       ├──▶ internal/ui/live_templates/session.css
+       ├──▶ theme.css + session.css + menu.css + palette.css (concatenated inline)
        ├──▶ base64(sessionData) in #session-data
        ├──▶ internal/ui/live_templates/chat_composer.html
        └──▶ <script type="module" src="/static/assets/session-*.js">
@@ -53,8 +53,9 @@ Session frontend modules are split by ownership:
 - `web/src/session/render/` — formatting helpers plus message/header renderers
 - `web/src/session/navigation/` — session path rendering, header/message navigation, copy-link wiring
 - `web/src/session/chat/` — chat composer, attachments, model and thinking controls
-- `web/src/session/live/` — session SSE/live reload behavior
-- `web/src/session/ui/` — session page interaction wiring and sidebar behavior
+- `web/src/session/live/` — session SSE/live reload, fork modal, share overlay, command/session palettes, update indicator
+- `web/src/session/ui/` — session page interaction wiring, sidebars, search filters
+- `web/src/session/cat-gatekeeper/` — the cat gate overlay + its settings
 
 `internal/ui/live_templates/export/app/*.js` is not the source of live interactive session runtime behavior. It is kept only for static/share exports.
 
@@ -84,6 +85,10 @@ The session page listens to `/events?id=<sessionId>` for:
 - `web/src/shared/status-events.js` — shared status SSE lifecycle
 - `web/src/shared/storage.js` — localStorage helpers
 - `web/src/shared/escape.js` — HTML escaping
+- `web/src/shared/theme.js` — theme toggle (dark/light/nord/dracula/custom)
+- `web/src/shared/version.js` — version check + update indicator helpers
+- `web/src/shared/keyboard-nav.js` — vim-style j/k/gg/G navigation
+- `web/src/shared/session-list-palette.js` — shared ⌘K session search palette
 
 ## Static Assets
 
@@ -92,7 +97,18 @@ The session page listens to `/events?id=<sessionId>` for:
 | Vite index bundle | `web/dist/assets/index-*.js` | `/static/assets/index-*.js` |
 | Vite session bundle | `web/dist/assets/session-*.js` | `/static/assets/session-*.js` |
 | Vite live bundle | `web/dist/assets/live-*.js` | `/static/assets/live-*.js` |
+| Vite lazy chunks | `web/dist/assets/*.js` | `/static/assets/*.js` |
 | Static export JS | `internal/ui/live_templates/export/app/*.js` + vendors | inline in exported HTML |
+| Theme CSS | `internal/ui/live_templates/styles/theme.css` | `/theme.css` (PWA route) |
+| Index CSS | `internal/ui/live_templates/styles/index.css` | `/index.css` (PWA route) |
+| Menu CSS | `internal/ui/live_templates/styles/menu.css` | `/menu.css` (PWA route) |
+| Palette CSS | `internal/ui/live_templates/styles/palette.css` | `/palette.css` (PWA route) |
+| Custom themes | `~/.pi/agent/pi-web/custom-themes.css` (optional) | `/custom-themes.css` |
+| PWA manifest | `internal/ui/live_templates/assets/manifest.webmanifest` | `/manifest.webmanifest` |
+| Service worker | `internal/ui/live_templates/assets/sw.js` | `/sw.js` |
+| Icons | `internal/ui/live_templates/assets/icon.svg` etc. | `/icon.svg`, `/icon-maskable.svg`, `/pi-logo.svg` |
+| Sound assets | `internal/ui/live_templates/assets/cat.webm` | `/cat.webm` |
+| User sound assets | `~/.pi/agent/pi-web/assets/*.mp3` | `/sounds/*.mp3` |
 
 ## Theme System
 

@@ -91,10 +91,10 @@ If not logged in → `400` error: `"GitHub CLI not logged in. Run 'gh auth login
 The handler resolves the session by ID and then calls:
 
 ```go
-renderExportSessionPage(session)
+renderExportSessionPage(session, theme)
 ```
 
-The export renderer omits live-only chrome (no back link, no share button, no chat composer) — the exported HTML is meant to be a clean, self-contained document.
+The `theme` parameter is extracted from the user's `pi-web-theme` cookie (falling back to `"dark"`) so the exported snapshot opens with the same theme the user had active. The export renderer omits live-only chrome (no back link, no share button, no chat composer) — the exported HTML is meant to be a clean, self-contained document.
 
 ### 5. Create Temporary File
 

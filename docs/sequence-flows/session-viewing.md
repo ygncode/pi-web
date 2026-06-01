@@ -171,9 +171,11 @@ The command menu (`⋯`) is organized into sections:
 
 - **Session** — Search Sessions (`⌘K`), New Session
 - *(divider)* — Rename, Share, Fork, Clone
-- **Preferences** — Appearance, Notifications
+- **Preferences** — Appearance, Notifications, Spinner, Cat Gatekeeper
 - **Development** — Resume via Terminal, Tree (`⌘B`), Diff
 - **Insights** — Model Usage
+- **Resources** — Documentation, GitHub
+- *(no title)* — Version, Settings
 
 The **Search Sessions** palette reuses the same CSS and palette template as the home page's `⌘K` palette. It filters server-side by `?project=` (the current session's working directory), then applies client-side text filtering with a 100ms debounce.
 

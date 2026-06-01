@@ -10,11 +10,13 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 |-------|------------|
 | Backend | Go 1.25+ |
 | Frontend (index) | Vite + vanilla JS |
-| Frontend (session) | Go `html/template` + embedded JS/CSS |
-| Styling | Custom CSS (dark theme) |
+| Frontend (session) | Vite + vanilla JS (Go renders only the HTML shell + initial data) |
+| Static export | Go `html/template` + inlined JS/CSS (self-contained Gist) |
+| Styling | Custom CSS (multi-theme: dark/light/nord/dracula/custom) |
 | Live Updates | Server-Sent Events (SSE) |
 | Chat RPC | JSONL over stdin/stdout via `pi --mode rpc` |
 | Session Storage | JSONL files on disk; pi-web creates new session files and appends `session_info` for browser rename |
+| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads |
 | Auth | Token cookie/query/header (optional on localhost) |
 
 ## Component Diagram
@@ -41,19 +43,27 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │                              HTTP Router                                  │
 │                                                                           │
 │   GET  /              →  handleIndex      (Vite index bundle)             │
-│   GET  /session       →  handleSession    (embedded HTML)                │
+│   GET  /session       →  handleSession    (Vite session bundle shell)    │
 │   GET  /api/session   →  handleApiSession  (JSON)                        │
+│   GET  /api/sessions  →  handleApiSessions (JSON list)                   │
 │   POST /api/chat      →  handleChat        (multipart or JSON)           │
 │   POST /api/chat/cancel → handleCancelChat                               │
 │   POST /api/set-model →  handleSetModel                                  │
 │   POST /api/set-thinking-level → handleSetThinkingLevel                  │
+│   POST /api/new-session / fork-session / clone-session                   │
 │   POST /api/rename-session → handleRenameSession                         │
 │   GET  /api/models    →  handleAvailableModels                           │
 │   GET  /api/worker-status → handleWorkerStatus                           │
+│   GET  /api/git/info  / POST /api/git/rename-branch                      │
+│   GET/POST /api/scratchpad → scratchpad (SQLite)                         │
+│   GET  /api/sounds  /  GET /sounds/…   (notification sounds)             │
 │   POST /share         →  handleShare         (GitHub Gist)               │
 │   GET  /events        →  handleEvents        (SSE)                       │
-│   POST /api/new-session → handleNewSession                               │
 │   GET  /api/recent-locations → handleRecentLocations                     │
+│   GET  /custom-themes.css → handleCustomThemes                           │
+│   /api/push/{vapid,subscribe,unsubscribe}  (web-push, optional)         │
+│   /api/{version,check-update,update,restart} (self-update, optional)    │
+│   PWA: /manifest.webmanifest, /sw.js, /icon.svg, /cat.webm, …           │
 │   GET  /static/…      →  embedded Vite assets                            │
 │                                                                           │
 │   All handlers wrapped with auth.Middleware (token check)                │
@@ -117,13 +127,17 @@ name, while pi-web itself continues listening only on localhost.
 ├── session-status/
 │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here
 │   └── …
+├── pi-web.sqlite           ← scratchpads (and future local state)
 └── pi-web/
-    └── pi-web-state.json   ← server state file
+    ├── pi-web-state.json   ← server state file
+    ├── custom-themes.css   ← optional user custom theme
+    ├── vapid.json          ← web-push VAPID keys (when push enabled)
+    └── push-subs.json      ← web-push subscriptions (when push enabled)
 ```
 
 ## Startup Order
 
-1. Parse CLI flags (`-p`, `-host`, `-o`, `-insecure`)
+1. Parse CLI flags (`-p`, `-host`, `-o`, `-insecure`, `-version`)
 2. Validate sessions directory exists
 3. Determine bind host (flag → localhost)
 4. Enforce auth for explicit non-loopback binds

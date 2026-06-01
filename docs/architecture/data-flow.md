@@ -35,6 +35,8 @@ Sessions are stored as **JSONL** files (one JSON object per line):
 | `branch_summary` | Summary of work on a git branch |
 | `compaction` | Conversation history was compacted |
 | `model_change` | Model switched mid-session |
+| `thinking_level_change` | Thinking level changed mid-session |
+| `diff` | Code diff output from edit/tool operations |
 
 ### Project Directory Encoding
 
@@ -62,6 +64,8 @@ sessions.ParseFile(path, dirName, fileName)
      │        └──▶ all types → append to Entries
      │
      ├──▶ Name = latest session_info.name, else session.name, else first user text, else filename
+     ├──▶ Model = last message model or last model_change modelId
+     ├──▶ ModelProvider = provider for last-known model
      ├──▶ LastActivity = latest timestamp (or file modtime fallback)
      │
      └──▶ ChatAvailable = cwd still exists?
@@ -232,4 +236,70 @@ Browser POST /api/new-session
            │         └──▶ So the session page can read default model/thinking level immediately
            │
            └──▶ Return {"ok": true, "id": <filename>}
+```
+
+## Data Flow: Fork Session
+
+```
+Browser POST /api/fork-session?id=<sourceId>
+           │
+           ▼
+    server.handleApiForkSession
+           │
+           ├──▶ Decode JSON body → {"entryId": "..."}
+           ├──▶ Resolve source session ID → filesystem path
+           ├──▶ sessions.ForkSessionFile(sessionsDir, sourcePath, entryId, now)
+           │         ├──▶ Parse source session into by-ID map
+           │         ├──▶ Walk from entryId back to root (via parentId)
+           │         ├──▶ Reverse to chronological order
+           │         ├──▶ Create new session header with parentSession reference + forkedFrom
+           │         └──▶ Write new JSONL file in same project directory
+           ├──▶ Initialize worker for the new session (async)
+           │
+           └──▶ Return {"ok": true, "id": <newFilename>}
+```
+
+## Data Flow: Clone Session
+
+```
+Browser POST /api/clone-session?id=<sourceId>
+           │
+           ▼
+    server.handleApiCloneSession
+           │
+           ├──▶ Decode JSON body → {"leafId": "..."}  (optional, defaults to last entry)
+           ├──▶ Resolve source session ID → filesystem path
+           ├──▶ sessions.CloneSessionFile(sessionsDir, sourcePath, leafId, now)
+           │         ├──▶ Parse source session into by-ID map
+           │         ├──▶ Walk from leafId back to root (via parentId)
+           │         ├──▶ Reverse to chronological order
+           │         ├──▶ Create new session header with parentSession reference
+           │         └──▶ Write new JSONL file in same project directory
+           ├──▶ Initialize worker for the new session (async)
+           │
+           └──▶ Return {"ok": true, "id": <newFilename>}
+```
+
+## Data Flow: Scratchpad (Notes)
+
+```
+Browser GET /api/scratchpad?project=<cwd>
+           │
+           ▼
+    server.handleGetScratchpad
+           │
+           ├──▶ Query SQLite: SELECT content FROM scratchpads WHERE project_path = ?
+           │
+           └──▶ Return {"content": "..."}  (empty string if no notes exist)
+
+Browser POST /api/scratchpad
+           │
+           ▼
+    server.handleSaveScratchpad
+           │
+           ├──▶ Decode JSON body → {"project": "...", "content": "..."}
+           ├──▶ UPSERT into SQLite scratchpads table (INSERT ... ON CONFLICT DO UPDATE)
+           │
+           └──▶ Return {"ok": true}
+```
 ```

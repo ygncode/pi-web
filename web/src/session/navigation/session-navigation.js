@@ -9,7 +9,8 @@ export function createSessionNavigator({
   buildShareUrl,
   copyToClipboard,
   applyToggleStateToNode = (node) => windowImpl.sessionToggleState?.applyToNode(node),
-  onNavigate = () => {}
+  onNavigate = () => {},
+  onFork = null
 } = {}) {
   const entryCache = new Map();
 
@@ -53,6 +54,16 @@ export function createSessionNavigator({
           copyToClipboard(buildShareUrl(entryId), btn);
         });
       });
+
+      messagesEl.querySelectorAll('.fork-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const entryId = btn.dataset.entryId;
+          if (typeof onFork === 'function') {
+            onFork(entryId, btn);
+          }
+        });
+      });
     }
 
     setTimeout(() => {
@@ -64,7 +75,7 @@ export function createSessionNavigator({
         const scrollTargetId = scrollToEntryId || targetId;
         const targetEl = documentImpl.getElementById(`entry-${scrollTargetId}`);
         if (targetEl) {
-          targetEl.scrollIntoView({ block: 'center' });
+          targetEl?.scrollIntoView?.({ block: 'center' });
           if (scrollToEntryId) {
             targetEl.classList.add('highlight');
             setTimeout(() => targetEl.classList.remove('highlight'), 2000);

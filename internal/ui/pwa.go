@@ -1,8 +1,10 @@
 package ui
 
 import (
+	"bytes"
 	_ "embed"
 	"net/http"
+	"time"
 )
 
 //go:embed live_templates/assets/manifest.webmanifest
@@ -20,8 +22,14 @@ var iconMaskableSVG string
 //go:embed live_templates/assets/pi-logo.svg
 var piLogoSVG string
 
+//go:embed live_templates/assets/cat.mp3
+var CatMP3 []byte
+
 //go:embed live_templates/assets/done.mp3
-var doneMP3 []byte
+var DoneMP3 []byte
+
+//go:embed live_templates/assets/cat.webm
+var catWebm []byte
 
 //go:embed live_templates/styles/theme.css
 var themeCSS string
@@ -67,10 +75,10 @@ func RegisterPWAHandlers(mux *http.ServeMux) {
 		w.Header().Set("Cache-Control", "public, max-age=86400")
 		_, _ = w.Write([]byte(piLogoSVG))
 	})
-	mux.HandleFunc("/done.mp3", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "audio/mpeg")
+	mux.HandleFunc("/cat.webm", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "video/webm")
 		w.Header().Set("Cache-Control", "public, max-age=86400")
-		_, _ = w.Write(doneMP3)
+		http.ServeContent(w, r, "cat.webm", time.Time{}, bytes.NewReader(catWebm))
 	})
 	mux.HandleFunc("/theme.css", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/css; charset=utf-8")

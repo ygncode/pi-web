@@ -1,5 +1,6 @@
 import { isDoneNotifyEnabled } from '../chat/done-notifier.js';
 import { showModelUsageModal } from './model-usage-modal.js';
+import { openVersionModal } from '../../shared/version.js';
 
 export function setupMobileCommandPanel({
   documentImpl = document,
@@ -66,6 +67,8 @@ export function setupMobileCommandPanel({
 
   documentImpl.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && panel.classList.contains('open')) {
+      e.preventDefault();
+      e.stopPropagation();
       closePanel();
     }
   });
@@ -125,6 +128,10 @@ export function setupMobileCommandPanel({
         closePanel();
         break;
       }
+      case 'version':
+        closePanel();
+        openVersionModal();
+        break;
       case 'rename':
       case 'fork':
       case 'clone':

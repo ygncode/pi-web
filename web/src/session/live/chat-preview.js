@@ -21,10 +21,37 @@ export function finishChatPreview(state) {
   stopWorkingAnimation(state);
   return true;
 }
-
 // Test placeholder for TestSessionViteSourceShowsAnimatedWorkingPreviewLabel: working<span class="working-dots"
 
-const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+export function getSpinnerConfig(windowImpl = typeof window !== 'undefined' ? window : null) {
+  let style = 'runcat';
+  try {
+    if (windowImpl && windowImpl.localStorage) {
+      const saved = windowImpl.localStorage.getItem('pi-sessions:spinner-style');
+      if (saved === 'braille') {
+        style = 'braille';
+      }
+    }
+  } catch (_) {}
+
+  if (style === 'braille') {
+    return {
+      frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
+      fontFamily: 'monospace',
+      interval: 80,
+      width: '12px'
+    };
+  } else {
+    // runcat frames mapping to unicode private use area characters in runcat.ttf font
+    return {
+      frames: ["", "", "", "", ""],
+      fontFamily: "'runcat', monospace",
+      interval: 100,
+      width: '18px'
+    };
+  }
+}
+
 const CREATIVE_MESSAGES = [
   "Working...",
   "Thinking...",
@@ -36,13 +63,24 @@ const CREATIVE_MESSAGES = [
   "Drafting response..."
 ];
 
-export function startWorkingAnimation(state, { setIntervalImpl = setInterval } = {}) {
+export function startWorkingAnimation(state, { setIntervalImpl = setInterval, windowImpl = typeof window !== 'undefined' ? window : null } = {}) {
   stopWorkingAnimation(state);
 
+  const config = getSpinnerConfig(windowImpl);
   let frameIdx = 0;
   let msgIdx = 0;
   let lastMsgChange = Date.now();
   state.activePreviewMessage = null;
+
+  // Sync initial spinner properties if spinner element is already present
+  if (state.chatPreviewEl) {
+    const spinnerEl = state.chatPreviewEl.querySelector('.preview-spinner');
+    if (spinnerEl) {
+      spinnerEl.style.fontFamily = config.fontFamily;
+      spinnerEl.style.width = config.width;
+      spinnerEl.textContent = config.frames[0];
+    }
+  }
 
   state.spinnerInterval = setIntervalImpl(() => {
     if (!state.chatPreviewEl) {
@@ -52,8 +90,12 @@ export function startWorkingAnimation(state, { setIntervalImpl = setInterval } =
 
     const spinnerEl = state.chatPreviewEl.querySelector('.preview-spinner');
     if (spinnerEl) {
-      frameIdx = (frameIdx + 1) % SPINNER_FRAMES.length;
-      spinnerEl.textContent = SPINNER_FRAMES[frameIdx];
+      if (spinnerEl.style.fontFamily !== config.fontFamily) {
+        spinnerEl.style.fontFamily = config.fontFamily;
+        spinnerEl.style.width = config.width;
+      }
+      frameIdx = (frameIdx + 1) % config.frames.length;
+      spinnerEl.textContent = config.frames[frameIdx];
     }
 
     if (!state.activePreviewMessage && Date.now() - lastMsgChange >= 2000) {
@@ -64,7 +106,7 @@ export function startWorkingAnimation(state, { setIntervalImpl = setInterval } =
         lastMsgChange = Date.now();
       }
     }
-  }, 80);
+  }, config.interval);
 }
 
 export function stopWorkingAnimation(state, { clearIntervalImpl = clearInterval } = {}) {
@@ -98,6 +140,7 @@ function getActiveMessage(content) {
 
 export function renderPendingChat(message, state, {
   documentImpl = document,
+  windowImpl = typeof window !== 'undefined' ? window : null,
   renderMarkdown,
   shouldFollow = () => false,
   forceFollowToBottom = () => {},
@@ -117,13 +160,17 @@ export function renderPendingChat(message, state, {
   if (userContent) userContent.innerHTML = renderMarkdown(text);
   container.appendChild(state.pendingUserEl);
 
+  const config = getSpinnerConfig(windowImpl);
+  const initialFrame = config.frames[0];
+  const initialStyle = `color: var(--accent); margin-right: 6px; font-family: ${config.fontFamily}; display: inline-block; width: ${config.width}; text-align: center;`;
+
   state.chatPreviewEl = documentImpl.createElement('div');
   state.chatPreviewEl.id = 'chat-preview-stream';
   state.chatPreviewEl.className = 'assistant-message chat-preview-stream chat-preview-waiting';
-  state.chatPreviewEl.innerHTML = '<div class="message-content assistant-text markdown-content"></div><div class="preview-label"><span class="preview-spinner" style="color: var(--accent); margin-right: 6px; font-family: monospace; display: inline-block; width: 12px; text-align: center;">⠋</span><span class="preview-text" style="color: var(--muted);">Working...</span></div>';
+  state.chatPreviewEl.innerHTML = `<div class="message-content assistant-text markdown-content"></div><div class="preview-label"><span class="preview-spinner" style="${initialStyle}">${initialFrame}</span><span class="preview-text" style="color: var(--muted);">Working...</span></div>`;
   container.appendChild(state.chatPreviewEl);
 
-  startWorkingAnimation(state, { setIntervalImpl });
+  startWorkingAnimation(state, { setIntervalImpl, windowImpl });
 
   if (shouldFollow()) {
     forceFollowToBottom(false);
@@ -134,6 +181,7 @@ export function renderPendingChat(message, state, {
 
 export function renderChatPreview(payload, state, {
   documentImpl = document,
+  windowImpl = typeof window !== 'undefined' ? window : null,
   renderMarkdown,
   shouldFollow = () => false,
   forceFollowToBottom = () => {},
@@ -143,12 +191,16 @@ export function renderChatPreview(payload, state, {
   if (!payload || typeof payload.content !== 'string') return false;
   const container = documentImpl.getElementById('messages') || documentImpl.getElementById('content') || documentImpl.body;
   if (!state.chatPreviewEl) {
+    const config = getSpinnerConfig(windowImpl);
+    const initialFrame = config.frames[0];
+    const initialStyle = `color: var(--accent); margin-right: 6px; font-family: ${config.fontFamily}; display: inline-block; width: ${config.width}; text-align: center;`;
+
     state.chatPreviewEl = documentImpl.createElement('div');
     state.chatPreviewEl.id = 'chat-preview-stream';
     state.chatPreviewEl.className = 'assistant-message chat-preview-stream';
-    state.chatPreviewEl.innerHTML = '<div class="message-content assistant-text markdown-content"></div><div class="preview-label"><span class="preview-spinner" style="color: var(--accent); margin-right: 6px; font-family: monospace; display: inline-block; width: 12px; text-align: center;">⠋</span><span class="preview-text" style="color: var(--muted);">Working...</span></div>';
+    state.chatPreviewEl.innerHTML = `<div class="message-content assistant-text markdown-content"></div><div class="preview-label"><span class="preview-spinner" style="${initialStyle}">${initialFrame}</span><span class="preview-text" style="color: var(--muted);">Working...</span></div>`;
     container.appendChild(state.chatPreviewEl);
-    startWorkingAnimation(state, { setIntervalImpl });
+    startWorkingAnimation(state, { setIntervalImpl, windowImpl });
   }
 
   const activeMsg = getActiveMessage(payload.content);

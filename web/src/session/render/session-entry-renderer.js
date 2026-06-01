@@ -468,6 +468,23 @@ export function createSessionEntryRenderer({
   }
 
   /**
+   * Render the fork button HTML for a message.
+   */
+  function renderForkButton(entryId) {
+    const isLive = documentImpl.getElementById('pi-chat-composer') !== null;
+    if (!isLive) return '';
+    return `<button class="fork-btn" data-entry-id="${entryId}" title="Fork session from this message">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="18" cy="18" r="3" />
+        <circle cx="6" cy="6" r="3" />
+        <circle cx="6" cy="18" r="3" />
+        <path d="M18 15V9a4 4 0 0 0-4-4H9" />
+        <line x1="6" y1="9" x2="6" y2="15" />
+      </svg>
+    </button>`;
+  }
+
+  /**
    * Render the copy-link button HTML for a message.
    */
   function renderCopyLinkButton(entryId) {
@@ -484,12 +501,13 @@ export function createSessionEntryRenderer({
     const tsHtml = ts ? `<div class="message-timestamp">${ts}</div>` : '';
     const entryId = `entry-${entry.id}`;
     const copyBtnHtml = renderCopyLinkButton(entry.id);
+    const forkBtnHtml = renderForkButton(entry.id);
 
     if (entry.type === 'message') {
       const msg = entry.message;
 
       if (msg.role === 'user') {
-        let html = `<div class="user-message" id="${entryId}">${copyBtnHtml}${tsHtml}`;
+        let html = `<div class="user-message" id="${entryId}">${forkBtnHtml}${copyBtnHtml}${tsHtml}`;
         const content = msg.content;
 
         if (Array.isArray(content)) {
@@ -513,7 +531,7 @@ export function createSessionEntryRenderer({
       }
 
       if (msg.role === 'assistant') {
-        let html = `<div class="assistant-message" id="${entryId}">${copyBtnHtml}${tsHtml}`;
+        let html = `<div class="assistant-message" id="${entryId}">${forkBtnHtml}${copyBtnHtml}${tsHtml}`;
 
         for (const block of msg.content) {
           if (block.type === 'text' && block.text.trim()) {

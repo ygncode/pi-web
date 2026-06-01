@@ -404,6 +404,10 @@ const isEditableTarget = (element) => {
 };
 
 // Keyboard shortcuts
+const SCROLL_AMOUNT = 300;
+const GG_TIMEOUT = 500;
+let ggTimer = null;
+
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     searchInput.value = '';
@@ -415,14 +419,54 @@ document.addEventListener('keydown', (e) => {
     return;
   }
 
-  const key = e.key.toLowerCase();
-  if (key === 't') {
+  if (e.key === 'j') {
+    e.preventDefault();
+    const content = document.getElementById('content');
+    if (content) {
+      content.scrollBy({ top: SCROLL_AMOUNT, behavior: 'instant' });
+    } else {
+      window.scrollBy({ top: SCROLL_AMOUNT, behavior: 'instant' });
+    }
+  } else if (e.key === 'k') {
+    e.preventDefault();
+    const content = document.getElementById('content');
+    if (content) {
+      content.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'instant' });
+    } else {
+      window.scrollBy({ top: -SCROLL_AMOUNT, behavior: 'instant' });
+    }
+  } else if (e.key === 'g') {
+    e.preventDefault();
+    if (ggTimer) {
+      clearTimeout(ggTimer);
+      ggTimer = null;
+      const content = document.getElementById('content');
+      if (content) {
+        content.scrollTo({ top: 0, behavior: 'instant' });
+      } else {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }
+    } else {
+      ggTimer = setTimeout(() => { ggTimer = null; }, GG_TIMEOUT);
+    }
+  } else if (e.key === 'G') {
+    e.preventDefault();
+    const content = document.getElementById('content');
+    if (content) {
+      content.scrollTo({ top: content.scrollHeight, behavior: 'instant' });
+    } else {
+      window.scrollTo({
+        top: document.documentElement.scrollHeight,
+        behavior: 'instant',
+      });
+    }
+  } else if (e.key.toLowerCase() === 't') {
     e.preventDefault();
     toggleThinking();
-  } else if (key === 'o') {
+  } else if (e.key.toLowerCase() === 'o') {
     e.preventDefault();
     toggleToolsVisibility();
-  } else if (key === 'p') {
+  } else if (e.key.toLowerCase() === 'p') {
     e.preventDefault();
     toggleToolOutputs();
   }

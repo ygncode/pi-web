@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 
@@ -21,6 +22,7 @@ import (
 	"pi-web/internal/server"
 	"pi-web/internal/sessions"
 	"pi-web/internal/ui"
+	"pi-web/internal/updater"
 	"pi-web/internal/workers"
 	"pi-web/web"
 )
@@ -44,6 +46,9 @@ func Main(version string) {
 	}
 
 	agentDir := piAgentDir()
+	if err := seedSoundsDir(agentDir); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to seed sounds directory: %v\n", err)
+	}
 	sessionsDir := filepath.Join(agentDir, "sessions")
 	if _, err := os.Stat(sessionsDir); os.IsNotExist(err) {
 		fmt.Fprintf(os.Stderr, "sessions directory not found: %s\n", sessionsDir)
@@ -61,6 +66,8 @@ func Main(version string) {
 		os.Exit(1)
 	}
 	authMiddleware := auth.New(token)
+
+	versionChecker := updater.New(version)
 
 	var srv *server.Server
 	manager := workers.NewManager(func(sessionID, sessionPath string) (workers.ChatWorker, error) {
@@ -82,6 +89,9 @@ func Main(version string) {
 		Models: func(ctx context.Context) (json.RawMessage, error) {
 			return defaultModelsCache.get(ctx)
 		},
+		Updater:    versionChecker,
+		RunInstall: runInstall,
+		RunRestart: runRestart,
 	})
 
 	mux := http.NewServeMux()
@@ -166,12 +176,15 @@ func Main(version string) {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	go versionChecker.Start(ctx)
+
 	go func() {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = httpServer.Shutdown(shutdownCtx)
 		srv.Shutdown()
+		_ = manager.Close()
 	}()
 
 	serveErr := httpServer.ListenAndServe()
@@ -271,3 +284,39 @@ func writeStateFile(agentDir, host, port string, tailscale bool, tailscaleURL st
 	stateFile = f
 	return path, nil
 }
+
+// seedSoundsDir ensures that ~/.pi/agent/pi-web/assets exists and seeds it with default sounds if empty.
+func seedSoundsDir(agentDir string) error {
+	soundsDir := filepath.Join(agentDir, "pi-web", "assets")
+	if err := os.MkdirAll(soundsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create sounds directory: %w", err)
+	}
+
+	files, err := os.ReadDir(soundsDir)
+	if err != nil {
+		return fmt.Errorf("failed to read sounds directory: %w", err)
+	}
+
+	hasMP3 := false
+	for _, f := range files {
+		if !f.IsDir() && filepath.Ext(strings.ToLower(f.Name())) == ".mp3" {
+			hasMP3 = true
+			break
+		}
+	}
+
+	if !hasMP3 {
+		// Seed cat.mp3
+		catPath := filepath.Join(soundsDir, "cat.mp3")
+		if err := os.WriteFile(catPath, ui.CatMP3, 0644); err != nil {
+			return fmt.Errorf("failed to seed cat.mp3: %w", err)
+		}
+		// Seed done.mp3
+		donePath := filepath.Join(soundsDir, "done.mp3")
+		if err := os.WriteFile(donePath, ui.DoneMP3, 0644); err != nil {
+			return fmt.Errorf("failed to seed done.mp3: %w", err)
+		}
+	}
+	return nil
+}
+

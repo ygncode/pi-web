@@ -60,7 +60,7 @@ describe('setupThinkingLevelSelector', () => {
       expect(chatApi.setThinkingLevel).toHaveBeenCalledWith('test-session', 'minimal');
       expect(setKnownThinkingLevel).toHaveBeenCalledWith('minimal');
       expect(setThinkingLabel).toHaveBeenCalledWith('minimal');
-      expect(setChatStatus).toHaveBeenCalledWith('thinking: minimal', 'ok');
+      expect(setChatStatus).not.toHaveBeenCalled();
       cleanupDom(el);
     });
 

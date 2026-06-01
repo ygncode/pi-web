@@ -7,7 +7,7 @@ This document explains the unified architecture of our HTML template layouts, st
 | Layer / Directory | Purpose |
 |-------------------|---------|
 | `web/` | **Client Runtime Source** — Vite-managed ES modules compiled into production assets (`web/dist/`) and served as `/static/assets/...` |
-| `internal/ui/live_templates/` | **Unified HTML Shells & Style Tokens** — Core Go-embedded template shells (`session.html`) and theme stylesheets (`styles/session.css`) |
+| `internal/ui/live_templates/` | **Unified HTML Shells & Style Tokens** — Core Go-embedded template shells (`session.html`, `index.html`) and split theme stylesheets (`styles/theme.css`, `session.css`, `menu.css`, `palette.css`, `index.css`) |
 
 ---
 
@@ -16,7 +16,13 @@ This document explains the unified architecture of our HTML template layouts, st
 Historically, this codebase maintained separate template layouts for the **Live Local App** and **Standalone Gist Exports**. They are now unified under one robust, flexible layout engine:
 
 - **Unified Template File**: `internal/ui/live_templates/session.html`
-- **Unified Style Tokens**: `internal/ui/live_templates/styles/session.css`
+- **CSS Stylesheets** (split by concern, concatenated inline for session page):
+  - `styles/theme.css` — CSS custom properties / theme variables
+  - `styles/session.css` — session page layout, tree, chat, message rendering
+  - `styles/menu.css` — command menu / context menu
+  - `styles/palette.css` — session search palette
+- **Index page** loads `/theme.css`, `/index.css`, `/menu.css`, `/palette.css` as separate stylesheet links
+- **Export page** inlines only `theme.css` + `session.css` (no menus/palettes needed)
 
 By using Go's `html/template` conditional checks (`{{if .IsLive}} ... {{else}} ... {{end}}`), the same layout shell dynamically adapts to serve both environments:
 
@@ -24,7 +30,7 @@ By using Go's `html/template` conditional checks (`{{if .IsLive}} ... {{else}} .
 |------------------------|------------------------|-------------------------------|
 | **Go Renderer** | `internal/ui/session_page.go` | `internal/ui/export.go` |
 | **HTML Layout Shell** | `live_templates/session.html` (`IsLive: true`) | `live_templates/session.html` (`IsLive: false`) |
-| **Styling Stylesheet** | `live_templates/styles/session.css` | `live_templates/styles/session.css` |
+| **Styling Stylesheet** | `live_templates/styles/theme.css` + `session.css` + `menu.css` + `palette.css` | `live_templates/styles/theme.css` + `session.css` |
 | **Theme Cycling Menu** | Yes (Desktop/Mobile dropdowns) | No (Top-right standalone toggle) |
 | **Back Link & popover** | Yes (Desktop command menus) | No |
 | **Chat Composer** | Yes (Server-plumbed input composer) | No |

@@ -34,7 +34,7 @@ a { color: inherit; }
     position: sticky;
     top: 0;
     z-index: 20;
-    background: color-mix(in srgb, var(--body-bg) 92%, transparent);
+    background: color-mix(in srgb, var(--chrome-bg) 92%, transparent);
     border-bottom: 1px solid var(--dim);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
@@ -43,6 +43,34 @@ a { color: inherit; }
     max-width: 1040px;
     margin: 0 auto;
     padding: 16px 28px 18px;
+}
+/* Standalone without WCO: merge header with OS title bar (both use body-bg). */
+@media (display-mode: standalone) {
+    .header {
+        background: var(--body-bg);
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+    }
+}
+
+/* Window Controls Overlay (installed PWA): make the header act as the OS title
+   bar — draggable, theme-matched, clearing the window-control inset. */
+:root.wco .header {
+    background: var(--chrome-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    -webkit-app-region: drag;
+    app-region: drag;
+}
+:root.wco .header-inner {
+    padding-left: calc(env(titlebar-area-x, 0px) + 28px);
+}
+:root.wco .header a,
+:root.wco .header button,
+:root.wco .header input,
+:root.wco .header kbd {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
 }
 .header-top {
     display: flex;

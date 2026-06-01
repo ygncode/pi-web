@@ -14,6 +14,7 @@ pi-web/
 │   │   ├── network.go          # Bind host / loopback helpers
 │   │   ├── tailscale.go        # Tailscale Serve detection/configuration
 │   │   ├── models_cache.go     # Process-wide coalesced cache for model list
+│   │   ├── update.go           # runInstall / runRestart for self-update
 │   │   └── state_file_*.go     # pi-web-state.json + flock helpers
 │   ├── frontend/
 │   │   └── assets.go           # Vite manifest parsing + static asset handlers
@@ -21,23 +22,38 @@ pi-web/
 │   │   ├── session_page.go     # Live session renderer
 │   │   ├── export.go           # Static export renderer
 │   │   ├── index_template.go   # Index page template + helpers
-│   │   ├── live_templates/     # Embedded live HTML/CSS/assets
-│   │   └── export/             # Embedded standalone export HTML/CSS/JS
+│   │   ├── live_page.go        # Live page shell rendering helpers
+│   │   ├── live_menu.go        # Command/theme menu rendering
+│   │   ├── palette.go          # Session-list palette rendering
+│   │   ├── auth_page.go        # Auth/token entry page
+│   │   ├── pwa.go              # PWA routes: manifest, sw.js, icons, css, cat.webm
+│   │   └── live_templates/     # Embedded HTML/CSS/assets (shells, styles, export/)
 │   ├── auth/
 │   │   └── auth.go             # Token-based HTTP middleware
 │   ├── chat/
 │   │   └── request.go          # Multipart chat request parser (text + images)
 │   ├── render/
-│   │   └── assets.go           # Vite manifest parsing helpers
+│   │   ├── assets.go           # Vite manifest parsing helpers
+│   │   └── json.go             # WriteJSON / WriteJSONError helpers
+│   ├── git/
+│   │   └── git.go              # git branch info, rename, PR URL detection
+│   ├── updater/
+│   │   └── updater.go          # Background version checker + changelog fetch
 │   ├── rpc/
 │   │   ├── client.go           # JSONL RPC command builders
 │   │   ├── worker.go           # pi --mode rpc subprocess worker
 │   │   ├── stream.go           # SSE chat-preview stream accumulator
 │   │   └── oneshot.go          # One-shot RPC for model enumeration
 │   ├── server/
-│   │   ├── server.go           # Server type, deps, SSE client registry
-│   │   ├── handlers.go         # HTTP handlers (index, session, api, new, locations, models)
+│   │   ├── server.go           # Server type, deps, SSE registry, SQLite open
+│   │   ├── handlers.go         # index, session, api/session(s), new, fork/clone, rename, locations, models, custom-themes
 │   │   ├── chat.go             # Chat, set-model, set-thinking, worker-status handlers
+│   │   ├── new_session.go      # New-session creation logic
+│   │   ├── git.go              # /api/git/info, /api/git/rename-branch handlers
+│   │   ├── scratchpad.go       # Per-project scratchpad get/save (SQLite)
+│   │   ├── sound.go            # /api/sounds + /sounds/ asset serving
+│   │   ├── push.go             # PushManager: VAPID, subscribe/unsubscribe, NotifyDone
+│   │   ├── update.go           # /api/version, check-update, update, restart handlers
 │   │   ├── events.go           # SSE endpoint (/events)
 │   │   ├── share.go            # Share handler adapter
 │   │   ├── watcher.go          # fsnotify + polling file watcher
@@ -53,6 +69,9 @@ pi-web/
 │   └── workers/
 │       └── manager.go          # ChatWorker lifecycle: create, cache, reap
 ```
+
+> The embedded standalone export bundle lives at `internal/ui/live_templates/export/`
+> (`app/*.js` + `vendor/`), **not** at `internal/ui/export/`.
 
 ## Key Types
 
@@ -75,15 +94,31 @@ type Server struct {
     now           func() time.Time
     renderIndex         func(w io.Writer, summaries []sessions.SessionSummary) error
     renderLiveSession   func(s sessions.Session) string
-    renderExportSession func(s sessions.Session) string
+    renderExportSession func(s sessions.Session, theme string) string
     models              func(ctx context.Context) (json.RawMessage, error)
     lastKnown     map[string]struct{} // sessions currently broadcast as running
     lastKnownMu   sync.Mutex
+    push          *PushManager    // web-push subscriptions + done notifications
+    db            *sql.DB         // SQLite (~/.pi/agent/pi-web.sqlite) for scratchpads
+    updater       *updater.Checker // optional; nil disables /api/version etc.
+    runInstall    func(ctx context.Context) error // optional self-update install
+    runRestart    func() error                    // optional self-update restart
+    updateMu      sync.Mutex      // serializes install/restart
     stopCh        chan struct{}
     stopOnce      sync.Once
     wg            sync.WaitGroup
 }
 ```
+
+`Deps` (passed to `New`) supplies everything wired from `internal/app`: renderers,
+`Models`, `Cache`, `Auth`, `ChatSender`, plus the optional `Updater`, `RunInstall`,
+and `RunRestart`. When `Updater` is nil the version/update routes are not registered;
+when `RunInstall`/`RunRestart` are nil the corresponding endpoints respond `503`.
+
+On `New`, the server opens (and migrates) a SQLite database at
+`~/.pi/agent/pi-web.sqlite` — currently a single `scratchpads` table keyed by
+project path. A `PushManager` (when configured) persists web-push subscriptions and
+VAPID keys under the agent dir.
 
 ### `sessions.Session`
 
@@ -100,6 +135,8 @@ type Session struct {
     MessageCount       int
     TokenTotal         int
     CostTotal          float64
+    Model              string                // last-known model from messages or model_change
+    ModelProvider      string                // provider for the last-known model
     Header             map[string]any        // type=="session" line
     Entries            []map[string]any      // all JSONL lines
     ChatAvailable      bool
@@ -152,8 +189,9 @@ type piRPCWorker struct {
 | Route | Method | Handler | Description |
 |-------|--------|---------|-------------|
 | `/` | GET | `handleIndex` | Render session list (Vite index bundle shell) |
-| `/session` | GET | `handleSession` | Render single session as embedded HTML |
+| `/session` | GET | `handleSession` | Render single session page (Vite session bundle shell) |
 | `/api/session` | GET | `handleApiSession` | JSON session data |
+| `/api/sessions` | GET | `handleApiSessions` | JSON list of session summaries |
 | `/api/chat` | POST | `handleChat` | Send chat message (multipart) |
 | `/api/chat/cancel` | POST | `handleCancelChat` | Abort running chat worker |
 | `/api/set-model` | POST | `handleSetModel` | Change model for session |
@@ -163,10 +201,30 @@ type piRPCWorker struct {
 | `/share` | POST | `handleShare` | Create private GitHub Gist |
 | `/events` | GET | `handleEvents` | SSE stream |
 | `/api/new-session` | POST | `handleNewSession` | Create new session file |
+| `/api/fork-session` | POST | `handleApiForkSession` | Fork a session into a new file |
+| `/api/clone-session` | POST | `handleApiCloneSession` | Clone a session into a new file |
 | `/api/rename-session` | POST | `handleRenameSession` | Append `session_info` rename metadata |
 | `/api/recent-locations` | GET | `handleRecentLocations` | List known project paths |
+| `/api/git/info` | GET | `handleGitInfo` | Branch / dirty / PR-URL info for a project |
+| `/api/git/rename-branch` | POST | `handleGitRenameBranch` | Rename the current git branch |
+| `/api/scratchpad` | GET/POST | `handleGetScratchpad` / `handleSaveScratchpad` | Per-project scratchpad (SQLite) |
+| `/api/sounds` | GET | `handleApiSounds` | List available notification sounds |
+| `/sounds/` | GET | `handleSounds` | Serve a sound asset (no auth) |
+| `/custom-themes.css` | GET | `handleCustomThemes` | User custom theme CSS |
+| `/api/push/vapid` | GET | `handleVapid` | VAPID public key (when push enabled) |
+| `/api/push/subscribe` | POST | `handleSubscribe` | Register a web-push subscription |
+| `/api/push/unsubscribe` | POST | `handleUnsubscribe` | Remove a web-push subscription |
+| `/api/version` | GET | `handleVersion` | Current/latest version (when updater set) |
+| `/api/check-update` | POST | `handleCheckUpdate` | Force a version check |
+| `/api/update` | POST | `handleUpdate` | Install the latest pi-web |
+| `/api/restart` | POST | `handleRestart` | Restart the service onto the new binary |
 
-| `/static/assets/index-*.js` | GET | — | Embedded Vite index bundle |
+PWA / static asset routes (registered outside `Server.Register`):
+
+| Route | Source |
+|-------|--------|
+| `/manifest.webmanifest`, `/sw.js`, `/icon.svg`, `/icon-maskable.svg`, `/pi-logo.svg`, `/cat.webm`, `/theme.css`, `/index.css`, `/menu.css`, `/palette.css` | `internal/ui/pwa.go` (embedded assets) |
+| `/static/assets/index-*.js`, `/static/assets/...` | Embedded Vite bundles (`internal/app/app.go` + `internal/frontend`) |
 
 ## Auth Flow
 

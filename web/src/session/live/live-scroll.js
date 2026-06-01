@@ -1,6 +1,5 @@
-export function chatComposerHeight({ documentImpl = document } = {}) {
-  const composer = documentImpl.getElementById('pi-chat-composer');
-  return composer ? composer.getBoundingClientRect().height : 0;
+export function chatComposerHeight() {
+  return 0;
 }
 
 export function isAtBottom({ documentImpl = document, windowImpl = window, threshold = 80 } = {}) {

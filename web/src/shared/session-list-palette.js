@@ -163,7 +163,7 @@ export function setupSessionListPalette({
     buttons.forEach((btn, i) => {
       if (i === selectedIndex) {
         btn.classList.add('palette-result--selected');
-        btn.scrollIntoView({ block: 'nearest' });
+        btn?.scrollIntoView?.({ block: 'nearest' });
       } else {
         btn.classList.remove('palette-result--selected');
       }
@@ -231,6 +231,8 @@ export function setupSessionListPalette({
 
     keydownHandler = (e) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
         close();
         return;
       }
