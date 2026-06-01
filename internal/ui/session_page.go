@@ -98,7 +98,7 @@ func RenderLiveSessionPage(session sessions.Session) string {
 			Styles:    template.HTML(styles),
 			BodyAttrs: template.HTMLAttr(bodyAttrs),
 		})),
-		ThemeBoot:          liveThemeBootScript(),
+		ThemeBoot:          themeBootScript("nord"),
 		ServiceWorker:      liveServiceWorkerScript(),
 		SessionCommandMenu: sessionDesktopMenuHTML(),
 		MobileCommandMenu:  sessionMobileMenuHTML(),
