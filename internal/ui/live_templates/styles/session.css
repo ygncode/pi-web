@@ -843,6 +843,11 @@
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      /* Lift the lit reading column above the darker chrome so it reads as a
+         raised panel, especially when framed by both sidebars. */
+      position: relative;
+      z-index: 1;
+      box-shadow: 0 0 22px rgba(0, 0, 0, 0.13);
     }
 
     /* Main content — scrolls independently within #app's fixed height */
@@ -2193,25 +2198,29 @@
       width: 100%;
       box-sizing: border-box;
       display: block;
-      padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+      padding: 14px 14px 0;
       /* Share the reading column's surface so there's no hard seam between the
          message stream and the composer — the shell card below is the only
          visible frame. */
       background: var(--body-bg);
     }
 
-    /* Git branch + Create PR row beneath the input box. */
+    /* Git branch + Create PR row — a full-bleed footer dock anchored to the
+       bottom of the reading column. The negative margins cancel the composer's
+       horizontal padding so the chrome surface runs edge to edge, framing the
+       column from below the way the sidebars frame it from the sides. */
     .pi-git-bar {
-      width: 100%;
-      max-width: 760px;
-      margin: 8px auto 0;
+      width: auto;
+      margin: 14px -14px 0;
       box-sizing: border-box;
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 0 2px;
+      padding: 9px 16px calc(9px + env(safe-area-inset-bottom));
       font-size: 11px;
+      background: var(--chrome-bg);
+      border-top: 1px solid var(--dim);
     }
     .pi-git-bar[hidden] { display: none; }
 
