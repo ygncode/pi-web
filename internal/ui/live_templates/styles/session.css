@@ -67,6 +67,7 @@
       --mdCode: #8abeb7;
       --mdCodeBlock: #b5bd68;
       --mdCodeBlockBorder: #808080;
+      --code-bg: rgba(0, 0, 0, 0.28);
       --mdQuote: #808080;
       --mdQuoteBorder: #808080;
       --mdHr: #808080;
@@ -158,6 +159,7 @@
       --mdCode: #5a8080;
       --mdCodeBlock: #588458;
       --mdCodeBlockBorder: #6c6c6c;
+      --code-bg: rgba(0, 0, 0, 0.05);
       --mdQuote: #6c6c6c;
       --mdQuoteBorder: #6c6c6c;
       --mdHr: #6c6c6c;
@@ -249,6 +251,7 @@
       --mdCode: #8fbcbb;
       --mdCodeBlock: #a3be8c;
       --mdCodeBlockBorder: #4c566a;
+      --code-bg: #2e3440;
       --mdQuote: #d8dee9;
       --mdQuoteBorder: #4c566a;
       --mdHr: #4c566a;
@@ -340,6 +343,7 @@
       --mdCode: #8be9fd;
       --mdCodeBlock: #50fa7b;
       --mdCodeBlockBorder: #6272a4;
+      --code-bg: #282a36;
       --mdQuote: #f8f8f2;
       --mdQuoteBorder: #6272a4;
       --mdHr: #6272a4;
@@ -2655,7 +2659,7 @@
       background: var(--code-bg, rgba(0, 0, 0, 0.28));
     }
     .pi-btw-md pre code { padding: 0; background: none; }
-    .pi-btw-md a { color: var(--link, #8abeb7); }
+    .pi-btw-md a { color: var(--mdLink, #8abeb7); }
     .pi-btw-md blockquote {
       margin: 0 0 8px;
       padding-left: 10px;
