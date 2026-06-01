@@ -5,6 +5,7 @@
  */
 
 import { showSheet } from '../live/full-screen-sheet.js';
+import { writeSetting } from '../../shared/settings-store.js';
 
 export const CAT_KEYS = {
   enabled: 'pi-web:v1:cat:enabled',
@@ -62,7 +63,7 @@ export function loadCatSettings({ storage = globalThis.localStorage } = {}) {
 
 export function saveCatSettings(partial = {}, { storage = globalThis.localStorage } = {}) {
   const write = (key, value) => {
-    try { storage?.setItem(key, String(value)); } catch { /* ignore */ }
+    writeSetting(key, String(value), { storage });
   };
   if ('enabled' in partial) write(CAT_KEYS.enabled, !!partial.enabled);
   if ('focusMin' in partial) write(CAT_KEYS.focusMin, clampInt(partial.focusMin, LIMITS.focusMin, CAT_DEFAULTS.focusMin));

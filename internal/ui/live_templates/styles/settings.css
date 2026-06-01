@@ -1,0 +1,160 @@
+.settings-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.settings-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--dim);
+  background: var(--surface);
+}
+
+.settings-back:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.settings-header h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  color: var(--text);
+}
+
+.settings-section {
+  margin-bottom: 28px;
+  border: 1px solid var(--dim);
+  border-radius: 12px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.settings-section-title {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 14px 18px 6px;
+  font-weight: 600;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-top: 1px solid var(--dim);
+}
+
+.settings-row:first-of-type {
+  border-top: none;
+}
+
+.settings-row-label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-row-label .name {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.settings-row-label .hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.settings-control select,
+.settings-control input[type="number"],
+.settings-control input[type="time"] {
+  background: var(--input-bg, var(--surface-2));
+  color: var(--text);
+  border: 1px solid var(--dim);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.9rem;
+  font-family: inherit;
+  min-width: 130px;
+}
+
+.settings-control input[type="number"] {
+  min-width: 90px;
+}
+
+/* Toggle switch */
+.settings-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex: none;
+}
+
+.settings-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.settings-toggle .slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--dim);
+  border-radius: 999px;
+  transition: background 0.15s ease;
+}
+
+.settings-toggle .slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  top: 3px;
+  background: var(--text-soft);
+  border-radius: 50%;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.settings-toggle input:checked + .slider {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.settings-toggle input:checked + .slider::before {
+  transform: translateX(20px);
+  background: #fff;
+}
+
+.settings-saved-hint {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 8px;
+  min-height: 1em;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+}
+
+.settings-saved-hint.visible {
+  opacity: 1;
+}

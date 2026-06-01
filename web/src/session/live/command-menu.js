@@ -1,10 +1,6 @@
-import { isDoneNotifyEnabled, setupSoundSelector } from '../chat/done-notifier.js';
-import { applyTheme, toggleTheme, syncThemeIcons } from '../../shared/theme.js';
 import { showModelUsageModal } from './model-usage-modal.js';
 import { showForkModal } from './fork-modal.js';
 import { openVersionModal } from '../../shared/version.js';
-
-export { applyTheme, toggleTheme, syncThemeIcons };
 
 function chatUrl(path, sessionId) {
   return `${path}?id=${encodeURIComponent(sessionId)}`;
@@ -75,43 +71,10 @@ export function setupCommandMenu({
 
   let open = false;
 
-  function syncNotifyToggle() {
-    const enabled = isDoneNotifyEnabled({ storage: windowImpl.localStorage });
-    const mobileStatus = documentImpl.getElementById('mobile-command-notify-status');
-    const desktopStatus = documentImpl.getElementById('command-menu-notify-status');
-    [mobileStatus, desktopStatus].forEach((el) => {
-      if (!el) return;
-      el.textContent = enabled ? 'ON' : 'OFF';
-      el.classList.toggle('on', enabled);
-
-      const parent = el.parentElement;
-      if (parent) {
-        const selector = parent.querySelector('.sound-selector');
-        if (selector) {
-          selector.style.display = enabled ? '' : 'none';
-        }
-      }
-    });
-  }
-
-  function syncSpinnerToggle() {
-    const isRuncat = windowImpl.localStorage.getItem('pi-sessions:spinner-style') !== 'braille';
-    const mobileStatus = documentImpl.getElementById('mobile-command-spinner-status');
-    const desktopStatus = documentImpl.getElementById('command-menu-spinner-status');
-    [mobileStatus, desktopStatus].forEach((el) => {
-      if (!el) return;
-      el.textContent = isRuncat ? 'RUNCAT' : 'BRAILLE';
-      el.classList.toggle('on', isRuncat);
-    });
-  }
-
   function openMobilePanel() {
     if (!mobileBackdrop || !mobilePanel) return;
     mobileBackdrop.style.display = '';
     mobilePanel.style.display = '';
-    syncNotifyToggle();
-    syncSpinnerToggle();
-    syncThemeIcons(documentImpl);
     requestAnimationFrame(() => {
       mobileBackdrop.classList.add('open');
       mobilePanel.classList.add('open');
@@ -132,9 +95,6 @@ export function setupCommandMenu({
 
   function openDesktopPopover() {
     if (!desktopPopover) return;
-    syncNotifyToggle();
-    syncSpinnerToggle();
-    syncThemeIcons(documentImpl);
     desktopPopover.style.display = '';
     requestAnimationFrame(() => {
       desktopPopover.classList.add('open');
@@ -195,26 +155,6 @@ export function setupCommandMenu({
 
   function handleAction(action) {
     switch (action) {
-      case 'theme': {
-        toggleTheme(windowImpl, documentImpl);
-        syncThemeIcons(documentImpl);
-        showToast('Appearance updated', documentImpl, windowImpl);
-        break;
-      }
-      case 'notifications': {
-        clickHiddenButton('notify-toggle', documentImpl);
-        syncNotifyToggle();
-        windowImpl.setTimeout(syncNotifyToggle, 400);
-        break;
-      }
-      case 'spinner': {
-        const current = windowImpl.localStorage.getItem('pi-sessions:spinner-style') === 'braille' ? 'braille' : 'runcat';
-        const next = current === 'runcat' ? 'braille' : 'runcat';
-        windowImpl.localStorage.setItem('pi-sessions:spinner-style', next);
-        syncSpinnerToggle();
-        showToast(`Spinner set to ${next.toUpperCase()}`, documentImpl, windowImpl);
-        break;
-      }
       case 'share': {
         clickHiddenButton('share-btn', documentImpl);
         closeMenu();
@@ -361,7 +301,4 @@ export function setupCommandMenu({
       handleAction(action);
     });
   });
-
-  // Set up the sound selector dropdown
-  setupSoundSelector({ documentImpl, windowImpl, storage: windowImpl.localStorage, fetchImpl });
 }

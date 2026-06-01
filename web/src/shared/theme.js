@@ -1,16 +1,26 @@
+import { writeSetting } from './settings-store.js';
+
+// Body/chrome background colors per theme, kept in sync with the inline boot
+// scripts in internal/ui/live_page.go. The boot script sets an inline
+// background-color on <html> before first paint; applyTheme must update that
+// same inline style on a live theme switch, otherwise the page surround keeps
+// the previous theme's color until the next reload.
+const BODY_BGS = { dark: '#111116', light: '#f6f5f2', nord: '#2e3440', dracula: '#282a36' };
+const CHROME_BGS = { dark: '#0f0f14', light: '#ddddda', nord: '#292f3a', dracula: '#242631' };
+
 export function applyTheme(windowImpl, documentImpl, next) {
   next = next || 'dark';
   documentImpl.documentElement.dataset.theme = next;
-  try { windowImpl.localStorage.setItem('pi-web-theme', next); } catch (e) {}
+  writeSetting('pi-web-theme', next, { storage: windowImpl.localStorage });
   try { documentImpl.cookie = 'pi-web-theme=' + next + ';path=/;SameSite=Lax;max-age=31536000'; } catch (e) {}
+
+  const wco = !!(windowImpl.navigator
+    && windowImpl.navigator.windowControlsOverlay
+    && windowImpl.navigator.windowControlsOverlay.visible);
+  const color = (wco ? CHROME_BGS : BODY_BGS)[next] || BODY_BGS.dark;
+  try { documentImpl.documentElement.style.backgroundColor = color; } catch (e) {}
   const meta = documentImpl.querySelector('meta[name="theme-color"]');
-  if (meta) {
-    let color = '#111116';
-    if (next === 'light') color = '#f6f5f2';
-    else if (next === 'nord') color = '#2e3440';
-    else if (next === 'dracula') color = '#282a36';
-    meta.content = color;
-  }
+  if (meta) meta.content = color;
 }
 
 export function toggleTheme(windowImpl, documentImpl) {

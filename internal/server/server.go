@@ -43,6 +43,7 @@ type Deps struct {
 	RenderIndex         func(w io.Writer, summaries []sessions.SessionSummary) error
 	RenderLiveSession   func(s sessions.Session) string
 	RenderExportSession func(s sessions.Session, theme string) string
+	RenderSettings      func(w io.Writer) error
 	Models              func(ctx context.Context) (json.RawMessage, error)
 	Now                 func() time.Time
 	// Updater reports current/latest version + changelog. Optional; when nil
@@ -73,6 +74,7 @@ type Server struct {
 	renderIndex         func(w io.Writer, summaries []sessions.SessionSummary) error
 	renderLiveSession   func(s sessions.Session) string
 	renderExportSession func(s sessions.Session, theme string) string
+	renderSettings      func(w io.Writer) error
 	models              func(ctx context.Context) (json.RawMessage, error)
 	lastKnown           map[string]struct{} // session ids currently broadcast as running
 	lastKnownMu         sync.Mutex
@@ -117,6 +119,14 @@ func New(deps Deps) *Server {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "failed to create scratchpads table: %v\n", err)
 		}
+		_, err = db.Exec(`CREATE TABLE IF NOT EXISTS settings (
+			key        TEXT PRIMARY KEY,
+			value      TEXT,
+			updated_at DATETIME
+		)`)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create settings table: %v\n", err)
+		}
 	}
 
 	s := &Server{
@@ -131,6 +141,7 @@ func New(deps Deps) *Server {
 		renderIndex:         deps.RenderIndex,
 		renderLiveSession:   deps.RenderLiveSession,
 		renderExportSession: deps.RenderExportSession,
+		renderSettings:      deps.RenderSettings,
 		models:              deps.Models,
 		lastKnown:           make(map[string]struct{}),
 		stopCh:              make(chan struct{}),
@@ -173,6 +184,7 @@ func (s *Server) Shutdown() {
 func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/", s.auth.Wrap(s.handleIndex))
 	mux.HandleFunc("/session", s.auth.Wrap(s.handleSession))
+	mux.HandleFunc("/settings", s.auth.Wrap(s.handleSettingsPage))
 	mux.HandleFunc("/api/session", s.auth.Wrap(s.handleApiSession))
 	mux.HandleFunc("/api/sessions", s.auth.Wrap(s.handleApiSessions))
 	mux.HandleFunc("/api/chat", s.auth.Wrap(s.handleChat))
@@ -196,6 +208,13 @@ func (s *Server) Register(mux *http.ServeMux) {
 			s.auth.Wrap(s.handleSaveScratchpad)(w, r)
 		} else {
 			s.auth.Wrap(s.handleGetScratchpad)(w, r)
+		}
+	})
+	mux.HandleFunc("/api/settings", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			s.auth.Wrap(s.handleSaveSettings)(w, r)
+		} else {
+			s.auth.Wrap(s.handleGetSettings)(w, r)
 		}
 	})
 	if s.push != nil {

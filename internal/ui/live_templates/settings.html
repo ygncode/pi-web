@@ -1,0 +1,138 @@
+{{ liveDocumentStart "Settings — Pi Sessions" (settingsPreload) (settingsStylesheets) }}
+{{ liveThemeBootScript }}
+<div class="settings-page">
+  <div class="settings-header">
+    <a class="settings-back" href="/"><span aria-hidden="true">←</span><span>Sessions</span></a>
+    <h1>Settings</h1>
+  </div>
+
+  <section class="settings-section">
+    <div class="settings-section-title">Appearance</div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Theme</span>
+        <span class="hint">Applies to every browser pointed at this instance.</span>
+      </div>
+      <div class="settings-control">
+        <select data-setting="pi-web-theme" data-setting-theme>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+          <option value="nord">Nord</option>
+          <option value="dracula">Dracula</option>
+          <option value="custom">Custom</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <div class="settings-section-title">Sessions List</div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Spinner style</span>
+        <span class="hint">Animation shown next to running sessions.</span>
+      </div>
+      <div class="settings-control">
+        <select data-setting="pi-sessions:spinner-style">
+          <option value="runcat">Runcat</option>
+          <option value="braille">Braille</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Default layout</span>
+        <span class="hint">How the sessions list is grouped on load.</span>
+      </div>
+      <div class="settings-control">
+        <select data-setting="pi-sessions:view-layout">
+          <option value="timeline">Timeline</option>
+          <option value="projects">Projects</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <div class="settings-section-title">Notifications</div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Notify when a response is ready</span>
+        <span class="hint">Plays a sound and shows a notification when chat completes.</span>
+      </div>
+      <div class="settings-control">
+        <label class="settings-toggle">
+          <input type="checkbox" data-setting="pi-share:v1:notify-on-done" data-setting-bool data-setting-notify>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Done sound</span>
+        <span class="hint">Sound played when a response is ready.</span>
+      </div>
+      <div class="settings-control">
+        <select data-setting="pi-share:v1:done-sound" data-setting-sound></select>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-section">
+    <div class="settings-section-title">Cat Gatekeeper</div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Enable Cat Gatekeeper</span>
+        <span class="hint">A cat appears when it is time to rest.</span>
+      </div>
+      <div class="settings-control">
+        <label class="settings-toggle">
+          <input type="checkbox" data-setting="pi-web:v1:cat:enabled" data-setting-bool>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Focus time (minutes)</span>
+        <span class="hint">Uninterrupted work before the cat appears.</span>
+      </div>
+      <div class="settings-control">
+        <input type="number" min="1" max="240" data-setting="pi-web:v1:cat:focus-min">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Break time (minutes)</span>
+        <span class="hint">How long the cat keeps you away.</span>
+      </div>
+      <div class="settings-control">
+        <input type="number" min="1" max="120" data-setting="pi-web:v1:cat:break-min">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Bedtime</span>
+        <span class="hint">When the cat says goodnight.</span>
+      </div>
+      <div class="settings-control">
+        <input type="time" data-setting="pi-web:v1:cat:bedtime">
+      </div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-row-label">
+        <span class="name">Sleep reminder (minutes)</span>
+        <span class="hint">How long the sleepy cat stays before locking.</span>
+      </div>
+      <div class="settings-control">
+        <input type="number" min="1" max="60" data-setting="pi-web:v1:cat:sleep-min">
+      </div>
+    </div>
+  </section>
+
+  <div class="settings-saved-hint" data-settings-saved>Saved</div>
+</div>
+
+{{ liveServiceWorkerScript }}
+<script type="module" src="{{ settingsScript }}"></script>
+{{ liveDocumentEnd }}

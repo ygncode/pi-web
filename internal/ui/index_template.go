@@ -19,9 +19,11 @@ var indexTmplStr string
 // funcMap so the rendered <script src> tracks the build hash.
 var indexScriptPath = "/static/assets/index.js"
 var sessionScriptPath = "/static/assets/session.js"
+var settingsScriptPath = "/static/assets/settings.js"
 
-func SetIndexScriptPath(path string)   { indexScriptPath = path }
-func SetSessionScriptPath(path string) { sessionScriptPath = path }
+func SetIndexScriptPath(path string)    { indexScriptPath = path }
+func SetSessionScriptPath(path string)  { sessionScriptPath = path }
+func SetSettingsScriptPath(path string) { settingsScriptPath = path }
 
 func fmtRelativeTime(ts string) string {
 	if ts == "" {
@@ -77,6 +79,17 @@ var funcMap = template.FuncMap{
 	"liveServiceWorkerScript": liveServiceWorkerScript,
 	"liveDocumentEnd":         liveDocumentEnd,
 	"indexStylesheets":        indexStylesheets,
+	"settingsScript":          func() string { return settingsScriptPath },
+	"settingsPreload": func() template.HTML {
+		return template.HTML(`<link rel="modulepreload" href="` + template.HTMLEscapeString(settingsScriptPath) + `">`)
+	},
+	"settingsStylesheets": settingsStylesheets,
+}
+
+func settingsStylesheets() template.HTML {
+	return template.HTML(`<link rel="stylesheet" href="/theme.css">
+<link rel="stylesheet" href="/menu.css">
+<link rel="stylesheet" href="/settings.css">`)
 }
 
 var indexTmpl = template.Must(template.New("index").Funcs(funcMap).Parse(indexTmplStr))

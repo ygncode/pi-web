@@ -39,6 +39,7 @@ import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
 import { showShortcutsModal } from './live/shortcuts-modal.js';
 import { setupCatGatekeeper } from './cat-gatekeeper/cat-gatekeeper.js';
+import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
 export { buildSessionLookups, createSessionDataModel, decodeBase64JSON, getSessionSearchParams, loadSessionData, readSessionPayload } from './data/session-data.js';
 export { buildActivePathIds, buildTree, buildTreeNodeMap, buildTreePrefix, findNewestLeaf, flattenTree, getPath } from './tree/session-tree.js';
 export { createTreeRenderer } from './tree/tree-renderer.js';
@@ -66,6 +67,8 @@ function applyLazyHighlighting(documentImpl) {
 
 export function runSessionApp({ target = window } = {}) {
   const documentImpl = target.document;
+  configureSettingsSync({ fetchImpl: target.fetch ? target.fetch.bind(target) : undefined });
+  hydrateSettings({ storage: target.localStorage });
   target.marked = target.marked || marked;
   const dataModel = target.__piSessionDataModel || loadSessionData({
     documentImpl,

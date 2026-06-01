@@ -1,3 +1,5 @@
+import { writeSetting } from '../../shared/settings-store.js';
+
 export const DONE_NOTIFY_STORAGE_KEY = 'pi-share:v1:notify-on-done';
 export const DONE_SOUND_STORAGE_KEY = 'pi-share:v1:done-sound';
 
@@ -10,11 +12,7 @@ export function isDoneNotifyEnabled({ storage = globalThis.localStorage } = {}) 
 }
 
 export function setDoneNotifyEnabled(enabled, { storage = globalThis.localStorage } = {}) {
-  try {
-    storage?.setItem(DONE_NOTIFY_STORAGE_KEY, String(!!enabled));
-  } catch {
-    // ignore
-  }
+  writeSetting(DONE_NOTIFY_STORAGE_KEY, String(!!enabled), { storage });
 }
 
 export function getSelectedSound({ storage = globalThis.localStorage } = {}) {
@@ -26,11 +24,7 @@ export function getSelectedSound({ storage = globalThis.localStorage } = {}) {
 }
 
 export function setSelectedSound(name, { storage = globalThis.localStorage } = {}) {
-  try {
-    storage?.setItem(DONE_SOUND_STORAGE_KEY, name || 'cat.mp3');
-  } catch {
-    // ignore
-  }
+  writeSetting(DONE_SOUND_STORAGE_KEY, name || 'cat.mp3', { storage });
 }
 
 export function playDoneSound({ windowImpl = window, audioSrc, storage = globalThis.localStorage } = {}) {

@@ -13,6 +13,19 @@ type liveDocumentData struct {
 	BodyAttrs template.HTMLAttr
 }
 
+// themeProvider returns the server-persisted theme so it can be injected into
+// the HTML shell before any JS runs (no flash of the wrong theme). It defaults
+// to "dark"; app wiring overrides it via SetThemeProvider to read the DB.
+var themeProvider = func() string { return "dark" }
+
+// SetThemeProvider installs the function used to resolve the current
+// server-backed theme for server-side injection.
+func SetThemeProvider(fn func() string) {
+	if fn != nil {
+		themeProvider = fn
+	}
+}
+
 // wcoBootScript toggles a `wco` class on <html> when the PWA is running with
 // Window Controls Overlay so the app can paint its own header into the OS title
 // bar. Runs in <head> (before <body> exists) so the class is set on the root
@@ -34,9 +47,13 @@ const wcoBootScript = `<script>
   var chromeBgs = {dark:'#0f0f14',light:'#ddddda',nord:'#292f3a',dracula:'#242631'};
   var bodyBgs   = {dark:'#111116',light:'#f6f5f2',nord:'#2e3440',dracula:'#282a36'};
   var o = navigator.windowControlsOverlay;
+  function serverTheme(){
+    var m = document.querySelector('meta[name="pi-web-theme"]');
+    return m && m.content ? m.content : '';
+  }
   function applyBg(){
-    var t = 'dark';
-    try{ t = localStorage.getItem('pi-web-theme') || 'dark'; }catch(e){}
+    var t = serverTheme();
+    if(!t){ try{ t = localStorage.getItem('pi-web-theme') || 'dark'; }catch(e){ t = 'dark'; } }
     var isWCO = o && o.visible;
     var map = isWCO ? chromeBgs : bodyBgs;
     document.documentElement.style.backgroundColor = map[t] || map.dark;
@@ -71,6 +88,9 @@ func renderLiveDocumentStart(data liveDocumentData) string {
 	b.WriteString("<meta name=\"mobile-web-app-capable\" content=\"yes\">\n")
 	b.WriteString("<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">\n")
 	b.WriteString("<meta name=\"apple-mobile-web-app-title\" content=\"Pi Sessions\">\n")
+	b.WriteString("<meta name=\"pi-web-theme\" content=\"")
+	b.WriteString(template.HTMLEscapeString(themeProvider()))
+	b.WriteString("\">\n")
 	b.WriteString(wcoBootScript)
 	b.WriteByte('\n')
 	if data.Styles != "" {
@@ -137,7 +157,17 @@ func themeBootScript(defaultTheme string) template.HTML {
     updateBtn();
   }
   var defaultTheme = '%s';
-  try{ applyTheme(localStorage.getItem(STORAGE_KEY) || defaultTheme); }catch(e){ applyTheme(defaultTheme); }
+  function serverTheme(){
+    var m = document.querySelector('meta[name="pi-web-theme"]');
+    return m && m.content ? m.content : '';
+  }
+  // The server-injected meta tag is the source of truth (shared across
+  // browsers). Fall back to localStorage, then the build-time default. Sync the
+  // resolved value back into localStorage so other modules stay consistent.
+  var resolved = serverTheme();
+  try{ if(!resolved) resolved = localStorage.getItem(STORAGE_KEY) || defaultTheme; }catch(e){ if(!resolved) resolved = defaultTheme; }
+  applyTheme(resolved);
+  try{ localStorage.setItem(STORAGE_KEY, resolved); }catch(e){}
   if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', function(){
       updateBtn();

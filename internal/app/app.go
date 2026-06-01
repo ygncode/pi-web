@@ -86,6 +86,7 @@ func Main(version string) {
 		RenderIndex:         ui.RenderIndex,
 		RenderLiveSession:   ui.RenderLiveSessionPage,
 		RenderExportSession: ui.RenderExportSessionPage,
+		RenderSettings:      ui.RenderSettings,
 		Models: func(ctx context.Context) (json.RawMessage, error) {
 			return defaultModelsCache.get(ctx)
 		},
@@ -94,17 +95,21 @@ func Main(version string) {
 		RunRestart: runRestart,
 	})
 
+	ui.SetThemeProvider(srv.ThemeSetting)
+
 	mux := http.NewServeMux()
 	srv.Register(mux)
 	ui.RegisterPWAHandlers(mux)
 	dfs := web.DistFS()
-	if scripts, err := frontend.LoadScripts(dfs, frontend.IndexEntry, frontend.SessionEntry, frontend.LiveEntry); err == nil {
+	if scripts, err := frontend.LoadScripts(dfs, frontend.IndexEntry, frontend.SessionEntry, frontend.SettingsEntry, frontend.LiveEntry); err == nil {
 		for _, script := range scripts {
 			switch script.Entry {
 			case frontend.IndexEntry:
 				ui.SetIndexScriptPath(script.Path)
 			case frontend.SessionEntry:
 				ui.SetSessionScriptPath(script.Path)
+			case frontend.SettingsEntry:
+				ui.SetSettingsScriptPath(script.Path)
 			}
 			mux.HandleFunc(script.Path, frontend.ServeJS(script.JS, script.Path != "/static/assets/index.js"))
 		}

@@ -1,17 +1,9 @@
 import { createSessionsPage } from './sessions-page.js';
-import {
-  isDoneNotifyEnabled,
-  registerPushSubscription,
-  requestNotifyPermission,
-  setDoneNotifyEnabled,
-  unregisterPushSubscription,
-  setupSoundSelector,
-  playDoneSound,
-} from '../session/chat/done-notifier.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
 import { createVersionController } from '../shared/version.js';
+import { configureSettingsSync, hydrateSettings, writeSetting } from '../shared/settings-store.js';
 
 export { createSessionsPage };
 
@@ -21,6 +13,8 @@ export function runIndexPage({
   setTimeoutImpl = setTimeout,
   clearTimeoutImpl = clearTimeout,
 } = {}) {
+  configureSettingsSync({ fetchImpl: windowImpl.fetch ? windowImpl.fetch.bind(windowImpl) : undefined });
+
   const page = createSessionsPage({
     root: documentImpl,
     setTimeoutImpl,
@@ -43,10 +37,6 @@ export function runIndexPage({
   const sessionPathInput = documentImpl.getElementById('sessionPath');
   const recentLocations = documentImpl.getElementById('recentLocations');
   const modalError = documentImpl.getElementById('modalError');
-  const notifyToggle = documentImpl.getElementById('index-notify-toggle');
-  const notifyStatus = documentImpl.getElementById('index-notify-status');
-  const spinnerToggle = documentImpl.getElementById('index-spinner-toggle');
-  const spinnerStatus = documentImpl.getElementById('index-spinner-status');
   const layoutBtns = Array.from(documentImpl.querySelectorAll('[data-layout-btn]'));
   const layoutStorageKey = 'pi-sessions:view-layout';
 
@@ -171,7 +161,7 @@ export function runIndexPage({
   layoutBtns.forEach((btn) => {
     btn.addEventListener('click', async () => {
       const layout = btn.dataset.layoutBtn === 'projects' ? 'projects' : 'timeline';
-      try { windowImpl.localStorage.setItem(layoutStorageKey, layout); } catch (_) {}
+      writeSetting(layoutStorageKey, layout, { storage: windowImpl.localStorage });
       setLayoutButtonState(layout);
       await page.setLayout(layout);
       markLayoutReady();
@@ -202,64 +192,6 @@ export function runIndexPage({
     webMenuBackdrop.addEventListener('click', (e) => {
       e.stopPropagation();
       closeMenu();
-    });
-  }
-
-  function syncNotifyMenuItem() {
-    if (!notifyToggle || !notifyStatus) return;
-    const enabled = isDoneNotifyEnabled({ storage: windowImpl.localStorage });
-    notifyStatus.textContent = enabled ? 'ON' : 'OFF';
-    notifyStatus.classList.toggle('on', enabled);
-    notifyToggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
-
-    const parent = notifyStatus.parentElement;
-    if (parent) {
-      const selector = parent.querySelector('.sound-selector');
-      if (selector) {
-        selector.style.display = enabled ? '' : 'none';
-      }
-    }
-  }
-
-  if (notifyToggle) {
-    syncNotifyMenuItem();
-    notifyToggle.addEventListener('click', async () => {
-      const enabled = isDoneNotifyEnabled({ storage: windowImpl.localStorage });
-      if (enabled) {
-        setDoneNotifyEnabled(false, { storage: windowImpl.localStorage });
-        await unregisterPushSubscription({ windowImpl });
-      } else {
-        const permission = await requestNotifyPermission({ windowImpl });
-        const granted = permission === 'granted';
-        setDoneNotifyEnabled(granted, { storage: windowImpl.localStorage });
-        if (granted) await registerPushSubscription({ windowImpl });
-      }
-      syncNotifyMenuItem();
-    });
-
-    setupSoundSelector({
-      documentImpl,
-      windowImpl,
-      storage: windowImpl.localStorage,
-      fetchImpl: windowImpl.fetch.bind(windowImpl)
-    });
-  }
-
-  function syncSpinnerMenuItem() {
-    if (!spinnerToggle || !spinnerStatus) return;
-    const isRuncat = windowImpl.localStorage.getItem('pi-sessions:spinner-style') !== 'braille';
-    spinnerStatus.textContent = isRuncat ? 'RUNCAT' : 'BRAILLE';
-    spinnerStatus.classList.toggle('on', isRuncat);
-    spinnerToggle.setAttribute('aria-pressed', isRuncat ? 'true' : 'false');
-  }
-
-  if (spinnerToggle) {
-    syncSpinnerMenuItem();
-    spinnerToggle.addEventListener('click', () => {
-      const current = windowImpl.localStorage.getItem('pi-sessions:spinner-style') === 'braille' ? 'braille' : 'runcat';
-      const next = current === 'runcat' ? 'braille' : 'runcat';
-      windowImpl.localStorage.setItem('pi-sessions:spinner-style', next);
-      syncSpinnerMenuItem();
     });
   }
 
@@ -371,6 +303,21 @@ export function runIndexPage({
     initialLayout = windowImpl.localStorage.getItem(layoutStorageKey) === 'projects' ? 'projects' : 'timeline';
   } catch (_) {}
   setLayoutButtonState(initialLayout);
+
+  // Pull server-backed settings and reconcile the layout control. Theme is
+  // already injected server-side; this catches cross-browser drift for the
+  // default layout without blocking first paint.
+  hydrateSettings({ storage: windowImpl.localStorage }).then((settings) => {
+    if (!settings) return;
+    const serverLayout = settings[layoutStorageKey] === 'projects' ? 'projects' : 'timeline';
+    if (serverLayout !== (documentImpl.documentElement.dataset.sessionLayout || 'timeline')) {
+      setLayoutButtonState(serverLayout);
+      page.setLayout(serverLayout)
+        .then(() => sessionPalette.refresh())
+        .catch(() => {})
+        .finally(markLayoutReady);
+    }
+  });
 
   page.filter();
   sessionPalette.refresh();
