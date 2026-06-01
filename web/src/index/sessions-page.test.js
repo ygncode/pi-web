@@ -236,17 +236,31 @@ describe('createSessionsPage project management', () => {
     document.body.innerHTML = '';
   });
 
-  it('loads projects from the API', async () => {
+  it('loads projects and filter state from the API', async () => {
     const fetchProjects = vi.fn(async () => ({
+      filterEnabled: true,
       projects: [
         { path: '/a', enabled: true, sessionCount: 2, source: 'discovered' },
         { path: '/b', enabled: false, sessionCount: 0, source: 'registered' }
       ]
     }));
     const page = createSessionsPage({ fetchProjects });
-    const projects = await page.loadProjects();
+    const { projects, filterEnabled } = await page.loadProjects();
     expect(projects).toHaveLength(2);
     expect(projects[0].path).toBe('/a');
+    expect(filterEnabled).toBe(true);
+  });
+
+  it('toggles the project filter mode then refreshes', async () => {
+    const updateProject = vi.fn(async () => ({ ok: true }));
+    const fetchSessions = vi.fn(async () => ({ sessions: [] }));
+    const page = createSessionsPage({ updateProject, fetchSessions });
+
+    await page.setFilterEnabled(true);
+    expect(updateProject).toHaveBeenCalledWith('', 'enable-filter');
+    await page.setFilterEnabled(false);
+    expect(updateProject).toHaveBeenCalledWith('', 'disable-filter');
+    expect(fetchSessions).toHaveBeenCalledTimes(2);
   });
 
   it('toggles a project then refreshes the session list', async () => {

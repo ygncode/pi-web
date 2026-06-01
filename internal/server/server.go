@@ -120,6 +120,9 @@ func New(deps Deps) *Server {
 		if _, err := db.Exec(projectPrefsSchema); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to create project_prefs table: %v\n", err)
 		}
+		if _, err := db.Exec(appSettingsSchema); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create app_settings table: %v\n", err)
+		}
 	}
 
 	s := &Server{

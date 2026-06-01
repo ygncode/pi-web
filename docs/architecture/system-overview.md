@@ -136,21 +136,26 @@ name, while pi-web itself continues listening only on localhost.
     └── push-subs.json      ← web-push subscriptions (when push enabled)
 ```
 
-## Project Visibility (Allowlist)
+## Project Visibility
 
-The index page only renders sessions whose project is **enabled**. Preferences
-live in the `project_prefs` SQLite table (`internal/server/projects.go`) and sync
-across devices since they are server-side.
+Project filtering is an **opt-in master switch**, stored in the `app_settings`
+SQLite table (`project_filter_enabled`, default **off**). Per-project enable
+state lives in the `project_prefs` table. Both are server-side, so they sync
+across devices. See `internal/server/projects.go`.
 
-- **First run** (empty table): every discovered project is seeded enabled, so the
-  homepage looks unchanged until the user curates.
-- **New projects** that appear after the first run default to **disabled** (hidden)
-  — an allowlist, so noise from one-off folders stays out of view.
+- **Filter off (default):** every session shows; new sessions (web- or
+  terminal-created) appear immediately, exactly like before the feature existed.
+- **Filter on:** the index only renders sessions whose project is **enabled** —
+  an allowlist. Projects discovered after the table is first seeded default to
+  hidden, so one-off folders stay out of view.
+- **First seed** (empty `project_prefs`): every discovered project is enabled, so
+  turning the filter on doesn't blank the homepage.
 - **Registering** a folder path (`action: register`) pre-approves it so sessions
   that later land there show immediately, even before any session exists.
 - Filtering is applied server-side in both `handleIndex` and `handleApiSessions`
-  (no client flash). Manage projects via the index menu → **Manage Projects**,
-  backed by `GET/POST /api/projects`.
+  (no client flash) and is a no-op while the master switch is off. Manage via the
+  index menu → **Manage Projects** (search, select/deselect-all, register, and the
+  filter switch), backed by `GET/POST /api/projects`.
 
 ## Startup Order
 

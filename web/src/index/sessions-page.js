@@ -304,7 +304,10 @@ export function createSessionsPage({
 
     async loadProjects() {
       const response = await fetchProjects();
-      return Array.isArray(response.projects) ? response.projects : [];
+      return {
+        projects: Array.isArray(response.projects) ? response.projects : [],
+        filterEnabled: !!response.filterEnabled
+      };
     },
 
     async setProjectEnabled(path, enabled) {
@@ -314,6 +317,11 @@ export function createSessionsPage({
 
     async setAllProjectsEnabled(enabled) {
       await updateProject('', enabled ? 'enable-all' : 'disable-all');
+      await this.refreshSessions();
+    },
+
+    async setFilterEnabled(enabled) {
+      await updateProject('', enabled ? 'enable-filter' : 'disable-filter');
       await this.refreshSessions();
     },
 

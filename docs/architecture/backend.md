@@ -117,10 +117,11 @@ and `RunRestart`. When `Updater` is nil the version/update routes are not regist
 when `RunInstall`/`RunRestart` are nil the corresponding endpoints respond `503`.
 
 On `New`, the server opens (and migrates) a SQLite database at
-`~/.pi/agent/pi-web.sqlite` — a `scratchpads` table keyed by project path and a
-`project_prefs` table that records which projects are shown on the index page
-(see `projects.go`). A `PushManager` (when configured) persists web-push
-subscriptions and VAPID keys under the agent dir.
+`~/.pi/agent/pi-web.sqlite` — a `scratchpads` table keyed by project path, a
+`project_prefs` table recording which projects are enabled, and an `app_settings`
+key/value table holding the project-filter master switch (default off). See
+`projects.go`. A `PushManager` (when configured) persists web-push subscriptions
+and VAPID keys under the agent dir.
 
 ### `sessions.Session`
 
@@ -210,7 +211,7 @@ type piRPCWorker struct {
 | `/api/git/info` | GET | `handleGitInfo` | Branch / dirty / PR-URL info for a project |
 | `/api/git/rename-branch` | POST | `handleGitRenameBranch` | Rename the current git branch |
 | `/api/scratchpad` | GET/POST | `handleGetScratchpad` / `handleSaveScratchpad` | Per-project scratchpad (SQLite) |
-| `/api/projects` | GET/POST | `handleApiProjects` / `handleUpdateProject` | List projects; enable/disable/register/remove visibility (SQLite) |
+| `/api/projects` | GET/POST | `handleApiProjects` / `handleUpdateProject` | List projects + filter state; enable/disable/register/remove, bulk enable-all/disable-all, enable-filter/disable-filter (SQLite) |
 | `/api/sounds` | GET | `handleApiSounds` | List available notification sounds |
 | `/sounds/` | GET | `handleSounds` | Serve a sound asset (no auth) |
 | `/custom-themes.css` | GET | `handleCustomThemes` | User custom theme CSS |

@@ -24,6 +24,9 @@ func newProjectPrefsDB(t *testing.T) *sql.DB {
 	if _, err := db.Exec(projectPrefsSchema); err != nil {
 		t.Fatalf("create project_prefs: %v", err)
 	}
+	if _, err := db.Exec(appSettingsSchema); err != nil {
+		t.Fatalf("create app_settings: %v", err)
+	}
 	t.Cleanup(func() { db.Close() })
 	return db
 }
@@ -78,6 +81,7 @@ func TestSyncProjectPrefs_PreservesExistingState(t *testing.T) {
 
 func TestFilterEnabledSummaries(t *testing.T) {
 	s := &Server{db: newProjectPrefsDB(t)}
+	s.setProjectFilterEnabled(true)
 	// Seed: /a enabled, /b disabled.
 	s.syncProjectPrefs([]string{"/a"})
 	s.syncProjectPrefs([]string{"/a", "/b"}) // /b hidden
@@ -102,6 +106,49 @@ func TestFilterEnabledSummaries_NoDBIsNoOp(t *testing.T) {
 	summaries := []sessions.SessionSummary{{ID: "1", Project: "/a"}}
 	if len(s.filterEnabledSummaries(summaries)) != 1 {
 		t.Fatal("without db, filtering should be a no-op")
+	}
+}
+
+func TestFilterDisabledShowsEverything(t *testing.T) {
+	s := &Server{db: newProjectPrefsDB(t)}
+	// /b is disabled in prefs, but the master filter is off (default).
+	s.syncProjectPrefs([]string{"/a"})
+	s.syncProjectPrefs([]string{"/a", "/b"})
+
+	summaries := []sessions.SessionSummary{{ID: "1", Project: "/a"}, {ID: "2", Project: "/b"}}
+	if got := s.filterEnabledSummaries(summaries); len(got) != 2 {
+		t.Fatalf("filter off should show everything, got %d", len(got))
+	}
+
+	s.setProjectFilterEnabled(true)
+	if got := s.filterEnabledSummaries(summaries); len(got) != 1 {
+		t.Fatalf("filter on should hide /b, got %d", len(got))
+	}
+}
+
+func TestHandleUpdateProject_FilterToggle(t *testing.T) {
+	s := &Server{db: newProjectPrefsDB(t)}
+	if s.projectFilterEnabled() {
+		t.Fatal("filter should default off")
+	}
+
+	post := func(action string) {
+		body, _ := json.Marshal(map[string]string{"action": action})
+		req := httptest.NewRequest(http.MethodPost, "/api/projects", strings.NewReader(string(body)))
+		w := httptest.NewRecorder()
+		s.handleUpdateProject(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("%s status = %d", action, w.Code)
+		}
+	}
+
+	post("enable-filter")
+	if !s.projectFilterEnabled() {
+		t.Fatal("enable-filter should turn the filter on")
+	}
+	post("disable-filter")
+	if s.projectFilterEnabled() {
+		t.Fatal("disable-filter should turn the filter off")
 	}
 }
 

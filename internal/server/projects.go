@@ -30,6 +30,41 @@ const projectPrefsSchema = `CREATE TABLE IF NOT EXISTS project_prefs (
 	updated_at DATETIME
 )`
 
+// appSettingsSchema holds simple key/value app preferences. Currently only the
+// project-filter master switch.
+const appSettingsSchema = `CREATE TABLE IF NOT EXISTS app_settings (
+	key TEXT PRIMARY KEY,
+	value TEXT
+)`
+
+const settingProjectFilterEnabled = "project_filter_enabled"
+
+// projectFilterEnabled reports whether the homepage should be filtered to only
+// enabled projects. Off by default: with the filter off every project (and any
+// new session) shows up normally.
+func (s *Server) projectFilterEnabled() bool {
+	if s.db == nil {
+		return false
+	}
+	var v string
+	if err := s.db.QueryRow("SELECT value FROM app_settings WHERE key = ?", settingProjectFilterEnabled).Scan(&v); err != nil {
+		return false
+	}
+	return v == "1"
+}
+
+func (s *Server) setProjectFilterEnabled(enabled bool) {
+	if s.db == nil {
+		return
+	}
+	v := "0"
+	if enabled {
+		v = "1"
+	}
+	_, _ = s.db.Exec(`INSERT INTO app_settings (key, value) VALUES (?, ?)
+		ON CONFLICT(key) DO UPDATE SET value=excluded.value`, settingProjectFilterEnabled, v)
+}
+
 type projectEntry struct {
 	Path         string `json:"path"`
 	Enabled      bool   `json:"enabled"`
@@ -112,7 +147,7 @@ func (s *Server) enabledProjectSet() (map[string]bool, bool) {
 // filterEnabledSummaries drops sessions whose project is disabled. Sessions with
 // an empty project are always kept. With no database it is a no-op.
 func (s *Server) filterEnabledSummaries(summaries []sessions.SessionSummary) []sessions.SessionSummary {
-	if s.db == nil {
+	if s.db == nil || !s.projectFilterEnabled() {
 		return summaries
 	}
 	s.syncProjectPrefs(distinctProjects(summaries))
@@ -201,7 +236,10 @@ func (s *Server) handleApiProjects(w http.ResponseWriter, r *http.Request) {
 		return entries[i].Path < entries[j].Path
 	})
 
-	writeJSON(w, 0, map[string]any{"projects": entries})
+	writeJSON(w, 0, map[string]any{
+		"projects":      entries,
+		"filterEnabled": s.projectFilterEnabled(),
+	})
 }
 
 func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
@@ -219,6 +257,12 @@ func (s *Server) handleUpdateProject(w http.ResponseWriter, r *http.Request) {
 	}
 	if s.db == nil {
 		writeJSONError(w, http.StatusInternalServerError, "preferences are unavailable")
+		return
+	}
+
+	if body.Action == "enable-filter" || body.Action == "disable-filter" {
+		s.setProjectFilterEnabled(body.Action == "enable-filter")
+		writeJSON(w, 0, map[string]any{"ok": true, "filterEnabled": s.projectFilterEnabled()})
 		return
 	}
 

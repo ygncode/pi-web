@@ -59,6 +59,9 @@ export function runIndexPage({
   const projectsModalError = documentImpl.getElementById('projectsModalError');
   const projectsSearch = documentImpl.getElementById('projectsSearch');
   const projectsToggleAllBtn = documentImpl.getElementById('projectsToggleAllBtn');
+  const projectsFilterToggle = documentImpl.getElementById('projectsFilterToggle');
+  const projectsFilterDesc = documentImpl.getElementById('projectsFilterDesc');
+  const projectsConfig = documentImpl.getElementById('projectsConfig');
 
   let modalHideTimer = null;
   let sessionPalette = null;
@@ -522,11 +525,22 @@ export function runIndexPage({
     applyProjectsSearch();
   }
 
+  function syncFilterToggle(filterEnabled) {
+    if (projectsFilterToggle) projectsFilterToggle.checked = filterEnabled;
+    if (projectsConfig) projectsConfig.classList.toggle('filter-off', !filterEnabled);
+    if (projectsFilterDesc) {
+      projectsFilterDesc.textContent = filterEnabled
+        ? 'Only checked projects appear on the homepage.'
+        : 'All projects are shown. Turn on to show only the checked ones.';
+    }
+  }
+
   async function refreshProjectsList() {
     if (projectsModalError) projectsModalError.textContent = '';
     try {
-      const projects = await page.loadProjects();
+      const { projects, filterEnabled } = await page.loadProjects();
       renderProjectsList(projects);
+      syncFilterToggle(filterEnabled);
     } catch (err) {
       if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to load projects';
     }
@@ -576,6 +590,22 @@ export function runIndexPage({
 
   if (projectsSearch) projectsSearch.addEventListener('input', applyProjectsSearch);
   if (projectsToggleAllBtn) projectsToggleAllBtn.addEventListener('click', doToggleAll);
+  if (projectsFilterToggle) {
+    projectsFilterToggle.addEventListener('change', async () => {
+      const enabled = projectsFilterToggle.checked;
+      projectsFilterToggle.disabled = true;
+      syncFilterToggle(enabled);
+      if (projectsModalError) projectsModalError.textContent = '';
+      try {
+        await page.setFilterEnabled(enabled);
+      } catch (err) {
+        syncFilterToggle(!enabled);
+        if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to update filter';
+      } finally {
+        projectsFilterToggle.disabled = false;
+      }
+    });
+  }
 
   if (projectsModalBackBtn) projectsModalBackBtn.addEventListener('click', hideProjectsModal);
   if (projectsDoneBtn) projectsDoneBtn.addEventListener('click', hideProjectsModal);
