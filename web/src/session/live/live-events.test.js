@@ -15,7 +15,6 @@ describe('live events', () => {
     const entryState = { seen: new Set(), liveRendered: new Set() };
     const appendEntry = vi.fn((entry) => { entryState.seen.add(entry.id); return true; });
     const refresh = vi.fn();
-    const showIndicator = vi.fn();
     const updateStats = vi.fn();
     const updateTitle = vi.fn();
     const scrollAfterLayout = vi.fn();
@@ -29,7 +28,6 @@ describe('live events', () => {
       appendEntry,
       upsertEntry: vi.fn(),
       refreshEntriesAffectedByToolResult: refresh,
-      showIndicator,
       updateStats,
       updateTitle,
       isFollowing: () => true,
@@ -41,7 +39,6 @@ describe('live events', () => {
     expect(result.newCount).toBe(2);
     expect(onReloaded).toHaveBeenCalledWith({ name: 'New Title', entries });
     expect(refresh).toHaveBeenCalledWith(entries[1], entries);
-    expect(showIndicator).toHaveBeenCalled();
     expect(updateStats).toHaveBeenCalledWith(entries);
     expect(updateTitle).toHaveBeenCalledWith('New Title');
     expect(scrollAfterLayout).toHaveBeenCalledWith(true);

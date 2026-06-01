@@ -26,7 +26,6 @@ import * as liveScroll from './live/live-scroll.js';
 import * as liveStats from './live/live-stats.js';
 import * as liveEntries from './live/live-entries.js';
 import * as chatPreview from './live/chat-preview.js';
-import * as updateIndicator from './live/update-indicator.js';
 import * as shareOverlay from './live/share-overlay.js';
 import * as resumeButton from './live/resume-button.js';
 import * as newSessionButton from './live/new-session-button.js';
@@ -318,7 +317,6 @@ export function runSessionApp({ target = window } = {}) {
     liveScroll,
     liveStats,
     liveEvents,
-    updateIndicator,
     chatPreview,
     shareOverlay,
     resumeButton,

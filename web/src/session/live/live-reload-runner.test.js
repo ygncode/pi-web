@@ -29,7 +29,6 @@ describe('live reload runner', () => {
       liveScroll: { isAtBottom: () => true, scrollToBottom: vi.fn(), scrollElementAboveComposer: vi.fn(), createFollowButton: vi.fn(), setFollowButtonText: vi.fn(), removeFollowButton: vi.fn() },
       liveStats: { updateStatsDom: vi.fn() },
       liveEvents,
-      updateIndicator: { showUpdateIndicator: vi.fn() },
       chatPreview: { clearChatPreview: vi.fn(), renderChatPreview: vi.fn() },
       shareOverlay: { setupShareButton: vi.fn() },
       resumeButton: { setupResumeButton: vi.fn() },
