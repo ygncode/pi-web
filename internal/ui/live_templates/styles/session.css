@@ -2310,6 +2310,9 @@
       min-width: 0;
       color: var(--muted);
     }
+    /* display:inline-flex above would otherwise defeat the [hidden] attribute
+       (equal specificity, author rule wins) — restore hiding for non-git cwds. */
+    .pi-git-branch[hidden] { display: none; }
     .pi-git-icon {
       width: 13px;
       height: 13px;
