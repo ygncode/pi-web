@@ -230,3 +230,86 @@ describe('createSessionsPage scalable state', () => {
     expect(page._reloadTimer).toBeNull();
   });
 });
+
+describe('createSessionsPage project management', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+  });
+
+  it('loads projects and filter state from the API', async () => {
+    const fetchProjects = vi.fn(async () => ({
+      filterEnabled: true,
+      projects: [
+        { path: '/a', enabled: true, sessionCount: 2, source: 'discovered' },
+        { path: '/b', enabled: false, sessionCount: 0, source: 'registered' }
+      ]
+    }));
+    const page = createSessionsPage({ fetchProjects });
+    const { projects, filterEnabled } = await page.loadProjects();
+    expect(projects).toHaveLength(2);
+    expect(projects[0].path).toBe('/a');
+    expect(filterEnabled).toBe(true);
+  });
+
+  it('toggles the project filter mode then refreshes', async () => {
+    const updateProject = vi.fn(async () => ({ ok: true }));
+    const fetchSessions = vi.fn(async () => ({ sessions: [] }));
+    const page = createSessionsPage({ updateProject, fetchSessions });
+
+    await page.setFilterEnabled(true);
+    expect(updateProject).toHaveBeenCalledWith('', 'enable-filter');
+    await page.setFilterEnabled(false);
+    expect(updateProject).toHaveBeenCalledWith('', 'disable-filter');
+    expect(fetchSessions).toHaveBeenCalledTimes(2);
+  });
+
+  it('toggles a project then refreshes the session list', async () => {
+    const updateProject = vi.fn(async () => ({ ok: true }));
+    const fetchSessions = vi.fn(async () => ({ sessions: [] }));
+    const page = createSessionsPage({ updateProject, fetchSessions });
+
+    await page.setProjectEnabled('/a', false);
+    expect(updateProject).toHaveBeenCalledWith('/a', 'disable');
+    expect(fetchSessions).toHaveBeenCalled();
+
+    await page.setProjectEnabled('/a', true);
+    expect(updateProject).toHaveBeenCalledWith('/a', 'enable');
+  });
+
+  it('registers a project and ignores blank paths', async () => {
+    const updateProject = vi.fn(async () => ({ ok: true }));
+    const fetchSessions = vi.fn(async () => ({ sessions: [] }));
+    const page = createSessionsPage({ updateProject, fetchSessions });
+
+    const ok = await page.registerProject('  ~/proj  ');
+    expect(ok).toBe(true);
+    expect(updateProject).toHaveBeenCalledWith('~/proj', 'register');
+
+    updateProject.mockClear();
+    const blank = await page.registerProject('   ');
+    expect(blank).toBe(false);
+    expect(updateProject).not.toHaveBeenCalled();
+  });
+
+  it('removes a project then refreshes', async () => {
+    const updateProject = vi.fn(async () => ({ ok: true }));
+    const fetchSessions = vi.fn(async () => ({ sessions: [] }));
+    const page = createSessionsPage({ updateProject, fetchSessions });
+
+    await page.removeProject('/b');
+    expect(updateProject).toHaveBeenCalledWith('/b', 'remove');
+    expect(fetchSessions).toHaveBeenCalled();
+  });
+
+  it('enables/disables all projects then refreshes', async () => {
+    const updateProject = vi.fn(async () => ({ ok: true }));
+    const fetchSessions = vi.fn(async () => ({ sessions: [] }));
+    const page = createSessionsPage({ updateProject, fetchSessions });
+
+    await page.setAllProjectsEnabled(false);
+    expect(updateProject).toHaveBeenCalledWith('', 'disable-all');
+    await page.setAllProjectsEnabled(true);
+    expect(updateProject).toHaveBeenCalledWith('', 'enable-all');
+    expect(fetchSessions).toHaveBeenCalledTimes(2);
+  });
+});

@@ -39,6 +39,19 @@ export function runIndexPage({
   const modalError = documentImpl.getElementById('modalError');
   const layoutBtns = Array.from(documentImpl.querySelectorAll('[data-layout-btn]'));
   const layoutStorageKey = 'pi-sessions:view-layout';
+  const manageProjectsBtns = Array.from(documentImpl.querySelectorAll('[data-manage-projects-btn]'));
+  const projectsModalOverlay = documentImpl.getElementById('projectsModalOverlay');
+  const projectsModalBackBtn = documentImpl.getElementById('projectsModalBackBtn');
+  const projectsDoneBtn = documentImpl.getElementById('projectsDoneBtn');
+  const projectsList = documentImpl.getElementById('projectsList');
+  const projectsAddPath = documentImpl.getElementById('projectsAddPath');
+  const projectsAddBtn = documentImpl.getElementById('projectsAddBtn');
+  const projectsModalError = documentImpl.getElementById('projectsModalError');
+  const projectsSearch = documentImpl.getElementById('projectsSearch');
+  const projectsToggleAllBtn = documentImpl.getElementById('projectsToggleAllBtn');
+  const projectsFilterToggle = documentImpl.getElementById('projectsFilterToggle');
+  const projectsFilterDesc = documentImpl.getElementById('projectsFilterDesc');
+  const projectsConfig = documentImpl.getElementById('projectsConfig');
 
   let modalHideTimer = null;
   let sessionPalette = null;
@@ -262,6 +275,7 @@ export function runIndexPage({
       const paletteOverlay = documentImpl.getElementById('sessionPalette');
       if (paletteOverlay?.classList.contains('open')) closePalette();
       else if (webMenu && !webMenu.hidden) closeMenu();
+      else if (projectsModalOpen) hideProjectsModal();
       else if (page.modal) hideModal();
     }
   });
@@ -296,6 +310,249 @@ export function runIndexPage({
 
   if (createBtn) {
     createBtn.addEventListener('click', doCreate);
+  }
+
+  // ── Manage projects modal ──
+
+  let projectsModalHideTimer = null;
+  let projectsModalOpen = false;
+
+  function showProjectsModal() {
+    closeMenu();
+    if (!projectsModalOverlay) return;
+    if (projectsModalHideTimer) {
+      clearTimeoutImpl(projectsModalHideTimer);
+      projectsModalHideTimer = null;
+    }
+    projectsModalOpen = true;
+    projectsModalOverlay.classList.add('visible');
+    documentImpl.body?.classList.add('modal-sheet-open');
+    const requestFrame = windowImpl.requestAnimationFrame?.bind(windowImpl) || ((fn) => setTimeoutImpl(fn, 0));
+    requestFrame(() => projectsModalOverlay.classList.add('open'));
+  }
+
+  function hideProjectsModal() {
+    projectsModalOpen = false;
+    if (projectsModalOverlay) {
+      projectsModalOverlay.classList.remove('open');
+      if (projectsModalHideTimer) clearTimeoutImpl(projectsModalHideTimer);
+      projectsModalHideTimer = setTimeoutImpl(() => {
+        projectsModalOverlay.classList.remove('visible');
+        projectsModalHideTimer = null;
+      }, 300);
+    }
+    documentImpl.body?.classList.remove('modal-sheet-open');
+  }
+
+  let projectsCache = [];
+
+  function applyProjectsSearch() {
+    if (!projectsList) return;
+    const q = (projectsSearch?.value || '').trim().toLowerCase();
+    const rows = projectsList.querySelectorAll('.project-row');
+    let anyVisible = false;
+    rows.forEach((row) => {
+      const match = !q || (row.dataset.path || '').toLowerCase().includes(q);
+      row.classList.toggle('hidden', !match);
+      if (match) anyVisible = true;
+    });
+    let noResults = projectsList.querySelector('[data-projects-no-results]');
+    if (q && rows.length && !anyVisible) {
+      if (!noResults) {
+        noResults = documentImpl.createElement('div');
+        noResults.className = 'projects-empty';
+        noResults.setAttribute('data-projects-no-results', '');
+        noResults.textContent = 'No projects match your search.';
+        projectsList.appendChild(noResults);
+      }
+      noResults.classList.remove('hidden');
+    } else if (noResults) {
+      noResults.classList.add('hidden');
+    }
+  }
+
+  function updateToggleAllLabel() {
+    if (!projectsToggleAllBtn) return;
+    const allEnabled = projectsCache.length > 0 && projectsCache.every((p) => p.enabled);
+    projectsToggleAllBtn.textContent = allEnabled ? 'Deselect all' : 'Select all';
+    projectsToggleAllBtn.dataset.target = allEnabled ? 'disable' : 'enable';
+    projectsToggleAllBtn.disabled = projectsCache.length === 0;
+  }
+
+  function renderProjectsList(projects) {
+    if (!projectsList) return;
+    projectsCache = projects;
+    updateToggleAllLabel();
+    projectsList.innerHTML = '';
+    if (!projects.length) {
+      const empty = documentImpl.createElement('div');
+      empty.className = 'projects-empty';
+      empty.textContent = 'No projects found yet.';
+      projectsList.appendChild(empty);
+      return;
+    }
+    for (const project of projects) {
+      const row = documentImpl.createElement('div');
+      row.className = 'project-row';
+      row.dataset.path = project.path;
+
+      const checkbox = documentImpl.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = !!project.enabled;
+      const applyToggle = async () => {
+        checkbox.disabled = true;
+        try {
+          await page.setProjectEnabled(project.path, checkbox.checked);
+        } catch (err) {
+          checkbox.checked = !checkbox.checked;
+          if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to update project';
+        } finally {
+          checkbox.disabled = false;
+        }
+      };
+      checkbox.addEventListener('change', applyToggle);
+
+      const name = documentImpl.createElement('span');
+      name.className = 'project-row-name';
+      const nameText = documentImpl.createElement('bdi');
+      nameText.textContent = project.path;
+      name.appendChild(nameText);
+      name.title = project.path;
+      name.addEventListener('click', () => {
+        if (checkbox.disabled) return;
+        checkbox.checked = !checkbox.checked;
+        applyToggle();
+      });
+
+      const meta = documentImpl.createElement('span');
+      meta.className = 'project-row-count';
+      const count = project.sessionCount || 0;
+      meta.textContent = count === 1 ? '1 session' : `${count} sessions`;
+
+      row.appendChild(checkbox);
+      row.appendChild(name);
+      row.appendChild(meta);
+
+      if (project.source === 'registered') {
+        const remove = documentImpl.createElement('button');
+        remove.type = 'button';
+        remove.className = 'project-row-remove';
+        remove.textContent = 'Remove';
+        remove.addEventListener('click', async () => {
+          remove.disabled = true;
+          try {
+            await page.removeProject(project.path);
+            await refreshProjectsList();
+          } catch (err) {
+            remove.disabled = false;
+            if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to remove project';
+          }
+        });
+        row.appendChild(remove);
+      }
+
+      projectsList.appendChild(row);
+    }
+    applyProjectsSearch();
+  }
+
+  function syncFilterToggle(filterEnabled) {
+    if (projectsFilterToggle) projectsFilterToggle.checked = filterEnabled;
+    if (projectsConfig) projectsConfig.classList.toggle('filter-off', !filterEnabled);
+    if (projectsFilterDesc) {
+      projectsFilterDesc.textContent = filterEnabled
+        ? 'Only checked projects appear on the homepage.'
+        : 'All projects are shown. Turn on to show only the checked ones.';
+    }
+  }
+
+  async function refreshProjectsList() {
+    if (projectsModalError) projectsModalError.textContent = '';
+    try {
+      const { projects, filterEnabled } = await page.loadProjects();
+      renderProjectsList(projects);
+      syncFilterToggle(filterEnabled);
+    } catch (err) {
+      if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to load projects';
+    }
+  }
+
+  async function openProjectsModal() {
+    showProjectsModal();
+    if (projectsAddPath) projectsAddPath.value = '';
+    if (projectsSearch) projectsSearch.value = '';
+    await refreshProjectsList();
+  }
+
+  async function doRegisterProject() {
+    if (!projectsAddPath) return;
+    const path = projectsAddPath.value.trim();
+    if (!path) return;
+    if (projectsModalError) projectsModalError.textContent = '';
+    if (projectsAddBtn) projectsAddBtn.disabled = true;
+    try {
+      await page.registerProject(path);
+      projectsAddPath.value = '';
+      await refreshProjectsList();
+    } catch (err) {
+      if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to add project';
+    } finally {
+      if (projectsAddBtn) projectsAddBtn.disabled = false;
+    }
+  }
+
+  async function doToggleAll() {
+    if (!projectsToggleAllBtn) return;
+    const enable = projectsToggleAllBtn.dataset.target !== 'disable';
+    projectsToggleAllBtn.disabled = true;
+    if (projectsModalError) projectsModalError.textContent = '';
+    try {
+      await page.setAllProjectsEnabled(enable);
+      await refreshProjectsList();
+    } catch (err) {
+      if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to update projects';
+      projectsToggleAllBtn.disabled = false;
+    }
+  }
+
+  manageProjectsBtns.forEach((btn) => {
+    btn.addEventListener('click', openProjectsModal);
+  });
+
+  if (projectsSearch) projectsSearch.addEventListener('input', applyProjectsSearch);
+  if (projectsToggleAllBtn) projectsToggleAllBtn.addEventListener('click', doToggleAll);
+  if (projectsFilterToggle) {
+    projectsFilterToggle.addEventListener('change', async () => {
+      const enabled = projectsFilterToggle.checked;
+      projectsFilterToggle.disabled = true;
+      syncFilterToggle(enabled);
+      if (projectsModalError) projectsModalError.textContent = '';
+      try {
+        await page.setFilterEnabled(enabled);
+      } catch (err) {
+        syncFilterToggle(!enabled);
+        if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to update filter';
+      } finally {
+        projectsFilterToggle.disabled = false;
+      }
+    });
+  }
+
+  if (projectsModalBackBtn) projectsModalBackBtn.addEventListener('click', hideProjectsModal);
+  if (projectsDoneBtn) projectsDoneBtn.addEventListener('click', hideProjectsModal);
+  if (projectsAddBtn) projectsAddBtn.addEventListener('click', doRegisterProject);
+  if (projectsAddPath) {
+    projectsAddPath.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        doRegisterProject();
+      }
+    });
+  }
+  if (projectsModalOverlay) {
+    projectsModalOverlay.addEventListener('click', (e) => {
+      if (e.target === projectsModalOverlay) hideProjectsModal();
+    });
   }
 
   let initialLayout = 'timeline';

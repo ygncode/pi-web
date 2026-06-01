@@ -14,7 +14,6 @@ export async function handleSessionReload({
   appendEntry,
   upsertEntry,
   refreshEntriesAffectedByToolResult,
-  showIndicator = () => {},
   updateStats = () => {},
   updateTitle = () => {},
   isFollowing = () => false,
@@ -55,7 +54,6 @@ export async function handleSessionReload({
   clearChatPreview();
 
   if (newCount > 0) {
-    showIndicator();
     updateStats(entries);
     if (isFollowing()) {
       scrollAfterLayout(true);

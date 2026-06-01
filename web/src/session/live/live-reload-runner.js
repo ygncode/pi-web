@@ -14,7 +14,6 @@ export function runLiveReload({
   liveScroll,
   liveStats,
   liveEvents,
-  updateIndicator,
   chatPreview,
   shareOverlay,
   resumeButton,
@@ -37,7 +36,6 @@ export function runLiveReload({
   const __piLiveScroll = liveScroll;
   const __piLiveStats = liveStats;
   const __piLiveEvents = liveEvents;
-  const __piUpdateIndicator = updateIndicator;
   const __piChatPreview = chatPreview;
   const __piShareOverlay = shareOverlay;
   const __piResumeButton = resumeButton;
@@ -220,16 +218,6 @@ export function runLiveReload({
     var es = null;
     var reconnectTimer = null;
     var reconnectAttempt = 0;
-    var UPDATE_INDICATOR_STATE = { indicator: null };
-
-    function showIndicator() {
-      return __piUpdateIndicator.showUpdateIndicator(UPDATE_INDICATOR_STATE, {
-        documentImpl: document,
-        requestAnimationFrameImpl: requestAnimationFrame,
-        setTimeoutImpl: setTimeout,
-        scrollToBottom: scrollToBottom
-      });
-    }
 
     var CHAT_PREVIEW_STATE = { chatPreviewEl: null, pendingUserEl: null };
 
@@ -281,7 +269,6 @@ export function runLiveReload({
         appendEntry: appendEntry,
         upsertEntry: upsertEntry,
         refreshEntriesAffectedByToolResult: refreshEntriesAffectedByToolResult,
-        showIndicator: showIndicator,
         updateStats: updateStats,
         updateTitle: updateTitle,
         isFollowing: function() { return FOLLOW; },

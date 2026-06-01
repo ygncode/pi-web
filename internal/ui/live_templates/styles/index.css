@@ -72,6 +72,16 @@ a { color: inherit; }
     -webkit-app-region: no-drag;
     app-region: no-drag;
 }
+/* The dropdown menu and modals are layered above the draggable header. Without
+   an explicit no-drag, the OS title-bar drag region swallows clicks on any of
+   their controls that overlap the header band (e.g. the top menu items). */
+:root.wco .web-menu,
+:root.wco .web-menu *,
+:root.wco .modal-overlay,
+:root.wco .modal-overlay * {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+}
 .header-top {
     display: flex;
     align-items: center;
@@ -494,6 +504,186 @@ body.modal-sheet-open { overflow: hidden; }
 }
 .modal-error { color: var(--danger); min-height: 16px; margin-top: 8px; font-size: 11px; }
 
+.modal-hint { color: var(--muted); font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
+.projects-filter-switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0 14px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--dim);
+    cursor: pointer;
+}
+.projects-filter-title { display: block; color: var(--text); font-size: 13px; font-weight: 560; }
+.projects-filter-desc { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; line-height: 1.4; }
+.switch { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+.switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.switch-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--dim);
+    border-radius: 999px;
+    transition: background 0.15s ease;
+}
+.switch-slider::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--text-soft);
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+.switch input:checked + .switch-slider { background: var(--accent); }
+.switch input:checked + .switch-slider::before { transform: translateX(16px); background: var(--body-bg); }
+.switch input:focus-visible + .switch-slider { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.projects-config.filter-off { opacity: 0.5; }
+.projects-toolbar {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.projects-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 36px;
+    box-sizing: border-box;
+    background: var(--body-bg);
+    border: 1px solid var(--dim);
+    color: var(--text);
+    padding: 0 12px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 12px;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.projects-search:focus { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.projects-bulk-btn {
+    flex: 0 0 auto;
+    height: 36px;
+    box-sizing: border-box;
+    border: 1px solid var(--dim);
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 0 14px;
+    border-radius: 6px;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.projects-bulk-btn:hover:not(:disabled) { color: var(--text); border-color: var(--muted); background: var(--surface-2); }
+.projects-bulk-btn:disabled { opacity: 0.5; cursor: default; }
+.projects-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    max-width: 100%;
+    max-height: 320px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    margin-bottom: 12px;
+}
+.projects-empty { color: var(--muted); font-size: 12px; padding: 12px 4px; }
+.project-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 100%;
+    padding: 8px 6px;
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+.project-row:hover { background: var(--surface-2); }
+.project-row input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    border: 1.5px solid var(--muted);
+    border-radius: 5px;
+    background: var(--body-bg);
+    cursor: pointer;
+    position: relative;
+    flex: 0 0 auto;
+    order: 0;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.project-row input[type="checkbox"]:hover { border-color: var(--text-soft); }
+.project-row input[type="checkbox"]:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+.project-row input[type="checkbox"]:checked::after {
+    content: "";
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 5px;
+    height: 9px;
+    border: solid var(--body-bg);
+    border-width: 0 2px 2px 0;
+    transform: translate(-50%, -50%) rotate(45deg);
+}
+.project-row input[type="checkbox"]:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.project-row-name {
+    color: var(--text);
+    font-size: 12px;
+    flex: 1 1 auto;
+    min-width: 0;
+    order: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    /* Truncate from the left so the distinguishing tail of long, common-prefixed
+       paths (the project folder) stays visible. */
+    direction: rtl;
+    text-align: left;
+}
+.project-row-name bdi { direction: ltr; unicode-bidi: bidi-override; }
+.project-row-count { color: var(--muted); font-size: 11px; white-space: nowrap; flex: 0 0 auto; order: 2; }
+.project-row-remove {
+    border: 1px solid var(--dim);
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    flex: 0 0 auto;
+    order: 3;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.project-row-remove:hover { color: var(--danger); border-color: var(--danger); }
+.project-row.hidden, .projects-empty.hidden { display: none; }
+.projects-footer {
+    margin-top: 10px;
+    padding-top: 16px;
+    border-top: 1px solid var(--dim);
+}
+.projects-footer-label {
+    display: block;
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 560;
+    margin-bottom: 8px;
+}
+.projects-footer input { margin-bottom: 0; }
+#projectsModalError { min-height: 0; margin: 8px 0 0; }
+#projectsModalError:empty { display: none; }
+#projectsModalOverlay .modal-actions { margin-top: 14px; }
+
 ::-webkit-scrollbar { width: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--dim); }
@@ -537,6 +727,9 @@ body.modal-sheet-open { overflow: hidden; }
     }
     .modal {
         width: 100%;
+        min-width: 0;
+        max-width: 100vw;
+        overflow-x: hidden;
         /* Fill the fixed overlay instead of 100svh; iOS can report svh shorter and leave a top gap. */
         height: 100%;
         max-height: none;
@@ -620,5 +813,32 @@ body.modal-sheet-open { overflow: hidden; }
         width: 100%;
         min-height: 48px;
         font-size: 16px;
+    }
+
+    /* Manage Projects sheet: switch + footer stay fixed, the list scrolls. */
+    .projects-filter-switch { flex-shrink: 0; }
+    .projects-config {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+    }
+    .projects-toolbar { flex-shrink: 0; }
+    .projects-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        max-height: none;
+        margin-bottom: 0;
+    }
+    .projects-footer { flex-shrink: 0; }
+    #projectsModalOverlay .modal-actions {
+        order: 0;
+        margin: 14px 0 0;
+        padding: 0;
+        border-top: 0;
+        background: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
 }

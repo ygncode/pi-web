@@ -80,6 +80,7 @@
     --mdCode: #8abeb7;
     --mdCodeBlock: #b5bd68;
     --mdCodeBlockBorder: #808080;
+    --code-bg: rgba(0, 0, 0, 0.28);
     --mdQuote: #808080;
     --mdQuoteBorder: #808080;
     --mdHr: #808080;
@@ -170,6 +171,7 @@
     --mdCode: #5a8080;
     --mdCodeBlock: #588458;
     --mdCodeBlockBorder: #6c6c6c;
+    --code-bg: rgba(0, 0, 0, 0.05);
     --mdQuote: #6c6c6c;
     --mdQuoteBorder: #6c6c6c;
     --mdHr: #6c6c6c;
@@ -247,7 +249,7 @@
     --darkGray: #3b4252;
     --accent-color: #88c0d0;
     --selectedBg: #434c5e;
-    --userMessageBg: #3b4252;
+    --userMessageBg: #434c5e;
     --toolPendingBg: #434c5e;
     --toolSuccessBg: #434c5e;
     --toolErrorBg: #4c566a;
@@ -260,6 +262,7 @@
     --mdCode: #8fbcbb;
     --mdCodeBlock: #a3be8c;
     --mdCodeBlockBorder: #4c566a;
+    --code-bg: #2e3440;
     --mdQuote: #d8dee9;
     --mdQuoteBorder: #4c566a;
     --mdHr: #4c566a;
@@ -337,7 +340,7 @@
     --darkGray: #44475a;
     --accent-color: #ff79c6;
     --selectedBg: #44475a;
-    --userMessageBg: #1e1f29;
+    --userMessageBg: #343746;
     --toolPendingBg: #343746;
     --toolSuccessBg: #343746;
     --toolErrorBg: #44475a;
@@ -350,6 +353,7 @@
     --mdCode: #8be9fd;
     --mdCodeBlock: #50fa7b;
     --mdCodeBlockBorder: #6272a4;
+    --code-bg: #282a36;
     --mdQuote: #f8f8f2;
     --mdQuoteBorder: #6272a4;
     --mdHr: #6272a4;

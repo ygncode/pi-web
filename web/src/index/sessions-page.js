@@ -148,6 +148,8 @@ export function createSessionsPage({
   fetchRecent = () => getJSON('/api/recent-locations'),
   fetchSessions = () => getJSON('/api/sessions'),
   createSession = (path) => postJSON('/api/new-session', { path }),
+  fetchProjects = () => getJSON('/api/projects'),
+  updateProject = (path, action) => postJSON('/api/projects', { path, action }),
   createStatusEvents = defaultCreateStatusEvents,
   navigate = defaultNavigate,
   setTimeoutImpl = setTimeout,
@@ -298,6 +300,42 @@ export function createSessionsPage({
         // Intentional no-op: recent locations are optional.
       }
       return this.recent;
+    },
+
+    async loadProjects() {
+      const response = await fetchProjects();
+      return {
+        projects: Array.isArray(response.projects) ? response.projects : [],
+        filterEnabled: !!response.filterEnabled
+      };
+    },
+
+    async setProjectEnabled(path, enabled) {
+      await updateProject(path, enabled ? 'enable' : 'disable');
+      await this.refreshSessions();
+    },
+
+    async setAllProjectsEnabled(enabled) {
+      await updateProject('', enabled ? 'enable-all' : 'disable-all');
+      await this.refreshSessions();
+    },
+
+    async setFilterEnabled(enabled) {
+      await updateProject('', enabled ? 'enable-filter' : 'disable-filter');
+      await this.refreshSessions();
+    },
+
+    async registerProject(path) {
+      const p = (path || '').trim();
+      if (!p) return false;
+      await updateProject(p, 'register');
+      await this.refreshSessions();
+      return true;
+    },
+
+    async removeProject(path) {
+      await updateProject(path, 'remove');
+      await this.refreshSessions();
     },
 
     async create() {

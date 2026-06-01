@@ -29,6 +29,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
+	summaries = s.filterEnabledSummaries(summaries)
 	sessions.SortSummariesByActivity(summaries)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.renderIndex(w, summaries); err != nil {
@@ -169,6 +170,8 @@ func (s *Server) handleApiSessions(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		summaries = filtered
+	} else {
+		summaries = s.filterEnabledSummaries(summaries)
 	}
 	sessions.SortSummariesByActivity(summaries)
 

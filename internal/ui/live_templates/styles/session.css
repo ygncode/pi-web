@@ -67,6 +67,7 @@
       --mdCode: #8abeb7;
       --mdCodeBlock: #b5bd68;
       --mdCodeBlockBorder: #808080;
+      --code-bg: rgba(0, 0, 0, 0.28);
       --mdQuote: #808080;
       --mdQuoteBorder: #808080;
       --mdHr: #808080;
@@ -158,6 +159,7 @@
       --mdCode: #5a8080;
       --mdCodeBlock: #588458;
       --mdCodeBlockBorder: #6c6c6c;
+      --code-bg: rgba(0, 0, 0, 0.05);
       --mdQuote: #6c6c6c;
       --mdQuoteBorder: #6c6c6c;
       --mdHr: #6c6c6c;
@@ -236,7 +238,7 @@
       --darkGray: #3b4252;
       --accent-color: #88c0d0;
       --selectedBg: #434c5e;
-      --userMessageBg: #3b4252;
+      --userMessageBg: #434c5e;
       --toolPendingBg: #434c5e;
       --toolSuccessBg: #434c5e;
       --toolErrorBg: #4c566a;
@@ -249,6 +251,7 @@
       --mdCode: #8fbcbb;
       --mdCodeBlock: #a3be8c;
       --mdCodeBlockBorder: #4c566a;
+      --code-bg: #2e3440;
       --mdQuote: #d8dee9;
       --mdQuoteBorder: #4c566a;
       --mdHr: #4c566a;
@@ -327,7 +330,7 @@
       --darkGray: #44475a;
       --accent-color: #ff79c6;
       --selectedBg: #44475a;
-      --userMessageBg: #1e1f29;
+      --userMessageBg: #343746;
       --toolPendingBg: #343746;
       --toolSuccessBg: #343746;
       --toolErrorBg: #44475a;
@@ -340,6 +343,7 @@
       --mdCode: #8be9fd;
       --mdCodeBlock: #50fa7b;
       --mdCodeBlockBorder: #6272a4;
+      --code-bg: #282a36;
       --mdQuote: #f8f8f2;
       --mdQuoteBorder: #6272a4;
       --mdHr: #6272a4;
@@ -418,6 +422,9 @@
       --right-sidebar-width: 320px;
       --right-sidebar-min-width: 240px;
       --right-sidebar-max-width: 640px;
+      /* Shared height of the three bottom bars (left tree status, middle git/btw
+         action bar, right scratchpad footer) so their top divider lines align. */
+      --session-footer-h: 34px;
     }
 
     * {
@@ -498,6 +505,31 @@
     }
 
     .hide-sidebar:hover {
+      color: var(--text);
+      background: var(--hover);
+      border-color: var(--borderMuted);
+    }
+
+    .sidebar-close {
+      display: none;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      font-size: 14px;
+      line-height: 1;
+      font-family: inherit;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--dim);
+      border-radius: 3px;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .sidebar-close:hover {
       color: var(--text);
       background: var(--hover);
       border-color: var(--borderMuted);
@@ -623,7 +655,9 @@
     }
 
     .right-sidebar-footer {
-      padding: 6px 12px;
+      min-height: var(--session-footer-h);
+      box-sizing: border-box;
+      padding: 0 12px;
       border-top: 1px solid var(--dim);
       flex-shrink: 0;
       display: flex;
@@ -829,7 +863,11 @@
     }
 
     .tree-status {
-      padding: 4px 12px;
+      display: flex;
+      align-items: center;
+      min-height: var(--session-footer-h);
+      box-sizing: border-box;
+      padding: 0 12px;
       font-size: 10px;
       color: var(--muted);
       flex-shrink: 0;
@@ -1090,6 +1128,13 @@
       app-region: no-drag;
     }
 
+    .session-header-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
     .session-header-back {
       display: inline-flex;
       align-items: center;
@@ -1098,6 +1143,10 @@
       text-decoration: none;
       font-size: 12px;
       flex-shrink: 0;
+    }
+
+    .session-header-tree-toggle[aria-pressed="false"] {
+      color: var(--text);
     }
 
     .session-header-back span {
@@ -1149,6 +1198,49 @@
       color: var(--text);
       background: var(--pi-menu-bg);
       border-color: var(--pi-menu-border);
+    }
+
+    .session-header-new {
+      height: 24px;
+      padding: 0 9px 0 7px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--accent);
+      color: var(--bg);
+      border: 1px solid var(--accent);
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-right: 8px;
+      transition: opacity 0.12s;
+    }
+
+    .session-header-new span[aria-hidden] {
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .session-header-new:hover,
+    .session-header-new:active {
+      opacity: 0.85;
+    }
+
+    @media (max-width: 900px) {
+      .session-header-new {
+        padding: 0;
+        width: 28px;
+        height: 28px;
+        justify-content: center;
+        gap: 0;
+      }
+
+      .session-header-new-label {
+        display: none;
+      }
     }
 
     .session-header-shortcuts-help {
@@ -1249,6 +1341,7 @@
       color: var(--userMessageText);
       padding: var(--line-height);
       border-radius: 4px;
+      border-left: 3px solid var(--accent);
       position: relative;
       overflow-wrap: break-word;
       word-wrap: break-word;
@@ -2141,11 +2234,11 @@
       }
 
       #sidebar .hide-sidebar {
-        position: absolute;
-        right: 12px;
-        bottom: calc(12px + env(safe-area-inset-bottom));
-        z-index: 2;
-        padding: 6px 10px;
+        display: none;
+      }
+
+      .sidebar-close {
+        display: flex;
       }
 
       #content {
@@ -2252,7 +2345,8 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
-      padding: 9px 16px calc(9px + env(safe-area-inset-bottom));
+      min-height: var(--session-footer-h);
+      padding: 0 16px env(safe-area-inset-bottom);
       font-size: 11px;
       background: var(--chrome-bg);
       border-top: 1px solid var(--dim);
@@ -2266,6 +2360,9 @@
       min-width: 0;
       color: var(--muted);
     }
+    /* display:inline-flex above would otherwise defeat the [hidden] attribute
+       (equal specificity, author rule wins) — restore hiding for non-git cwds. */
+    .pi-git-branch[hidden] { display: none; }
     .pi-git-icon {
       width: 13px;
       height: 13px;
@@ -2318,6 +2415,15 @@
       outline: none;
     }
     .pi-git-branch-input[hidden] { display: none; }
+
+    .pi-git-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+      /* Stay pinned right even when the branch cluster is hidden (non-git cwd). */
+      margin-left: auto;
+    }
 
     .pi-git-actions {
       display: inline-flex;
@@ -2401,6 +2507,241 @@
       padding-right: 7px;
     }
     .pi-git-caret[hidden] { display: none; }
+
+    /* ── btw floating window ── */
+    .pi-btw-window {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1200;
+      display: flex;
+      flex-direction: column;
+      width: 340px;
+      min-width: 260px;
+      max-width: calc(100vw - 24px);
+      height: 420px;
+      min-height: 220px;
+      max-height: calc(100vh - 24px);
+      background: var(--container-bg, var(--surface));
+      border: 1px solid var(--dim);
+      border-radius: 8px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+      resize: both;
+    }
+    .pi-btw-window[hidden] { display: none; }
+
+    .pi-btw-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      background: var(--chrome-bg);
+      border-bottom: 1px solid var(--dim);
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+    }
+    .pi-btw-title {
+      font-family: Georgia, "Times New Roman", serif;
+      font-style: italic;
+      font-size: 17px;
+      color: var(--text);
+    }
+    .pi-btw-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pi-btw-new {
+      padding: 2px 9px;
+      font-size: 11px;
+      font-family: inherit;
+      background: transparent;
+      color: var(--text-soft);
+      border: 1px solid var(--dim);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .pi-btw-new:hover {
+      color: var(--text);
+      background: var(--hover);
+      border-color: var(--borderMuted);
+    }
+    .pi-btw-new:disabled { opacity: 0.5; cursor: default; }
+    .pi-btw-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      font-size: 18px;
+      line-height: 1;
+      background: transparent;
+      color: var(--muted);
+      border: 0;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+    .pi-btw-close:hover {
+      color: var(--text);
+      background: var(--hover);
+    }
+
+    .pi-btw-body {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 14px 12px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text-soft);
+    }
+    .pi-btw-empty {
+      margin: auto;
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .pi-btw-msg {
+      max-width: 90%;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 7px 10px;
+      border-radius: 9px;
+      overflow-wrap: anywhere;
+    }
+    .pi-btw-msg.user {
+      align-self: flex-end;
+      background: var(--accent, #8abeb7);
+      color: var(--body-bg, #1d1f21);
+    }
+    .pi-btw-msg.user.pending { opacity: 0.6; }
+    .pi-btw-msg.assistant {
+      align-self: flex-start;
+      background: var(--hover);
+      color: var(--text);
+    }
+
+    /* Rendered markdown inside a bubble: tight spacing, readable proportional
+       text, monospace only for code. */
+    .pi-btw-md { min-width: 0; max-width: 100%; }
+    .pi-btw-md > :first-child { margin-top: 0; }
+    .pi-btw-md > :last-child { margin-bottom: 0; }
+    .pi-btw-md p { margin: 0 0 8px; }
+    .pi-btw-md img,
+    .pi-btw-md table { max-width: 100%; }
+    .pi-btw-md ul,
+    .pi-btw-md ol { margin: 0 0 8px; padding-left: 20px; }
+    .pi-btw-md li { margin: 2px 0; }
+    .pi-btw-md h1,
+    .pi-btw-md h2,
+    .pi-btw-md h3,
+    .pi-btw-md h4 { margin: 10px 0 6px; font-size: 1.05em; line-height: 1.3; }
+    .pi-btw-md code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: color-mix(in srgb, var(--text) 12%, transparent);
+    }
+    .pi-btw-md pre {
+      margin: 0 0 8px;
+      padding: 8px 10px;
+      overflow-x: auto;
+      border-radius: 6px;
+      background: var(--code-bg, rgba(0, 0, 0, 0.28));
+    }
+    .pi-btw-md pre code { padding: 0; background: none; }
+    .pi-btw-md a { color: var(--mdLink, #8abeb7); }
+    .pi-btw-md blockquote {
+      margin: 0 0 8px;
+      padding-left: 10px;
+      border-left: 2px solid var(--dim);
+      color: var(--muted);
+    }
+
+    /* Tool-call chips and bash lines. */
+    .pi-btw-tool {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+    .pi-btw-tool + .pi-btw-tool { margin-top: 2px; }
+
+    /* Working / streaming indicator (cat runner). */
+    .pi-btw-working {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+    }
+    .pi-btw-spinner {
+      display: inline-block;
+      text-align: center;
+      color: var(--accent, #8abeb7);
+    }
+    .pi-btw-working-label { font-size: 12px; }
+
+    .pi-btw-input-row {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-top: 1px solid var(--dim);
+    }
+    .pi-btw-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 8px 10px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px;
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--dim);
+      border-radius: 5px;
+      outline: none;
+    }
+    .pi-btw-input::placeholder { color: var(--muted); }
+    .pi-btw-send {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      font-size: 14px;
+      background: transparent;
+      color: var(--text-soft);
+      border: 1px solid var(--dim);
+      border-radius: 5px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+    .pi-btw-send:hover {
+      color: var(--text);
+      background: var(--hover);
+      border-color: var(--borderMuted);
+    }
+    .pi-btw-send.cancel {
+      border-radius: 50%;
+      color: var(--error, #d77);
+      border-color: color-mix(in srgb, var(--error, #d77) 55%, var(--dim));
+    }
+    .pi-btw-send.cancel:hover {
+      color: #fff;
+      background: var(--error, #d77);
+      border-color: var(--error, #d77);
+    }
 
     .pi-chat-shell {
       width: 100%;
@@ -2951,26 +3292,6 @@
     }
 
     /* Update indicator */
-    .update-indicator {
-      position: fixed;
-      top: 8px;
-      right: 8px;
-      z-index: 200;
-      padding: 2px 8px;
-      font-size: 10px;
-      font-family: inherit;
-      background: var(--accent);
-      color: var(--body-bg);
-      border-radius: 3px;
-      opacity: 0;
-      transition: opacity 0.3s;
-      cursor: pointer;
-    }
-
-    .update-indicator.visible {
-      opacity: 1;
-    }
-
     /* Follow button */
     .follow-button {
       position: fixed;

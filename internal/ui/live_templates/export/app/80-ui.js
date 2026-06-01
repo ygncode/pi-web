@@ -292,6 +292,11 @@ function setupSidebarCollapse() {
   if (hideSidebarBtn) {
     hideSidebarBtn.addEventListener('click', closeSidebar);
   }
+
+  const sidebarCloseBtn = document.getElementById('sidebar-close');
+  if (sidebarCloseBtn) {
+    sidebarCloseBtn.addEventListener('click', () => setSidebarOpen(false));
+  }
 }
 
 setupSidebarCollapse();

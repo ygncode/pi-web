@@ -16,7 +16,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 | Live Updates | Server-Sent Events (SSE) |
 | Chat RPC | JSONL over stdin/stdout via `pi --mode rpc` |
 | Session Storage | JSONL files on disk; pi-web creates new session files and appends `session_info` for browser rename |
-| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads and server-backed user settings |
+| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads, project visibility prefs, and server-backed user settings |
 | Auth | Token cookie/query/header (optional on localhost) |
 
 ## Component Diagram
@@ -58,6 +58,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   GET  /api/git/info  / POST /api/git/rename-branch                      │
 │   GET/POST /api/scratchpad → scratchpad (SQLite)                         │
 │   GET/POST /api/settings → user settings (SQLite, write-through cache)   │
+│   GET/POST /api/projects → project visibility prefs (SQLite)             │
 │   GET  /api/sounds  /  GET /sounds/…   (notification sounds)             │
 │   POST /share         →  handleShare         (GitHub Gist)               │
 │   GET  /events        →  handleEvents        (SSE)                       │
@@ -129,13 +130,34 @@ name, while pi-web itself continues listening only on localhost.
 ├── session-status/
 │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here
 │   └── …
-├── pi-web.sqlite           ← scratchpads + server-backed user settings
+├── pi-web.sqlite           ← scratchpads + project visibility prefs + user settings
 └── pi-web/
     ├── pi-web-state.json   ← server state file
     ├── custom-themes.css   ← optional user custom theme
     ├── vapid.json          ← web-push VAPID keys (when push enabled)
     └── push-subs.json      ← web-push subscriptions (when push enabled)
 ```
+
+## Project Visibility
+
+Project filtering is an **opt-in master switch**, stored in the `app_settings`
+SQLite table (`project_filter_enabled`, default **off**). Per-project enable
+state lives in the `project_prefs` table. Both are server-side, so they sync
+across devices. See `internal/server/projects.go`.
+
+- **Filter off (default):** every session shows; new sessions (web- or
+  terminal-created) appear immediately, exactly like before the feature existed.
+- **Filter on:** the index only renders sessions whose project is **enabled** —
+  an allowlist. Projects discovered after the table is first seeded default to
+  hidden, so one-off folders stay out of view.
+- **First seed** (empty `project_prefs`): every discovered project is enabled, so
+  turning the filter on doesn't blank the homepage.
+- **Registering** a folder path (`action: register`) pre-approves it so sessions
+  that later land there show immediately, even before any session exists.
+- Filtering is applied server-side in both `handleIndex` and `handleApiSessions`
+  (no client flash) and is a no-op while the master switch is off. Manage via the
+  index menu → **Manage Projects** (search, select/deselect-all, register, and the
+  filter switch), backed by `GET/POST /api/projects`.
 
 ## Startup Order
 

@@ -98,6 +98,14 @@ export function setupSidebarCollapse({ documentImpl = document, windowImpl = win
 
   const hamburger = documentImpl.getElementById('hamburger');
   const hideBtn = documentImpl.getElementById('hide-sidebar');
+  const closeBtn = documentImpl.getElementById('sidebar-close');
+  const treeToggle = documentImpl.getElementById('tree-toggle');
+
+  const syncTreeToggle = () => {
+    if (!treeToggle) return;
+    const isCollapsed = !!documentImpl.body?.classList.contains('sidebar-collapsed');
+    treeToggle.setAttribute('aria-pressed', isCollapsed ? 'false' : 'true');
+  };
 
   hamburger?.addEventListener('click', () => {
     if (isMobileLayout({ windowImpl })) {
@@ -106,6 +114,7 @@ export function setupSidebarCollapse({ documentImpl = document, windowImpl = win
     }
     setSidebarCollapsed(false, { documentImpl, windowImpl });
     saveSidebarCollapsed(false, { storage });
+    syncTreeToggle();
   });
 
   const closeSidebar = () => {
@@ -115,11 +124,24 @@ export function setupSidebarCollapse({ documentImpl = document, windowImpl = win
     }
     setSidebarCollapsed(true, { documentImpl, windowImpl });
     saveSidebarCollapsed(true, { storage });
+    syncTreeToggle();
   };
 
   hideBtn?.addEventListener('click', closeSidebar);
+  closeBtn?.addEventListener('click', () => setSidebarOpen(false, { documentImpl }));
 
+  treeToggle?.addEventListener('click', () => {
+    if (isMobileLayout({ windowImpl })) {
+      setSidebarOpen(true, { documentImpl });
+      return;
+    }
+    const next = !documentImpl.body?.classList.contains('sidebar-collapsed');
+    setSidebarCollapsed(next, { documentImpl, windowImpl });
+    saveSidebarCollapsed(next, { storage });
+    syncTreeToggle();
+  });
 
+  syncTreeToggle();
 }
 
 export function setupSidebarResize({ documentImpl = document, windowImpl = window, storage = globalThis.localStorage } = {}) {

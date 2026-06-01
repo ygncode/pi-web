@@ -18,6 +18,7 @@ import * as doneNotifier from './chat/done-notifier.js';
 import * as chatApi from './chat/chat-api.js';
 import * as gitApi from './chat/git-api.js';
 import { setupGitFooter } from './chat/git-footer.js';
+import { setupBtwPopup } from './live/btw-popup.js';
 import * as chatSelectors from './chat/chat-selectors.js';
 import * as thinkingSelector from './chat/thinking-selector.js';
 import * as modelSelector from './chat/model-selector.js';
@@ -26,7 +27,6 @@ import * as liveScroll from './live/live-scroll.js';
 import * as liveStats from './live/live-stats.js';
 import * as liveEntries from './live/live-entries.js';
 import * as chatPreview from './live/chat-preview.js';
-import * as updateIndicator from './live/update-indicator.js';
 import * as shareOverlay from './live/share-overlay.js';
 import * as resumeButton from './live/resume-button.js';
 import * as newSessionButton from './live/new-session-button.js';
@@ -321,7 +321,6 @@ export function runSessionApp({ target = window } = {}) {
     liveScroll,
     liveStats,
     liveEvents,
-    updateIndicator,
     chatPreview,
     shareOverlay,
     resumeButton,
@@ -431,6 +430,14 @@ export function runSessionApp({ target = window } = {}) {
     });
   }
 
+  const newSessionHeaderBtn = documentImpl.getElementById('new-session-header-btn');
+  if (newSessionHeaderBtn) {
+    newSessionHeaderBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      documentImpl.getElementById('new-btn')?.click();
+    });
+  }
+
   // Initialize chat after live reload so the optimistic "message sent" event
   // has a listener before the user can submit. Otherwise cold-start sends can
   // clear/disable the composer without rendering the pending message preview.
@@ -461,6 +468,8 @@ export function runSessionApp({ target = window } = {}) {
     sessionId: getSessionSearchParams({ documentImpl, windowImpl: target }).get('id') || '',
     gitApi
   });
+
+  setupBtwPopup({ documentImpl, windowImpl: target, cwd: dataModel.header?.cwd || '' });
 
   // Handle Visual Viewport changes to prevent mobile browsers from shifting
   // the top fixed header out of view when the virtual keyboard is open.
