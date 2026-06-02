@@ -260,6 +260,63 @@ func TestHandleCommandsReturns500OnRealError(t *testing.T) {
 	}
 }
 
+func TestHandleCommandsLoadSpawnsWorker(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "--tmp--project--", "session.jsonl")
+	fake := &fakeSender{
+		commandsReady: true,
+		commands:      []workers.SlashCommand{{Name: "skill:foo", Description: "Foo", Source: "skill"}},
+	}
+	s := &Server{sessionsDir: root, chatSender: fake}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl&load=1", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", w.Code, w.Body.String())
+	}
+	if !fake.ensureWorkerCalled {
+		t.Fatalf("EnsureWorker was not called for load=1")
+	}
+	var body struct {
+		WorkerReady bool                   `json:"workerReady"`
+		Commands    []workers.SlashCommand `json:"commands"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !body.WorkerReady || len(body.Commands) != 1 {
+		t.Fatalf("body = %#v", body)
+	}
+}
+
+func TestHandleCommandsPeekDoesNotSpawnWorker(t *testing.T) {
+	fake := &fakeSender{}
+	s := &Server{sessionsDir: t.TempDir(), chatSender: fake}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	if fake.ensureWorkerCalled {
+		t.Fatalf("EnsureWorker should not be called without load=1")
+	}
+}
+
+func TestHandleCommandsLoadMissingSessionReturns404(t *testing.T) {
+	fake := &fakeSender{}
+	s := &Server{sessionsDir: t.TempDir(), chatSender: fake}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=missing.jsonl&load=1", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", w.Code)
+	}
+	if fake.ensureWorkerCalled {
+		t.Fatalf("EnsureWorker should not be called when session is missing")
+	}
+}
+
 func TestHandleWorkerStatusDefaultsIdle(t *testing.T) {
 	s := &Server{sessionsDir: t.TempDir(), chatSender: &fakeSender{}}
 	req := httptest.NewRequest(http.MethodGet, "/api/worker-status?id=session.jsonl", nil)

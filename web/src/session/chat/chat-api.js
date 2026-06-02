@@ -18,8 +18,8 @@ export function listModels({ fetchImpl = fetch } = {}) {
   return fetchImpl('/api/models');
 }
 
-export function getCommands(sessionId, { fetchImpl = fetch } = {}) {
-  return fetchImpl(chatUrl('/api/commands', sessionId));
+export function getCommands(sessionId, { fetchImpl = fetch, load = false } = {}) {
+  return fetchImpl(chatUrl('/api/commands', sessionId) + (load ? '&load=1' : ''));
 }
 
 export function setModel(sessionId, { provider, modelId }, { fetchImpl = fetch } = {}) {

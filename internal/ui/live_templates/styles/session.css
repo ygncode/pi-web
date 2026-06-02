@@ -3196,6 +3196,19 @@
       font-size: 11px;
       text-align: center;
     }
+    .pi-chat-skill-load {
+      display: block;
+      width: calc(100% - 16px);
+      margin: 0 8px 8px;
+      padding: 6px 10px;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--selected-bg, #3a3a4a);
+      border: 1px solid var(--dim);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .pi-chat-skill-load:hover { border-color: var(--accent, #7aa2f7); }
 
     /* Share overlay */
     .share-overlay-backdrop {

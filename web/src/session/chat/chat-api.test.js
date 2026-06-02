@@ -17,6 +17,7 @@ describe('chat api helpers', () => {
     await setModel('s.jsonl', { provider: 'p', modelId: 'm' }, { fetchImpl });
     await setThinkingLevel('s.jsonl', 'medium', { fetchImpl });
     await getCommands('s.jsonl', { fetchImpl });
+    await getCommands('s.jsonl', { fetchImpl, load: true });
 
     expect(fetchImpl).toHaveBeenNthCalledWith(1, '/api/chat?id=s.jsonl', { method: 'POST', body });
     expect(fetchImpl).toHaveBeenNthCalledWith(2, '/api/chat/cancel?id=s.jsonl', { method: 'POST' });
@@ -33,5 +34,6 @@ describe('chat api helpers', () => {
       body: JSON.stringify({ level: 'medium' })
     });
     expect(fetchImpl).toHaveBeenNthCalledWith(7, '/api/commands?id=s.jsonl');
+    expect(fetchImpl).toHaveBeenNthCalledWith(8, '/api/commands?id=s.jsonl&load=1');
   });
 });

@@ -174,12 +174,44 @@ func (s *Server) handleWorkerStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleCommands lists the slash commands (extensions, prompt templates,
-// skills) exposed by the session's pi worker. It never spawns a worker; if
-// none is running yet, it reports workerReady=false with an empty list so the
-// client can prompt the user to send a message first. Older pi builds that
+// skills) exposed by the session's pi worker.
+//
+// By default it only peeks at an existing worker; if none is running it reports
+// workerReady=false with an empty list. With ?load=1 it instead spawns (or
+// reuses) the worker first, so the client can offer an explicit "load skills"
+// action without the user having to send a chat message. Older pi builds that
 // predate the get_commands RPC are degraded gracefully to an empty list.
 func (s *Server) handleCommands(w http.ResponseWriter, r *http.Request) {
 	sessionID := r.URL.Query().Get("id")
+	load := r.URL.Query().Get("load") == "1"
+
+	if load && s.chatSender != nil {
+		resolved, err := sessions.ResolveByID(s.sessionsDir, sessionID)
+		if err != nil {
+			switch {
+			case errors.Is(err, sessions.ErrInvalidSessionID):
+				writeJSONError(w, http.StatusBadRequest, "invalid session id")
+			case errors.Is(err, sessions.ErrSessionNotFound):
+				writeJSONError(w, http.StatusNotFound, "session not found")
+			default:
+				writeJSONError(w, http.StatusInternalServerError, err.Error())
+			}
+			return
+		}
+		if !resolved.Session.ChatAvailable {
+			writeJSONError(w, http.StatusConflict, resolved.Session.ChatDisabledReason)
+			return
+		}
+		sessionID = resolved.Session.ID
+		spawnCtx, cancel := context.WithTimeout(r.Context(), 20*time.Second)
+		err = s.chatSender.EnsureWorker(spawnCtx, sessionID, resolved.Path)
+		cancel()
+		if err != nil {
+			writeJSONError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+
 	commands := []workers.SlashCommand{}
 	ready := false
 	if s.chatSender != nil {

@@ -24,9 +24,14 @@ export function extractSkills(commands) {
     });
 }
 
+export const SKILL_LOAD_BUTTON_ID = 'pi-chat-skill-load';
+
 export function renderSkillList(skills, { workerReady = true, escapeHtml = String } = {}) {
   if (!workerReady) {
-    return '<div class="pi-chat-skill-empty">Send a message first to load skills</div>';
+    return (
+      '<div class="pi-chat-skill-empty">No skills loaded yet</div>' +
+      `<button type="button" id="${SKILL_LOAD_BUTTON_ID}" class="pi-chat-skill-load">Load skills</button>`
+    );
   }
   if (!skills || skills.length === 0) {
     return '<div class="pi-chat-skill-empty">No skills loaded</div>';
@@ -60,17 +65,14 @@ export function setupSkillList({
     popup.style.display = 'block';
   }
 
-  // maybeShow opens the skill list when the composer value is exactly "/skill",
-  // otherwise hides it. Returns a promise so callers/tests can await the fetch.
-  async function maybeShow(value) {
-    if (!isSkillTrigger(value)) {
-      close();
-      return;
-    }
+  // fetchAndRender queries the commands endpoint and renders the result.
+  // When load is true the server spawns the worker first (used by the explicit
+  // "Load skills" button); otherwise it only peeks at an existing worker.
+  async function fetchAndRender(load) {
     if (!chatApi || typeof chatApi.getCommands !== 'function') return;
     show('<div class="pi-chat-skill-empty">Loading…</div>');
     try {
-      const res = await chatApi.getCommands(sessionId);
+      const res = await chatApi.getCommands(sessionId, { load });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'failed to load skills');
       const skills = extractSkills(data.commands);
@@ -80,12 +82,33 @@ export function setupSkillList({
     }
   }
 
+  // maybeShow opens the skill list when the composer value is exactly "/skill",
+  // otherwise hides it. Returns a promise so callers/tests can await the fetch.
+  function maybeShow(value) {
+    if (!isSkillTrigger(value)) {
+      close();
+      return Promise.resolve();
+    }
+    return fetchAndRender(false);
+  }
+
+  // load spawns the worker on demand and lists its skills. Bound to the
+  // "Load skills" button shown when no worker is running yet.
+  function load() {
+    return fetchAndRender(true);
+  }
+
   documentImpl.addEventListener('click', (e) => {
+    const target = e && e.target;
+    if (target && target.id === SKILL_LOAD_BUTTON_ID) {
+      load();
+      return;
+    }
     if (popup && popup.style.display !== 'none') {
       const textarea = documentImpl.getElementById('pi-chat-message');
-      if (!popup.contains(e.target) && e.target !== textarea) close();
+      if (!popup.contains(target) && target !== textarea) close();
     }
   });
 
-  return { maybeShow, close };
+  return { maybeShow, load, close };
 }

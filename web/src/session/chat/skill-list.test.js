@@ -24,7 +24,9 @@ describe('skill-list pure helpers', () => {
   });
 
   it('renders states for not-ready, empty, and populated', () => {
-    expect(renderSkillList([], { workerReady: false })).toContain('Send a message first');
+    const notReady = renderSkillList([], { workerReady: false });
+    expect(notReady).toContain('Load skills');
+    expect(notReady).toContain('pi-chat-skill-load');
     expect(renderSkillList([], { workerReady: true })).toContain('No skills loaded');
     const html = renderSkillList([{ displayName: 'foo', description: 'Foo skill' }], { workerReady: true });
     expect(html).toContain('foo');
@@ -61,7 +63,7 @@ describe('setupSkillList controller', () => {
     };
     const api = setupSkillList({ documentImpl, sessionId: 's.jsonl', chatApi });
     await api.maybeShow('/skill');
-    expect(chatApi.getCommands).toHaveBeenCalledWith('s.jsonl');
+    expect(chatApi.getCommands).toHaveBeenCalledWith('s.jsonl', { load: false });
     expect(popup.style.display).toBe('block');
     expect(list.innerHTML).toContain('foo');
   });
@@ -74,7 +76,7 @@ describe('setupSkillList controller', () => {
     expect(popup.style.display).toBe('none');
   });
 
-  it('shows a hint when the worker is not ready', async () => {
+  it('shows a load button when the worker is not ready', async () => {
     const chatApi = {
       getCommands: vi.fn(() => Promise.resolve(new Response(
         JSON.stringify({ workerReady: false, commands: [] }),
@@ -83,6 +85,21 @@ describe('setupSkillList controller', () => {
     };
     const api = setupSkillList({ documentImpl, sessionId: 's.jsonl', chatApi });
     await api.maybeShow('/skill');
-    expect(list.innerHTML).toContain('Send a message first');
+    expect(chatApi.getCommands).toHaveBeenCalledWith('s.jsonl', { load: false });
+    expect(list.innerHTML).toContain('Load skills');
+  });
+
+  it('load() requests a spawn and renders the skills', async () => {
+    const chatApi = {
+      getCommands: vi.fn(() => Promise.resolve(new Response(
+        JSON.stringify({ workerReady: true, commands: [{ name: 'skill:bar', description: 'Bar', source: 'skill' }] }),
+        { status: 200 }
+      ))),
+    };
+    const api = setupSkillList({ documentImpl, sessionId: 's.jsonl', chatApi });
+    await api.load();
+    expect(chatApi.getCommands).toHaveBeenCalledWith('s.jsonl', { load: true });
+    expect(popup.style.display).toBe('block');
+    expect(list.innerHTML).toContain('bar');
   });
 });
