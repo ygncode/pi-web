@@ -1,19 +1,19 @@
 // The "btw" floating window: a draggable, resizable scratch-chat opened from
-// the git bar. It talks to a single global pi session ("the btw session")
-// persisted server-side in the sqlite app_settings table, so the conversation
-// survives reloads AND stays in sync across every device in realtime. The
-// window itself is built entirely in JS, so the export snapshot (no
-// composer/git bar) never includes it.
+// the git bar. Each session page has its own btw session, persisted server-side
+// in the sqlite btw_sessions table keyed by the parent session id, so the
+// conversation survives reloads AND stays in sync across every device viewing
+// the same page in realtime. The window itself is built entirely in JS, so the
+// export snapshot (no composer/git bar) never includes it.
 //
-// Backend contract:
-//   GET  /api/btw            -> { sessionId }            current btw session (or "")
-//   POST /api/btw/new {path} -> { id }                   create + adopt a new btw session
+// Backend contract (parent = the session page this window was opened from):
+//   GET  /api/btw?parent=<pid> -> { sessionId }          active btw for parent (or "")
+//   POST /api/btw/new {path,parent} -> { id }            create + adopt a new btw session
 //   POST /api/chat?id=<id>   (FormData message)          send a message
 //   POST /api/chat/cancel?id=<id>                        cancel the running turn
 //   GET  /api/worker-status?id=<id> -> { state }         idle|running|error
 //   GET  /api/session?id=<id>-> { entries, ... }         transcript
 //   /events?id=<id>          SSE: "reload" + "chat-preview" {content,done}
-//   /events?id=__all__       SSE: "btw-changed" {sessionId}  cross-device pointer sync
+//   /events?id=<pid>         SSE: "btw-changed" {sessionId}  per-parent pointer sync
 
 import { marked } from 'marked';
 import { safeMarkedParse } from '../render/markdown.js';
@@ -21,7 +21,10 @@ import { formatToolCall } from '../render/session-format.js';
 import { getSpinnerConfig } from './chat-preview.js';
 
 const POS_KEY = 'pi-btw:window';
-const GLOBAL_TOPIC = '__all__';
+// Sentinel matching the server's btwGlobalParent for a btw opened with no parent
+// session. Today every page with a btw button has a parent id, so this is just a
+// safety fallback (and the migration home for the legacy single global btw).
+const GLOBAL_PARENT = '__global__';
 
 export function setupBtwPopup({
   documentImpl = document,
@@ -29,10 +32,14 @@ export function setupBtwPopup({
   fetchImpl,
   EventSourceImpl,
   cwd = '',
+  parentId = '',
   renderMarkdown,
 } = {}) {
   const button = documentImpl.getElementById('pi-btw-button');
   if (!button) return null;
+
+  // The SSE topic / query key identifying this window's parent session.
+  const parent = parentId || GLOBAL_PARENT;
 
   // On phones the floating window and the main chat composer fight for the same
   // cramped screen, so we keep them mutually exclusive there.
@@ -308,10 +315,11 @@ export function setupBtwPopup({
     }
   }
 
-  // Listen on the global topic so a "new" on another device switches us over.
+  // Listen on the parent's topic so a "new" on another device viewing the same
+  // page switches us over.
   function subscribeGlobal() {
     if (globalSource || !ES) return;
-    globalSource = new ES('/events?id=' + encodeURIComponent(GLOBAL_TOPIC));
+    globalSource = new ES('/events?id=' + encodeURIComponent(parent));
     globalSource.addEventListener('btw-changed', (e) => {
       try {
         const p = JSON.parse(e.data);
@@ -409,7 +417,6 @@ export function setupBtwPopup({
   // ── actions ──
   function setSession(id) {
     sessionId = id || '';
-    saveGeom({ sessionId });
     entries = [];
     pendingUser = null;
     streamingText = '';
@@ -428,7 +435,7 @@ export function setupBtwPopup({
     return doFetch('/api/btw/new', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path: cwd }),
+      body: JSON.stringify({ path: cwd, parent: parentId }),
     })
       .then((r) => r.json())
       .then((data) => {
@@ -440,14 +447,14 @@ export function setupBtwPopup({
       });
   }
 
+  // Lazy "new": clear the window to its empty state without creating a session
+  // file. The fresh btw session is created on the first message send (see
+  // submitMessage), so pressing "new" and never typing leaves no empty
+  // throwaway behind — and the server's active pointer only moves once a real
+  // message exists.
   function startNewSession() {
-    if (els) els.newBtn.disabled = true;
-    createSession()
-      .catch(() => {})
-      .finally(() => {
-        if (els) els.newBtn.disabled = false;
-        if (els) els.input.focus();
-      });
+    setSession('');
+    if (els) els.input.focus();
   }
 
   async function submitMessage() {
@@ -558,8 +565,8 @@ export function setupBtwPopup({
     saveGeom({ open: true });
     subscribeGlobal();
     startStatusPolling();
-    // Sync to the persisted server-side btw session each time we open.
-    doFetch('/api/btw')
+    // Sync to this parent's persisted server-side btw session each time we open.
+    doFetch('/api/btw?parent=' + encodeURIComponent(parent))
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         const id = data && data.sessionId ? data.sessionId : '';

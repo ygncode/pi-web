@@ -469,7 +469,12 @@ export function runSessionApp({ target = window } = {}) {
     gitApi
   });
 
-  setupBtwPopup({ documentImpl, windowImpl: target, cwd: dataModel.header?.cwd || '' });
+  setupBtwPopup({
+    documentImpl,
+    windowImpl: target,
+    cwd: dataModel.header?.cwd || '',
+    parentId: getSessionSearchParams({ documentImpl, windowImpl: target }).get('id') || '',
+  });
 
   // Handle Visual Viewport changes to prevent mobile browsers from shifting
   // the top fixed header out of view when the virtual keyboard is open.

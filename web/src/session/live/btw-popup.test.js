@@ -39,8 +39,8 @@ function jsonResponse(body, ok = true) {
 // A fetch router that covers every endpoint the popup touches.
 function router(overrides = {}) {
   return vi.fn((url, opts) => {
-    if (url === '/api/btw') return jsonResponse(overrides.btw || { sessionId: '' });
-    if (url === '/api/btw/new') return jsonResponse(overrides.new || { id: 'new-sess.jsonl' });
+    if (url.startsWith('/api/btw/new')) return jsonResponse(overrides.new || { id: 'new-sess.jsonl' });
+    if (url.startsWith('/api/btw')) return jsonResponse(overrides.btw || { sessionId: '' });
     if (url.startsWith('/api/worker-status')) return jsonResponse(overrides.status || { state: 'idle' });
     if (url.startsWith('/api/session')) return jsonResponse(overrides.session || { entries: [] });
     if (url.startsWith('/api/chat/cancel')) return jsonResponse({ ok: true });
@@ -79,7 +79,7 @@ describe('btw popup', () => {
     expect(w.querySelector('.pi-btw-new')).not.toBeNull();
     expect(w.querySelector('.pi-btw-close')).not.toBeNull();
     expect(w.querySelector('#pi-btw-input')).not.toBeNull();
-    expect(fetchImpl).toHaveBeenCalledWith('/api/btw');
+    expect(fetchImpl).toHaveBeenCalledWith('/api/btw?parent=__global__');
     api.close();
   });
 
@@ -139,11 +139,18 @@ describe('btw popup', () => {
     api.close();
   });
 
-  it('creates a session then sends when none exists yet', async () => {
+  it('creates a session then sends when none exists yet, passing cwd + parent', async () => {
     const { win, doc } = makeEnv();
     const sent = [];
     const fetchImpl = router({ new: { id: 'new-sess.jsonl' }, sent });
-    const api = setupBtwPopup({ documentImpl: doc, windowImpl: win, fetchImpl, EventSourceImpl: FakeEventSource, cwd: '/repo/foo' });
+    const api = setupBtwPopup({
+      documentImpl: doc,
+      windowImpl: win,
+      fetchImpl,
+      EventSourceImpl: FakeEventSource,
+      cwd: '/repo/foo',
+      parentId: 'parent-1.jsonl',
+    });
 
     doc.getElementById('pi-btw-button').click();
     await flush();
@@ -152,24 +159,28 @@ describe('btw popup', () => {
     doc.getElementById('pi-btw-form').dispatchEvent(new win.Event('submit'));
     await flush();
 
-    expect(fetchImpl).toHaveBeenCalledWith('/api/btw/new', expect.objectContaining({ method: 'POST' }));
+    const call = fetchImpl.mock.calls.find((c) => String(c[0]).startsWith('/api/btw/new'));
+    expect(call[1].method).toBe('POST');
+    expect(JSON.parse(call[1].body)).toEqual({ path: '/repo/foo', parent: 'parent-1.jsonl' });
     expect(sent[0]).toContain('new-sess.jsonl');
     expect(doc.querySelector('.pi-btw-msg.user')).not.toBeNull();
     api.close();
   });
 
-  it('new button posts to /api/btw/new with the cwd', async () => {
+  it('new button is lazy: clears the window without creating a session', async () => {
     const { win, doc } = makeEnv();
-    const fetchImpl = router({ new: { id: 'fresh.jsonl' } });
-    const api = setupBtwPopup({ documentImpl: doc, windowImpl: win, fetchImpl, EventSourceImpl: FakeEventSource, cwd: '/repo/bar' });
+    const fetchImpl = router({ btw: { sessionId: 'sess-1.jsonl' } });
+    const api = setupBtwPopup({ documentImpl: doc, windowImpl: win, fetchImpl, EventSourceImpl: FakeEventSource });
 
     doc.getElementById('pi-btw-button').click();
     await flush();
     doc.querySelector('.pi-btw-new').click();
     await flush();
 
-    const call = fetchImpl.mock.calls.find((c) => c[0] === '/api/btw/new');
-    expect(JSON.parse(call[1].body)).toEqual({ path: '/repo/bar' });
+    // No session file is created until the first message is sent.
+    expect(fetchImpl.mock.calls.some((c) => String(c[0]).startsWith('/api/btw/new'))).toBe(false);
+    // The window resets to its empty prompt state.
+    expect(doc.querySelector('.pi-btw-empty')).not.toBeNull();
     api.close();
   });
 
@@ -213,15 +224,21 @@ describe('btw popup', () => {
     api.close();
   });
 
-  it('switches session in realtime on a global btw-changed event', async () => {
+  it('switches session in realtime on a per-parent btw-changed event', async () => {
     const { win, doc } = makeEnv();
     const fetchImpl = router({ btw: { sessionId: 'sess-1.jsonl' } });
-    const api = setupBtwPopup({ documentImpl: doc, windowImpl: win, fetchImpl, EventSourceImpl: FakeEventSource });
+    const api = setupBtwPopup({
+      documentImpl: doc,
+      windowImpl: win,
+      fetchImpl,
+      EventSourceImpl: FakeEventSource,
+      parentId: 'parent-1.jsonl',
+    });
 
     doc.getElementById('pi-btw-button').click();
     await flush();
 
-    const globalES = FakeEventSource.instances.find((e) => e.url.includes('__all__'));
+    const globalES = FakeEventSource.instances.find((e) => e.url.includes('parent-1.jsonl'));
     expect(globalES).toBeTruthy();
     globalES.emit('btw-changed', JSON.stringify({ sessionId: 'sess-2.jsonl' }));
     await flush();

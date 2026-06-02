@@ -134,6 +134,10 @@ func New(deps Deps) *Server {
 		if _, err := db.Exec(appSettingsSchema); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to create app_settings table: %v\n", err)
 		}
+		if _, err := db.Exec(btwSessionsSchema); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create btw_sessions table: %v\n", err)
+		}
+		migrateLegacyBtwSession(db)
 	}
 
 	s := &Server{
