@@ -289,7 +289,7 @@ export function runChatComposer({
     if (!notice) {
       notice = document.createElement('div');
       notice.id = 'pi-chat-cwd-toast';
-      notice.style.cssText = 'position:fixed;top:8px;right:8px;z-index:200;padding:2px 8px;font-size:10px;font-family:inherit;background:var(--accent);color:var(--body-bg);border-radius:3px;opacity:0;transition:opacity 0.3s;pointer-events:none;';
+      notice.style.cssText = 'position:fixed;top:60px;right:8px;z-index:200;padding:2px 8px;font-size:10px;font-family:inherit;background:var(--accent);color:var(--body-bg);border-radius:3px;opacity:0;transition:opacity 0.3s;pointer-events:none;';
       document.body.appendChild(notice);
     }
     notice.textContent = message;
