@@ -136,6 +136,33 @@ describe('setupKeyboardNav', () => {
     expect(escapeCall).toBeTruthy();
   });
 
+  it('navigates to /settings on Cmd+, (and Ctrl+,)', () => {
+    const doc = createMockDocument();
+    const win = createMockWindow();
+    win.location = { href: '' };
+
+    setupKeyboardNav({ windowImpl: win, documentImpl: doc });
+
+    const e1 = doc._dispatch('keydown', { key: ',', metaKey: true });
+    expect(win.location.href).toBe('/settings');
+    expect(e1.preventDefault).toHaveBeenCalled();
+
+    win.location.href = '';
+    doc._dispatch('keydown', { key: ',', ctrlKey: true });
+    expect(win.location.href).toBe('/settings');
+  });
+
+  it('does not navigate to /settings on Cmd+Shift+,', () => {
+    const doc = createMockDocument();
+    const win = createMockWindow();
+    win.location = { href: '' };
+
+    setupKeyboardNav({ windowImpl: win, documentImpl: doc });
+    doc._dispatch('keydown', { key: ',', metaKey: true, shiftKey: true });
+
+    expect(win.location.href).toBe('');
+  });
+
   it('scrolls down on j', () => {
     const doc = createMockDocument();
     const win = createMockWindow();

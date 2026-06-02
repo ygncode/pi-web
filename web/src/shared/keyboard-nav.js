@@ -51,6 +51,15 @@ export function setupKeyboardNav({
     }
   }, { capture: true });
 
+  // Cmd/Ctrl+, opens the global settings page (standard macOS preferences
+  // shortcut). Works regardless of focus, like a native app.
+  documentImpl.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key === ',') {
+      e.preventDefault();
+      windowImpl.location.href = '/settings';
+    }
+  });
+
   documentImpl.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (isEditableTarget(documentImpl.activeElement)) return;
