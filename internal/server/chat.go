@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"pi-web/internal/chat"
@@ -21,6 +22,7 @@ type ChatSender interface {
 	SetThinkingLevel(ctx context.Context, sessionID, sessionPath, level string) error
 	Abort(ctx context.Context, sessionID string) error
 	GetState(ctx context.Context, sessionID string) (workers.WorkerStatus, error)
+	GetCommands(ctx context.Context, sessionID string) ([]workers.SlashCommand, bool, error)
 	Status(sessionID string) workers.WorkerStatus
 	EnsureWorker(ctx context.Context, sessionID, sessionPath string) error
 }
@@ -169,6 +171,37 @@ func (s *Server) handleWorkerStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, 0, status)
+}
+
+// handleCommands lists the slash commands (extensions, prompt templates,
+// skills) exposed by the session's pi worker. It never spawns a worker; if
+// none is running yet, it reports workerReady=false with an empty list so the
+// client can prompt the user to send a message first. Older pi builds that
+// predate the get_commands RPC are degraded gracefully to an empty list.
+func (s *Server) handleCommands(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.URL.Query().Get("id")
+	commands := []workers.SlashCommand{}
+	ready := false
+	if s.chatSender != nil {
+		ctx, cancel := context.WithTimeout(r.Context(), 3*time.Second)
+		defer cancel()
+		cmds, workerReady, err := s.chatSender.GetCommands(ctx, sessionID)
+		ready = workerReady
+		if err != nil && !isUnknownCommandErr(err) {
+			writeJSONError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		if cmds != nil {
+			commands = cmds
+		}
+	}
+	writeJSON(w, 0, map[string]any{"workerReady": ready, "commands": commands})
+}
+
+// isUnknownCommandErr reports whether err came from a pi build that does not
+// implement the get_commands RPC (pre-v0.78.0).
+func isUnknownCommandErr(err error) bool {
+	return err != nil && strings.Contains(strings.ToLower(err.Error()), "unknown command")
 }
 
 func (s *Server) hasRecentSessionActivity(sessionID string) bool {

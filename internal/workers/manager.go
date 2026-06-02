@@ -26,12 +26,21 @@ type WorkerStatus struct {
 	ThinkingLevel string `json:"thinkingLevel,omitempty"`
 }
 
+// SlashCommand is a command the pi agent exposes for invocation via prompt.
+// Source is one of "extension", "prompt", or "skill".
+type SlashCommand struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Source      string `json:"source"`
+}
+
 type ChatWorker interface {
 	Prompt(ctx context.Context, chat chat.Request) error
 	SetModel(ctx context.Context, provider, modelID string) error
 	SetThinkingLevel(ctx context.Context, level string) error
 	Abort(ctx context.Context) error
 	GetState(ctx context.Context) (WorkerStatus, error)
+	GetCommands(ctx context.Context) ([]SlashCommand, error)
 	Status() WorkerStatus
 	Close() error
 }
@@ -163,6 +172,21 @@ func (m *Manager) GetState(ctx context.Context, sessionID string) (WorkerStatus,
 		return WorkerStatus{State: WorkerStateIdle}, nil
 	}
 	return worker.GetState(ctx)
+}
+
+// GetCommands returns the slash commands exposed by the session's pi worker.
+// It never spawns a worker: if none is running yet, ready is false and the
+// command list is nil. Skills are fixed for a worker's lifetime, so the worker
+// caches the result after the first call.
+func (m *Manager) GetCommands(ctx context.Context, sessionID string) (commands []SlashCommand, ready bool, err error) {
+	m.mu.Lock()
+	worker := m.workers[sessionID]
+	m.mu.Unlock()
+	if worker == nil {
+		return nil, false, nil
+	}
+	commands, err = worker.GetCommands(ctx)
+	return commands, true, err
 }
 
 func (m *Manager) Abort(ctx context.Context, sessionID string) error {

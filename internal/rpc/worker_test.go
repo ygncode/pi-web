@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
@@ -128,6 +129,26 @@ func TestHandleRPCLineIgnoresMalformedJSON(t *testing.T) {
 
 	if got := w.Status(); got.State != workers.WorkerStateIdle {
 		t.Fatalf("status = %q, want idle", got.State)
+	}
+}
+
+func TestGetCommandsReturnsCacheWithoutRPC(t *testing.T) {
+	// stdin is nil: if GetCommands tried to write a command it would panic,
+	// so reaching the cached result proves it short-circuits the RPC.
+	want := []workers.SlashCommand{{Name: "skill:foo", Description: "Foo", Source: "skill"}}
+	w := &piRPCWorker{
+		status:         workers.WorkerStatus{State: workers.WorkerStateIdle},
+		pending:        make(map[string]chan response),
+		cachedCommands: want,
+		commandsCached: true,
+	}
+
+	got, err := w.GetCommands(context.Background())
+	if err != nil {
+		t.Fatalf("GetCommands error: %v", err)
+	}
+	if len(got) != 1 || got[0] != want[0] {
+		t.Fatalf("commands = %#v", got)
 	}
 }
 

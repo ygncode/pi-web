@@ -3159,6 +3159,44 @@
     .thinking-level-item.selected.thinking-xhigh,
     .thinking-level-item:hover.thinking-xhigh { color: var(--thinkingXhigh); }
 
+    /* /skill list */
+    .pi-chat-skill-popup {
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--container-bg, #1e1e2e);
+      border: 1px solid var(--dim);
+      border-radius: 6px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.3);
+      z-index: 200;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .pi-chat-skill-header {
+      padding: 8px 10px;
+      font-size: 11px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--dim);
+    }
+    .pi-chat-skill-list { padding: 4px; }
+    .pi-chat-skill-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 6px 8px;
+      border-radius: 3px;
+    }
+    .pi-chat-skill-item:hover { background: var(--selected-bg, #3a3a4a); }
+    .pi-chat-skill-name { color: var(--text); font-size: 12px; }
+    .pi-chat-skill-desc { color: var(--muted); font-size: 11px; }
+    .pi-chat-skill-empty {
+      padding: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+    }
+
     /* Share overlay */
     .share-overlay-backdrop {
       position: fixed;

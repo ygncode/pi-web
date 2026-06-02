@@ -34,6 +34,8 @@ type piRPCWorker struct {
 	lastStreamActivity   atomic.Int64 // unix nanos; stream/turn events keep worker visually running
 	streamSink           StreamEventSink
 	streamPreview        *streamPreviewAccumulator
+	cachedCommands       []workers.SlashCommand
+	commandsCached       bool
 }
 
 // idleReportable is implemented by workers that can report when they were last
@@ -238,6 +240,55 @@ func (w *piRPCWorker) GetState(ctx context.Context) (workers.WorkerStatus, error
 	case <-ctx.Done():
 		w.removePending(id)
 		return workers.WorkerStatus{}, ctx.Err()
+	}
+}
+
+// GetCommands queries pi for the commands available via prompt (extensions,
+// prompt templates, and skills). The set is fixed for a worker's lifetime, so
+// the result is cached after the first successful call.
+func (w *piRPCWorker) GetCommands(ctx context.Context) ([]workers.SlashCommand, error) {
+	w.mu.Lock()
+	if w.commandsCached {
+		cached := append([]workers.SlashCommand(nil), w.cachedCommands...)
+		w.mu.Unlock()
+		return cached, nil
+	}
+	w.mu.Unlock()
+
+	id := w.nextID()
+	ch := make(chan response, 1)
+	w.mu.Lock()
+	w.pending[id] = ch
+	w.mu.Unlock()
+
+	w.writeMu.Lock()
+	err := WriteCommand(w.stdin, BuildGetCommandsCommand(id))
+	w.writeMu.Unlock()
+	if err != nil {
+		w.removePending(id)
+		return nil, err
+	}
+
+	select {
+	case res := <-ch:
+		if !res.Success {
+			if res.Error != "" {
+				return nil, errors.New(res.Error)
+			}
+			return nil, fmt.Errorf("rpc get_commands rejected")
+		}
+		var payload struct {
+			Commands []workers.SlashCommand `json:"commands"`
+		}
+		_ = json.Unmarshal(res.Data, &payload)
+		w.mu.Lock()
+		w.cachedCommands = payload.Commands
+		w.commandsCached = true
+		w.mu.Unlock()
+		return payload.Commands, nil
+	case <-ctx.Done():
+		w.removePending(id)
+		return nil, ctx.Err()
 	}
 }
 

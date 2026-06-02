@@ -45,6 +45,10 @@ func (f *fakeChatWorker) GetState(ctx context.Context) (WorkerStatus, error) {
 	return f.Status(), nil
 }
 
+func (f *fakeChatWorker) GetCommands(ctx context.Context) ([]SlashCommand, error) {
+	return nil, nil
+}
+
 func (f *fakeChatWorker) Close() error { return nil }
 
 func TestManagerCreatesOneWorkerPerSession(t *testing.T) {
@@ -119,9 +123,31 @@ func (r *reapableWorker) SetModel(ctx context.Context, provider, modelID string)
 func (r *reapableWorker) SetThinkingLevel(ctx context.Context, level string) error     { return nil }
 func (r *reapableWorker) Abort(ctx context.Context) error                              { return nil }
 func (r *reapableWorker) GetState(ctx context.Context) (WorkerStatus, error)           { return r.Status(), nil }
+func (r *reapableWorker) GetCommands(ctx context.Context) ([]SlashCommand, error)      { return nil, nil }
 func (r *reapableWorker) Status() WorkerStatus                                         { return WorkerStatus{State: WorkerStateIdle} }
 func (r *reapableWorker) Close() error                                                 { r.closed = true; return nil }
 func (r *reapableWorker) IdleSince(now time.Time) time.Duration                        { return r.idleFor }
+
+func TestManagerGetCommandsDoesNotSpawnWorker(t *testing.T) {
+	created := 0
+	manager := NewManager(func(string, string) (ChatWorker, error) {
+		created++
+		return &fakeChatWorker{}, nil
+	})
+	commands, ready, err := manager.GetCommands(context.Background(), "missing.jsonl")
+	if err != nil {
+		t.Fatalf("GetCommands error: %v", err)
+	}
+	if ready {
+		t.Fatalf("ready = true, want false when no worker exists")
+	}
+	if commands != nil {
+		t.Fatalf("commands = %#v, want nil", commands)
+	}
+	if created != 0 {
+		t.Fatalf("factory called %d times, want 0", created)
+	}
+}
 
 func TestManagerReapsIdleWorkersBeyondTTL(t *testing.T) {
 	w := &reapableWorker{idleFor: time.Hour}
@@ -184,6 +210,7 @@ func (runningReapable) Abort(ctx context.Context) error                         
 func (runningReapable) GetState(ctx context.Context) (WorkerStatus, error) {
 	return WorkerStatus{State: WorkerStateRunning}, nil
 }
+func (runningReapable) GetCommands(ctx context.Context) ([]SlashCommand, error) { return nil, nil }
 func (runningReapable) Status() WorkerStatus                  { return WorkerStatus{State: WorkerStateRunning} }
 func (runningReapable) Close() error                          { return nil }
 func (runningReapable) IdleSince(now time.Time) time.Duration { return time.Hour }
@@ -197,6 +224,7 @@ func (erroredWorker) Abort(ctx context.Context) error                           
 func (erroredWorker) GetState(ctx context.Context) (WorkerStatus, error) {
 	return WorkerStatus{State: WorkerStateError}, nil
 }
+func (erroredWorker) GetCommands(ctx context.Context) ([]SlashCommand, error) { return nil, nil }
 func (erroredWorker) Status() WorkerStatus {
 	return WorkerStatus{State: WorkerStateError, Error: "dead"}
 }

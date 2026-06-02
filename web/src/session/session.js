@@ -22,6 +22,7 @@ import { setupBtwPopup } from './live/btw-popup.js';
 import * as chatSelectors from './chat/chat-selectors.js';
 import * as thinkingSelector from './chat/thinking-selector.js';
 import * as modelSelector from './chat/model-selector.js';
+import * as skillList from './chat/skill-list.js';
 import * as liveReloadRunner from './live/live-reload-runner.js';
 import * as liveScroll from './live/live-scroll.js';
 import * as liveStats from './live/live-stats.js';
@@ -456,6 +457,7 @@ export function runSessionApp({ target = window } = {}) {
     chatSelectors,
     modelSelector,
     thinkingSelector,
+    skillList,
     FormDataImpl: target.FormData,
     URLSearchParamsImpl: target.URLSearchParams,
     CustomEventImpl: target.CustomEvent,

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -36,6 +37,9 @@ type fakeSender struct {
 	setThinkingSessionID    string
 	setThinkingLevel        string
 	sendCh                  chan struct{}
+	commands                []workers.SlashCommand
+	commandsReady           bool
+	commandsErr             error
 }
 
 func (f *fakeSender) Send(ctx context.Context, sessionID, sessionPath string, chat chat.Request) error {
@@ -74,6 +78,10 @@ func (f *fakeSender) GetState(ctx context.Context, sessionID string) (workers.Wo
 		return f.state, nil
 	}
 	return workers.WorkerStatus{State: workers.WorkerStateIdle}, nil
+}
+
+func (f *fakeSender) GetCommands(ctx context.Context, sessionID string) ([]workers.SlashCommand, bool, error) {
+	return f.commands, f.commandsReady, f.commandsErr
 }
 
 func (f *fakeSender) Status(sessionID string) workers.WorkerStatus {
@@ -164,6 +172,91 @@ func TestHandleChatRejectsBrokenSession(t *testing.T) {
 	}
 	if !strings.Contains(w.Body.String(), "working directory no longer exists") {
 		t.Fatalf("body = %q", w.Body.String())
+	}
+}
+
+func TestHandleCommandsReportsNotReadyWithoutWorker(t *testing.T) {
+	s := &Server{sessionsDir: t.TempDir(), chatSender: &fakeSender{}}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	var body struct {
+		WorkerReady bool                   `json:"workerReady"`
+		Commands    []workers.SlashCommand `json:"commands"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if body.WorkerReady {
+		t.Fatalf("workerReady = true, want false")
+	}
+	if len(body.Commands) != 0 {
+		t.Fatalf("commands = %#v, want empty", body.Commands)
+	}
+}
+
+func TestHandleCommandsReturnsCommands(t *testing.T) {
+	fake := &fakeSender{
+		commandsReady: true,
+		commands: []workers.SlashCommand{
+			{Name: "skill:foo", Description: "Foo skill", Source: "skill"},
+			{Name: "my-ext", Description: "An extension", Source: "extension"},
+		},
+	}
+	s := &Server{sessionsDir: t.TempDir(), chatSender: fake}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	var body struct {
+		WorkerReady bool                   `json:"workerReady"`
+		Commands    []workers.SlashCommand `json:"commands"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !body.WorkerReady {
+		t.Fatalf("workerReady = false, want true")
+	}
+	if len(body.Commands) != 2 || body.Commands[0].Name != "skill:foo" {
+		t.Fatalf("commands = %#v", body.Commands)
+	}
+}
+
+func TestHandleCommandsDegradesOnUnknownCommand(t *testing.T) {
+	fake := &fakeSender{commandsReady: true, commandsErr: errors.New("Unknown command: get_commands")}
+	s := &Server{sessionsDir: t.TempDir(), chatSender: fake}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (degraded); body=%s", w.Code, w.Body.String())
+	}
+	var body struct {
+		WorkerReady bool                   `json:"workerReady"`
+		Commands    []workers.SlashCommand `json:"commands"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(body.Commands) != 0 {
+		t.Fatalf("commands = %#v, want empty on unknown command", body.Commands)
+	}
+}
+
+func TestHandleCommandsReturns500OnRealError(t *testing.T) {
+	fake := &fakeSender{commandsReady: true, commandsErr: errors.New("boom")}
+	s := &Server{sessionsDir: t.TempDir(), chatSender: fake}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", w.Code)
 	}
 }
 

@@ -12,6 +12,7 @@ export function runChatComposer({
   chatSelectors,
   modelSelector,
   thinkingSelector,
+  skillList,
   FormDataImpl = FormData,
   URLSearchParamsImpl = URLSearchParams,
   CustomEventImpl = CustomEvent,
@@ -25,6 +26,7 @@ export function runChatComposer({
   const __piChatSelectors = chatSelectors;
   const __piModelSelector = modelSelector;
   const __piThinkingSelector = thinkingSelector;
+  const __piSkillList = skillList;
   const FormData = FormDataImpl;
   const URLSearchParams = URLSearchParamsImpl;
   const CustomEvent = CustomEventImpl;
@@ -405,6 +407,7 @@ export function runChatComposer({
       textarea.addEventListener('input', () => {
         autoResizeTextarea();
         updateSendEnabled();
+        if (_skillListApi && _skillListApi.maybeShow) _skillListApi.maybeShow(textarea.value);
       });
       // Initial sizing in case the textarea was pre-filled (e.g. browser autofill).
       autoResizeTextarea();
@@ -868,6 +871,7 @@ export function runChatComposer({
 
   let _modelSelectorApi = null;
   let _thinkingSelectorApi = null;
+  let _skillListApi = null;
 
   function initPiChatControls() {
     setupCwdCopy();
@@ -893,6 +897,7 @@ export function runChatComposer({
 
     _modelSelectorApi = loadModelSelector();
     _thinkingSelectorApi = setupThinkingLevelSelector();
+    _skillListApi = loadSkillList();
   }
 
   if (document.readyState === 'loading') {
@@ -916,6 +921,18 @@ export function runChatComposer({
       getKnownModelLabel: () => knownModelLabel,
       setCurrentModelForThinking: (model) => { currentModelForThinking = model; },
       setWorkerModelUpdate: (handler) => { onWorkerModelUpdate = handler; }
+    });
+  }
+
+  // ── Skill list (/skill) ──────────────────────────────────────────────
+  function loadSkillList() {
+    if (!__piSkillList || typeof __piSkillList.setupSkillList !== 'function') return null;
+    const sessionId = new URLSearchParams(window.location.search).get('id') || (document.getElementById('pi-chat-composer') || {}).dataset?.sessionId || '';
+    return __piSkillList.setupSkillList({
+      documentImpl: document,
+      sessionId,
+      chatApi: __piChatApi,
+      escapeHtml
     });
   }
 
