@@ -10,6 +10,8 @@ import (
 	"time"
 
 	webpush "github.com/SherClockHolmes/webpush-go"
+
+	"pi-web/internal/agentdir"
 )
 
 // PushManager owns the VAPID key pair and the set of browser push
@@ -41,7 +43,7 @@ type vapidFile struct {
 // NewPushManager loads/creates VAPID keys and subscription store under
 // <agentDir>/pi-web/. Returns a manager ready to register HTTP handlers.
 func NewPushManager(agentDir string) (*PushManager, error) {
-	dir := filepath.Join(agentDir, "pi-web")
+	dir := agentdir.WebDir(agentDir)
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"pi-web/internal/agentdir"
 	"pi-web/internal/ui"
 )
 
@@ -18,7 +19,7 @@ func (s *Server) handleApiSounds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	soundsDir := filepath.Join(s.agentDir, "pi-web", "assets")
+	soundsDir := filepath.Join(agentdir.WebDir(s.agentDir), "assets")
 	files, err := os.ReadDir(soundsDir)
 	if err != nil {
 		writeJSON(w, http.StatusOK, map[string]any{
@@ -66,7 +67,7 @@ func (s *Server) handleSounds(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	soundsDir := filepath.Join(s.agentDir, "pi-web", "assets")
+	soundsDir := filepath.Join(agentdir.WebDir(s.agentDir), "assets")
 	filePath := filepath.Clean(filepath.Join(soundsDir, name))
 	expectedDir := filepath.Clean(soundsDir)
 

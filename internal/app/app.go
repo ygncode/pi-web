@@ -8,14 +8,12 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"runtime"
-	"strings"
 	"syscall"
 	"time"
 
+	"pi-web/internal/agentdir"
 	"pi-web/internal/auth"
 	"pi-web/internal/frontend"
 	"pi-web/internal/rpc"
@@ -45,7 +43,7 @@ func Main(version string) {
 		os.Exit(0)
 	}
 
-	agentDir := piAgentDir()
+	agentDir := agentdir.Path()
 	if err := seedSoundsDir(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to seed sounds directory: %v\n", err)
 	}
@@ -199,130 +197,3 @@ func Main(version string) {
 		os.Exit(1)
 	}
 }
-
-func openBrowser(url string) {
-	var cmd string
-	var args []string
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = "open"
-		args = []string{url}
-	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start", url}
-	default:
-		cmd = "xdg-open"
-		args = []string{url}
-	}
-	exec.Command(cmd, args...).Start()
-}
-
-// piAgentDir returns the Pi agent config directory.
-// It respects the PI_CODING_AGENT_DIR environment variable, falling back to
-// ~/.pi/agent.
-func piAgentDir() string {
-	if dir := os.Getenv("PI_CODING_AGENT_DIR"); dir != "" {
-		return dir
-	}
-	home, _ := os.UserHomeDir()
-	if home == "" {
-		home = os.Getenv("HOME")
-	}
-	return filepath.Join(home, ".pi", "agent")
-}
-
-// piWebDir returns the pi-web data directory inside the Pi agent dir.
-func piWebDir() string {
-	return filepath.Join(piAgentDir(), "pi-web")
-}
-
-// stateFile is held open for the lifetime of the process so the flock stays
-// in effect. Closing it releases the lock.
-var stateFile *os.File
-
-func writeStateFile(agentDir, host, port string, tailscale bool, tailscaleURL string) (string, error) {
-	webDir := filepath.Join(agentDir, "pi-web")
-	if err := os.MkdirAll(webDir, 0755); err != nil {
-		return "", err
-	}
-	path := filepath.Join(webDir, "pi-web-state.json")
-
-	// Migrate old state file from pre-pi-web directory layout.
-	// Only migrate when the new path does not already exist; otherwise
-	// os.Rename would unlink a destination inode that another pi-web
-	// process may already hold a flock on, defeating the single-instance
-	// lock.
-	oldPath := filepath.Join(agentDir, "pi-web-state.json")
-	if _, err := os.Stat(oldPath); err == nil {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			_ = os.Rename(oldPath, path)
-		}
-	}
-
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644)
-	if err != nil {
-		return "", err
-	}
-	if err := lockStateFile(f); err != nil {
-		_ = f.Close()
-		return "", err
-	}
-	data, err := json.Marshal(map[string]any{
-		"pid":          os.Getpid(),
-		"port":         port,
-		"host":         host,
-		"tailscale":    tailscale,
-		"tailscaleUrl": tailscaleURL,
-		"startedAt":    time.Now().UTC().Format(time.RFC3339),
-	})
-	if err != nil {
-		_ = f.Close()
-		return "", err
-	}
-	if err := f.Truncate(0); err != nil {
-		_ = f.Close()
-		return "", err
-	}
-	if _, err := f.WriteAt(data, 0); err != nil {
-		_ = f.Close()
-		return "", err
-	}
-	stateFile = f
-	return path, nil
-}
-
-// seedSoundsDir ensures that ~/.pi/agent/pi-web/assets exists and seeds it with default sounds if empty.
-func seedSoundsDir(agentDir string) error {
-	soundsDir := filepath.Join(agentDir, "pi-web", "assets")
-	if err := os.MkdirAll(soundsDir, 0755); err != nil {
-		return fmt.Errorf("failed to create sounds directory: %w", err)
-	}
-
-	files, err := os.ReadDir(soundsDir)
-	if err != nil {
-		return fmt.Errorf("failed to read sounds directory: %w", err)
-	}
-
-	hasMP3 := false
-	for _, f := range files {
-		if !f.IsDir() && filepath.Ext(strings.ToLower(f.Name())) == ".mp3" {
-			hasMP3 = true
-			break
-		}
-	}
-
-	if !hasMP3 {
-		// Seed cat.mp3
-		catPath := filepath.Join(soundsDir, "cat.mp3")
-		if err := os.WriteFile(catPath, ui.CatMP3, 0644); err != nil {
-			return fmt.Errorf("failed to seed cat.mp3: %w", err)
-		}
-		// Seed done.mp3
-		donePath := filepath.Join(soundsDir, "done.mp3")
-		if err := os.WriteFile(donePath, ui.DoneMP3, 0644); err != nil {
-			return fmt.Errorf("failed to seed done.mp3: %w", err)
-		}
-	}
-	return nil
-}
-

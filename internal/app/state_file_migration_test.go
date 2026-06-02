@@ -6,42 +6,6 @@ import (
 	"testing"
 )
 
-func TestPiAgentDir_RespectsEnvVar(t *testing.T) {
-	t.Setenv("PI_CODING_AGENT_DIR", "/custom/pi/agent")
-	got := piAgentDir()
-	if got != "/custom/pi/agent" {
-		t.Fatalf("want /custom/pi/agent, got %s", got)
-	}
-}
-
-func TestPiAgentDir_FallsBackToHome(t *testing.T) {
-	t.Setenv("PI_CODING_AGENT_DIR", "")
-	got := piAgentDir()
-	if got == "" {
-		t.Fatal("expected non-empty path")
-	}
-	if got == "/custom/pi/agent" {
-		t.Fatal("should not use env var when empty")
-	}
-	// Should end with .pi/agent when falling back
-	if filepath.Base(filepath.Dir(got)) != ".pi" {
-		t.Fatalf("expected parent to be .pi, got %s", got)
-	}
-	if filepath.Base(got) != "agent" {
-		t.Fatalf("expected base to be agent, got %s", got)
-	}
-}
-
-func TestPiWebDir(t *testing.T) {
-	tmp := t.TempDir()
-	t.Setenv("PI_CODING_AGENT_DIR", tmp)
-	got := piWebDir()
-	want := filepath.Join(tmp, "pi-web")
-	if got != want {
-		t.Fatalf("want %s, got %s", want, got)
-	}
-}
-
 func TestWriteStateFile_SkipsMigrationWhenNewExists(t *testing.T) {
 	tmp := t.TempDir()
 	webDir := filepath.Join(tmp, "pi-web")

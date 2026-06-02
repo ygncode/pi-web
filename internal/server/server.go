@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"pi-web/internal/agentdir"
 	"pi-web/internal/auth"
 	"pi-web/internal/render"
 	"pi-web/internal/rpc"
@@ -96,7 +97,7 @@ func New(deps Deps) *Server {
 	}
 	agentDir := deps.AgentDir
 	if agentDir == "" {
-		agentDir = filepath.Join(os.Getenv("HOME"), ".pi", "agent")
+		agentDir = agentdir.Path()
 	}
 
 	// Ensure the agentDir exists
