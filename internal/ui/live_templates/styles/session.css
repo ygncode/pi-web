@@ -2188,11 +2188,27 @@
         height: 100%;
       }
 
+      /* Pin the whole shell to the top of the layout viewport. iOS Safari
+         otherwise scrolls the layout viewport when the keyboard opens, sliding
+         the bottom-docked composer underneath it. With position:fixed the shell
+         can't be shifted, and its height tracks the visible viewport
+         (--viewport-height, kept in sync from visualViewport in session.js), so
+         the composer always sits just above the keyboard. */
       body {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
         display: flex;
         flex-direction: column;
         height: 100vh;
         height: var(--viewport-height, 100svh);
+        /* The base body rule sets min-height:100vh. On iOS 100vh is the LARGE
+           viewport (full screen, behind the keyboard), and min-height beats
+           height — so without this override the body stays full-height and the
+           bottom-docked composer is buried under the keyboard. Track the
+           visible viewport here too. */
+        min-height: var(--viewport-height, 100svh);
         overflow: hidden;
       }
 
@@ -2265,8 +2281,17 @@
         padding: env(safe-area-inset-top) 12px 0;
       }
 
+      /* On phones the title sat absolutely centered and overlapped the
+         left (back + tree toggle) and right action clusters. Drop it into the
+         flex flow so it occupies only the gap between them and truncates. */
       .session-header-title {
-        max-width: 50vw;
+        position: static;
+        transform: none;
+        flex: 1 1 auto;
+        min-width: 0;
+        max-width: none;
+        margin: 0 8px;
+        text-align: center;
       }
 
       body.sidebar-open .session-header-bar {
@@ -2313,6 +2338,29 @@
 
       .right-sidebar-resizer {
         display: none !important;
+      }
+
+      /* The btw scratch-chat is a draggable floating window on desktop. On a
+         phone a fixed box gets buried behind the on-screen keyboard, so dock it
+         as a full-height sheet sized to the visible viewport (--viewport-height
+         tracks the keyboard). Its input row, pinned at the bottom of that
+         height, then stays above the keyboard. */
+      .pi-btw-window {
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: 100% !important;
+        height: var(--viewport-height, 100svh) !important;
+        max-height: none !important;
+        border-radius: 0 !important;
+        resize: none !important;
+      }
+
+      .pi-btw-header {
+        cursor: default;
       }
     }
 

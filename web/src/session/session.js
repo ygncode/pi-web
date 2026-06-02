@@ -480,10 +480,10 @@ export function runSessionApp({ target = window } = {}) {
 
       // Dynamically adjust the top header's vertical position to offset
       // layout viewport scroll/shift caused by mobile virtual keyboard.
-      const offsetTop = target.visualViewport.offsetTop;
+      const offsetTop = Math.max(0, target.visualViewport.offsetTop);
       const header = documentImpl.querySelector('.session-header-bar');
       if (header) {
-        header.style.transform = `translateY(${Math.max(0, offsetTop)}px)`;
+        header.style.transform = `translateY(${offsetTop}px)`;
       }
     };
     target.visualViewport.addEventListener('resize', handleVisualViewportChange);
