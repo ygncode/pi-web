@@ -52,7 +52,7 @@ func newBenchServer(b *testing.B, numSessions, messagesPerSession int) (*Server,
 		Auth:        auth.New(""),
 		Cache:       sessions.NewCache(),
 		RenderIndex: func(w io.Writer, _ []sessions.SessionSummary) error { return nil },
-		RenderLiveSession: func(s sessions.Session) string {
+		RenderLiveSession: func(s sessions.Session, _ string) string {
 			return fmt.Sprintf("<html><body>%d entries</body></html>", len(s.Entries))
 		},
 		RenderExportSession: func(s sessions.Session, theme string) string { return "" },

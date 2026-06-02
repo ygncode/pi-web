@@ -224,13 +224,13 @@ export function setupRightSidebar({
   });
 
   // ── Init ──────────────────────────────────────────────────────────────────
-  // Load stored width, and load scratchpad if not collapsed
+  // Load stored width. Scratchpad content is server-rendered into the textarea
+  // so it's present on first paint (no placeholder→value flash); adopt it as the
+  // baseline instead of re-fetching, which would blank then refill the field.
   const savedWidth = loadWidth();
   if (savedWidth !== null) applyWidth(savedWidth);
 
-  if (!isCollapsed() && projectPath) {
-    loadScratchpad();
-  }
+  if (textarea) lastSaved = textarea.value;
 
   return { toggleSidebar };
 }

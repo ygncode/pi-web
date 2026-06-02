@@ -55,8 +55,16 @@ func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	scratchpad := ""
+	if resolved.Session.Header != nil {
+		if cwd, ok := resolved.Session.Header["cwd"].(string); ok && cwd != "" {
+			if content, err := s.lookupScratchpad(cwd); err == nil {
+				scratchpad = content
+			}
+		}
+	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	io.WriteString(w, s.renderLiveSession(resolved.Session))
+	io.WriteString(w, s.renderLiveSession(resolved.Session, scratchpad))
 }
 
 func (s *Server) handleApiForkSession(w http.ResponseWriter, r *http.Request) {

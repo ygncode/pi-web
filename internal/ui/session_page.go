@@ -68,7 +68,7 @@ func prepareSessionPageData(session sessions.Session, cssTemplate string) (dataB
 
 // renderLiveSessionPage renders the interactive session viewer served at
 // /session. It loads the Vite-built session module and includes the chat composer.
-func RenderLiveSessionPage(session sessions.Session) string {
+func RenderLiveSessionPage(session sessions.Session, scratchpad string) string {
 	dataBase64, css, bodyAttrs := prepareSessionPageData(session, liveThemeCss+"\n"+liveSessionCss+"\n"+liveMenuCss+"\n"+livePaletteCss)
 
 	scriptSrc := template.HTMLEscapeString(sessionScriptPath)
@@ -88,6 +88,7 @@ func RenderLiveSessionPage(session sessions.Session) string {
 		SessionScript      template.HTML
 		FirstMessageStub   template.HTML
 		ChatComposer       template.HTML
+		Scratchpad         string
 		LiveDocumentEnd    template.HTML
 	}{
 		IsLive:             true,
@@ -112,6 +113,7 @@ func RenderLiveSessionPage(session sessions.Session) string {
 		SessionScript:    template.HTML(`<script type="module" src="` + scriptSrc + `"></script>`),
 		FirstMessageStub: template.HTML(firstMessageStub(session)),
 		ChatComposer:     template.HTML(chatComposerHtmlForSession(session)),
+		Scratchpad:       scratchpad,
 		LiveDocumentEnd:  liveDocumentEnd(),
 	}
 
@@ -122,7 +124,9 @@ func RenderLiveSessionPage(session sessions.Session) string {
 	return buf.String()
 }
 
-func renderLiveSessionPage(session sessions.Session) string { return RenderLiveSessionPage(session) }
+func renderLiveSessionPage(session sessions.Session) string {
+	return RenderLiveSessionPage(session, "")
+}
 
 // firstMessageStub returns a minimal HTML stub for the first user message so
 // the browser has an LCP candidate before the JS bundle finishes loading.

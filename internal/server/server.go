@@ -42,7 +42,7 @@ type Deps struct {
 	ChatSender          ChatSender
 	Cache               *sessions.Cache
 	RenderIndex         func(w io.Writer, summaries []sessions.SessionSummary) error
-	RenderLiveSession   func(s sessions.Session) string
+	RenderLiveSession   func(s sessions.Session, scratchpad string) string
 	RenderExportSession func(s sessions.Session, theme string) string
 	RenderSettings      func(w io.Writer) error
 	Models              func(ctx context.Context) (json.RawMessage, error)
@@ -73,7 +73,7 @@ type Server struct {
 	shareRunner         shareCmdRunner
 	now                 func() time.Time
 	renderIndex         func(w io.Writer, summaries []sessions.SessionSummary) error
-	renderLiveSession   func(s sessions.Session) string
+	renderLiveSession   func(s sessions.Session, scratchpad string) string
 	renderExportSession func(s sessions.Session, theme string) string
 	renderSettings      func(w io.Writer) error
 	models              func(ctx context.Context) (json.RawMessage, error)

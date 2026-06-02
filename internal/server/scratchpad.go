@@ -7,6 +7,21 @@ import (
 	"time"
 )
 
+// lookupScratchpad returns the saved scratchpad content for a project path.
+// An unknown project (or no database) yields an empty string, not an error, so
+// callers on the page-render path can pre-fill the textarea best-effort.
+func (s *Server) lookupScratchpad(project string) (string, error) {
+	if project == "" || s.db == nil {
+		return "", nil
+	}
+	var content string
+	err := s.db.QueryRow("SELECT content FROM scratchpads WHERE project_path = ?", project).Scan(&content)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return content, err
+}
+
 func (s *Server) handleGetScratchpad(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
@@ -24,14 +39,8 @@ func (s *Server) handleGetScratchpad(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var content string
-	err := s.db.QueryRow("SELECT content FROM scratchpads WHERE project_path = ?", project).Scan(&content)
+	content, err := s.lookupScratchpad(project)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			// Not found, return empty
-			writeJSON(w, http.StatusOK, map[string]any{"content": ""})
-			return
-		}
 		writeJSONError(w, http.StatusInternalServerError, "failed to query scratchpad: "+err.Error())
 		return
 	}
