@@ -3186,6 +3186,7 @@
       gap: 2px;
       padding: 6px 8px;
       border-radius: 3px;
+      cursor: pointer;
     }
     .pi-chat-skill-item:hover { background: var(--selected-bg, #3a3a4a); }
     .pi-chat-skill-name { color: var(--text); font-size: 12px; }

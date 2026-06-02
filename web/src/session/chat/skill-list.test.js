@@ -28,9 +28,10 @@ describe('skill-list pure helpers', () => {
     expect(notReady).toContain('Load skills');
     expect(notReady).toContain('pi-chat-skill-load');
     expect(renderSkillList([], { workerReady: true })).toContain('No skills loaded');
-    const html = renderSkillList([{ displayName: 'foo', description: 'Foo skill' }], { workerReady: true });
+    const html = renderSkillList([{ name: 'skill:foo', displayName: 'foo', description: 'Foo skill' }], { workerReady: true });
     expect(html).toContain('foo');
     expect(html).toContain('Foo skill');
+    expect(html).toContain('data-skill="skill:foo"');
   });
 });
 
@@ -101,5 +102,13 @@ describe('setupSkillList controller', () => {
     expect(chatApi.getCommands).toHaveBeenCalledWith('s.jsonl', { load: true });
     expect(popup.style.display).toBe('block');
     expect(list.innerHTML).toContain('bar');
+  });
+
+  it('insertSkill writes the slash invocation and closes the popup', () => {
+    popup.style.display = 'block';
+    const api = setupSkillList({ documentImpl, sessionId: 's.jsonl', chatApi: {} });
+    api.insertSkill('skill:memory');
+    expect(textarea.value).toBe('/skill:memory ');
+    expect(popup.style.display).toBe('none');
   });
 });

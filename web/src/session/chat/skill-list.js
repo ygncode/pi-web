@@ -41,7 +41,7 @@ export function renderSkillList(skills, { workerReady = true, escapeHtml = Strin
       const desc = s.description
         ? `<span class="pi-chat-skill-desc">${escapeHtml(s.description)}</span>`
         : '';
-      return `<div class="pi-chat-skill-item"><span class="pi-chat-skill-name">${escapeHtml(s.displayName)}</span>${desc}</div>`;
+      return `<div class="pi-chat-skill-item" data-skill="${escapeHtml(s.name || '')}"><span class="pi-chat-skill-name">${escapeHtml(s.displayName)}</span>${desc}</div>`;
     })
     .join('');
 }
@@ -98,10 +98,32 @@ export function setupSkillList({
     return fetchAndRender(true);
   }
 
+  // insertSkill writes the skill's slash invocation into the composer so the
+  // user only has to press send. The skill name is already prefixed "skill:",
+  // so the invocation is "/skill:<name>".
+  function insertSkill(name) {
+    if (!name) return;
+    const textarea = documentImpl.getElementById('pi-chat-message');
+    if (!textarea) return;
+    textarea.value = `/${name} `;
+    if (typeof textarea.focus === 'function') textarea.focus();
+    if (typeof textarea.dispatchEvent === 'function') {
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    close();
+  }
+
   documentImpl.addEventListener('click', (e) => {
     const target = e && e.target;
     if (target && target.id === SKILL_LOAD_BUTTON_ID) {
       load();
+      return;
+    }
+    const item = target && typeof target.closest === 'function'
+      ? target.closest('.pi-chat-skill-item')
+      : null;
+    if (item && typeof item.getAttribute === 'function') {
+      insertSkill(item.getAttribute('data-skill'));
       return;
     }
     if (popup && popup.style.display !== 'none') {
@@ -110,5 +132,5 @@ export function setupSkillList({
     }
   });
 
-  return { maybeShow, load, close };
+  return { maybeShow, load, insertSkill, close };
 }
