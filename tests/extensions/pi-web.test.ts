@@ -36,7 +36,7 @@ vi.mock('node:fs', async (importOriginal) => {
   };
 });
 
-import {
+import piWebExtension, {
   isTailscaleHost,
   isSSH,
   normalizeCommandArgs,
@@ -52,6 +52,37 @@ import {
 declare global {
   var __MOCK_PI_WEB_TOKEN__: string | null | undefined;
   var __MOCK_PI_WEB_ENV_CONTENT__: string | undefined;
+}
+
+function createExtensionHarness() {
+  const tools = new Map<string, any>();
+  const handlers = new Map<string, Function[]>();
+  const pi = {
+    registerTool: vi.fn((tool: any) => tools.set(tool.name, tool)),
+    registerCommand: vi.fn(),
+    on: vi.fn((event: string, handler: Function) => {
+      const list = handlers.get(event) ?? [];
+      list.push(handler);
+      handlers.set(event, list);
+    }),
+    setSessionName: vi.fn(),
+    exec: vi.fn(),
+  };
+
+  piWebExtension(pi as any);
+
+  const ctx = {
+    hasUI: true,
+    ui: {
+      setTitle: vi.fn(),
+      notify: vi.fn(),
+    },
+    sessionManager: {
+      getSessionFile: vi.fn(() => '/tmp/pi-session.jsonl'),
+    },
+  };
+
+  return { pi, ctx, tools, handlers };
 }
 
 // ── isSSH ───────────────────────────────────────────────────────────
@@ -209,6 +240,65 @@ describe('deriveTitleFromInput', () => {
     expect(
       deriveTitleFromInput('check https://example.com/foo for updates'),
     ).toBe('Check Updates');
+  });
+});
+
+// ── pi_web_set_tab_title tool ───────────────────────────────────────
+describe('pi_web_set_tab_title tool', () => {
+  const orig = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...orig };
+    vi.restoreAllMocks();
+  });
+
+  it('keeps the default synchronous response shape', async () => {
+    delete process.env.PI_WEB_BACKGROUND_TAB_TITLE;
+    const { pi, ctx, tools } = createExtensionHarness();
+    const tool = tools.get('pi_web_set_tab_title');
+
+    expect(tool).toBeDefined();
+    const result = await tool.execute(
+      'call-1',
+      { title: ' Test Session ' },
+      undefined,
+      undefined,
+      ctx,
+    );
+
+    expect(ctx.ui.setTitle).toHaveBeenCalledWith('Test Session');
+    expect(pi.setSessionName).toHaveBeenCalledWith('Test Session');
+    expect(ctx.ui.notify).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      content: [{ type: 'text', text: 'Session title set to Test Session.' }],
+      details: { title: 'Test Session' },
+    });
+  });
+
+  it('queues title updates when PI_WEB_BACKGROUND_TAB_TITLE is set', async () => {
+    process.env.PI_WEB_BACKGROUND_TAB_TITLE = '1';
+    const { pi, ctx, tools } = createExtensionHarness();
+    const tool = tools.get('pi_web_set_tab_title');
+
+    expect(tool).toBeDefined();
+    const result = await tool.execute(
+      'call-1',
+      { title: 'Background Session' },
+      undefined,
+      undefined,
+      ctx,
+    );
+
+    expect(ctx.ui.setTitle).toHaveBeenCalledWith('Background Session');
+    expect(pi.setSessionName).toHaveBeenCalledWith('Background Session');
+    expect(ctx.ui.notify).toHaveBeenCalledWith(
+      'Session title set to Background Session.',
+      'info',
+    );
+    expect(result).toEqual({
+      content: [{ type: 'text', text: 'Session title update queued.' }],
+      details: { queued: true, title: 'Background Session' },
+    });
   });
 });
 

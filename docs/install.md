@@ -129,6 +129,15 @@ PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web --host 192.168.1.50
 
 By default, pi-web binds to `127.0.0.1`. If Tailscale is running with MagicDNS, pi-web also runs `tailscale serve --bg --https=<port> http://127.0.0.1:<port>` and prints the HTTPS tailnet URL. Any explicit non-loopback bind requires `PI_WEB_TOKEN` to be set; pass `--insecure` to override for local testing.
 
+## Optional Environment Settings
+
+Optional extension settings can be added to `~/.config/pi-web/env`:
+
+```bash
+# Queue tab title updates in the background instead of blocking the agent turn.
+PI_WEB_BACKGROUND_TAB_TITLE=1
+```
+
 ## Remote Access
 
 Leave pi-web listening locally, then use the printed Tailscale HTTPS URL from your phone or laptop on the tailnet.

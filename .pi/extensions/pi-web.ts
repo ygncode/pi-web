@@ -798,6 +798,8 @@ async function showRemoteAccess(
 export default function (pi: ExtensionAPI) {
   let lastAutoTitle: string | null = null;
 
+  let titleJobId = 0;
+
   pi.registerTool({
     name: "pi_web_set_tab_title",
     label: "Set Tab Title",
@@ -812,13 +814,47 @@ export default function (pi: ExtensionAPI) {
       title: Type.String({ description: "Short 2-5 word session title." }),
     }),
     async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      const title = setPiWebTabTitle(pi, ctx, String(params.title ?? ""));
-      lastAutoTitle = title;
+      const title = String(params.title ?? "");
+      const backgroundTitleUpdates =
+        process.env["PI_WEB_BACKGROUND_TAB_TITLE"] === "1";
+
+      if (!backgroundTitleUpdates) {
+        const finalTitle = setPiWebTabTitle(pi, ctx, title);
+        lastAutoTitle = finalTitle;
+        return {
+          content: [{ type: "text", text: `Session title set to ${finalTitle}.` }],
+          details: { title: finalTitle },
+        };
+      }
+
+      const jobId = ++titleJobId;
+      const sessionFile = ctx.sessionManager.getSessionFile();
+
+      void (async () => {
+        try {
+          if (jobId !== titleJobId) return;
+          if (ctx.sessionManager.getSessionFile() !== sessionFile) return;
+
+          const finalTitle = setPiWebTabTitle(pi, ctx, title);
+          lastAutoTitle = finalTitle;
+          if (ctx.hasUI) {
+            ctx.ui.notify(`Session title set to ${finalTitle}.`, "info");
+          }
+        } catch (error) {
+          console.warn("[pi-web] background tab title update failed", error);
+        }
+      })();
+
       return {
-        content: [{ type: "text", text: `Session title set to ${title}.` }],
-        details: { title },
+        content: [{ type: "text", text: "Session title update queued." }],
+        details: { queued: true, title },
       };
     },
+  });
+
+  pi.on("session_shutdown", () => {
+    // Cancel any queued background title update before reload/session replacement.
+    titleJobId++;
   });
 
   pi.on("input", async (event, ctx) => {
