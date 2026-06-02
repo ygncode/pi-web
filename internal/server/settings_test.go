@@ -146,6 +146,30 @@ func TestSettingsNoDBDegradesGracefully(t *testing.T) {
 	}
 }
 
+func TestGetPostHandlerRejectsOtherMethods(t *testing.T) {
+	s := &Server{}
+	called := false
+	h := s.getPostHandler(
+		func(w http.ResponseWriter, r *http.Request) { called = true },
+		func(w http.ResponseWriter, r *http.Request) { called = true },
+	)
+
+	for _, method := range []string{http.MethodDelete, http.MethodPut, http.MethodPatch} {
+		req := httptest.NewRequest(method, "/api/settings", nil)
+		w := httptest.NewRecorder()
+		h(w, req)
+		if w.Code != http.StatusMethodNotAllowed {
+			t.Errorf("%s: expected 405, got %d", method, w.Code)
+		}
+		if got := w.Header().Get("Allow"); got != "GET, POST" {
+			t.Errorf("%s: expected Allow 'GET, POST', got %q", method, got)
+		}
+	}
+	if called {
+		t.Error("get/post handlers should not run for unsupported methods")
+	}
+}
+
 func TestHandleGetSettingsWrongMethod(t *testing.T) {
 	s := &Server{db: newSettingsTestDB(t)}
 	req := httptest.NewRequest(http.MethodDelete, "/api/settings", nil)

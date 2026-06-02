@@ -206,30 +206,12 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/clone-session", s.auth.Wrap(s.handleApiCloneSession))
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
 	mux.HandleFunc("/api/recent-locations", s.auth.Wrap(s.handleRecentLocations))
-	mux.HandleFunc("/api/projects", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			s.auth.Wrap(s.handleUpdateProject)(w, r)
-		} else {
-			s.auth.Wrap(s.handleApiProjects)(w, r)
-		}
-	})
+	mux.HandleFunc("/api/projects", s.getPostHandler(s.handleApiProjects, s.handleUpdateProject))
 	mux.HandleFunc("/api/git/info", s.auth.Wrap(s.handleGitInfo))
 	mux.HandleFunc("/api/git/rename-branch", s.auth.Wrap(s.handleGitRenameBranch))
 	mux.HandleFunc("/custom-themes.css", s.auth.Wrap(s.handleCustomThemes))
-	mux.HandleFunc("/api/scratchpad", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			s.auth.Wrap(s.handleSaveScratchpad)(w, r)
-		} else {
-			s.auth.Wrap(s.handleGetScratchpad)(w, r)
-		}
-	})
-	mux.HandleFunc("/api/settings", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodPost {
-			s.auth.Wrap(s.handleSaveSettings)(w, r)
-		} else {
-			s.auth.Wrap(s.handleGetSettings)(w, r)
-		}
-	})
+	mux.HandleFunc("/api/scratchpad", s.getPostHandler(s.handleGetScratchpad, s.handleSaveScratchpad))
+	mux.HandleFunc("/api/settings", s.getPostHandler(s.handleGetSettings, s.handleSaveSettings))
 	mux.HandleFunc("/api/btw", s.auth.Wrap(s.handleGetBtw))
 	mux.HandleFunc("/api/btw/new", s.auth.Wrap(s.handleNewBtw))
 	if s.push != nil {
@@ -242,6 +224,22 @@ func (s *Server) Register(mux *http.ServeMux) {
 		mux.HandleFunc("/api/check-update", s.auth.Wrap(s.handleCheckUpdate))
 		mux.HandleFunc("/api/update", s.auth.Wrap(s.handleUpdate))
 		mux.HandleFunc("/api/restart", s.auth.Wrap(s.handleRestart))
+	}
+}
+
+// getPostHandler routes GET to get and POST to post, each wrapped with auth,
+// and rejects any other method with 405 (and an Allow header) before auth runs.
+func (s *Server) getPostHandler(get, post http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			s.auth.Wrap(get)(w, r)
+		case http.MethodPost:
+			s.auth.Wrap(post)(w, r)
+		default:
+			w.Header().Set("Allow", "GET, POST")
+			writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
+		}
 	}
 }
 
