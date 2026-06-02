@@ -476,13 +476,37 @@ export function runSessionApp({ target = window } = {}) {
   // Handle Visual Viewport changes to prevent mobile browsers from shifting
   // the top fixed header out of view when the virtual keyboard is open.
   if (target.visualViewport) {
+    const isTextInputFocused = () => {
+      const ae = documentImpl.activeElement;
+      return !!ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT');
+    };
+
     const handleVisualViewportChange = () => {
-      const height = target.visualViewport.height;
-      documentImpl.documentElement.style.setProperty('--viewport-height', `${height}px`);
+      const vv = target.visualViewport;
+      // Override the layout height only while a text field is focused (keyboard
+      // open), so the composer is pulled above the keyboard. When nothing is
+      // focused, fall back to the CSS `100svh` — on iOS Safari
+      // visualViewport.height can report the larger, toolbar-excluding height,
+      // which over-sizes the page and pushes the composer's send/git bar behind
+      // the bottom toolbar.
+      if (isTextInputFocused()) {
+        documentImpl.documentElement.style.setProperty('--viewport-height', `${vv.height}px`);
+      } else {
+        documentImpl.documentElement.style.removeProperty('--viewport-height');
+      }
+
+      // iOS Safari pins `position:fixed; bottom:0` to the *layout* viewport,
+      // which the keyboard overlays rather than shrinks — so the composer ends
+      // up behind the keyboard. Measure how much the keyboard covers (layout
+      // viewport bottom minus visual viewport bottom) and expose it as
+      // `--keyboard-inset` so the composer can lift itself above the keyboard.
+      const layoutHeight = documentImpl.documentElement.clientHeight;
+      const keyboardInset = Math.max(0, Math.round(layoutHeight - vv.height - vv.offsetTop));
+      documentImpl.documentElement.style.setProperty('--keyboard-inset', `${keyboardInset}px`);
 
       // Dynamically adjust the top header's vertical position to offset
       // layout viewport scroll/shift caused by mobile virtual keyboard.
-      const offsetTop = target.visualViewport.offsetTop;
+      const offsetTop = vv.offsetTop;
       const header = documentImpl.querySelector('.session-header-bar');
       if (header) {
         header.style.transform = `translateY(${Math.max(0, offsetTop)}px)`;
@@ -490,6 +514,8 @@ export function runSessionApp({ target = window } = {}) {
     };
     target.visualViewport.addEventListener('resize', handleVisualViewportChange);
     target.visualViewport.addEventListener('scroll', handleVisualViewportChange);
+    documentImpl.addEventListener('focusin', handleVisualViewportChange);
+    documentImpl.addEventListener('focusout', handleVisualViewportChange);
     handleVisualViewportChange();
   }
 

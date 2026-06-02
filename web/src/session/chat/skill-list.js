@@ -70,7 +70,17 @@ export function setupSkillList({
   // "Load skills" button); otherwise it only peeks at an existing worker.
   async function fetchAndRender(load) {
     if (!chatApi || typeof chatApi.getCommands !== 'function') return;
+    // Injecting the popup's DOM while the textarea is focused makes iOS Safari
+    // blur it (dismissing the keyboard and shifting focus). Re-assert focus
+    // after each render — preventScroll stops iOS's jumpy scroll-into-view.
+    const textarea = documentImpl.getElementById('pi-chat-message');
+    const keepFocus = () => {
+      if (textarea && documentImpl.activeElement !== textarea && typeof textarea.focus === 'function') {
+        textarea.focus({ preventScroll: true });
+      }
+    };
     show('<div class="pi-chat-skill-empty">Loading…</div>');
+    keepFocus();
     try {
       const res = await chatApi.getCommands(sessionId, { load });
       const data = await res.json();
@@ -80,6 +90,7 @@ export function setupSkillList({
     } catch (_) {
       show('<div class="pi-chat-skill-empty">Failed to load skills</div>');
     }
+    keepFocus();
   }
 
   // maybeShow opens the skill list when the composer value is exactly "/skill",

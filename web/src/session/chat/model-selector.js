@@ -30,7 +30,8 @@ export function setupModelSelector({
   setKnownModelLabel = () => {},
   getKnownModelLabel = () => '',
   setCurrentModelForThinking = () => {},
-  setWorkerModelUpdate = () => {}
+  setWorkerModelUpdate = () => {},
+  onOpen = () => {}
 } = {}) {
   let allModels = [];
   let selectedModel = null;
@@ -57,6 +58,9 @@ export function setupModelSelector({
 
   function openPopup() {
     if (!popup) return;
+    // Dismiss any sibling popup (e.g. the /skill list) since the model button's
+    // click stops propagation, so their outside-click handlers never fire.
+    onOpen();
     popup.style.display = 'flex';
     if (popupSearch) {
       popupSearch.value = '';

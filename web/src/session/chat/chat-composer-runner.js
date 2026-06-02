@@ -920,7 +920,8 @@ export function runChatComposer({
       setKnownModelLabel: (label) => { knownModelLabel = label; },
       getKnownModelLabel: () => knownModelLabel,
       setCurrentModelForThinking: (model) => { currentModelForThinking = model; },
-      setWorkerModelUpdate: (handler) => { onWorkerModelUpdate = handler; }
+      setWorkerModelUpdate: (handler) => { onWorkerModelUpdate = handler; },
+      onOpen: () => { if (_skillListApi && _skillListApi.close) _skillListApi.close(); }
     });
   }
 

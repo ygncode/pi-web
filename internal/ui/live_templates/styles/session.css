@@ -2245,9 +2245,34 @@
 
       #content {
         min-height: 0;
-        padding: calc(52px + env(safe-area-inset-top) + var(--line-height)) 16px var(--line-height);
+        padding: calc(52px + env(safe-area-inset-top) + var(--line-height)) 16px calc(var(--pi-chat-composer-height, 200px) + var(--line-height));
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
+      }
+
+      /* iOS Safari's flex height chain fails to constrain the scroll column,
+         so the in-flow composer flows below the fold and gets clipped by the
+         body's overflow:hidden. Pin it to the layout viewport bottom instead:
+         with no keyboard it sits at the viewport floor; when the keyboard opens
+         iOS shrinks the layout viewport and it rides up above the keyboard.
+         #content gets matching padding-bottom so content isn't hidden behind it. */
+      .pi-chat-composer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: var(--keyboard-inset, 0px);
+        z-index: 50;
+        background: var(--body-bg);
+        transition: bottom 0.15s ease-out;
+      }
+
+      /* iOS Safari zooms the page in whenever a text field with font-size < 16px
+         gains focus (it ignores maximum-scale for this). That zoom shifts the
+         visual viewport and desyncs the caret from the textarea. Force 16px on
+         the composer inputs so focusing them never triggers the zoom. */
+      #pi-chat-message,
+      .pi-chat-model-search {
+        font-size: 16px;
       }
 
       #content > * {
