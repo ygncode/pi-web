@@ -16,6 +16,10 @@
 // internal/server/settings.go.
 export const SERVER_SETTING_KEYS = [
   'pi-web-theme',
+  'pi-web:v1:font-ui',
+  'pi-web:v1:font-content',
+  'pi-web:v1:font-ui-size',
+  'pi-web:v1:font-content-size',
   'pi-sessions:spinner-style',
   'pi-share:v1:notify-on-done',
   'pi-share:v1:done-sound',
@@ -24,6 +28,7 @@ export const SERVER_SETTING_KEYS = [
   'pi-web:v1:cat:focus-min',
   'pi-web:v1:cat:break-min',
   'pi-web:v1:cat:bedtime',
+  'pi-web:v1:cat:wakeup',
   'pi-web:v1:cat:sleep-min',
 ];
 

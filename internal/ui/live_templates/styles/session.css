@@ -434,7 +434,7 @@
 
     body {
       font-family: var(--font-sans);
-      font-size: 12px;
+      font-size: var(--font-size-ui);
       line-height: var(--line-height);
       color: var(--text);
       background: var(--body-bg);
@@ -1997,6 +1997,8 @@
     .markdown-content {
       overflow-wrap: anywhere;
       min-width: 0;
+      font-family: var(--font-content);
+      font-size: var(--font-content-size);
     }
 
     /* Markdown headings */
@@ -2030,7 +2032,7 @@
       color: var(--mdCode);
       padding: 0 4px;
       border-radius: 3px;
-      font-family: inherit;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       overflow-wrap: break-word;
     }
 
@@ -4482,6 +4484,31 @@
 
     .cat-overlay--locked .cat-message {
       color: rgba(207, 211, 255, 0.95);
+    }
+
+    .cat-snooze {
+      position: absolute;
+      bottom: 9vh;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 3;
+      font-family: var(--font-sans, sans-serif);
+      font-size: clamp(15px, 1.6vw, 19px);
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.95);
+      background: rgba(0, 0, 0, 0.58);
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      border-radius: 999px;
+      padding: 14px 30px;
+      cursor: pointer;
+      backdrop-filter: blur(2px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+
+    .cat-snooze:hover {
+      background: rgba(0, 0, 0, 0.72);
+      border-color: rgba(255, 255, 255, 0.5);
     }
 
     /* --- settings sheet form --- */

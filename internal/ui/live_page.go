@@ -26,6 +26,26 @@ func SetThemeProvider(fn func() string) {
 	}
 }
 
+const defaultMonoStack = "ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace"
+
+// fontProvider returns the resolved CSS font-family stacks and pixel sizes for
+// the interface (--font-sans / --font-size-ui) and content (--font-content /
+// --font-content-size). Injected into the shell so the page paints with the
+// chosen fonts/sizes before any JS runs. Defaults to the monospace stack; app
+// wiring overrides it via SetFontProvider to read the DB.
+var fontProvider = func() (uiStack, contentStack, uiSize, contentSize string) {
+	return defaultMonoStack, defaultMonoStack, "12", "13"
+}
+
+// SetFontProvider installs the function used to resolve the current
+// server-backed interface/content font stacks and sizes for server-side
+// injection.
+func SetFontProvider(fn func() (string, string, string, string)) {
+	if fn != nil {
+		fontProvider = fn
+	}
+}
+
 // wcoBootScript toggles a `wco` class on <html> when the PWA is running with
 // Window Controls Overlay so the app can paint its own header into the OS title
 // bar. Runs in <head> (before <body> exists) so the class is set on the root
@@ -98,6 +118,16 @@ func renderLiveDocumentStart(data liveDocumentData) string {
 		b.WriteByte('\n')
 	}
 	b.WriteString("<link rel=\"stylesheet\" href=\"/custom-themes.css\">\n")
+	fontUI, fontContent, fontUISize, fontContentSize := fontProvider()
+	b.WriteString("<style id=\"pi-web-fonts\">:root{--font-sans:")
+	b.WriteString(fontUI)
+	b.WriteString(";--font-content:")
+	b.WriteString(fontContent)
+	b.WriteString(";--font-size-ui:")
+	b.WriteString(fontUISize)
+	b.WriteString("px;--font-content-size:")
+	b.WriteString(fontContentSize)
+	b.WriteString("px;}</style>\n")
 	b.WriteString("</head>\n<body")
 	if data.BodyAttrs != "" {
 		b.WriteString(string(data.BodyAttrs))

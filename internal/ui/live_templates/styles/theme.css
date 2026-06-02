@@ -12,6 +12,13 @@
 
 :root {
     --font-sans: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+    /* Font for rendered message content; falls back to the interface font and
+       is overridden by the server-injected #pi-web-fonts style when set. */
+    --font-content: var(--font-sans);
+    /* Adjustable font sizes (overridden by the server-injected #pi-web-fonts
+       style and live by the settings page). */
+    --font-size-ui: 12px;
+    --font-content-size: 13px;
     --palette-surface: var(--surface);
     --palette-surface-2: var(--surface-2);
     --palette-text-soft: var(--text-soft);

@@ -2,6 +2,9 @@
   max-width: 720px;
   margin: 0 auto;
   padding: 24px 20px 80px;
+  /* Base the page on the interface font size so it reflects the setting and
+     previews changes live (child text sizes are em-relative to this). */
+  font-size: var(--font-size-ui);
 }
 
 .settings-header {
@@ -17,7 +20,7 @@
   gap: 6px;
   color: var(--text-soft);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: 1em;
   padding: 6px 10px;
   border-radius: 8px;
   border: 1px solid var(--dim);
@@ -30,7 +33,7 @@
 }
 
 .settings-header h1 {
-  font-size: 1.4rem;
+  font-size: 1.6em;
   margin: 0;
   color: var(--text);
 }
@@ -44,7 +47,7 @@
 }
 
 .settings-section-title {
-  font-size: 0.75rem;
+  font-size: 0.85em;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -73,12 +76,12 @@
 
 .settings-row-label .name {
   color: var(--text);
-  font-size: 0.95rem;
+  font-size: 1.05em;
 }
 
 .settings-row-label .hint {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.9em;
 }
 
 .settings-control select,
@@ -89,13 +92,24 @@
   border: 1px solid var(--dim);
   border-radius: 8px;
   padding: 7px 10px;
-  font-size: 0.9rem;
+  font-size: 1em;
   font-family: inherit;
   min-width: 130px;
 }
 
 .settings-control input[type="number"] {
   min-width: 90px;
+}
+
+.settings-font-control {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.settings-font-custom {
+  min-width: 160px;
 }
 
 /* Toggle switch */
@@ -148,7 +162,7 @@
 .settings-saved-hint {
   text-align: center;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.9em;
   margin-top: 8px;
   min-height: 1em;
   transition: opacity 0.3s ease;

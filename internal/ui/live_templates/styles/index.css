@@ -18,7 +18,7 @@
 html { background: var(--body-bg); }
 body {
     font-family: var(--font-sans);
-    font-size: 13px;
+    font-size: var(--font-size-ui);
     line-height: var(--line-height);
     color: var(--text-soft);
     background: var(--body-bg);
