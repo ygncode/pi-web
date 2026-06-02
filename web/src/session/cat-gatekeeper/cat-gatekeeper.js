@@ -17,11 +17,10 @@ const TICK_MS = 1000;
 // Cap how much a single focus tick can subtract so a throttled/backgrounded
 // tab that fires a delayed tick can't burn a big chunk of focus time at once.
 const MAX_FOCUS_STEP_MS = 2000;
-// How long after bedtime the goodnight nudge still fires (handles opening
-// pi-web well after bedtime, including past midnight).
-const SLEEP_WINDOW_MIN = 8 * 60;
 // Remaining-focus persistence is only trusted across short reloads.
 const FOCUS_RESTORE_MAX_AGE_MS = 30 * 60 * 1000;
+// One-time snooze grants this much extra time at the bedtime soft warning.
+const SNOOZE_MS = 5 * 60 * 1000;
 
 const FOCUS_REMAINING_KEY = 'pi-web:v1:cat:focus-remaining-ms';
 const FOCUS_SAVED_AT_KEY = 'pi-web:v1:cat:focus-saved-at';
@@ -40,10 +39,20 @@ function formatMMSS(ms) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-function bedtimeToMinutes(bedtime) {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(String(bedtime));
-  if (!match) return 23 * 60;
+function timeToMinutes(value, fallbackMin) {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(String(value));
+  if (!match) return fallbackMin;
   return Number(match[1]) * 60 + Number(match[2]);
+}
+
+// Minutes from bedtime to wakeup, wrapping past midnight. 0 means the window is
+// empty (bedtime === wakeup) and the sleepy cat never triggers.
+function sleepWindowMinutes(bedtime, wakeup) {
+  const bed = timeToMinutes(bedtime, 23 * 60);
+  const wake = timeToMinutes(wakeup, 7 * 60);
+  let span = (wake - bed) % 1440;
+  if (span < 0) span += 1440;
+  return span;
 }
 
 export function setupCatGatekeeper({
@@ -60,11 +69,13 @@ export function setupCatGatekeeper({
   let intervalId = null;
 
   const state = {
-    phase: 'focus', // focus | break | sleep | sleep-locked
+    phase: 'focus', // focus | break | sleep | snooze | sleep-locked
     focusRemainingMs: 0,
     breakRemainingMs: 0,
     sleepElapsedMs: 0,
     sleepTriggered: false,
+    snoozeUsed: false,
+    snoozeRemainingMs: 0,
     lastTickAt: nowFn(),
   };
 
@@ -101,12 +112,14 @@ export function setupCatGatekeeper({
     return focusTotalMs;
   }
 
-  function inSleepWindow(bedtime) {
+  function inSleepWindow(bedtime, wakeup) {
+    const window = sleepWindowMinutes(bedtime, wakeup);
+    if (window <= 0) return false;
     const d = new Date(nowFn());
     const cur = d.getHours() * 60 + d.getMinutes();
-    let diff = (cur - bedtimeToMinutes(bedtime)) % 1440;
+    let diff = (cur - timeToMinutes(bedtime, 23 * 60)) % 1440;
     if (diff < 0) diff += 1440;
-    return diff < SLEEP_WINDOW_MIN;
+    return diff < window;
   }
 
   // --- overlay -------------------------------------------------------------
@@ -122,8 +135,11 @@ export function setupCatGatekeeper({
         <div class="cat-art" data-cat-art></div>
         <div class="cat-timer" data-cat-timer></div>
         <div class="cat-message" data-cat-message></div>
+        <button type="button" class="cat-snooze" data-cat-snooze style="display:none">Snooze 5 min</button>
       </div>`;
     documentImpl.body.appendChild(overlay);
+    const snoozeBtn = overlay.querySelector('[data-cat-snooze]');
+    snoozeBtn?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); snooze(); });
     return overlay;
   }
 
@@ -178,17 +194,22 @@ export function setupCatGatekeeper({
     const el = ensureOverlay();
     const timer = el.querySelector('[data-cat-timer]');
     const msg = el.querySelector('[data-cat-message]');
+    const snoozeBtn = el.querySelector('[data-cat-snooze]');
     if (timer) { timer.style.display = ''; timer.textContent = formatMMSS(state.breakRemainingMs); }
     // Break shows only the countdown box (no message overlapping the cat).
     if (msg) { msg.textContent = ''; msg.style.display = 'none'; }
+    if (snoozeBtn) snoozeBtn.style.display = 'none';
   }
 
   function renderSleep(locked) {
     const el = ensureOverlay();
     const timer = el.querySelector('[data-cat-timer]');
     const msg = el.querySelector('[data-cat-message]');
+    const snoozeBtn = el.querySelector('[data-cat-snooze]');
     if (timer) timer.style.display = 'none';
     if (msg) { msg.style.display = ''; msg.textContent = locked ? 'Locked for the night — get some rest.' : 'Time to sleep!'; }
+    // Snooze is offered only during the soft warning, and only until used once.
+    if (snoozeBtn) snoozeBtn.style.display = (!locked && !state.snoozeUsed) ? '' : 'none';
     if (locked) el.classList.add('cat-overlay--locked');
   }
 
@@ -216,6 +237,16 @@ export function setupCatGatekeeper({
     renderSleep(false);
   }
 
+  // One-time bedtime snooze: dismisses the soft warning and grants SNOOZE_MS
+  // before the sleepy cat returns. Ignored once already used or past the warning.
+  function snooze() {
+    if (state.phase !== 'sleep' || state.snoozeUsed) return;
+    state.snoozeUsed = true;
+    state.phase = 'snooze';
+    state.snoozeRemainingMs = SNOOZE_MS;
+    hideOverlay();
+  }
+
   function tick() {
     const now = nowFn();
     const realDelta = Math.max(0, now - state.lastTickAt);
@@ -229,7 +260,7 @@ export function setupCatGatekeeper({
 
     // Bedtime overrides everything and, once triggered, is sticky for the session.
     if (state.phase !== 'sleep' && state.phase !== 'sleep-locked'
-      && !state.sleepTriggered && isActive() && inSleepWindow(cfg.bedtime)) {
+      && !state.sleepTriggered && isActive() && inSleepWindow(cfg.bedtime, cfg.wakeup)) {
       enterSleep();
       return;
     }
@@ -257,6 +288,15 @@ export function setupCatGatekeeper({
         }
         break;
       }
+      case 'snooze': {
+        state.snoozeRemainingMs -= realDelta;
+        if (state.snoozeRemainingMs <= 0) {
+          // Still night? Bring the cat back. Otherwise the window passed — resume focus.
+          if (inSleepWindow(cfg.bedtime, cfg.wakeup)) enterSleep();
+          else { state.phase = 'focus'; state.focusRemainingMs = cfg.focusMin * 60000; }
+        }
+        break;
+      }
       default:
         break;
     }
@@ -269,6 +309,7 @@ export function setupCatGatekeeper({
     if (!cfg.enabled) return 'Cat Gatekeeper is off.';
     switch (state.phase) {
       case 'break': return `On a break — ${formatMMSS(state.breakRemainingMs)} left.`;
+      case 'snooze': return `Snoozed — back to bed in ${formatMMSS(state.snoozeRemainingMs)}.`;
       case 'sleep':
       case 'sleep-locked': return 'Bedtime — time to sleep.';
       default: return `Next break in ${formatMMSS(state.focusRemainingMs)}.`;
@@ -323,6 +364,6 @@ export function setupCatGatekeeper({
     overlay = null;
   }
 
-  const controller = { start, destroy, tick, getStatusText, skipToBreak, openSettings, getState: () => ({ ...state }) };
+  const controller = { start, destroy, tick, getStatusText, skipToBreak, snooze, openSettings, getState: () => ({ ...state }) };
   return controller;
 }

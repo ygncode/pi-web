@@ -129,4 +129,40 @@ describe('cat gatekeeper bedtime', () => {
     h.controller.start();
     expect(h.controller.getState().phase).toBe('focus');
   });
+
+  it('snoozes the soft warning once, then brings the cat back and locks', () => {
+    const h = harness({ hour: 23, minute: 0, settings: { bedtime: '23:00', wakeup: '07:00', sleepMin: 2 } });
+    h.controller.start();
+    expect(h.controller.getState().phase).toBe('sleep');
+    expect(h.overlay().querySelector('[data-cat-snooze]').style.display).not.toBe('none');
+
+    // Click snooze: overlay dismisses and we wait out the 5-minute snooze.
+    h.overlay().querySelector('[data-cat-snooze]').click();
+    expect(h.controller.getState().phase).toBe('snooze');
+    expect(h.controller.getState().snoozeUsed).toBe(true);
+    expect(h.overlay().classList.contains('visible')).toBe(false);
+
+    // After the snooze window, the sleepy cat returns (still bedtime).
+    h.tick(5 * 60000 + 1000);
+    expect(h.controller.getState().phase).toBe('sleep');
+    // Snooze already used: the button is now hidden.
+    expect(h.overlay().querySelector('[data-cat-snooze]').style.display).toBe('none');
+
+    // A second snooze attempt is ignored.
+    h.controller.snooze();
+    expect(h.controller.getState().phase).toBe('sleep');
+
+    // The reminder then locks as usual.
+    h.tick(2 * 60000 + 1000);
+    expect(h.controller.getState().phase).toBe('sleep-locked');
+  });
+
+  it('does not snooze once locked', () => {
+    const h = harness({ hour: 23, minute: 0, settings: { bedtime: '23:00', sleepMin: 1 } });
+    h.controller.start();
+    h.tick(60_000 + 1000);
+    expect(h.controller.getState().phase).toBe('sleep-locked');
+    h.controller.snooze();
+    expect(h.controller.getState().phase).toBe('sleep-locked');
+  });
 });

@@ -24,9 +24,9 @@ describe('cat settings storage', () => {
 
   it('round-trips saved values', () => {
     const storage = makeStorage();
-    saveCatSettings({ enabled: false, focusMin: 50, breakMin: 10, bedtime: '22:30', sleepMin: 3 }, { storage });
+    saveCatSettings({ enabled: false, focusMin: 50, breakMin: 10, bedtime: '22:30', wakeup: '06:30', sleepMin: 3 }, { storage });
     expect(loadCatSettings({ storage })).toEqual({
-      enabled: false, focusMin: 50, breakMin: 10, bedtime: '22:30', sleepMin: 3,
+      enabled: false, focusMin: 50, breakMin: 10, bedtime: '22:30', wakeup: '06:30', sleepMin: 3,
     });
   });
 
