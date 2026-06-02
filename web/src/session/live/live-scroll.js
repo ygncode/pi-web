@@ -7,8 +7,17 @@ export function isAtBottom({ documentImpl = document, windowImpl = window, thres
   const body = documentImpl.body;
   const content = documentImpl.getElementById('content');
 
-  // If the window has scrollable height, the main window is the active scroll container (Desktop).
-  // Otherwise, #content is the active scroll container (Mobile).
+  // #content is the active scroll container whenever it actually overflows
+  // (always on mobile, where the composer is fixed and body is overflow:hidden).
+  // Check it first: with a fixed composer the document can edge just past the
+  // viewport, which would otherwise mis-route us to the window branch (scroll
+  // position 0) and leave the follow button stuck on.
+  if (content && content.scrollHeight > content.clientHeight) {
+    const contentRemaining = content.scrollHeight - content.scrollTop - content.clientHeight;
+    return contentRemaining < threshold;
+  }
+
+  // Otherwise the main window is the scroll container (Desktop).
   const isWindowScrollable = de.scrollHeight > windowImpl.innerHeight;
 
   if (isWindowScrollable) {
@@ -17,11 +26,6 @@ export function isAtBottom({ documentImpl = document, windowImpl = window, thres
     const viewport = windowImpl.innerHeight;
     const remaining = docHeight - scrolled - viewport;
     return remaining < threshold;
-  }
-
-  if (content && content.scrollHeight > content.clientHeight) {
-    const contentRemaining = content.scrollHeight - content.scrollTop - content.clientHeight;
-    return contentRemaining < threshold;
   }
 
   // Fallback to window measurements if content is not scrollable/present

@@ -481,8 +481,17 @@ export function runSessionApp({ target = window } = {}) {
       return !!ae && (ae.tagName === 'TEXTAREA' || ae.tagName === 'INPUT');
     };
 
+    let prevKeyboardInset = 0;
     const handleVisualViewportChange = () => {
       const vv = target.visualViewport;
+      // Capture follow state before mutating layout: if the message stream is
+      // already near the bottom we keep it pinned there after the keyboard
+      // grows the reserved space below #content.
+      const content = documentImpl.getElementById('content');
+      const wasAtBottom = content
+        ? (content.scrollHeight - content.scrollTop - content.clientHeight < 80)
+        : false;
+
       // Override the layout height only while a text field is focused (keyboard
       // open), so the composer is pulled above the keyboard. When nothing is
       // focused, fall back to the CSS `100svh` — on iOS Safari
@@ -504,6 +513,15 @@ export function runSessionApp({ target = window } = {}) {
       const keyboardInset = Math.max(0, Math.round(layoutHeight - vv.height - vv.offsetTop));
       documentImpl.documentElement.style.setProperty('--keyboard-inset', `${keyboardInset}px`);
 
+      // When the keyboard opens (inset grows) and the user was following the
+      // latest message, re-pin to the bottom once the new padding-bottom is
+      // applied — otherwise the freshly reserved space leaves the last message
+      // stranded behind the composer.
+      if (content && keyboardInset > prevKeyboardInset && wasAtBottom) {
+        target.requestAnimationFrame(() => { content.scrollTop = content.scrollHeight; });
+      }
+      prevKeyboardInset = keyboardInset;
+
       // Dynamically adjust the top header's vertical position to offset
       // layout viewport scroll/shift caused by mobile virtual keyboard.
       const offsetTop = vv.offsetTop;
@@ -519,22 +537,6 @@ export function runSessionApp({ target = window } = {}) {
     handleVisualViewportChange();
   }
 
-  // Prevent mobile browser from auto-scrolling the layout viewport when keyboard opens
-  target.addEventListener('scroll', () => {
-    if (target.scrollY !== 0 || target.scrollX !== 0) {
-      target.scrollTo(0, 0);
-    }
-  });
-  documentImpl.addEventListener('scroll', () => {
-    if (documentImpl.documentElement.scrollTop !== 0 || documentImpl.documentElement.scrollLeft !== 0) {
-      documentImpl.documentElement.scrollTop = 0;
-      documentImpl.documentElement.scrollLeft = 0;
-    }
-    if (documentImpl.body.scrollTop !== 0 || documentImpl.body.scrollLeft !== 0) {
-      documentImpl.body.scrollTop = 0;
-      documentImpl.body.scrollLeft = 0;
-    }
-  });
 }
 
 

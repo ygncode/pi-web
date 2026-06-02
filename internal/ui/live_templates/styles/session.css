@@ -2186,6 +2186,7 @@
     @media (max-width: 900px) {
       html, body {
         height: 100%;
+        overscroll-behavior: none;
       }
 
       body {
@@ -2245,7 +2246,7 @@
 
       #content {
         min-height: 0;
-        padding: calc(52px + env(safe-area-inset-top) + var(--line-height)) 16px calc(var(--pi-chat-composer-height, 200px) + var(--line-height));
+        padding: calc(52px + env(safe-area-inset-top) + var(--line-height)) 16px calc(var(--keyboard-inset, 0px) + var(--pi-chat-composer-height, 200px) + var(--line-height));
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
       }
