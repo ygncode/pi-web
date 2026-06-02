@@ -56,23 +56,18 @@ func homeMenuHTML() template.HTML {
 			{Items: []liveMenuItem{
 				{Label: "New Session", Attrs: `data-new-session-btn role="menuitem"`},
 				{Label: "Manage Projects", Attrs: `id="manage-projects-btn" data-manage-projects-btn role="menuitem"`},
-				{Label: "Import Session", Muted: true, Attrs: `role="menuitem"`},
-			}},
-			{Items: []liveMenuItem{
-				{Label: "Active Sessions", Muted: true, Attrs: `role="menuitem"`},
-				{Label: "Archived Sessions", Muted: true, Attrs: `role="menuitem"`},
 			}},
 			{Items: []liveMenuItem{
 				{Label: "Documentation", Href: "https://github.com/ygncode/pi-web/tree/main/docs", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
 				{Label: "GitHub", Href: "https://github.com/ygncode/pi-web", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
 			}},
 			{Items: []liveMenuItem{
+				{Label: "<span>Settings</span>", Suffix: "<kbd>⌘,</kbd>", Href: "/settings", Attrs: `role="menuitem"`},
 				{
 					Label:  "<span>Version</span>",
 					Suffix: `<span class="version-status" data-version-status>…</span>`,
 					Attrs:  `id="index-version-row" data-version-row role="menuitem"`,
 				},
-				{Label: "<span>Settings</span>", Suffix: "<span>›</span>", Href: "/settings", Attrs: `role="menuitem"`},
 			}},
 		},
 	})
@@ -113,12 +108,12 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, versionStatusID, container
 				{Label: "GitHub", Href: "https://github.com/ygncode/pi-web", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
 			}},
 			{Items: []liveMenuItem{
+				{Label: "<span>Settings</span>", Suffix: "<kbd>⌘,</kbd>", Href: "/settings", Attrs: `role="menuitem"`},
 				{
 					Label:  "<span>Version</span>",
 					Suffix: template.HTML("<span class=\"version-status\" id=\"" + versionStatusID + "\" data-version-status>…</span>"),
 					Attrs:  `data-action="version" data-version-row role="menuitem"`,
 				},
-				{Label: "<span>Settings</span>", Suffix: "<span>›</span>", Href: "/settings", Attrs: `role="menuitem"`},
 			}},
 		},
 	})
