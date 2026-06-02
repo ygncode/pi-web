@@ -58,10 +58,6 @@ func homeMenuHTML() template.HTML {
 				{Label: "Manage Projects", Attrs: `id="manage-projects-btn" data-manage-projects-btn role="menuitem"`},
 			}},
 			{Items: []liveMenuItem{
-				{Label: "Documentation", Href: "https://github.com/ygncode/pi-web/tree/main/docs", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
-				{Label: "GitHub", Href: "https://github.com/ygncode/pi-web", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
-			}},
-			{Items: []liveMenuItem{
 				{Label: "<span>Settings</span>", Suffix: "<kbd>⌘,</kbd>", Href: "/settings", Attrs: `role="menuitem"`},
 				{
 					Label:  "<span>Version</span>",
@@ -92,9 +88,6 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, versionStatusID, container
 				{Label: "Fork", Attrs: `data-action="fork"`},
 				{Label: "Clone", Attrs: `data-action="clone"`},
 			}},
-			{Title: "Preferences", Items: []liveMenuItem{
-				{Label: "<span>Cat Gatekeeper</span>", Suffix: "<span>›</span>", Attrs: `data-action="cat-gatekeeper"`},
-			}},
 			{Title: "Development", Items: []liveMenuItem{
 				{Label: "Resume via Terminal", Attrs: `data-action="terminal"`},
 				{Label: "Tree", Suffix: template.HTML("<kbd>⌘B</kbd>"), Attrs: `data-action="tree"`},
@@ -102,10 +95,6 @@ func sessionMenuHTML(id, class, bodyClass, itemClass, versionStatusID, container
 			}},
 			{Title: "Insights", Items: []liveMenuItem{
 				{Label: "Model Usage", Attrs: `data-action="model-usage"`},
-			}},
-			{Title: "Resources", Items: []liveMenuItem{
-				{Label: "Documentation", Href: "https://github.com/ygncode/pi-web/tree/main/docs", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
-				{Label: "GitHub", Href: "https://github.com/ygncode/pi-web", Attrs: `target="_blank" rel="noreferrer" role="menuitem"`},
 			}},
 			{Items: []liveMenuItem{
 				{Label: "<span>Settings</span>", Suffix: "<kbd>⌘,</kbd>", Href: "/settings", Attrs: `role="menuitem"`},

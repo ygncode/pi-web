@@ -159,6 +159,24 @@
   background: #fff;
 }
 
+.settings-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 1em;
+  padding: 7px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--dim);
+  background: var(--input-bg, var(--surface-2));
+  white-space: nowrap;
+}
+
+.settings-link:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
 .settings-saved-hint {
   text-align: center;
   color: var(--muted);
