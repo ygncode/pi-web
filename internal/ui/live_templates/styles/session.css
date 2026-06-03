@@ -2844,6 +2844,69 @@
       flex: 1;
     }
 
+    .pi-chat-slash-popup {
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--container-bg, #1e1e2e);
+      border: 1px solid var(--dim);
+      border-radius: 6px;
+      box-shadow: 0 -4px 16px rgba(0,0,0,0.3);
+      z-index: 200;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .slash-group {
+      padding: 4px 12px 2px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .slash-group:first-child {
+      border-top: none;
+      margin-top: 0;
+    }
+    .slash-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1px;
+      width: 100%;
+      padding: 5px 12px;
+      font-family: inherit;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+    }
+    .slash-item:hover,
+    .slash-item.active {
+      background: var(--hover);
+    }
+    .slash-item-name {
+      font-size: 11px;
+      color: var(--accent);
+    }
+    .slash-item-desc {
+      font-size: 10px;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 100%;
+    }
+    .slash-empty {
+      padding: 12px;
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+    }
+
     .pi-chat-disabled-notice {
       padding: 9px 11px 0;
       color: var(--muted);

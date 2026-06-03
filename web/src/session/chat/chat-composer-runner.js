@@ -12,6 +12,7 @@ export function runChatComposer({
   chatSelectors,
   modelSelector,
   thinkingSelector,
+  slashSelector,
   FormDataImpl = FormData,
   URLSearchParamsImpl = URLSearchParams,
   CustomEventImpl = CustomEvent,
@@ -25,6 +26,7 @@ export function runChatComposer({
   const __piChatSelectors = chatSelectors;
   const __piModelSelector = modelSelector;
   const __piThinkingSelector = thinkingSelector;
+  const __piSlashSelector = slashSelector;
   const FormData = FormDataImpl;
   const URLSearchParams = URLSearchParamsImpl;
   const CustomEvent = CustomEventImpl;
@@ -545,6 +547,9 @@ export function runChatComposer({
       renderAttachments();
     });
     textarea.addEventListener('keydown', (event) => {
+      // Slash-command palette gets first dibs on navigation keys while open so
+      // Enter selects a command instead of submitting the message.
+      if (_slashSelectorApi && _slashSelectorApi.handleKeydown(event)) return;
       if (event.key === 'Enter' && !event.shiftKey) {
         if (isMobileTextInputMode()) return;
         event.preventDefault();
@@ -868,6 +873,7 @@ export function runChatComposer({
 
   let _modelSelectorApi = null;
   let _thinkingSelectorApi = null;
+  let _slashSelectorApi = null;
 
   function initPiChatControls() {
     setupCwdCopy();
@@ -893,6 +899,7 @@ export function runChatComposer({
 
     _modelSelectorApi = loadModelSelector();
     _thinkingSelectorApi = setupThinkingLevelSelector();
+    _slashSelectorApi = loadSlashSelector();
   }
 
   if (document.readyState === 'loading') {
@@ -916,6 +923,20 @@ export function runChatComposer({
       getKnownModelLabel: () => knownModelLabel,
       setCurrentModelForThinking: (model) => { currentModelForThinking = model; },
       setWorkerModelUpdate: (handler) => { onWorkerModelUpdate = handler; }
+    });
+  }
+
+  // ── Slash-command palette ────────────────────────────────────────────
+  function loadSlashSelector() {
+    if (!__piSlashSelector || typeof __piSlashSelector.setupSlashCommands !== 'function') {
+      return { handleKeydown: () => false };
+    }
+    const sessionId = new URLSearchParams(window.location.search).get('id') || (document.getElementById('pi-chat-composer') || {}).dataset?.sessionId || '';
+    return __piSlashSelector.setupSlashCommands({
+      documentImpl: document,
+      sessionId,
+      chatApi: __piChatApi,
+      escapeHtml
     });
   }
 

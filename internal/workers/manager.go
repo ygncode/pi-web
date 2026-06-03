@@ -26,12 +26,21 @@ type WorkerStatus struct {
 	ThinkingLevel string `json:"thinkingLevel,omitempty"`
 }
 
+// SlashCommand is a slash-invokable command exposed by a pi worker via the
+// get_commands RPC. Source is one of "extension", "prompt", or "skill".
+type SlashCommand struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Source      string `json:"source"`
+}
+
 type ChatWorker interface {
 	Prompt(ctx context.Context, chat chat.Request) error
 	SetModel(ctx context.Context, provider, modelID string) error
 	SetThinkingLevel(ctx context.Context, level string) error
 	Abort(ctx context.Context) error
 	GetState(ctx context.Context) (WorkerStatus, error)
+	GetCommands(ctx context.Context) ([]SlashCommand, error)
 	Status() WorkerStatus
 	Close() error
 }
@@ -163,6 +172,21 @@ func (m *Manager) GetState(ctx context.Context, sessionID string) (WorkerStatus,
 		return WorkerStatus{State: WorkerStateIdle}, nil
 	}
 	return worker.GetState(ctx)
+}
+
+// GetCommands peeks at an existing worker for the session and returns its
+// slash commands. It never spawns a worker: if none exists yet it returns
+// ready=false so callers can decide whether to spawn (via EnsureWorker) before
+// retrying.
+func (m *Manager) GetCommands(ctx context.Context, sessionID string) (cmds []SlashCommand, ready bool, err error) {
+	m.mu.Lock()
+	worker := m.workers[sessionID]
+	m.mu.Unlock()
+	if worker == nil {
+		return nil, false, nil
+	}
+	cmds, err = worker.GetCommands(ctx)
+	return cmds, true, err
 }
 
 func (m *Manager) Abort(ctx context.Context, sessionID string) error {

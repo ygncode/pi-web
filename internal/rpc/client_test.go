@@ -52,6 +52,13 @@ func TestBuildPromptCommandOmitsSteerWhenIdle(t *testing.T) {
 	}
 }
 
+func TestBuildGetCommandsCommand(t *testing.T) {
+	cmd := BuildGetCommandsCommand("req-7")
+	if cmd["id"] != "req-7" || cmd["type"] != "get_commands" {
+		t.Fatalf("cmd = %#v", cmd)
+	}
+}
+
 func TestWriteRPCCommandWritesJSONLine(t *testing.T) {
 	var buf bytes.Buffer
 	if err := WriteCommand(&buf, map[string]any{"type": "get_state"}); err != nil {

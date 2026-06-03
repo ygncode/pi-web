@@ -18,6 +18,11 @@ export function listModels({ fetchImpl = fetch } = {}) {
   return fetchImpl('/api/models');
 }
 
+export function getCommands(sessionId, { load = false } = {}, { fetchImpl = fetch } = {}) {
+  const url = chatUrl('/api/commands', sessionId) + (load ? '&load=1' : '');
+  return fetchImpl(url);
+}
+
 export function setModel(sessionId, { provider, modelId }, { fetchImpl = fetch } = {}) {
   return fetchImpl(chatUrl('/api/set-model', sessionId), {
     method: 'POST',

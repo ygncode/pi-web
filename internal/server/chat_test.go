@@ -36,6 +36,10 @@ type fakeSender struct {
 	setThinkingSessionID    string
 	setThinkingLevel        string
 	sendCh                  chan struct{}
+	commands                []workers.SlashCommand
+	commandsReady           bool
+	commandsErr             error
+	getCommandsCalls        int
 }
 
 func (f *fakeSender) Send(ctx context.Context, sessionID, sessionPath string, chat chat.Request) error {
@@ -74,6 +78,11 @@ func (f *fakeSender) GetState(ctx context.Context, sessionID string) (workers.Wo
 		return f.state, nil
 	}
 	return workers.WorkerStatus{State: workers.WorkerStateIdle}, nil
+}
+
+func (f *fakeSender) GetCommands(ctx context.Context, sessionID string) ([]workers.SlashCommand, bool, error) {
+	f.getCommandsCalls++
+	return f.commands, f.commandsReady, f.commandsErr
 }
 
 func (f *fakeSender) Status(sessionID string) workers.WorkerStatus {
@@ -271,6 +280,97 @@ func TestHandleWorkerStatusTrustsIdleWorkerOverRecentFileWrite(t *testing.T) {
 	body := w.Body.String()
 	if !strings.Contains(body, `"state":"idle"`) {
 		t.Fatalf("body = %q, want state=idle", body)
+	}
+}
+
+func TestHandleCommandsRejectsNonGET(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "test-project", "session.jsonl")
+	s := &Server{sessionsDir: root, chatSender: &fakeSender{}}
+	req := httptest.NewRequest(http.MethodPost, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Fatalf("status = %d, want 405", w.Code)
+	}
+}
+
+func TestHandleCommandsReturnsWorkerCommands(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "test-project", "session.jsonl")
+	sender := &fakeSender{
+		commands:      []workers.SlashCommand{{Name: "skill:memory", Description: "mem", Source: "skill"}},
+		commandsReady: true,
+	}
+	s := &Server{sessionsDir: root, chatSender: sender}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	var body struct {
+		Commands []workers.SlashCommand `json:"commands"`
+		Ready    bool                   `json:"workerReady"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &body); err != nil {
+		t.Fatalf("body decode: %v", err)
+	}
+	if !body.Ready {
+		t.Fatalf("workerReady = false, want true")
+	}
+	if len(body.Commands) != 1 || body.Commands[0].Name != "skill:memory" {
+		t.Fatalf("commands = %#v", body.Commands)
+	}
+	if sender.ensureWorkerCalled {
+		t.Fatalf("EnsureWorker called without ?load=1")
+	}
+}
+
+func TestHandleCommandsReportsNotReadyWithoutWorker(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "test-project", "session.jsonl")
+	s := &Server{sessionsDir: root, chatSender: &fakeSender{commandsReady: false}}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	if got := w.Body.String(); !strings.Contains(got, `"commands":[]`) || !strings.Contains(got, `"workerReady":false`) {
+		t.Fatalf("body = %q", got)
+	}
+}
+
+func TestHandleCommandsLoadEnsuresWorker(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "test-project", "session.jsonl")
+	sender := &fakeSender{commandsReady: true}
+	s := &Server{sessionsDir: root, chatSender: sender}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl&load=1", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d", w.Code)
+	}
+	if !sender.ensureWorkerCalled {
+		t.Fatalf("EnsureWorker not called for ?load=1")
+	}
+}
+
+func TestHandleCommandsDegradesOnQueryError(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "test-project", "session.jsonl")
+	sender := &fakeSender{commandsReady: true, commandsErr: context.DeadlineExceeded}
+	s := &Server{sessionsDir: root, chatSender: sender}
+	req := httptest.NewRequest(http.MethodGet, "/api/commands?id=session.jsonl", nil)
+	w := httptest.NewRecorder()
+	s.handleCommands(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (degraded)", w.Code)
+	}
+	if got := w.Body.String(); !strings.Contains(got, `"commands":[]`) {
+		t.Fatalf("body = %q, want empty commands on error", got)
 	}
 }
 

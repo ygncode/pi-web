@@ -10,9 +10,11 @@ import (
 )
 
 type fakeChatWorker struct {
-	mu        sync.Mutex
-	streaming bool
-	prompts   []map[string]any
+	mu              sync.Mutex
+	streaming       bool
+	prompts         []map[string]any
+	commands        []SlashCommand
+	getCommandsCall int
 }
 
 func (f *fakeChatWorker) Prompt(ctx context.Context, chat chat.Request) error {
@@ -45,6 +47,13 @@ func (f *fakeChatWorker) GetState(ctx context.Context) (WorkerStatus, error) {
 	return f.Status(), nil
 }
 
+func (f *fakeChatWorker) GetCommands(ctx context.Context) ([]SlashCommand, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.getCommandsCall++
+	return f.commands, nil
+}
+
 func (f *fakeChatWorker) Close() error { return nil }
 
 func TestManagerCreatesOneWorkerPerSession(t *testing.T) {
@@ -65,6 +74,45 @@ func TestManagerCreatesOneWorkerPerSession(t *testing.T) {
 	}
 	if created != 2 {
 		t.Fatalf("created workers = %d, want 2", created)
+	}
+}
+
+func TestManagerGetCommandsPeeksWithoutSpawning(t *testing.T) {
+	created := 0
+	manager := NewManager(func(string, string) (ChatWorker, error) {
+		created++
+		return &fakeChatWorker{}, nil
+	})
+	cmds, ready, err := manager.GetCommands(context.Background(), "missing.jsonl")
+	if err != nil {
+		t.Fatalf("GetCommands error: %v", err)
+	}
+	if ready {
+		t.Fatalf("ready = true, want false when no worker exists")
+	}
+	if len(cmds) != 0 {
+		t.Fatalf("commands = %#v, want none", cmds)
+	}
+	if created != 0 {
+		t.Fatalf("created = %d, want 0 (peek must not spawn)", created)
+	}
+}
+
+func TestManagerGetCommandsReturnsWorkerCommands(t *testing.T) {
+	worker := &fakeChatWorker{commands: []SlashCommand{{Name: "skill:memory", Source: "skill"}}}
+	manager := NewManager(func(string, string) (ChatWorker, error) { return worker, nil })
+	if err := manager.EnsureWorker(context.Background(), "a.jsonl", "/tmp/a.jsonl"); err != nil {
+		t.Fatal(err)
+	}
+	cmds, ready, err := manager.GetCommands(context.Background(), "a.jsonl")
+	if err != nil {
+		t.Fatalf("GetCommands error: %v", err)
+	}
+	if !ready {
+		t.Fatalf("ready = false, want true when worker exists")
+	}
+	if len(cmds) != 1 || cmds[0].Name != "skill:memory" {
+		t.Fatalf("commands = %#v", cmds)
 	}
 }
 
@@ -119,6 +167,7 @@ func (r *reapableWorker) SetModel(ctx context.Context, provider, modelID string)
 func (r *reapableWorker) SetThinkingLevel(ctx context.Context, level string) error     { return nil }
 func (r *reapableWorker) Abort(ctx context.Context) error                              { return nil }
 func (r *reapableWorker) GetState(ctx context.Context) (WorkerStatus, error)           { return r.Status(), nil }
+func (r *reapableWorker) GetCommands(ctx context.Context) ([]SlashCommand, error)      { return nil, nil }
 func (r *reapableWorker) Status() WorkerStatus                                         { return WorkerStatus{State: WorkerStateIdle} }
 func (r *reapableWorker) Close() error                                                 { r.closed = true; return nil }
 func (r *reapableWorker) IdleSince(now time.Time) time.Duration                        { return r.idleFor }
@@ -184,6 +233,7 @@ func (runningReapable) Abort(ctx context.Context) error                         
 func (runningReapable) GetState(ctx context.Context) (WorkerStatus, error) {
 	return WorkerStatus{State: WorkerStateRunning}, nil
 }
+func (runningReapable) GetCommands(ctx context.Context) ([]SlashCommand, error) { return nil, nil }
 func (runningReapable) Status() WorkerStatus                  { return WorkerStatus{State: WorkerStateRunning} }
 func (runningReapable) Close() error                          { return nil }
 func (runningReapable) IdleSince(now time.Time) time.Duration { return time.Hour }
@@ -197,6 +247,7 @@ func (erroredWorker) Abort(ctx context.Context) error                           
 func (erroredWorker) GetState(ctx context.Context) (WorkerStatus, error) {
 	return WorkerStatus{State: WorkerStateError}, nil
 }
+func (erroredWorker) GetCommands(ctx context.Context) ([]SlashCommand, error) { return nil, nil }
 func (erroredWorker) Status() WorkerStatus {
 	return WorkerStatus{State: WorkerStateError, Error: "dead"}
 }

@@ -30,6 +30,8 @@ type piRPCWorker struct {
 	currentProvider      string
 	currentThinkingLevel string
 	stderrBuf            *strings.Builder
+	commands             []workers.SlashCommand
+	commandsCached       bool
 	lastActive           atomic.Int64 // unix nanos; only user-initiated actions update this
 	lastStreamActivity   atomic.Int64 // unix nanos; stream/turn events keep worker visually running
 	streamSink           StreamEventSink
@@ -238,6 +240,59 @@ func (w *piRPCWorker) GetState(ctx context.Context) (workers.WorkerStatus, error
 	case <-ctx.Done():
 		w.removePending(id)
 		return workers.WorkerStatus{}, ctx.Err()
+	}
+}
+
+// GetCommands returns the slash commands pi loaded for this session (skills,
+// prompt templates, and extension commands). The set is fixed for a worker's
+// lifetime, so the first successful result is cached and reused. It does not
+// call touch(): querying commands is a passive UI affordance and should not
+// keep an idle worker alive.
+func (w *piRPCWorker) GetCommands(ctx context.Context) ([]workers.SlashCommand, error) {
+	w.mu.Lock()
+	if w.commandsCached {
+		cmds := w.commands
+		w.mu.Unlock()
+		return cmds, nil
+	}
+	w.mu.Unlock()
+
+	id := w.nextID()
+	ch := make(chan response, 1)
+	w.mu.Lock()
+	w.pending[id] = ch
+	w.mu.Unlock()
+
+	w.writeMu.Lock()
+	err := WriteCommand(w.stdin, BuildGetCommandsCommand(id))
+	w.writeMu.Unlock()
+	if err != nil {
+		w.removePending(id)
+		return nil, err
+	}
+
+	select {
+	case res := <-ch:
+		if !res.Success {
+			if res.Error != "" {
+				return nil, errors.New(res.Error)
+			}
+			return nil, fmt.Errorf("rpc get_commands rejected")
+		}
+		var payload struct {
+			Commands []workers.SlashCommand `json:"commands"`
+		}
+		if err := json.Unmarshal(res.Data, &payload); err != nil {
+			return nil, err
+		}
+		w.mu.Lock()
+		w.commands = payload.Commands
+		w.commandsCached = true
+		w.mu.Unlock()
+		return payload.Commands, nil
+	case <-ctx.Done():
+		w.removePending(id)
+		return nil, ctx.Err()
 	}
 }
 

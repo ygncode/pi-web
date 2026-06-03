@@ -21,6 +21,7 @@ type ChatSender interface {
 	SetThinkingLevel(ctx context.Context, sessionID, sessionPath, level string) error
 	Abort(ctx context.Context, sessionID string) error
 	GetState(ctx context.Context, sessionID string) (workers.WorkerStatus, error)
+	GetCommands(ctx context.Context, sessionID string) ([]workers.SlashCommand, bool, error)
 	Status(sessionID string) workers.WorkerStatus
 	EnsureWorker(ctx context.Context, sessionID, sessionPath string) error
 }
@@ -169,6 +170,51 @@ func (s *Server) handleWorkerStatus(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, 0, status)
+}
+
+// handleCommands serves the slash-command palette for a session's composer.
+// By default it peeks at an existing worker and never spawns one; with
+// ?load=1 it ensures a worker first (used when the user opens the palette and
+// no worker exists yet). Any failure to query commands degrades to an empty
+// list rather than an error — the palette is a non-critical affordance and
+// must never break the composer.
+func (s *Server) handleCommands(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	resolved, err := sessions.ResolveByID(s.sessionsDir, r.URL.Query().Get("id"))
+	if err != nil {
+		if errors.Is(err, sessions.ErrInvalidSessionID) {
+			writeJSONError(w, http.StatusBadRequest, "invalid session id")
+			return
+		}
+		if errors.Is(err, sessions.ErrSessionNotFound) {
+			writeJSONError(w, http.StatusNotFound, "session not found")
+			return
+		}
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if s.chatSender == nil {
+		writeJSONError(w, http.StatusServiceUnavailable, "chat unavailable")
+		return
+	}
+	sessionID := resolved.Session.ID
+	if r.URL.Query().Get("load") == "1" {
+		if err := s.chatSender.EnsureWorker(r.Context(), sessionID, resolved.Path); err != nil {
+			fmt.Fprintf(os.Stderr, "commands: ensure worker failed for %s: %v\n", sessionID, err)
+		}
+	}
+	cmds, ready, err := s.chatSender.GetCommands(r.Context(), sessionID)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "commands: query failed for %s: %v\n", sessionID, err)
+		cmds = nil
+	}
+	if cmds == nil {
+		cmds = []workers.SlashCommand{}
+	}
+	writeJSON(w, 0, map[string]any{"commands": cmds, "workerReady": ready})
 }
 
 func (s *Server) hasRecentSessionActivity(sessionID string) bool {
