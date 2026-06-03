@@ -55,9 +55,27 @@ jobs:
         working-directory: e2e
         run: npm ci
 
-      - name: Install Playwright browsers
+      # Browser binaries are the slowest part of the job (~200MB download).
+      # Cache them keyed on the pinned Playwright version (from the lockfile);
+      # the key changes only when @playwright/test is bumped.
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/package-lock.json') }}
+
+      - name: Install Playwright browsers + OS deps (cache miss)
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         working-directory: e2e
         run: npx playwright install --with-deps chromium firefox webkit
+
+      # On a cache hit the binaries are restored, but OS libraries (apt) aren't
+      # cached, so install just those.
+      - name: Install Playwright OS deps (cache hit)
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        working-directory: e2e
+        run: npx playwright install-deps chromium firefox webkit
 
       - name: Build pi-web
         run: make build
