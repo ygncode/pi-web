@@ -301,6 +301,7 @@ export function runSessionApp({ target = window } = {}) {
   navigateTo(currentLeafId, dataModel.urlTargetId ? 'target' : 'bottom', dataModel.urlTargetId || null);
 
   doneNotifier.setupDoneNotifyToggle({ documentImpl, windowImpl: target });
+  doneNotifier.setupAppBadgeClearing({ documentImpl, windowImpl: target });
   target.addEventListener('pi-worker-done', () => {
     doneNotifier.notifyDone({ documentImpl, windowImpl: target });
   });

@@ -894,7 +894,7 @@
       min-width: 0;
       min-height: 0;
       overflow-y: auto;
-      padding: calc(52px + var(--line-height)) calc(var(--line-height) * 2) var(--line-height);
+      padding: calc(52px + 8px) calc(var(--line-height) * 2) var(--line-height);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -2261,7 +2261,7 @@
 
       #content {
         min-height: 0;
-        padding: calc(52px + env(safe-area-inset-top) + var(--line-height)) 16px var(--line-height);
+        padding: calc(52px + env(safe-area-inset-top) + 8px) 16px var(--line-height);
         -webkit-overflow-scrolling: touch;
         overscroll-behavior: contain;
       }
@@ -2278,6 +2278,11 @@
 
 
       .session-header-bar {
+        /* Grow the bar by the safe-area inset. Without this, box-sizing:
+           border-box keeps the bar at a fixed 52px while #content reserves
+           52px + inset of top padding, leaving an empty gap the height of
+           the inset below the header. */
+        height: calc(52px + env(safe-area-inset-top));
         padding: env(safe-area-inset-top) 12px 0;
       }
 

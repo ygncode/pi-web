@@ -80,6 +80,23 @@ function urlBase64ToUint8Array(base64String) {
   return out;
 }
 
+// Calls pushManager.subscribe(). If it throws (e.g. stale/incompatible
+// subscription left over from a VAPID key rotation), force-unsubscribes the
+// stale entry and retries once before giving up.
+async function _subscribePush(reg, publicKey) {
+  const opts = { userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) };
+  try {
+    return await reg.pushManager.subscribe(opts);
+  } catch (firstErr) {
+    const stale = await reg.pushManager.getSubscription().catch(() => null);
+    if (stale) {
+      await stale.unsubscribe().catch(() => {});
+      return await reg.pushManager.subscribe(opts);
+    }
+    throw firstErr;
+  }
+}
+
 export async function registerPushSubscription({ windowImpl = window, fetchImpl = fetch } = {}) {
   try {
     const navImpl = windowImpl.navigator;
@@ -91,10 +108,7 @@ export async function registerPushSubscription({ windowImpl = window, fetchImpl 
     if (!publicKey) return false;
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
-      sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey)
-      });
+      sub = await _subscribePush(reg, publicKey);
     }
     const body = sub.toJSON ? sub.toJSON() : sub;
     await fetchImpl('/api/push/subscribe', {
@@ -172,6 +186,46 @@ export function notifyDone({ windowImpl = window, documentImpl = document, stora
   if (!isDoneNotifyEnabled({ storage })) return;
   playDoneSound({ windowImpl, storage });
   showDoneNotification({ windowImpl, documentImpl });
+  // Badge only when the user isn't watching this session — covers background
+  // tabs, minimized windows, and other apps in front. Cleared on
+  // visibilitychange/focus via setupAppBadgeClearing.
+  if (documentImpl.hidden) {
+    try {
+      const nav = windowImpl.navigator;
+      if (nav && nav.setAppBadge) {
+        const p = nav.setAppBadge(1);
+        if (p && typeof p.catch === 'function') p.catch(() => {});
+      }
+    } catch {
+      // ignore
+    }
+  }
+}
+
+// Clears the app-icon badge set by the service worker on a background push.
+// No-op where the Badging API is unsupported.
+export function clearAppBadge({ windowImpl = window } = {}) {
+  try {
+    const nav = windowImpl.navigator;
+    if (nav && nav.clearAppBadge) {
+      const p = nav.clearAppBadge();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    }
+  } catch {
+    // ignore
+  }
+}
+
+// Clears the badge whenever the app comes to the foreground, so the user
+// doesn't see a stale count after opening it directly (rather than via the
+// notification tap, which the service worker handles).
+export function setupAppBadgeClearing({ documentImpl = document, windowImpl = window } = {}) {
+  const clear = () => {
+    if (!documentImpl.hidden) clearAppBadge({ windowImpl });
+  };
+  clear();
+  documentImpl.addEventListener('visibilitychange', clear);
+  windowImpl.addEventListener('focus', clear);
 }
 
 export async function fetchAvailableSounds({ fetchImpl = fetch } = {}) {
