@@ -131,20 +131,25 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
         var out = getResultText().trim();
         if (out) html += renderToolOutput(out);
       }
-    } else if (call.name === 'ask_user_question') {
+    } else if (call.name === 'ask_user_question' || call.name === 'pi_web_ask_user_question') {
       var questions = Array.isArray(args.questions) ? args.questions : [];
       var qaAnswers = result && result.details && result.details.answers ? result.details.answers : {};
       var qaCancelled = result && result.details && result.details.cancelled === true;
+      var qaAwaitingReply = !!(result && result.details && result.details.awaitingChatReply === true);
       var qaFailed = !!(result && result.isError);
-      var qaInteractive = !result || qaFailed || qaCancelled;
+      var qaInteractive = !result || qaFailed || qaCancelled || qaAwaitingReply;
       var qaMulti = questions.length > 1;
+      var qaAnyMultiSelect = questions.some(function(q){ return q && q.multiSelect === true; });
+      var qaNeedsSubmit = qaMulti || qaAnyMultiSelect;
       html = '<div class="tool-execution '+status+'">';
-      html += '<div class="ask-question-card" data-question-count="'+questions.length+'">';
+      html += '<div class="ask-question-card" data-question-count="'+questions.length+'" data-needs-submit="'+qaNeedsSubmit+'">';
       html += '<div class="ask-question-title">Question for you</div>';
       if (qaFailed) {
         html += '<div class="ask-question-state error">question UI failed</div>';
       } else if (qaCancelled) {
         html += '<div class="ask-question-state error">cancelled</div>';
+      } else if (qaAwaitingReply) {
+        html += '<div class="ask-question-state pending">waiting for response</div>';
       } else if (result) {
         html += '<div class="ask-question-state answered">answered</div>';
       } else {
@@ -154,7 +159,8 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
         var questionText = typeof q.question === 'string' ? q.question : 'Question '+(qi+1);
         var answer = qaAnswers[questionText];
         var options = Array.isArray(q.options) ? q.options : [];
-        html += '<div class="ask-question-block" data-question-text="'+escapeHtml(questionText)+'">';
+        var multiSelect = q && q.multiSelect === true;
+        html += '<div class="ask-question-block" data-question-text="'+escapeHtml(questionText)+'" data-multi-select="'+multiSelect+'">';
         if (q.header) html += '<div class="ask-question-header">'+escapeHtml(String(q.header))+'</div>';
         html += '<div class="ask-question-text">'+escapeHtml(questionText)+'</div>';
         if (options.length > 0) {
@@ -177,12 +183,12 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
         html += '</div>';
       });
       if (qaInteractive) {
-        if (qaMulti) {
+        if (qaNeedsSubmit) {
           html += '<div class="ask-question-actions" style="display:none"><button type="button" class="ask-question-submit-btn">Send answers</button></div>';
         } else if (qaFailed || qaCancelled) {
           html += '<div class="ask-question-hint">Click an option to send your answer to pi.</div>';
         } else {
-          html += '<div class="ask-question-hint">Use the chat composer below to answer this question.</div>';
+          html += '<div class="ask-question-hint">Click an option, or use the chat composer below, to answer this question.</div>';
         }
       }
       html += '</div>';

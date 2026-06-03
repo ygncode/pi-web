@@ -673,8 +673,10 @@ export function runChatComposer({
         const parts = [];
         card.querySelectorAll('.ask-question-block').forEach(block => {
           const questionText = block.dataset.questionText || '';
-          const sel = block.querySelector('.ask-question-option-action.selected');
-          if (sel && questionText) parts.push(`"${questionText}" = "${sel.dataset.answer || ''}"`);
+          const answers = Array.from(block.querySelectorAll('.ask-question-option-action.selected'))
+            .map(el => el.dataset.answer || '')
+            .filter(Boolean);
+          if (answers.length && questionText) parts.push(`"${questionText}" = "${answers.join(', ')}"`);
         });
         if (parts.length === 0) return;
         card.querySelectorAll('.ask-question-option-action').forEach(b => { b.disabled = true; });
@@ -694,10 +696,10 @@ export function runChatComposer({
 
       const card = option.closest('.ask-question-card');
       const block = option.closest('.ask-question-block');
-      const questionCount = parseInt(card?.dataset.questionCount || '1', 10);
+      const needsSubmit = card?.dataset.needsSubmit === 'true';
 
-      if (questionCount === 1) {
-        // Single question: send immediately
+      if (!needsSubmit) {
+        // Single, single-select question: send immediately
         const question = option.dataset.question || 'Question';
         const answer = option.dataset.answer || option.textContent.trim();
         option.disabled = true;
@@ -706,10 +708,14 @@ export function runChatComposer({
         return;
       }
 
-      // Multi-question: mark selection, show submit button
+      // Collect-then-submit: toggle selection, then reveal the submit button
       if (block) {
-        block.querySelectorAll('.ask-question-option-action').forEach(b => b.classList.remove('selected'));
-        option.classList.add('selected');
+        if (block.dataset.multiSelect === 'true') {
+          option.classList.toggle('selected');
+        } else {
+          block.querySelectorAll('.ask-question-option-action').forEach(b => b.classList.remove('selected'));
+          option.classList.add('selected');
+        }
       }
       const actions = card?.querySelector('.ask-question-actions');
       if (actions) actions.style.display = '';
