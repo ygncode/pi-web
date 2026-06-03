@@ -1,0 +1,60 @@
+name: Bug report
+description: Report something in pi-web that isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill out the sections
+        below so we can reproduce and triage it quickly.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including what you expected to happen instead.
+      placeholder: When I open a session, the chat composer...
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can we reproduce the behavior?
+      placeholder: |
+        1. Start pi-web with `...`
+        2. Open the session at `...`
+        3. Click `...`
+        4. See error
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: pi-web version
+      description: From the in-app version indicator or `pi-web --version`.
+      placeholder: v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS & browser
+      description: Operating system and the browser (with version) where you saw this.
+      placeholder: macOS 15.2, Chrome 130
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: pi-web server output or browser console errors. This is automatically formatted as code.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy
+      options:
+        - label: I have not pasted private session content; logs and screenshots are scrubbed of sensitive data.
+          required: true

@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest an idea or improvement for pi-web
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        pi-web is early-stage. Per CONTRIBUTING.md, please open this issue to
+        discuss your idea first — the maintainer will triage it before inviting
+        any pull request.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem are you trying to solve? What's the use case?
+      placeholder: When viewing a session, I can't...
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like to see happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches or workarounds you've thought about.
+    validations:
+      required: false
+  - type: checkboxes
+    id: acknowledgement
+    attributes:
+      label: Acknowledgement
+      options:
+        - label: I understand the maintainer triages requests and will invite a PR only if this moves forward.
+          required: true
