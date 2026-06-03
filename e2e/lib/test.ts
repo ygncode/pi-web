@@ -19,6 +19,19 @@ export const test = base.extend<Fixtures>({
   sessionsDir: async ({}, use) => {
     await use(readState().sessionsDir);
   },
+  // Belt-and-suspenders for the cat gatekeeper: global-setup disables it
+  // server-side, but settings hydrate asynchronously, so also set localStorage
+  // before any page script runs to cover the synchronous pre-hydration read.
+  page: async ({ page }, use) => {
+    await page.addInitScript(() => {
+      try {
+        localStorage.setItem("pi-web:v1:cat:enabled", "false");
+      } catch {
+        /* ignore */
+      }
+    });
+    await use(page);
+  },
 });
 
 /**
