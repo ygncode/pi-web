@@ -195,3 +195,7 @@ es.onmessage = (e) => {
 }
 es.addEventListener('chat-preview', (e) => renderChatPreview(JSON.parse(e.data)))
 ```
+
+---
+
+**E2E coverage:** `e2e/tests/live-reload.spec.ts` appends to a session file on disk and asserts the change surfaces in the browser via SSE. See [docs/dev/e2e-testing.md](../dev/e2e-testing.md).

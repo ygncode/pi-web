@@ -7,7 +7,7 @@
             content="width=device-width, initial-scale=1, maximum-scale=1"
         />
         <title>pi-web — Authentication Required</title>
-        <link rel="icon" type="image/svg+xml" href="/icon.svg">
+        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
         <script>
             (function () {
                 var theme = "dark";
@@ -49,7 +49,9 @@
                 height: 100%;
             }
             body {
-                font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+                font-family:
+                    ui-monospace, SFMono-Regular, Menlo, Consolas,
+                    "Liberation Mono", monospace;
                 font-size: 13px;
                 line-height: 1.5;
                 color: var(--text-soft);
@@ -132,11 +134,14 @@
                 font-family: inherit;
                 font-size: 13px;
                 outline: none;
-                transition: border-color 0.12s, box-shadow 0.12s;
+                transition:
+                    border-color 0.12s,
+                    box-shadow 0.12s;
             }
             input:focus {
                 border-color: var(--accent);
-                box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 20%, transparent);
+                box-shadow: 0 0 0 2px
+                    color-mix(in srgb, var(--accent) 20%, transparent);
             }
             input::placeholder {
                 color: var(--muted);
@@ -160,7 +165,9 @@
                 font-size: 13px;
                 font-weight: 600;
                 cursor: pointer;
-                transition: opacity 0.12s, filter 0.12s;
+                transition:
+                    opacity 0.12s,
+                    filter 0.12s;
             }
             button:hover {
                 opacity: 0.9;

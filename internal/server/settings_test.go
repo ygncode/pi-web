@@ -87,6 +87,39 @@ func TestHandleSaveSettingsRoundTrip(t *testing.T) {
 	}
 }
 
+func TestAutoTitleSettingsDefaultsAndRoundTrip(t *testing.T) {
+	s := &Server{db: newSettingsTestDB(t)}
+
+	all := s.getSettings()
+	if all["pi-web:v1:auto-title:enabled"] != "true" {
+		t.Errorf("expected auto-title enabled default 'true', got %q", all["pi-web:v1:auto-title:enabled"])
+	}
+	if all["pi-web:v1:auto-title:mode"] != "each-turn" {
+		t.Errorf("expected auto-title mode default 'each-turn', got %q", all["pi-web:v1:auto-title:mode"])
+	}
+	if all["pi-web:v1:auto-title:model"] != "" {
+		t.Errorf("expected auto-title model default '', got %q", all["pi-web:v1:auto-title:model"])
+	}
+
+	body := bytes.NewBufferString(`{"settings":{"pi-web:v1:auto-title:enabled":"false","pi-web:v1:auto-title:mode":"each-turn","pi-web:v1:auto-title:model":"anthropic/sonnet"}}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/settings", body)
+	w := httptest.NewRecorder()
+	s.handleSaveSettings(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	if !s.autoTitleEachTurn() {
+		t.Error("expected autoTitleEachTurn() true after saving 'each-turn'")
+	}
+	if s.autoTitleEnabled() {
+		t.Error("expected autoTitleEnabled() false after saving 'false'")
+	}
+	if got := s.autoTitleModel(); got != "anthropic/sonnet" {
+		t.Errorf("expected stored model, got %q", got)
+	}
+}
+
 func TestHandleSaveSettingsIgnoresUnknownKeys(t *testing.T) {
 	s := &Server{db: newSettingsTestDB(t)}
 

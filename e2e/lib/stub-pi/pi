@@ -1,0 +1,128 @@
+#!/usr/bin/env node
+// Fake `pi --mode rpc` for e2e tests. Speaks the line-delimited JSON protocol
+// the real worker expects (see internal/rpc/{client,worker}.go) so chat flows
+// can be exercised without the real pi binary or any API keys.
+//
+// Behavior:
+//   - switch_session: remember the session file path.
+//   - get_state / set_model / set_thinking_level / abort: acknowledge.
+//   - prompt: ack, then append a user turn + a deterministic assistant reply to
+//     the session JSONL (like real pi owns the file) and emit stream + agent_end
+//     events. The browser picks up the reply via the fsnotify->SSE reload path.
+
+import fs from "node:fs";
+import readline from "node:readline";
+
+let sessionPath = "";
+let model = { id: "claude-opus-4-7", name: "Opus", provider: "anthropic" };
+let thinkingLevel = "medium";
+let idSeq = 0;
+
+function send(obj) {
+  process.stdout.write(JSON.stringify(obj) + "\n");
+}
+
+function respond(id, command, data = {}) {
+  send({ type: "response", id, command, success: true, data });
+}
+
+function nextId() {
+  return `stub-${Date.now().toString(36)}-${idSeq++}`;
+}
+
+function lastEntryId() {
+  try {
+    const lines = fs.readFileSync(sessionPath, "utf8").split("\n").filter((l) => l.trim());
+    for (let i = lines.length - 1; i >= 0; i--) {
+      const e = JSON.parse(lines[i]);
+      if (e && e.id) return e.id;
+    }
+  } catch {
+    /* file may not exist yet */
+  }
+  return null;
+}
+
+function appendEntry(entry) {
+  fs.appendFileSync(sessionPath, JSON.stringify(entry) + "\n");
+}
+
+function messageEntry(role, text, parentId) {
+  const id = nextId();
+  return {
+    id,
+    entry: {
+      type: "message",
+      id,
+      parentId,
+      timestamp: new Date().toISOString(),
+      message: { role, content: [{ type: "text", text }], timestamp: Date.now() },
+    },
+  };
+}
+
+function handlePrompt(cmd) {
+  // Ack the prompt command first so POST /api/chat returns promptly.
+  respond(cmd.id, "prompt", {});
+
+  const userText = typeof cmd.message === "string" ? cmd.message : JSON.stringify(cmd.message ?? "");
+  const reply = `Stub reply: ${userText}`;
+
+  // Mimic real pi taking ownership of the session file.
+  setTimeout(() => {
+    if (sessionPath) {
+      const user = messageEntry("user", userText, lastEntryId());
+      appendEntry(user.entry);
+      const asst = messageEntry("assistant", reply, user.id);
+      appendEntry(asst.entry);
+    }
+    // Best-effort stream signals; shape mismatch is harmless to the worker.
+    send({ type: "message_update", assistantMessageEvent: { type: "text_delta", text: reply } });
+    send({ type: "message_end" });
+    send({ type: "turn_end" });
+    send({ type: "agent_end" });
+  }, 30);
+}
+
+function handle(cmd) {
+  switch (cmd.type) {
+    case "switch_session":
+      sessionPath = cmd.sessionPath || sessionPath;
+      respond(cmd.id, "switch_session", {});
+      break;
+    case "get_state":
+      respond(cmd.id, "get_state", { thinkingLevel, model });
+      break;
+    case "set_model":
+      model = { id: cmd.modelId, name: cmd.modelId, provider: cmd.provider };
+      respond(cmd.id, "set_model", model);
+      break;
+    case "set_thinking_level":
+      thinkingLevel = cmd.level || thinkingLevel;
+      respond(cmd.id, "set_thinking_level", { thinkingLevel });
+      break;
+    case "abort":
+      respond(cmd.id, "abort", {});
+      send({ type: "agent_end" });
+      break;
+    case "prompt":
+      handlePrompt(cmd);
+      break;
+    default:
+      if (cmd.id) respond(cmd.id, cmd.type || "unknown", {});
+  }
+}
+
+const rl = readline.createInterface({ input: process.stdin });
+rl.on("line", (line) => {
+  const trimmed = line.trim();
+  if (!trimmed) return;
+  let cmd;
+  try {
+    cmd = JSON.parse(trimmed);
+  } catch {
+    return;
+  }
+  if (cmd && cmd.id) handle(cmd);
+});
+rl.on("close", () => process.exit(0));

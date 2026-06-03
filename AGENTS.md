@@ -12,6 +12,7 @@ Before making structural changes, read the relevant doc in `docs/`:
 | Changing frontend build/template embedding | `docs/dev/templates-vs-web.md` |
 | Working on chat, SSE, or live-reload | `docs/sequence-flows/chat.md`, `docs/sequence-flows/live-reload.md` |
 | Working on export/share | `docs/sequence-flows/share.md` |
+| Writing or debugging E2E / browser tests | `docs/dev/e2e-testing.md` |
 
 The most important doc for frontend work is **`docs/dev/templates-vs-web.md`** â€” it explains the unified rendering where `web/` provides the live Vite app, and `internal/ui/live_templates/` provides the Go-embedded shells and consolidated `export/` JS.
 
@@ -19,7 +20,7 @@ The most important doc for frontend work is **`docs/dev/templates-vs-web.md`** â
 
 - **Backend:** Go 1.25+ (`fsnotify`, `x/sys`)
 - **Frontend:** Vanilla JS, Vite, Vitest + jsdom
-- **Session data:** JSONL from `~/.pi/agent/sessions/`; pi-web normally treats existing files as read-only, except browser rename appends a `session_info` metadata line. New-session creation writes a fresh JSONL file with a header and optional implicit model/thinking entries.
+- **Session data:** JSONL from `~/.pi/agent/sessions/`; pi-web normally treats existing files as read-only, except it appends a `session_info` metadata line for browser rename and for auto-titling (the latter marked `autoTitle:true`). New-session creation writes a fresh JSONL file with a header and optional implicit model/thinking entries.
 - **Live updates:** SSE driven by `fsnotify` file watchers
 - **Auth:** `PI_WEB_TOKEN` required for non-loopback binds (e.g. Tailscale)
 
@@ -70,11 +71,13 @@ The most important doc for frontend work is **`docs/dev/templates-vs-web.md`** â
 ## Build & Test
 
 ```bash
-make setup    # npm install + go mod download
-make dev      # Vite watcher + Go hot-reload (air)
-make test     # vitest + go test ./...
-make build    # frontend-build + go build -o pi-web
-make check    # test + build + vet
+make setup      # npm install + go mod download
+make dev        # Vite watcher + Go hot-reload (air)
+make test       # vitest + go test ./...
+make build      # frontend-build + go build -o pi-web
+make check      # test + build + vet
+make e2e-setup  # one-time: install e2e deps + Playwright browsers
+make e2e        # build binary + run Playwright E2E (not part of test/check)
 ```
 
 **Critical:** `go build ./cmd/pi-web` requires `web/dist` to exist first because of `//go:embed`. Always run `make build`, never `go build` alone.
@@ -83,6 +86,7 @@ make check    # test + build + vet
 
 - **Go:** Table-driven tests in `*_test.go` alongside source
 - **Frontend:** Tests next to source (`foo.js` â†’ `foo.test.js`). DOM helpers accept `{ documentImpl, windowImpl }` for testability
+- **E2E (Playwright):** Lives in `e2e/`, runs against the built binary across desktop + mobile + iPad browsers. Chat uses a stub `pi`; fixtures are sanitized real sessions. Kept out of `make test`/`make check` (needs browsers + the server). See `docs/dev/e2e-testing.md`.
 
 ## Coding Standards
 
@@ -94,7 +98,7 @@ make check    # test + build + vet
 
 1. **Live and export use a unified template.** `internal/ui/live_templates/session.html` serves both the live app and Gist snapshots. Do not split them.
 2. **Always keep `internal/ui/live_templates/` in sync** with `web/src/session/ui/` changes when styling or structures shift.
-3. **Existing session data is append-only for rename.** Browser chat goes to a `pi --mode rpc` worker, which writes conversation entries. pi-web otherwise watches and broadcasts; its only direct write to existing session files is appending `session_info` for browser rename. New-session creation may write initial implicit `model_change` / `thinking_level_change` entries in the fresh file.
+3. **Existing session data is append-only for `session_info`.** Browser chat goes to a `pi --mode rpc` worker, which writes conversation entries. pi-web otherwise watches and broadcasts; its only direct writes to existing session files are appending `session_info` â€” for browser rename, and for auto-titling (marked `autoTitle:true`, see `internal/server/auto_title.go`). New-session creation may write initial implicit `model_change` / `thinking_level_change` entries in the fresh file.
 4. **One worker per session.** Reused for subsequent messages. Crashed = evicted + replaced. Idle workers reaped after 10 min.
 5. **SSE topics:** `globalSessID = "__all__"` for index-wide events; session ID for per-session events.
 6. **Default port:** `31415`. State file: `~/.pi/agent/pi-web/pi-web-state.json`.

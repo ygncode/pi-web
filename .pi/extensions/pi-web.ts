@@ -1,10 +1,8 @@
 import type {
   ExtensionAPI,
   ExtensionCommandContext,
-  ExtensionContext,
   ExecOptions,
 } from "@earendil-works/pi-coding-agent";
-import { Type } from "typebox";
 import {
   Container,
   truncateToWidth,
@@ -357,98 +355,6 @@ export function normalizeCommandArgs(args: unknown): string[] {
   return [];
 }
 
-export const TITLE_WORD_LIMIT = 5;
-
-export const TITLE_STOP_WORDS = new Set([
-  "a",
-  "an",
-  "and",
-  "are",
-  "can",
-  "could",
-  "do",
-  "does",
-  "for",
-  "from",
-  "how",
-  "i",
-  "in",
-  "inspired",
-  "is",
-  "it",
-  "like",
-  "me",
-  "need",
-  "of",
-  "on",
-  "or",
-  "please",
-  "the",
-  "this",
-  "to",
-  "us",
-  "we",
-  "what",
-  "when",
-  "whenever",
-  "would",
-  "you",
-]);
-
-export function titleCaseWord(word: string): string {
-  const lower = word.toLowerCase();
-  if (lower === "pi") return "Pi";
-  if (lower === "pi-web") return "Pi-Web";
-  if (lower === "api") return "API";
-  if (lower === "ui") return "UI";
-  if (lower === "ux") return "UX";
-  if (lower === "sse") return "SSE";
-  if (lower === "rpc") return "RPC";
-  if (lower === "tui") return "TUI";
-  return lower
-    .split("-")
-    .map((part) => (part ? `${part[0].toUpperCase()}${part.slice(1)}` : part))
-    .join("-");
-}
-
-export function deriveTitleFromInput(text: string): string | null {
-  const normalized = text
-    .replace(/```[\s\S]*?```/g, " ")
-    .replace(/`([^`]*)`/g, " $1 ")
-    .replace(/https?:\/\/\S+/g, " ")
-    .replace(/[_/]+/g, " ")
-    .replace(/[^\p{L}\p{N}-]+/gu, " ")
-    .trim();
-  if (!normalized) return null;
-
-  const words = normalized.split(/\s+/).filter(Boolean);
-  const meaningful = words.filter(
-    (word) => !TITLE_STOP_WORDS.has(word.toLowerCase()),
-  );
-  const selected = (meaningful.length ? meaningful : words).slice(
-    0,
-    TITLE_WORD_LIMIT,
-  );
-  if (selected.length === 0) return null;
-  return selected.map(titleCaseWord).join(" ");
-}
-
-function setPiWebTabTitle(
-  pi: ExtensionAPI,
-  ctx: ExtensionContext,
-  title: string,
-) {
-  const cleanTitle = title.trim();
-  if (!cleanTitle) throw new Error("title cannot be empty");
-  if (ctx.hasUI) ctx.ui.setTitle(cleanTitle);
-  try {
-    pi.setSessionName(cleanTitle);
-  } catch {
-    // Session naming is best-effort; UI title updates should still succeed.
-  }
-  return cleanTitle;
-}
-
 async function findPiWebBinary(pi: ExtensionAPI): Promise<string | null> {
   // 1. Local dev build (e.g. when working inside the pi-web repo).
   try {
@@ -796,40 +702,9 @@ async function showRemoteAccess(
 }
 
 export default function (pi: ExtensionAPI) {
-  let lastAutoTitle: string | null = null;
-
-  pi.registerTool({
-    name: "pi_web_set_tab_title",
-    label: "Set Tab Title",
-    description:
-      "Set the Pi/pi-web session title to a concise description of the user's current task.",
-    promptSnippet:
-      "Update the Pi/pi-web session title when the user's task focus changes.",
-    promptGuidelines: [
-      "Use pi_web_set_tab_title with a short 2-5 word Title Case summary when the user's task focus changes.",
-    ],
-    parameters: Type.Object({
-      title: Type.String({ description: "Short 2-5 word session title." }),
-    }),
-    async execute(_toolCallId, params, _signal, _onUpdate, ctx) {
-      const title = setPiWebTabTitle(pi, ctx, String(params.title ?? ""));
-      lastAutoTitle = title;
-      return {
-        content: [{ type: "text", text: `Session title set to ${title}.` }],
-        details: { title },
-      };
-    },
-  });
-
-  pi.on("input", async (event, ctx) => {
-    const title =
-      typeof event.text === "string" ? deriveTitleFromInput(event.text) : null;
-    if (title && title !== lastAutoTitle) {
-      setPiWebTabTitle(pi, ctx, title);
-      lastAutoTitle = title;
-    }
-    return { action: "continue" };
-  });
+  // Session auto-titling now lives in pi-web itself (see internal/server/
+  // auto_title.go), gated by the /settings page, so the extension no longer
+  // registers a title tool or input handler.
 
   // Start pi-web opportunistically when the extension loads so /remote works on a
   // fresh shell after `pi install npm:@ygncode/pi-web`.

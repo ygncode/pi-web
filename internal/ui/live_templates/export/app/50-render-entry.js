@@ -111,17 +111,22 @@ function renderAskUserQuestionTool(args, result) {
   const questions = Array.isArray(args.questions) ? args.questions : [];
   const answers = result?.details?.answers || {};
   const cancelled = result?.details?.cancelled === true;
+  const awaitingChatReply = result?.details?.awaitingChatReply === true;
   const questionToolFailed = result?.isError === true;
-  const canClick = !result || questionToolFailed;
+  const canClick = !result || questionToolFailed || awaitingChatReply;
   const isInteractive = canClick || cancelled;
   const isMulti = questions.length > 1;
+  const anyMultiSelect = questions.some(q => q && q.multiSelect === true);
+  const needsSubmit = isMulti || anyMultiSelect;
 
-  let html = `<div class="ask-question-card" data-question-count="${questions.length}">`;
+  let html = `<div class="ask-question-card" data-question-count="${questions.length}" data-needs-submit="${needsSubmit}">`;
   html += '<div class="ask-question-title">Question for you</div>';
   if (questionToolFailed) {
     html += '<div class="ask-question-state error">question UI failed</div>';
   } else if (cancelled) {
     html += '<div class="ask-question-state error">cancelled</div>';
+  } else if (awaitingChatReply) {
+    html += '<div class="ask-question-state pending">waiting for response</div>';
   } else if (result) {
     html += '<div class="ask-question-state answered">answered</div>';
   } else {
@@ -136,7 +141,8 @@ function renderAskUserQuestionTool(args, result) {
     const questionText = typeof q.question === 'string' ? q.question : `Question ${qIndex + 1}`;
     const answer = answers[questionText];
     const options = Array.isArray(q.options) ? q.options : [];
-    html += `<div class="ask-question-block" data-question-text="${escapeHtml(questionText)}">`;
+    const multiSelect = q && q.multiSelect === true;
+    html += `<div class="ask-question-block" data-question-text="${escapeHtml(questionText)}" data-multi-select="${multiSelect}">`;
     if (q.header) html += `<div class="ask-question-header">${escapeHtml(String(q.header))}</div>`;
     html += `<div class="ask-question-text">${escapeHtml(questionText)}</div>`;
     if (options.length > 0) {
@@ -162,14 +168,14 @@ function renderAskUserQuestionTool(args, result) {
   });
 
   if (isInteractive) {
-    if (isMulti) {
+    if (needsSubmit) {
       html += '<div class="ask-question-actions" style="display:none"><button type="button" class="ask-question-submit-btn">Send answers</button></div>';
     } else if (questionToolFailed) {
       html += '<div class="ask-question-hint">Use these options as a fallback — click an option to send your answer to pi.</div>';
     } else if (cancelled) {
       html += '<div class="ask-question-hint">Click an option to send your answer to pi.</div>';
-    } else if (!result) {
-      html += '<div class="ask-question-hint">Use the chat composer below to answer this question.</div>';
+    } else if (!result || awaitingChatReply) {
+      html += '<div class="ask-question-hint">Click an option, or use the chat composer below, to answer this question.</div>';
     }
   }
 
@@ -298,7 +304,8 @@ function renderToolCall(call) {
       }
       break;
     }
-    case 'ask_user_question': {
+    case 'ask_user_question':
+    case 'pi_web_ask_user_question': {
       html += renderAskUserQuestionTool(args, result);
       break;
     }

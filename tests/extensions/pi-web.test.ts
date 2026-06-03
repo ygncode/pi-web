@@ -40,10 +40,6 @@ import {
   isTailscaleHost,
   isSSH,
   normalizeCommandArgs,
-  titleCaseWord,
-  deriveTitleFromInput,
-  TITLE_WORD_LIMIT,
-  TITLE_STOP_WORDS,
   withToken,
   readPiWebToken,
   writePiWebToken,
@@ -147,68 +143,6 @@ describe('normalizeCommandArgs', () => {
   it('set-token destructure: token with special chars', () => {
     const [, token] = normalizeCommandArgs('set-token sec=ret&val');
     expect(token).toBe('sec=ret&val');
-  });
-});
-
-// ── titleCaseWord ───────────────────────────────────────────────────
-describe('titleCaseWord', () => {
-  it('preserves known acronyms', () => {
-    expect(titleCaseWord('pi')).toBe('Pi');
-    expect(titleCaseWord('pi-web')).toBe('Pi-Web');
-    expect(titleCaseWord('api')).toBe('API');
-    expect(titleCaseWord('ui')).toBe('UI');
-    expect(titleCaseWord('ux')).toBe('UX');
-    expect(titleCaseWord('sse')).toBe('SSE');
-    expect(titleCaseWord('rpc')).toBe('RPC');
-    expect(titleCaseWord('tui')).toBe('TUI');
-  });
-
-  it('title-cases regular words', () => {
-    expect(titleCaseWord('hello')).toBe('Hello');
-    expect(titleCaseWord('WORLD')).toBe('World');
-    expect(titleCaseWord('foo-bar')).toBe('Foo-Bar');
-  });
-
-  it('handles empty string', () => {
-    expect(titleCaseWord('')).toBe('');
-  });
-});
-
-// ── deriveTitleFromInput ────────────────────────────────────────────
-describe('deriveTitleFromInput', () => {
-  it('returns null for empty input', () => {
-    expect(deriveTitleFromInput('')).toBeNull();
-    expect(deriveTitleFromInput('   ')).toBeNull();
-  });
-
-  it('falls back to stop words when they are the only words', () => {
-    // When all words are stop words, falls back to original words
-    expect(deriveTitleFromInput('the and for')).toBe('The And For');
-  });
-
-  it('returns title from meaningful words', () => {
-    expect(deriveTitleFromInput('add a new feature for the dashboard')).toBe(
-      'Add New Feature Dashboard',
-    );
-  });
-
-  it('caps at TITLE_WORD_LIMIT words', () => {
-    const long = 'one two three four five six seven eight';
-    expect(
-      deriveTitleFromInput(long)?.split(' ').length,
-    ).toBeLessThanOrEqual(TITLE_WORD_LIMIT);
-  });
-
-  it('strips code blocks', () => {
-    expect(deriveTitleFromInput('fix ```js\nconst x = 1;\n``` bug')).toBe(
-      'Fix Bug',
-    );
-  });
-
-  it('strips URLs', () => {
-    expect(
-      deriveTitleFromInput('check https://example.com/foo for updates'),
-    ).toBe('Check Updates');
   });
 });
 

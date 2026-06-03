@@ -49,6 +49,13 @@ export async function runSettingsPage({
     }
   }
 
+  // Populate the auto-title model dropdown before applying stored values, so
+  // the persisted "provider/id" selection can be reflected.
+  const titleModelSelect = documentImpl.querySelector('[data-auto-title-model]');
+  if (titleModelSelect) {
+    await populateModelSelect(titleModelSelect, { documentImpl, fetchImpl: fetchImpl || fetch });
+  }
+
   // Pull the authoritative values from the server (falls back to the cache /
   // defaults the server returns) and reflect them in the controls.
   const settings = (await hydrateSettings({ fetchImpl, storage })) || readFromStorage(storage, controls);
@@ -239,6 +246,43 @@ export function setupBackLink(documentImpl, windowImpl) {
         windowImpl.location.href = '/';
       }
     });
+  }
+}
+
+// Fetch /api/models and append provider-grouped options to a model <select>.
+// Keeps any pre-existing options (e.g. the "pi default" empty option). Values
+// are stored as "provider/id" to match the --model pattern pi expects.
+export async function populateModelSelect(select, { documentImpl = document, fetchImpl = fetch } = {}) {
+  let models;
+  try {
+    const resp = await fetchImpl('/api/models', { headers: { Accept: 'application/json' } });
+    if (!resp.ok) return;
+    const data = await resp.json();
+    models = Array.isArray(data?.models) ? data.models : null;
+  } catch {
+    return;
+  }
+  if (!models || !models.length) return;
+
+  const byProvider = new Map();
+  for (const m of models) {
+    const id = m.id || m.modelId || '';
+    const provider = m.provider || '';
+    if (!id || !provider) continue;
+    if (!byProvider.has(provider)) byProvider.set(provider, []);
+    byProvider.get(provider).push({ id, name: m.name || id });
+  }
+
+  for (const provider of Array.from(byProvider.keys()).sort((a, b) => a.localeCompare(b))) {
+    const group = documentImpl.createElement('optgroup');
+    group.label = provider;
+    for (const { id, name } of byProvider.get(provider)) {
+      const opt = documentImpl.createElement('option');
+      opt.value = `${provider}/${id}`;
+      opt.textContent = name;
+      group.appendChild(opt);
+    }
+    select.appendChild(group);
   }
 }
 

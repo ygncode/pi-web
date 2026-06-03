@@ -30,6 +30,9 @@ export const SERVER_SETTING_KEYS = [
   'pi-web:v1:cat:bedtime',
   'pi-web:v1:cat:wakeup',
   'pi-web:v1:cat:sleep-min',
+  'pi-web:v1:auto-title:enabled',
+  'pi-web:v1:auto-title:mode',
+  'pi-web:v1:auto-title:model',
 ];
 
 // Network sync is disabled until a page entrypoint configures it. This keeps

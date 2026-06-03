@@ -212,3 +212,7 @@ After 10 minutes of idle time (no user-initiated actions), the reaper goroutine 
 ### 10. Model Switch Side Effect
 
 `handleSetModel` updates the worker model via RPC. On success, the worker automatically refreshes its thinking level (`refreshThinkingLevel`) so the UI stays consistent.
+
+---
+
+**E2E coverage:** `e2e/tests/chat.spec.ts` drives this flow end-to-end with a stub `pi` worker (`e2e/lib/stub-pi/pi`). See [docs/dev/e2e-testing.md](../dev/e2e-testing.md).

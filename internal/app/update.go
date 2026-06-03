@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
-	"syscall"
 	"time"
 )
 
@@ -43,7 +42,7 @@ func runRestart() error {
 	default:
 		return fmt.Errorf("restart is only supported on macOS and Linux")
 	}
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
+	detachSession(cmd)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {

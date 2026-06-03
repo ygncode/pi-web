@@ -1,7 +1,8 @@
-.PHONY: build setup frontend-setup go-setup root-setup frontend-build frontend-test extension-test memory-test go-test vet test check clean dev release-patch release-minor release-major release-beta
+.PHONY: build setup frontend-setup go-setup root-setup frontend-build frontend-test extension-test memory-test go-test vet test check clean dev release-patch release-minor release-major release-beta e2e e2e-setup
 
 BINARY ?= pi-web
 WEB_DIR := web
+E2E_DIR := e2e
 NODE_MODULES := $(WEB_DIR)/node_modules
 ROOT_NODE_MODULES := node_modules
 
@@ -62,6 +63,14 @@ dev: frontend-setup go-setup
 
 version:
 	@echo $(VERSION)
+
+# End-to-end browser tests (Playwright). Kept out of `test`/`check` because they
+# need browser binaries and the built server. See docs/dev/e2e-testing.md.
+e2e-setup:
+	cd $(E2E_DIR) && npm ci && npx playwright install --with-deps chromium firefox webkit
+
+e2e: build
+	cd $(E2E_DIR) && npx playwright test
 
 clean:
 	rm -f $(BINARY)

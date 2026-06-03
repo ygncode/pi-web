@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from 'vitest';
-import { setupBackLink } from './settings.js';
+import { setupBackLink, populateModelSelect } from './settings.js';
+
+function makeFakeDoc() {
+  const make = (tag) => {
+    const node = { tag, children: [], label: '', value: '', textContent: '' };
+    node.appendChild = (c) => node.children.push(c);
+    return node;
+  };
+  return { createElement: (tag) => make(tag) };
+}
 
 function makeLink() {
   const label = { textContent: 'Sessions' };
@@ -87,5 +96,41 @@ describe('setupBackLink', () => {
 
     expect(win.history.back).not.toHaveBeenCalled();
     expect(win.location.href).toBe('/');
+  });
+});
+
+describe('populateModelSelect', () => {
+  it('appends provider-grouped options with provider/id values', async () => {
+    const select = { children: [], appendChild(c) { this.children.push(c); } };
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        models: [
+          { provider: 'anthropic', id: 'sonnet', name: 'Sonnet' },
+          { provider: 'anthropic', modelId: 'haiku', name: 'Haiku' },
+          { provider: 'openai', id: 'gpt-4o', name: 'GPT-4o' },
+        ],
+      }),
+    });
+
+    await populateModelSelect(select, { documentImpl: makeFakeDoc(), fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledWith('/api/models', expect.anything());
+    // Two provider optgroups, sorted alphabetically.
+    expect(select.children.map((g) => g.label)).toEqual(['anthropic', 'openai']);
+    const anthropic = select.children[0];
+    expect(anthropic.children.map((o) => o.value)).toEqual([
+      'anthropic/sonnet',
+      'anthropic/haiku',
+    ]);
+    expect(anthropic.children.map((o) => o.textContent)).toEqual(['Sonnet', 'Haiku']);
+    expect(select.children[1].children[0].value).toBe('openai/gpt-4o');
+  });
+
+  it('no-ops on fetch failure', async () => {
+    const select = { children: [], appendChild(c) { this.children.push(c); } };
+    const fetchImpl = vi.fn().mockRejectedValue(new Error('boom'));
+    await populateModelSelect(select, { documentImpl: makeFakeDoc(), fetchImpl });
+    expect(select.children).toHaveLength(0);
   });
 });
