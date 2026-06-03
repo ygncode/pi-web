@@ -18,6 +18,15 @@ let model = { id: "claude-opus-4-7", name: "Opus", provider: "anthropic" };
 let thinkingLevel = "medium";
 let idSeq = 0;
 
+// Deterministic slash-command set for the get_commands rpc. Includes one of
+// each source so the palette spec can assert that extension commands are
+// filtered out while prompt + skill commands are surfaced.
+const COMMANDS = [
+  { name: "btw", description: "Open a side-chat popover", source: "extension" },
+  { name: "workon", description: "Start working on a task", source: "prompt" },
+  { name: "skill:memory", description: "Project memory skill", source: "skill" },
+];
+
 function send(obj) {
   process.stdout.write(JSON.stringify(obj) + "\n");
 }
@@ -104,6 +113,9 @@ function handle(cmd) {
     case "abort":
       respond(cmd.id, "abort", {});
       send({ type: "agent_end" });
+      break;
+    case "get_commands":
+      respond(cmd.id, "get_commands", { commands: COMMANDS });
       break;
     case "prompt":
       handlePrompt(cmd);
