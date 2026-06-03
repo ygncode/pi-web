@@ -13,6 +13,26 @@ test.describe("version modal update check", () => {
       "loading-state check runs on one project",
     );
 
+    // Pin the initial version state to "up to date" so the modal deterministically
+    // opens on the "Check for updates" affordance. Without this the state depends
+    // on the binary's build version and a background update check (in CI the
+    // binary is stamped with a bare commit SHA, which isn't treated as a dev
+    // build, so the poller reports an update and the modal shows "Update &
+    // Restart" instead).
+    await page.route("**/api/version", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          current: "1.0.0",
+          latest: "1.0.0",
+          hasUpdate: false,
+          isDev: false,
+          checkedAt: new Date().toISOString(),
+        }),
+      });
+    });
+
     // Control the check timing and avoid a real GitHub round-trip: hold the
     // response open long enough to observe the in-flight state, then resolve
     // as "up to date".
