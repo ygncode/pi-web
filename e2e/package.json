@@ -1,0 +1,17 @@
+{
+  "name": "pi-web-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Playwright end-to-end tests for pi-web (runs against the built binary).",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install --with-deps chromium firefox webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0"
+  }
+}
