@@ -92,6 +92,36 @@ describe('createVersionController', () => {
     expect(overlay.querySelector('.version-modal-body').textContent).toContain('local development build');
   });
 
+  it('shows an inline loading state on the check button while a check is in flight', async () => {
+    // First call (GET /api/version) resolves up-to-date; the manual check
+    // (POST /api/check-update) stays pending so we can observe the in-flight UI.
+    let resolveCheck;
+    const fetchImpl = vi.fn((url) => {
+      if (String(url).includes('check-update')) {
+        return new Promise((resolve) => { resolveCheck = resolve; });
+      }
+      return jsonResponse({ current: '1.0.0', latest: '1.0.0', hasUpdate: false });
+    });
+    createVersionController({ documentImpl: dom.window.document, windowImpl: dom.window, fetchImpl });
+    await Promise.resolve();
+    await Promise.resolve();
+    openVersionModal();
+    const overlay = dom.window.document.querySelector('.version-modal-overlay');
+    const checkBtn = Array.from(overlay.querySelectorAll('.version-modal-btn'))
+      .find((b) => b.textContent === 'Check for updates');
+    expect(checkBtn).toBeTruthy();
+
+    checkBtn.click();
+
+    expect(checkBtn.classList.contains('is-loading')).toBe(true);
+    expect(checkBtn.textContent).toBe('Checking…');
+    expect(checkBtn.disabled).toBe(true);
+    // The status row must stay hidden — no layout-jumping pop-in.
+    expect(overlay.querySelector('.version-modal-status').hidden).toBe(true);
+
+    resolveCheck({ ok: true, status: 200, json: () => Promise.resolve({ current: '1.0.0', latest: '1.0.0', hasUpdate: false }) });
+  });
+
   it('openModal renders an update modal with an Update button', async () => {
     const fetchImpl = vi.fn(() => jsonResponse({ current: '1.0.0', latest: '1.1.0', hasUpdate: true, changelog: '- new' }));
     createVersionController({ documentImpl: dom.window.document, windowImpl: dom.window, fetchImpl });

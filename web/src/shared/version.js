@@ -227,15 +227,32 @@ export function createVersionController({
     return btn;
   }
 
+  // Minimum time the "Checking…" state stays visible. A check often resolves in
+  // a few dozen ms; without a floor the spinner pops in and vanishes as a flash.
+  const MIN_CHECK_MS = 450;
+
+  function delay(ms) {
+    return new Promise((resolve) => windowImpl.setTimeout(resolve, ms));
+  }
+
   async function doManualCheck(btn) {
+    const label = btn.textContent;
     btn.disabled = true;
-    setStatus('Checking…', 'info');
+    btn.classList.add('is-loading');
+    btn.textContent = 'Checking…';
+    const startedAt = Date.now();
     try {
       await refresh(true);
+      const elapsed = Date.now() - startedAt;
+      if (elapsed < MIN_CHECK_MS) await delay(MIN_CHECK_MS - elapsed);
+      // renderModal() rebuilds the action buttons, so the loading state on this
+      // (now-detached) button is discarded along with it.
       renderModal();
     } catch (_) {
-      setStatus('Could not check for updates.', 'error');
+      btn.classList.remove('is-loading');
+      btn.textContent = label;
       btn.disabled = false;
+      setStatus('Could not check for updates.', 'error');
     }
   }
 
