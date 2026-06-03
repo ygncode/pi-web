@@ -22,6 +22,7 @@ type summaryLine struct {
 	ID        string      `json:"id"`
 	Provider  string      `json:"provider"`
 	ModelID   string      `json:"modelId"`
+	AutoTitle bool        `json:"autoTitle"`
 	Message   *summaryMsg `json:"message"`
 }
 
@@ -323,10 +324,21 @@ func truncate(s string, n int) string {
 
 var ErrEmptySessionName = errors.New("session name is empty")
 
-// RenameSession persists a display-name change by appending a session_info
+// RenameSession persists a user display-name change by appending a session_info
 // entry. Parsers already treat the latest session_info.name as authoritative,
 // so this preserves JSONL history instead of rewriting existing entries.
 func RenameSession(path, name string, now func() time.Time) error {
+	return appendSessionName(path, name, false, now)
+}
+
+// AutoTitleSession is like RenameSession but marks the entry as written by
+// pi-web's auto-titler (autoTitle:true), so a later read can tell its own titles
+// apart from a user's manual rename and re-title safely across restarts.
+func AutoTitleSession(path, name string, now func() time.Time) error {
+	return appendSessionName(path, name, true, now)
+}
+
+func appendSessionName(path, name string, auto bool, now func() time.Time) error {
 	name = strings.TrimSpace(name)
 	if name == "" {
 		return ErrEmptySessionName
@@ -339,10 +351,12 @@ func RenameSession(path, name string, now func() time.Time) error {
 		Type      string `json:"type"`
 		Timestamp string `json:"timestamp"`
 		Name      string `json:"name"`
+		AutoTitle bool   `json:"autoTitle,omitempty"`
 	}{
 		Type:      "session_info",
 		Timestamp: now().UTC().Format(time.RFC3339),
 		Name:      name,
+		AutoTitle: auto,
 	}
 	data, err := json.Marshal(entry)
 	if err != nil {

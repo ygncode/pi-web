@@ -88,6 +88,14 @@ type Server struct {
 	runInstall          func(ctx context.Context) error
 	runRestart          func() error
 	updateMu            sync.Mutex // serializes install/restart operations
+
+	// Auto-title bookkeeping (see auto_title.go). Guards against re-titling
+	// loops and clobbering user-set names.
+	titleMu        sync.Mutex
+	titleInFlight  map[string]bool
+	titledName     map[string]string // sessID -> the title pi-web last set
+	titledCount    map[string]int    // sessID -> user-msg count at last titling
+	titleUserOwned map[string]bool   // sessID -> user named it; never auto-title
 }
 
 func New(deps Deps) *Server {
@@ -155,6 +163,10 @@ func New(deps Deps) *Server {
 		renderSettings:      deps.RenderSettings,
 		models:              deps.Models,
 		lastKnown:           make(map[string]struct{}),
+		titleInFlight:       make(map[string]bool),
+		titledName:          make(map[string]string),
+		titledCount:         make(map[string]int),
+		titleUserOwned:      make(map[string]bool),
 		stopCh:              make(chan struct{}),
 		db:                  db,
 		updater:             deps.Updater,

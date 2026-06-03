@@ -20,7 +20,6 @@ func TestPiWebExtensionRegistersExpectedCommands(t *testing.T) {
 		"launchctl",
 		"systemctl",
 		`import("qrcode")`,
-		"Set the Pi/pi-web session title",
 	} {
 		if !strings.Contains(src, want) {
 			t.Fatalf("extension missing expected marker %q", want)

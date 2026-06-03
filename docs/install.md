@@ -42,7 +42,8 @@ This single command:
 - Installs it to `~/.pi/agent/bin/pi-web`
 - Sets up auto-start on login (launchd on macOS, systemd on Linux)
 - Registers the `/web`, `/remote`, `/refresh`, `/pi-web token`, and `/pi-web set-token` pi commands
-- Registers `set_tab_title`, which updates the Pi/pi-web session title and auto-derives a short title from each user message
+
+Session auto-titling is built into pi-web (not the extension) and configured on the `/settings` page. It's on by default: pi-web names sessions automatically using a free built-in word heuristic (no AI), re-titling on every new message. You can switch to titling once per session, and/or pick a model to write smarter titles instead of the heuristic.
 
 On Linux, auto-start is configured as a user systemd service at `~/.config/systemd/user/pi-web.service`. The installer rewrites its `ExecStart` to the actual installed binary path. If Tailscale is available at runtime, pi-web publishes the localhost server with Tailscale Serve HTTPS. If user systemd is unavailable, run it manually with `~/.pi/agent/bin/pi-web -o`.
 
