@@ -346,11 +346,18 @@ test.describe("artifacts panel", () => {
     await seedArtifactSetting(page, "pi-web:v1:artifacts:enabled", "false");
     await page.goto(`/session?id=${encodeURIComponent(id)}`);
 
-    // The tab element exists but is hidden via its `hidden` property.
-    const tabHidden = await page
-      .locator("#right-tab-artifacts")
-      .evaluate((el) => (el as HTMLElement).hidden);
-    expect(tabHidden).toBe(true);
+    // Open the sidebar so its tabs are laid out (collapsed on mobile).
+    const collapsed = await page.evaluate(() =>
+      document.body.classList.contains("right-sidebar-collapsed"),
+    );
+    if (collapsed) await page.locator("#toggle-right-sidebar-btn").click();
+
+    // The Artifacts tab is actually not rendered (visibility, not just the
+    // `hidden` property) while its siblings remain visible — guards against the
+    // CSS `display` rule overriding the `[hidden]` attribute.
+    await expect(page.locator("#right-tab-scratchpad")).toBeVisible();
+    await expect(page.locator("#right-tab-notes")).toBeVisible();
+    await expect(page.locator("#right-tab-artifacts")).toBeHidden();
     // Scratchpad remains the active tab.
     await expect(page.locator("#right-tab-scratchpad")).toHaveClass(/active/);
   });

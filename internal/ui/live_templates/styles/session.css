@@ -633,6 +633,10 @@
       transition: color 0.15s, background 0.15s, border-color 0.15s;
     }
 
+    .right-sidebar-tab[hidden] {
+      display: none;
+    }
+
     .right-sidebar-tab:hover {
       color: var(--text);
     }
