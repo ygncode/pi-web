@@ -44,6 +44,20 @@ describe('artifact panel', () => {
     expect(panel.getCount()).toBe(0);
   });
 
+  it('shows a filter hint in the empty state when artifacts are hidden', () => {
+    const { doc, panel } = setup();
+    panel.setArtifacts([], { hiddenCount: 3 });
+    const empty = doc.querySelector('.artifact-empty');
+    expect(empty.textContent).toContain('3 artifacts hidden by your filter');
+    expect(empty.querySelector('a[href="/settings"]')).not.toBeNull();
+  });
+
+  it('singularizes the filter hint for a single hidden artifact', () => {
+    const { doc, panel } = setup();
+    panel.setArtifacts([], { hiddenCount: 1 });
+    expect(doc.querySelector('.artifact-empty').textContent).toContain('1 artifact hidden');
+  });
+
   it('lists artifacts and auto-selects the first', () => {
     const { doc, panel } = setup();
     panel.setArtifacts(arts);

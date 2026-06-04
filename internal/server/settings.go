@@ -50,6 +50,8 @@ var settingDefaults = map[string]string{
 	"pi-web:v1:auto-title:enabled": "true",
 	"pi-web:v1:auto-title:mode":    "each-turn",
 	"pi-web:v1:auto-title:model":   "",
+	"pi-web:v1:artifacts:enabled":  "true",
+	"pi-web:v1:artifacts:include":  "*.md, *.html",
 }
 
 // getSettings returns every server-backed setting: defaults overlaid with any

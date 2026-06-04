@@ -15,6 +15,7 @@ import * as searchFiltersApi from './ui/search-filters.js';
 import { setupSessionUi } from './ui/session-ui-runner.js';
 import { collectArtifacts } from './artifacts/artifact-registry.js';
 import { createArtifactPanel } from './artifacts/artifact-panel.js';
+import { filterArtifacts, readArtifactSettings } from './artifacts/artifact-filter.js';
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { createAnnotationLayer } from './annotations/annotation-layer.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
@@ -102,14 +103,27 @@ export function runSessionApp({ target = window } = {}) {
 
   let artifactPanel = null;
   let annotationLayer = null;
+  // Hide the Artifacts tab entirely when the feature is disabled; if it was the
+  // active tab, fall back to Scratchpad so the user isn't left on a blank pane.
+  function applyArtifactsEnabled(enabled) {
+    const tab = documentImpl.getElementById('right-tab-artifacts');
+    if (!tab) return;
+    tab.hidden = !enabled;
+    if (!enabled && tab.classList.contains('active')) {
+      documentImpl.getElementById('right-tab-scratchpad')?.click();
+    }
+  }
   function refreshArtifacts() {
     if (!artifactPanel) return;
-    const artifacts = collectArtifacts(dataModel.entries);
-    artifactPanel.setArtifacts(artifacts);
+    const all = collectArtifacts(dataModel.entries);
+    const settings = readArtifactSettings(target.localStorage);
+    applyArtifactsEnabled(settings.enabled);
+    const { visible, hiddenCount } = filterArtifacts(all, settings);
+    artifactPanel.setArtifacts(visible, { hiddenCount });
     const countEl = documentImpl.getElementById('artifact-tab-count');
     if (countEl) {
-      countEl.textContent = String(artifacts.length);
-      countEl.hidden = artifacts.length === 0;
+      countEl.textContent = String(visible.length);
+      countEl.hidden = visible.length === 0;
     }
   }
 

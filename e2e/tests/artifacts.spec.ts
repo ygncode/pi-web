@@ -89,6 +89,54 @@ function sessionWithRename() {
   return entries;
 }
 
+/**
+ * One assistant turn producing a mix of artifacts so include filters have
+ * something to keep and something to drop:
+ *   - write notes.md       (matches *.md)
+ *   - write page.html      (matches *.html)
+ *   - write src/widget.go  (matches neither)
+ *   - a fenced ```html block → snippet (no path; dropped by any non-empty filter)
+ */
+function sessionWithMixedArtifacts() {
+  const { entries, lastId } = buildSession();
+  const id = `e2e-mixed-${Date.now()}`;
+  entries.push({
+    type: "message",
+    id,
+    parentId: lastId,
+    timestamp: new Date().toISOString(),
+    message: {
+      role: "assistant",
+      content: [
+        { type: "text", text: "Snippet:\n\n```html\n<b>hi</b>\n```" },
+        { type: "toolCall", id: `mc1-${Date.now()}`, name: "write", arguments: { file_path: "notes.md", content: "# Notes\n" } },
+        { type: "toolCall", id: `mc2-${Date.now()}`, name: "write", arguments: { file_path: "page.html", content: "<h1>Page</h1>\n" } },
+        { type: "toolCall", id: `mc3-${Date.now()}`, name: "write", arguments: { file_path: "src/widget.go", content: "package widget\n" } },
+      ],
+      timestamp: Date.now(),
+    },
+  });
+  return entries;
+}
+
+/** Seed an artifact setting in localStorage before the page's scripts run. */
+async function seedArtifactSetting(
+  page: import("@playwright/test").Page,
+  key: string,
+  value: string,
+) {
+  await page.addInitScript(
+    ([k, v]) => {
+      try {
+        localStorage.setItem(k, v);
+      } catch {
+        /* ignore */
+      }
+    },
+    [key, value] as const,
+  );
+}
+
 async function openArtifactsTab(page: import("@playwright/test").Page) {
   // The right sidebar is open by default on desktop but collapsed on mobile;
   // toggle it open only when collapsed so we don't accidentally close it.
@@ -249,5 +297,61 @@ test.describe("artifacts panel", () => {
       page.locator('.artifact-action[data-action="download"]').click(),
     ]);
     expect(download.suggestedFilename()).toBe("widget.go");
+  });
+
+  test("include filter keeps matching files and drops others + snippets", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const name = uniqueSessionName(testInfo, "art");
+    const id = writeSession(sessionsDir, name, sessionWithMixedArtifacts());
+
+    await seedArtifactSetting(page, "pi-web:v1:artifacts:include", "*.md, *.html");
+    await page.goto(`/session?id=${encodeURIComponent(id)}`);
+    await openArtifactsTab(page);
+
+    // notes.md + page.html survive; src/widget.go and the html snippet are hidden.
+    await expect(page.locator("#artifact-tab-count")).toHaveText("2");
+    await expect(page.locator(".artifact-list-item")).toHaveCount(2);
+    await expect(page.locator(".artifact-list-item", { hasText: "notes.md" })).toBeVisible();
+    await expect(page.locator(".artifact-list-item", { hasText: "page.html" })).toBeVisible();
+    await expect(page.locator(".artifact-list-item", { hasText: "widget.go" })).toHaveCount(0);
+  });
+
+  test("empty-state hint links to Settings when the filter hides everything", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const name = uniqueSessionName(testInfo, "art");
+    const id = writeSession(sessionsDir, name, sessionWithMixedArtifacts());
+
+    // A filter that matches none of the four artifacts.
+    await seedArtifactSetting(page, "pi-web:v1:artifacts:include", "*.rs");
+    await page.goto(`/session?id=${encodeURIComponent(id)}`);
+    await openArtifactsTab(page);
+
+    await expect(page.locator(".artifact-list-item")).toHaveCount(0);
+    const empty = page.locator(".artifact-empty");
+    await expect(empty).toContainText("hidden by your filter");
+    await expect(empty.locator('a[href="/settings"]')).toBeVisible();
+  });
+
+  test("disabling artifacts hides the tab and falls back to Scratchpad", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const name = uniqueSessionName(testInfo, "art");
+    const id = writeSession(sessionsDir, name, sessionWithArtifacts());
+
+    await seedArtifactSetting(page, "pi-web:v1:artifacts:enabled", "false");
+    await page.goto(`/session?id=${encodeURIComponent(id)}`);
+
+    // The tab element exists but is hidden via its `hidden` property.
+    const tabHidden = await page
+      .locator("#right-tab-artifacts")
+      .evaluate((el) => (el as HTMLElement).hidden);
+    expect(tabHidden).toBe(true);
+    // Scratchpad remains the active tab.
+    await expect(page.locator("#right-tab-scratchpad")).toHaveClass(/active/);
   });
 });

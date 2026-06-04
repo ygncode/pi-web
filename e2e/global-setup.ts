@@ -18,10 +18,15 @@ export default async function globalSetup() {
   const res = await fetch(`${baseURL}/api/settings`, {
     method: "POST",
     headers: { "content-type": "application/json" },
+    // Show all artifacts by default (empty include filter). The product default
+    // is "*.md, *.html", which would hide the .go writes and code snippets the
+    // artifacts behavior tests assert on. The dedicated filter tests opt into a
+    // filter explicitly; everything else runs unfiltered for determinism.
     body: JSON.stringify({
       settings: {
         "pi-web:v1:cat:enabled": "false",
         "pi-web:v1:auto-title:enabled": "false",
+        "pi-web:v1:artifacts:include": "",
       },
     }),
   });

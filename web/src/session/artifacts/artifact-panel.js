@@ -26,6 +26,8 @@ export function createArtifactPanel({
 
   let artifacts = [];
   let selectedId = '';
+  // How many detected artifacts the active filter is hiding (for the empty state).
+  let hiddenCount = 0;
   // Preview is opt-in (click-to-run): we never auto-execute artifact content on
   // load. Resets to false whenever the selected artifact changes.
   let previewing = false;
@@ -69,6 +71,11 @@ export function createArtifactPanel({
 
   function listHtml() {
     if (artifacts.length === 0) {
+      if (hiddenCount > 0) {
+        const noun = hiddenCount === 1 ? 'artifact' : 'artifacts';
+        return `<div class="artifact-empty">${hiddenCount} ${noun} hidden by your filter — `
+          + `adjust in <a href="/settings">Settings</a>.</div>`;
+      }
       return '<div class="artifact-empty">No artifacts in this session yet.</div>';
     }
     let html = '<div class="artifact-list" role="tablist">';
@@ -210,8 +217,9 @@ export function createArtifactPanel({
     }
   });
 
-  function setArtifacts(next) {
+  function setArtifacts(next, { hiddenCount: hidden = 0 } = {}) {
     artifacts = Array.isArray(next) ? next : [];
+    hiddenCount = Number.isFinite(hidden) && hidden > 0 ? hidden : 0;
     if (!artifacts.some(a => a.id === selectedId)) {
       selectedId = artifacts.length > 0 ? artifacts[0].id : '';
       previewing = false;

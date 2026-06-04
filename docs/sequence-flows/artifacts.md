@@ -12,11 +12,14 @@ Artifacts are **live-only**: the panel host exists only on the live session page
 Frontend modules (`web/src/session/artifacts/`):
 
 - `artifact-registry.js` — pure, DOM-free detection → an array of descriptors
+- `artifact-filter.js` — pure, DOM-free narrowing of that array by the user's
+  Artifacts settings (enable toggle + include-glob list)
 - `artifact-panel.js` — the right-sidebar panel (list, source view, preview,
   copy/download, help modal)
 
-Wired in `session.js`: `collectArtifacts(dataModel.entries)` feeds the panel on
-load and again on every live-reload (`syncDataModelEntries`).
+Wired in `session.js` (`refreshArtifacts`): `collectArtifacts(dataModel.entries)`
+detects everything, `filterArtifacts(...)` narrows it by settings, and the result
+feeds the panel on load and again on every live-reload (`syncDataModelEntries`).
 
 ## Detection: path-keyed, edit-aware
 
@@ -117,6 +120,35 @@ The HTML/SVG iframe is the load-bearing security boundary:
   style-src 'unsafe-inline'; font-src data:; script-src 'unsafe-inline'` — inline
   styles/scripts run so the preview is functional, but nothing can exfiltrate.
 - `referrerpolicy="no-referrer"`.
+
+## Filtering & settings
+
+Two server-backed settings (mirrored to localStorage via `settings-store.js`,
+defaults in `internal/server/settings.go`) control what the panel shows:
+
+| Key | Default | Meaning |
+|-----|---------|---------|
+| `pi-web:v1:artifacts:enabled` | `true` | When `false`, the whole **Artifacts tab is hidden** (and if it was active, the sidebar falls back to Scratchpad). |
+| `pi-web:v1:artifacts:include` | `*.md, *.html` | Comma/space-separated glob list. Empty = show everything. |
+
+`filterArtifacts(artifacts, { enabled, include })` (pure) applies them:
+
+- **Disabled** → returns nothing.
+- **Empty include** → everything passes (all files + snippets).
+- **Non-empty include** → file artifacts are kept only if their path matches a
+  pattern; **chat snippets are dropped** (they have no `filePath` to match). This
+  is the deliberate "filter hides snippets" rule.
+
+Glob dialect is intentionally simple (not gitignore): a pattern without `/`
+matches the **basename** (`*.md`); a pattern with `/` matches the **full path**
+(`artifacts/**`); `*` is a non-slash run and `**` spans slashes; a bare `.md`
+token is normalized to `*.md`.
+
+The registry itself is unchanged — it always detects everything, so toggling the
+filter never loses data. When the include list hides detected artifacts, the
+panel's empty state shows a count + a link to Settings rather than a bare "no
+artifacts" message. Settings live in the **Artifacts** section of `/settings`
+(`internal/ui/live_templates/settings.html`).
 
 ## Annotating artifacts
 

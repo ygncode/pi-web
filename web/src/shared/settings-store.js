@@ -33,6 +33,8 @@ export const SERVER_SETTING_KEYS = [
   'pi-web:v1:auto-title:enabled',
   'pi-web:v1:auto-title:mode',
   'pi-web:v1:auto-title:model',
+  'pi-web:v1:artifacts:enabled',
+  'pi-web:v1:artifacts:include',
 ];
 
 // Network sync is disabled until a page entrypoint configures it. This keeps

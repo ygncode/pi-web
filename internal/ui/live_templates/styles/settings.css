@@ -86,7 +86,8 @@
 
 .settings-control select,
 .settings-control input[type="number"],
-.settings-control input[type="time"] {
+.settings-control input[type="time"],
+.settings-control input[type="text"] {
   background: var(--input-bg, var(--surface-2));
   color: var(--text);
   border: 1px solid var(--dim);
@@ -99,6 +100,10 @@
 
 .settings-control input[type="number"] {
   min-width: 90px;
+}
+
+.settings-control input[type="text"] {
+  min-width: 220px;
 }
 
 .settings-font-control {

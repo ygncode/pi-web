@@ -26,6 +26,9 @@ export const test = base.extend<Fixtures>({
     await page.addInitScript(() => {
       try {
         localStorage.setItem("pi-web:v1:cat:enabled", "false");
+        // Mirror the server-seeded "show all" artifact filter for the synchronous
+        // pre-hydration read. Filter tests override this with their own init script.
+        localStorage.setItem("pi-web:v1:artifacts:include", "");
       } catch {
         /* ignore */
       }
