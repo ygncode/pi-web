@@ -47,7 +47,7 @@ func ReadTitleInputs(path string) (TitleInputs, error) {
 	var sessionInfoAuto bool
 
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
+	scanner.Buffer(make([]byte, 64*1024), 256*1024*1024)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if len(line) == 0 {

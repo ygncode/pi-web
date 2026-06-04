@@ -169,7 +169,7 @@ func ParseSummary(path, dirName, fileName string) (SessionSummary, error) {
 
 	var headerName, sessionInfoName, firstUserText, headerCwd string
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
+	scanner.Buffer(make([]byte, 64*1024), 256*1024*1024)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if len(line) == 0 {
@@ -395,7 +395,7 @@ func ParseFile(path, dirName, fileName string) (Session, error) {
 	seenSessionHeaders := make(map[string]bool)
 
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
+	scanner.Buffer(make([]byte, 64*1024), 256*1024*1024)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
@@ -650,7 +650,7 @@ func readSessionCWD(dir string) string {
 	}
 	defer f.Close()
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 64*1024), 1*1024*1024)
+	scanner.Buffer(make([]byte, 64*1024), 256*1024*1024)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if len(line) == 0 {
@@ -803,7 +803,7 @@ func createBranchSessionFile(sessionsDir, sourcePath, targetEntryID string, now 
 	seenSessionHeaders := make(map[string]bool)
 
 	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 64*1024), 4*1024*1024)
+	scanner.Buffer(make([]byte, 64*1024), 256*1024*1024)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if line == "" {
