@@ -21,6 +21,7 @@ import (
 	"pi-web/internal/sessions"
 	"pi-web/internal/ui"
 	"pi-web/internal/updater"
+	"pi-web/internal/widgets"
 	"pi-web/internal/workers"
 	"pi-web/web"
 )
@@ -68,11 +69,28 @@ func Main(version string) {
 	versionChecker := updater.New(version)
 
 	var srv *server.Server
+	widgetStore := widgets.NewStore()
 	manager := workers.NewManager(func(sessionID, sessionPath string) (workers.ChatWorker, error) {
-		return rpc.NewPiWorkerWithStream(sessionPath, func(preview rpc.StreamPreview) {
-			if srv != nil {
-				srv.BroadcastChatPreview(sessionID, preview)
-			}
+		return rpc.NewPiWorker(sessionPath, rpc.NewPiWorkerOptions{
+			StreamSink: func(preview rpc.StreamPreview) {
+				if srv != nil {
+					srv.BroadcastChatPreview(sessionID, preview)
+				}
+			},
+			WidgetSink: func(ev rpc.WidgetEvent) {
+				// Mirror setWidget into the per-session store + broadcast over
+				// SSE so connected browser sidebars update immediately.
+				if ev.Removed {
+					if widgetStore.Remove(sessionID, ev.Key) && srv != nil {
+						srv.BroadcastWidgetUpdate(sessionID, widgets.Widget{Key: ev.Key, Placement: ev.Placement}, true)
+					}
+					return
+				}
+				w := widgetStore.Set(sessionID, ev.Key, ev.Lines, ev.Placement)
+				if srv != nil {
+					srv.BroadcastWidgetUpdate(sessionID, w, false)
+				}
+			},
 		})
 	})
 	srv = server.New(server.Deps{
@@ -91,6 +109,7 @@ func Main(version string) {
 		Updater:    versionChecker,
 		RunInstall: runInstall,
 		RunRestart: runRestart,
+		Widgets:    widgetStore,
 	})
 
 	ui.SetThemeProvider(srv.ThemeSetting)

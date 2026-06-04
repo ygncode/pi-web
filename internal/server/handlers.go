@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"pi-web/internal/agentdir"
 	"pi-web/internal/sessions"
+	"pi-web/internal/widgets"
 )
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -62,6 +64,20 @@ func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
 				scratchpad = content
 			}
 		}
+	}
+	// Page-load widget bootstrap: ensure an RPC worker exists for this session
+	// so its extensions run session_start and emit setWidget events. Without
+	// this, /api/widgets would be empty until the user actually starts a chat.
+	// EnsureWorker is idempotent — it reuses an existing worker if one is
+	// already running, otherwise spawns one via the factory (which wires the
+	// WidgetSink in app.go). Background-context so we don't block the page
+	// render on worker startup. The 10-min idle reaper handles cleanup.
+	if s.chatSender != nil && s.widgets != nil {
+		go func(sessionID, sessionPath string) {
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			_ = s.chatSender.EnsureWorker(ctx, sessionID, sessionPath)
+		}(resolved.Session.ID, resolved.Path)
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	io.WriteString(w, s.renderLiveSession(resolved.Session, scratchpad))
@@ -188,6 +204,56 @@ func (s *Server) handleApiSessions(w http.ResponseWriter, r *http.Request) {
 	sessions.SortSummariesByActivity(summaries)
 
 	writeJSON(w, 0, map[string]any{"sessions": summaries})
+}
+
+// handleApiWidgets returns the current extension-widget snapshot for a session.
+//
+// GET /api/widgets?session=<id> → {"widgets": [{key, lines, placement, updated_at}, ...]}
+//
+// The widgets are populated by the RPC worker's setWidget event consumer in
+// internal/app/app.go (a worker's stdout emits extension_ui_request events,
+// the WidgetSink routes them into the per-session store). When no worker has
+// ever run for the session, the snapshot is empty — the page-load worker
+// bootstrap in handleSession addresses that case.
+//
+// Live updates are pushed via SSE `widget-update` events on the same per-
+// session channel as chat-preview etc.; see BroadcastWidgetUpdate.
+func (s *Server) handleApiWidgets(w http.ResponseWriter, r *http.Request) {
+	sessionID := r.URL.Query().Get("session")
+	if sessionID == "" {
+		writeJSONError(w, http.StatusBadRequest, "session is required")
+		return
+	}
+	if s.widgets == nil {
+		writeJSON(w, 0, map[string]any{"widgets": []any{}})
+		return
+	}
+	state := s.widgets.Get(sessionID)
+	out := make([]widgets.Widget, 0, len(state))
+	for _, wgt := range state {
+		out = append(out, wgt)
+	}
+	// Deterministic ordering: aboveEditor first, then belowEditor, then
+	// alphabetical by key inside each placement bucket. Keeps the UI stable.
+	sort.Slice(out, func(i, j int) bool {
+		pi, pj := placementRank(out[i].Placement), placementRank(out[j].Placement)
+		if pi != pj {
+			return pi < pj
+		}
+		return out[i].Key < out[j].Key
+	})
+	writeJSON(w, 0, map[string]any{"widgets": out})
+}
+
+func placementRank(p string) int {
+	switch p {
+	case "aboveEditor":
+		return 0
+	case "belowEditor":
+		return 1
+	default:
+		return 2
+	}
 }
 
 func (s *Server) handleApiSession(w http.ResponseWriter, r *http.Request) {

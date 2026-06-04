@@ -95,14 +95,17 @@
     <div id="right-sidebar-resizer" class="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize scratchpad sidebar"></div>
     <aside id="right-sidebar" class="right-sidebar">
       <div class="right-sidebar-header">
-        <h3>Scratchpad</h3>
+        <div class="right-sidebar-tabs" role="tablist" aria-label="Right sidebar tabs">
+          <button id="right-sidebar-tab-scratchpad" class="right-sidebar-tab is-active" role="tab" aria-selected="true" aria-controls="right-sidebar-pane-scratchpad" data-pane="scratchpad">Scratchpad</button>
+          <button id="right-sidebar-tab-widgets" class="right-sidebar-tab" role="tab" aria-selected="false" aria-controls="right-sidebar-pane-widgets" data-pane="widgets">Widgets</button>
+        </div>
         <div class="right-sidebar-actions">
-          <button id="expand-right-sidebar" class="right-sidebar-btn" title="Expand scratchpad">
+          <button id="expand-right-sidebar" class="right-sidebar-btn" title="Expand sidebar">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
             </svg>
           </button>
-          <button id="close-right-sidebar" class="right-sidebar-btn" title="Hide scratchpad (⌘⇧N)">
+          <button id="close-right-sidebar" class="right-sidebar-btn" title="Hide sidebar (⌘⇧N)">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -110,8 +113,11 @@
           </button>
         </div>
       </div>
-      <div class="right-sidebar-content">
+      <div id="right-sidebar-pane-scratchpad" class="right-sidebar-content right-sidebar-pane is-active" role="tabpanel" aria-labelledby="right-sidebar-tab-scratchpad">
         <textarea id="scratchpad-textarea" class="scratchpad-textarea" placeholder="Write project-level notes, scratchpad, tasks...">{{.Scratchpad}}</textarea>
+      </div>
+      <div id="right-sidebar-pane-widgets" class="right-sidebar-content right-sidebar-pane" role="tabpanel" aria-labelledby="right-sidebar-tab-widgets" hidden>
+        <div id="widgets-panel" class="widgets-panel"></div>
       </div>
       <div class="right-sidebar-footer">
         <span id="scratchpad-status" class="scratchpad-status">Saved</span>

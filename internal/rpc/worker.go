@@ -36,6 +36,7 @@ type piRPCWorker struct {
 	lastStreamActivity   atomic.Int64 // unix nanos; stream/turn events keep worker visually running
 	streamSink           StreamEventSink
 	streamPreview        *streamPreviewAccumulator
+	widgetSink           WidgetSink
 }
 
 // idleReportable is implemented by workers that can report when they were last
@@ -58,7 +59,26 @@ func (w *piRPCWorker) IdleSince(now time.Time) time.Duration {
 	return now.Sub(time.Unix(0, last))
 }
 
+// NewPiWorkerWithStream spawns a `pi --mode rpc` subprocess for the given
+// session and wires up event sinks. Pass nil for any sink you don't need.
+//
+// streamSink: receives assistant-message text-delta previews for live UI.
+// widgetSink: receives extension setWidget events (added 2026-06-04 to
+// surface extension widgets — todos, goals, monitors, etc. — in the browser
+// alongside the existing TUI rendering).
 func NewPiWorkerWithStream(sessionPath string, streamSink StreamEventSink) (workers.ChatWorker, error) {
+	return NewPiWorker(sessionPath, NewPiWorkerOptions{StreamSink: streamSink})
+}
+
+// NewPiWorkerOptions bundles optional sinks/config for NewPiWorker. New fields
+// can be added without breaking existing callers.
+type NewPiWorkerOptions struct {
+	StreamSink StreamEventSink
+	WidgetSink WidgetSink
+}
+
+// NewPiWorker spawns a pi RPC worker with the given options.
+func NewPiWorker(sessionPath string, opts NewPiWorkerOptions) (workers.ChatWorker, error) {
 	if _, err := exec.LookPath("pi"); err != nil {
 		return nil, fmt.Errorf("pi executable not found: %w", err)
 	}
@@ -80,8 +100,9 @@ func NewPiWorkerWithStream(sessionPath string, streamSink StreamEventSink) (work
 		status:        workers.WorkerStatus{State: workers.WorkerStateIdle},
 		pending:       make(map[string]chan response),
 		stderrBuf:     &stderrBuf,
-		streamSink:    streamSink,
+		streamSink:    opts.StreamSink,
 		streamPreview: &streamPreviewAccumulator{},
+		widgetSink:    opts.WidgetSink,
 	}
 	if err := cmd.Start(); err != nil {
 		return nil, err
@@ -437,6 +458,31 @@ func (w *piRPCWorker) handleRPCLine(line string) {
 			w.currentThinkingLevel = level
 			w.mu.Unlock()
 		}
+	}
+	if raw["type"] == "extension_ui_request" && raw["method"] == "setWidget" && w.widgetSink != nil {
+		// Pi's RPC mode dispatches setWidget as fire-and-forget (no response
+		// expected — see dist/modes/rpc/rpc-mode.js). We just route the payload
+		// to the sink; the widgets store handles broadcasting to the browser.
+		key, _ := raw["widgetKey"].(string)
+		if key == "" {
+			return
+		}
+		placement, _ := raw["widgetPlacement"].(string)
+		// widgetLines is `string[] | undefined`. Undefined → JSON null → removal.
+		var lines []string
+		removed := true
+		if v, ok := raw["widgetLines"]; ok && v != nil {
+			if arr, ok := v.([]any); ok {
+				lines = make([]string, 0, len(arr))
+				for _, item := range arr {
+					if s, ok := item.(string); ok {
+						lines = append(lines, s)
+					}
+				}
+				removed = false
+			}
+		}
+		w.widgetSink(WidgetEvent{Key: key, Lines: lines, Placement: placement, Removed: removed})
 	}
 }
 

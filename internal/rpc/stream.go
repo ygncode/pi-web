@@ -7,6 +7,17 @@ type StreamPreview struct {
 
 type StreamEventSink func(StreamPreview)
 
+// WidgetEvent is forwarded to a WidgetSink whenever the pi worker emits a
+// setWidget extension_ui_request. Lines=nil indicates removal.
+type WidgetEvent struct {
+	Key       string
+	Lines     []string
+	Placement string
+	Removed   bool
+}
+
+type WidgetSink func(WidgetEvent)
+
 type assistantMessageEvent struct {
 	Type    string `json:"type"`
 	Delta   string `json:"delta"`

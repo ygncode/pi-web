@@ -4707,3 +4707,87 @@
     }
     .cat-settings-skip:hover { filter: brightness(1.08); }
 
+
+    /* Right-sidebar tab control (Scratchpad | Widgets). The header already
+       had .right-sidebar-header + .right-sidebar-actions; tabs replace the
+       previous <h3>Scratchpad</h3>. */
+    .right-sidebar-tabs {
+      display: flex;
+      gap: 4px;
+      flex: 1 1 auto;
+    }
+    .right-sidebar-tab {
+      flex: 0 0 auto;
+      padding: 4px 10px;
+      font: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted, #aaa);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .right-sidebar-tab:hover {
+      color: var(--text, #fff);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .right-sidebar-tab.is-active {
+      color: var(--text, #fff);
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--dim, rgba(255, 255, 255, 0.12));
+    }
+    .right-sidebar-pane { display: none; }
+    .right-sidebar-pane.is-active { display: flex; flex-direction: column; }
+
+    /* Widgets pane content. Each widget is a section with a header (key) +
+       a <pre>-styled body (lines). Sections stack vertically; the panel
+       scrolls when content overflows. */
+    .widgets-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 10px;
+      overflow-y: auto;
+      height: 100%;
+    }
+    .widget {
+      border: 1px solid var(--dim, rgba(255, 255, 255, 0.12));
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.02);
+      overflow: hidden;
+    }
+    .widget-header {
+      padding: 6px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted, #aaa);
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--dim, rgba(255, 255, 255, 0.10));
+    }
+    .widget-lines {
+      margin: 0;
+      padding: 8px 10px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      line-height: 1.5;
+      color: var(--text, #ddd);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .widget-empty {
+      padding: 8px 10px;
+      font-size: 12px;
+      color: var(--muted, #888);
+      font-style: italic;
+    }
+    .widgets-empty {
+      padding: 16px 12px;
+      color: var(--muted, #888);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .widgets-empty p { margin: 0 0 8px; }
+    .widgets-empty-hint { font-size: 12px; opacity: 0.8; }

@@ -22,6 +22,7 @@ import (
 	"pi-web/internal/rpc"
 	"pi-web/internal/sessions"
 	"pi-web/internal/updater"
+	"pi-web/internal/widgets"
 
 	_ "modernc.org/sqlite"
 )
@@ -56,6 +57,11 @@ type Deps struct {
 	// RunRestart restarts the pi-web service (detached) so the new binary
 	// takes over. Optional; when nil /api/restart responds 503.
 	RunRestart func() error
+	// Widgets is the per-session extension widget store. Populated by the
+	// RPC worker's setWidget event handler in internal/app/app.go and read
+	// by /api/widgets + broadcast via SSE on changes. Optional; nil disables
+	// the widget endpoint + SSE event but doesn't break anything else.
+	Widgets *widgets.Store
 }
 
 // Server holds runtime state — connected SSE clients and last-seen modtimes
@@ -88,6 +94,7 @@ type Server struct {
 	runInstall          func(ctx context.Context) error
 	runRestart          func() error
 	updateMu            sync.Mutex // serializes install/restart operations
+	widgets             *widgets.Store
 
 	// Auto-title bookkeeping (see auto_title.go). Guards against re-titling
 	// loops and clobbering user-set names.
@@ -172,6 +179,7 @@ func New(deps Deps) *Server {
 		updater:             deps.Updater,
 		runInstall:          deps.RunInstall,
 		runRestart:          deps.RunRestart,
+		widgets:             deps.Widgets,
 	}
 	if pm, err := NewPushManager(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "push notifications unavailable: %v\n", err)
@@ -210,6 +218,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/settings", s.auth.Wrap(s.handleSettingsPage))
 	mux.HandleFunc("/api/session", s.auth.Wrap(s.handleApiSession))
 	mux.HandleFunc("/api/sessions", s.auth.Wrap(s.handleApiSessions))
+	mux.HandleFunc("/api/widgets", s.auth.Wrap(s.handleApiWidgets))
 	mux.HandleFunc("/api/chat", s.auth.Wrap(s.handleChat))
 	mux.HandleFunc("/api/chat/cancel", s.auth.Wrap(s.handleCancelChat))
 	mux.HandleFunc("/api/set-model", s.auth.Wrap(s.handleSetModel))
@@ -314,6 +323,27 @@ func (s *Server) removeClient(target *sseClient) {
 	s.clients = filtered
 	s.clientsMu.Unlock()
 	close(target.ch)
+}
+
+// BroadcastWidgetUpdate emits a `widget-update` SSE event on the per-session
+// channel when an extension setWidget call landed. Mirrors BroadcastChatPreview;
+// the embedding app wires it to the worker factory's WidgetSink so widget
+// events flow to connected browsers immediately. Removed=true tells the
+// frontend to tear down that widget's section.
+func (s *Server) BroadcastWidgetUpdate(sessionID string, w widgets.Widget, removed bool) {
+	if sessionID == "" || sessionID == globalSessID {
+		return
+	}
+	payload := map[string]any{
+		"session_id": sessionID,
+		"widget":     w,
+		"removed":    removed,
+	}
+	msg, err := formatSSEJSONEvent("widget-update", payload)
+	if err != nil {
+		return
+	}
+	s.broadcast(sessionID, msg)
 }
 
 func (s *Server) BroadcastChatPreview(sessionID string, preview rpc.StreamPreview) {

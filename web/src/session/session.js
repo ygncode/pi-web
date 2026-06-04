@@ -13,6 +13,7 @@ import * as toggleStateApi from './ui/toggle-state.js';
 import * as sidebarApi from './ui/sidebar.js';
 import * as searchFiltersApi from './ui/search-filters.js';
 import { setupSessionUi } from './ui/session-ui-runner.js';
+import { setupRightSidebarTabs, setupWidgetsPanel } from './ui/widgets-panel.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
 import * as chatApi from './chat/chat-api.js';
@@ -477,6 +478,19 @@ export function runSessionApp({ target = window } = {}) {
     windowImpl: target,
     cwd: dataModel.header?.cwd || '',
     parentId: getSessionSearchParams({ documentImpl, windowImpl: target }).get('id') || '',
+  });
+
+  // Right-sidebar tabs (Scratchpad | Widgets) + widgets panel data layer.
+  // Widgets are populated by the server's RPC worker (handleSession spawns one
+  // on page load to bootstrap them). /api/widgets returns the current
+  // snapshot; SSE `widget-update` events keep the panel live.
+  setupRightSidebarTabs({ documentImpl });
+  setupWidgetsPanel({
+    sessionId,
+    documentImpl,
+    windowImpl: target,
+    fetchImpl: target.fetch ? target.fetch.bind(target) : undefined,
+    EventSourceImpl: target.EventSource,
   });
 
   // Handle Visual Viewport changes to prevent mobile browsers from shifting
