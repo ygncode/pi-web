@@ -87,7 +87,10 @@
 .settings-control select,
 .settings-control input[type="number"],
 .settings-control input[type="time"],
-.settings-control input[type="text"] {
+.settings-control input[type="text"],
+.settings-font-custom {
+  box-sizing: border-box;
+  width: 180px;
   background: var(--input-bg, var(--surface-2));
   color: var(--text);
   border: 1px solid var(--dim);
@@ -95,15 +98,10 @@
   padding: 7px 10px;
   font-size: 1em;
   font-family: inherit;
-  min-width: 130px;
-}
-
-.settings-control input[type="number"] {
-  min-width: 90px;
 }
 
 .settings-control input[type="text"] {
-  min-width: 220px;
+  width: 220px;
 }
 
 .settings-font-control {
@@ -111,10 +109,6 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 6px;
-}
-
-.settings-font-custom {
-  min-width: 160px;
 }
 
 /* Toggle switch */
@@ -194,4 +188,24 @@
 
 .settings-saved-hint.visible {
   opacity: 1;
+}
+
+@media (max-width: 560px) {
+  .settings-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .settings-font-control {
+    align-items: stretch;
+  }
+
+  .settings-control select,
+  .settings-control input[type="number"],
+  .settings-control input[type="time"],
+  .settings-control input[type="text"],
+  .settings-font-custom {
+    width: 100%;
+  }
 }

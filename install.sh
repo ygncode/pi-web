@@ -7,7 +7,7 @@ set -euo pipefail
 #   curl -fsSL https://raw.githubusercontent.com/ygncode/pi-web/main/install.sh | bash
 #
 # Via pi package (also registers /remote, /refresh commands):
-#   pi install git:github.com/ygncode/pi-web
+#   pi install npm:@ygncode/pi-web@beta
 #
 # Updates are handled by re-running the same command.
 
@@ -56,6 +56,17 @@ detect_platform() {
   esac
 
   echo "${os}-${arch}"
+}
+
+# ── Choose release tag ──────────────────────────────────────────────
+package_tag() {
+  # When install.sh runs as an npm lifecycle script, install the binary that
+  # matches the npm package version. This keeps pinned installs such as
+  # `pi install npm:@ygncode/pi-web@0.0.1-beta.25` pinned for both the extension
+  # package and the downloaded pi-web binary.
+  if [[ "${npm_package_name:-}" == "@ygncode/pi-web" && -n "${npm_package_version:-}" ]]; then
+    echo "v${npm_package_version#v}"
+  fi
 }
 
 # ── Check latest release tag ────────────────────────────────────────
@@ -153,6 +164,7 @@ install_binary() {
   local src="$1"
   local tag="$2"
   local is_update="${3:-false}"
+  local inplace="${PI_WEB_INPLACE_UPDATE:-}"
 
   if [[ -f "$BINARY" ]] && [[ "$is_update" != "true" ]]; then
     # Interactive: ask before overwriting
@@ -164,8 +176,11 @@ install_binary() {
     fi
   fi
 
-  # Stop running instance before replacing
-  if [[ -f "$BINARY" ]]; then
+  # Stop running instance before replacing. Skipped for in-place self-updates:
+  # pi-web spawned this script (via `pi install`), so stopping the service here
+  # would kill the very npm process running it. pi-web triggers its own detached
+  # restart afterward (see internal/app/update.go).
+  if [[ -f "$BINARY" && -z "$inplace" ]]; then
     if [[ "$(uname -s)" == "Linux" ]]; then
       systemctl --user stop pi-web.service 2>/dev/null || true
     elif [[ "$(uname -s)" == "Darwin" ]]; then
@@ -181,6 +196,14 @@ install_binary() {
   if [[ ! -w "$INSTALL_DIR" ]]; then
     info "Installing to ${INSTALL_DIR} (requires sudo)..."
     sudo cp "$src" "$BINARY"
+  elif [[ -n "$inplace" ]]; then
+    # Atomic swap so the binary can be replaced while the old process still
+    # runs — a plain cp over a running executable fails with ETXTBSY on Linux.
+    # The temp file must share $BINARY's directory so the mv is a pure rename(2).
+    local staged="${BINARY}.new.$$"
+    cp "$src" "$staged"
+    chmod +x "$staged"
+    mv -f "$staged" "$BINARY"
   else
     cp "$src" "$BINARY"
   fi
@@ -378,7 +401,12 @@ main() {
   platform="$(detect_platform)"
 
   local tag
-  tag="$(latest_tag)"
+  tag="$(package_tag)"
+  if [[ -n "$tag" ]]; then
+    info "Using pi-web package version ${tag}."
+  else
+    tag="$(latest_tag)"
+  fi
 
   if ! needs_update "$tag"; then
     info "Already up-to-date (${tag})."
@@ -397,6 +425,15 @@ main() {
 
   if ! install_binary "$tmp_binary" "$tag" "$is_update"; then
     # User chose not to overwrite
+    exit 0
+  fi
+
+  # In-place self-update: pi-web triggered this and restarts itself afterward
+  # via its own /api/restart. Skip env/service setup so we don't restart (and
+  # kill) the npm process running this script, or clobber the service's PATH.
+  if [[ -n "${PI_WEB_INPLACE_UPDATE:-}" ]]; then
+    info "Binary updated to ${tag}; pi-web will restart to apply it."
+    echo ""
     exit 0
   fi
 

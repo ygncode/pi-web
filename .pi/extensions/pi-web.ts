@@ -18,6 +18,8 @@ import {
   constants as fsConstants,
   mkdirSync,
   readFileSync,
+  readdirSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
@@ -346,6 +348,21 @@ export function withToken(url: string): string {
   if (!token) return url;
   const separator = url.includes("?") ? "&" : "?";
   return `${url}${separator}token=${encodeURIComponent(token)}`;
+}
+
+export function cleanupPiWebNpmTemps(agentRoot = agentDir()): number {
+  const scopeDir = join(agentRoot, "npm", "node_modules", "@ygncode");
+  let removed = 0;
+  try {
+    for (const name of readdirSync(scopeDir)) {
+      if (!name.startsWith(".pi-web-")) continue;
+      rmSync(join(scopeDir, name), { recursive: true, force: true });
+      removed++;
+    }
+  } catch {
+    // Package directory may not exist yet; nothing to clean.
+  }
+  return removed;
 }
 
 export function normalizeCommandArgs(args: unknown): string[] {
@@ -707,7 +724,7 @@ export default function (pi: ExtensionAPI) {
   // registers a title tool or input handler.
 
   // Start pi-web opportunistically when the extension loads so /remote works on a
-  // fresh shell after `pi install npm:@ygncode/pi-web`.
+  // fresh shell after `pi install npm:@ygncode/pi-web@beta`.
   void detectHostPort(pi)
     .then((detected) => {
       if (!detected) return;
@@ -872,7 +889,13 @@ export default function (pi: ExtensionAPI) {
 
       if (subcommand === "update") {
         try {
-          ctx.ui.notify("Updating pi-web package...", "info");
+          const cleaned = cleanupPiWebNpmTemps();
+          ctx.ui.notify(
+            cleaned > 0
+              ? `Cleaned ${cleaned} stale npm temp dir(s). Updating pi-web package...`
+              : "Updating pi-web package...",
+            "info",
+          );
           await pi.exec("pi", ["install", "npm:@ygncode/pi-web@beta"]);
           try {
             await restartPiWeb(pi);
@@ -886,7 +909,10 @@ export default function (pi: ExtensionAPI) {
           await ctx.reload();
           return;
         } catch (err) {
-          ctx.ui.notify(`Failed to update pi-web: ${err}`, "error");
+          ctx.ui.notify(
+            `Failed to update pi-web: ${err}\nTry: rm -rf ~/.pi/agent/npm/node_modules/@ygncode/.pi-web-* && pi install npm:@ygncode/pi-web@beta`,
+            "error",
+          );
         }
         return;
       }

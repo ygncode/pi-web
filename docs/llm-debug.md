@@ -1,6 +1,6 @@
 User is installing pi-web via 
 
-- pi install npm:@ygncode/pi-web
+- pi install npm:@ygncode/pi-web@beta
 
 Which it automatically run [install.sh](https://raw.githubusercontent.com/ygncode/pi-web/refs/heads/main/install.sh) and setup pi.
 

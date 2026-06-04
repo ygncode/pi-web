@@ -6,9 +6,14 @@ import vm from 'node:vm';
 function loadServiceWorker({ clients = [] } = {}) {
   const listeners = {};
   const notifications = [];
+  const badge = { set: [], cleared: 0 };
   const self = {
     addEventListener(type, handler) { listeners[type] = handler; },
     skipWaiting() {},
+    navigator: {
+      setAppBadge: async (n) => { badge.set.push(n); },
+      clearAppBadge: async () => { badge.cleared += 1; }
+    },
     clients: {
       claim() {},
       matchAll: async () => clients,
@@ -20,7 +25,7 @@ function loadServiceWorker({ clients = [] } = {}) {
   };
   const code = readFileSync(resolve(process.cwd(), '../internal/ui/live_templates/assets/sw.js'), 'utf8');
   vm.runInNewContext(code, { self }, { filename: 'internal/ui/live_templates/assets/sw.js' });
-  return { listeners, notifications };
+  return { listeners, notifications, badge };
 }
 
 async function dispatchPush(listener, payload = { title: 'pi session', body: 'Response ready', sessionId: 's1' }) {
@@ -73,5 +78,36 @@ describe('push service worker notifications', () => {
     await dispatchPush(listeners.push);
 
     expect(notifications).toHaveLength(1);
+  });
+
+  it('sets an app-icon badge when showing a background notification', async () => {
+    const { listeners, badge } = loadServiceWorker({ clients: [] });
+
+    await dispatchPush(listeners.push);
+
+    expect(badge.set).toEqual([1]);
+  });
+
+  it('does not badge when a foreground window suppresses the notification', async () => {
+    const { listeners, badge } = loadServiceWorker({
+      clients: [{ visibilityState: 'visible', url: 'http://localhost/session?id=s1' }]
+    });
+
+    await dispatchPush(listeners.push);
+
+    expect(badge.set).toEqual([]);
+  });
+
+  it('clears the app-icon badge when a notification is clicked', async () => {
+    const { listeners, badge } = loadServiceWorker({ clients: [] });
+
+    const waits = [];
+    listeners.notificationclick({
+      notification: { close() {}, data: { sessionId: 's1' } },
+      waitUntil: (promise) => waits.push(promise)
+    });
+    await Promise.all(waits);
+
+    expect(badge.cleared).toBe(1);
   });
 });

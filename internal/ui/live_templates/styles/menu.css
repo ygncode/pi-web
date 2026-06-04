@@ -495,7 +495,10 @@
     padding: 0 16px 4px;
     font-size: 12px;
     color: var(--muted, #858a96);
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
+.version-modal-status:not([hidden]) { opacity: 1; }
 .version-modal-status.error { color: #e06c75; }
 .version-modal-status.info { color: var(--accent, #9cc7c0); }
 
@@ -529,6 +532,27 @@
 .version-modal-btn.ghost:hover { background: var(--pi-menu-hover-bg, rgba(127,127,127,0.12)); }
 .version-modal-btn.primary:hover { opacity: 0.9; }
 .version-modal-btn:disabled { opacity: 0.5; cursor: default; }
+
+.version-modal-btn.is-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
+.version-modal-btn.is-loading::before {
+    content: "";
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    animation: version-spin 0.7s linear infinite;
+}
+@keyframes version-spin {
+    to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .version-modal-btn.is-loading::before { animation: none; }
+}
 
 body.version-modal-open { overflow: hidden; }
 

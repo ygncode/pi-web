@@ -53,6 +53,14 @@ self.addEventListener('push', (event) => {
       // Phones play their default notification sound when this fires.
       silent: false,
     };
+    // Badge the app icon so the user notices even after the banner is gone.
+    // Cleared when the app is opened/focused (notificationclick + page
+    // visibility handler). No-op where the Badging API is unsupported.
+    try {
+      if (self.navigator && self.navigator.setAppBadge) {
+        await self.navigator.setAppBadge(1);
+      }
+    } catch (_) {}
     await self.registration.showNotification(title, options);
   })());
 });
@@ -62,6 +70,11 @@ self.addEventListener('notificationclick', (event) => {
   const sessionId = event.notification.data && event.notification.data.sessionId;
   const target = sessionId ? `/session?id=${encodeURIComponent(sessionId)}` : '/';
   event.waitUntil((async () => {
+    try {
+      if (self.navigator && self.navigator.clearAppBadge) {
+        await self.navigator.clearAppBadge();
+      }
+    } catch (_) {}
     const all = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const client of all) {
       if (client.url.includes(target) && 'focus' in client) {

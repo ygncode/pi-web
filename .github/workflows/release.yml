@@ -142,6 +142,9 @@ jobs:
           tag_version="${GITHUB_REF_NAME#v}"
           if [[ "${GITHUB_REF_NAME}" == *"-"* ]]; then
             npm publish --access public --tag beta --provenance
+            # pi-web is currently beta-only. Keep unqualified installs
+            # (`pi install npm:@ygncode/pi-web`) on the newest beta too.
+            npm dist-tag add "@ygncode/pi-web@${tag_version}" latest
           else
             npm publish --access public --tag latest --provenance
           fi

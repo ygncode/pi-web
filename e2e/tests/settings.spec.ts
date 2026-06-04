@@ -40,4 +40,57 @@ test.describe("settings page", () => {
 
     await expect(page.locator(SPINNER)).toHaveValue(next);
   });
+
+  // Alignment: all form controls in the settings control column must share the
+  // same rendered width so the column has consistent left and right edges.
+  test("form controls share a uniform width", async ({ page }, testInfo) => {
+    // Run only on Desktop Chrome — layout is visual, browser-independent, and
+    // a single representative viewport (1280×720) is enough.
+    test.skip(
+      testInfo.project.name !== "Desktop Chrome",
+      "visual alignment check runs on one project",
+    );
+
+    await page.goto("/settings");
+    await expect(page.locator(LAYOUT)).toBeVisible();
+
+    // Collect bounding-box widths of every select, number, and time input that
+    // sits inside a .settings-control.
+    const widths: number[] = await page.evaluate(() => {
+      const controls = document.querySelectorAll<HTMLElement>(
+        ".settings-control select, .settings-control input[type='number'], .settings-control input[type='time']",
+      );
+      return Array.from(controls).map((el) =>
+        Math.round(el.getBoundingClientRect().width),
+      );
+    });
+
+    expect(widths.length).toBeGreaterThan(0);
+
+    // All controls must be the same width (uniform column).
+    const first = widths[0];
+    for (const w of widths) {
+      expect(w).toBe(first);
+    }
+  });
+
+  // Alignment: on narrow viewports (≤560px) rows must stack vertically so the
+  // label and control don't compete for horizontal space.
+  test("rows stack vertically on narrow viewports", async ({ page }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "Desktop Chrome",
+      "responsive stacking check runs on one project",
+    );
+
+    await page.setViewportSize({ width: 400, height: 800 });
+    await page.goto("/settings");
+    await expect(page.locator(LAYOUT)).toBeVisible();
+
+    const flexDirection = await page.evaluate(() => {
+      const row = document.querySelector<HTMLElement>(".settings-row");
+      return row ? getComputedStyle(row).flexDirection : null;
+    });
+
+    expect(flexDirection).toBe("column");
+  });
 });

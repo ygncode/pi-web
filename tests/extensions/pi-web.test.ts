@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { homedir } from 'node:os';
 import { dirname } from 'node:path';
-import { chmodSync, mkdirSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 // Mock node:fs before importing the module under test
 vi.mock('node:fs', async (importOriginal) => {
@@ -9,7 +9,12 @@ vi.mock('node:fs', async (importOriginal) => {
   return {
     ...actual,
     chmodSync: vi.fn(),
-    mkdirSync: vi.fn(),
+    mkdirSync: vi.fn((path: string, options?: unknown) => {
+      if (typeof path === 'string' && path.includes('/.tmp-test-')) {
+        return (actual as any).mkdirSync(path, options as any);
+      }
+      return undefined;
+    }),
     writeFileSync: vi.fn((path: string, content: string, options?: unknown) => {
       const tokenEnvPath = `${homedir()}/.config/pi-web/env`;
       if (typeof path === 'string' && path === tokenEnvPath) {
@@ -43,6 +48,7 @@ import {
   withToken,
   readPiWebToken,
   writePiWebToken,
+  cleanupPiWebNpmTemps,
 } from '../../.pi/extensions/pi-web.ts';
 
 declare global {
@@ -143,6 +149,27 @@ describe('normalizeCommandArgs', () => {
   it('set-token destructure: token with special chars', () => {
     const [, token] = normalizeCommandArgs('set-token sec=ret&val');
     expect(token).toBe('sec=ret&val');
+  });
+});
+
+// ── npm cleanup ────────────────────────────────────────────────────
+describe('cleanupPiWebNpmTemps', () => {
+  it('removes stale pi-web npm temp dirs only', () => {
+    const root = `${process.cwd()}/.tmp-test-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const scope = `${root}/npm/node_modules/@ygncode`;
+    const stale = `${scope}/.pi-web-F7YwHA7A`;
+    const keep = `${scope}/pi-web`;
+    mkdirSync(`${stale}/nested`, { recursive: true });
+    mkdirSync(keep, { recursive: true });
+    writeFileSync(`${stale}/nested/file`, 'x');
+
+    try {
+      expect(cleanupPiWebNpmTemps(root)).toBe(1);
+      expect(existsSync(stale)).toBe(false);
+      expect(existsSync(keep)).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
 
