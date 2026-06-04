@@ -24,6 +24,9 @@
 const ENABLED_KEY = 'pi-web:v1:artifacts:enabled';
 const INCLUDE_KEY = 'pi-web:v1:artifacts:include';
 
+// localStorage keys that should re-run the filter when changed in another tab.
+export const ARTIFACT_SETTING_KEYS = [ENABLED_KEY, INCLUDE_KEY];
+
 // JS-side fallbacks so the session page can paint synchronously before the
 // server-backed settings (hydrateSettings) resolve. Mirrors settingDefaults in
 // internal/server/settings.go.

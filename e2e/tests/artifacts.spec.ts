@@ -361,4 +361,31 @@ test.describe("artifacts panel", () => {
     // Scratchpad remains the active tab.
     await expect(page.locator("#right-tab-scratchpad")).toHaveClass(/active/);
   });
+
+  test("reflects a setting change from another tab live (no reload)", async ({
+    page,
+    context,
+    sessionsDir,
+  }, testInfo) => {
+    const name = uniqueSessionName(testInfo, "art");
+    const id = writeSession(sessionsDir, name, sessionWithArtifacts());
+
+    await page.goto(`/session?id=${encodeURIComponent(id)}`);
+    const collapsed = await page.evaluate(() =>
+      document.body.classList.contains("right-sidebar-collapsed"),
+    );
+    if (collapsed) await page.locator("#toggle-right-sidebar-btn").click();
+    await expect(page.locator("#right-tab-artifacts")).toBeVisible();
+
+    // A second tab in the same context flips the setting; the shared-localStorage
+    // write fires a `storage` event in the open session, which re-runs the filter.
+    const other = await context.newPage();
+    await other.goto("/");
+    await other.evaluate(() =>
+      localStorage.setItem("pi-web:v1:artifacts:enabled", "false"),
+    );
+
+    await expect(page.locator("#right-tab-artifacts")).toBeHidden();
+    await other.close();
+  });
 });

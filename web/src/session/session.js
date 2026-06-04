@@ -15,7 +15,7 @@ import * as searchFiltersApi from './ui/search-filters.js';
 import { setupSessionUi } from './ui/session-ui-runner.js';
 import { collectArtifacts } from './artifacts/artifact-registry.js';
 import { createArtifactPanel } from './artifacts/artifact-panel.js';
-import { filterArtifacts, readArtifactSettings } from './artifacts/artifact-filter.js';
+import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './artifacts/artifact-filter.js';
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { createAnnotationLayer } from './annotations/annotation-layer.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
@@ -276,6 +276,14 @@ export function runSessionApp({ target = window } = {}) {
     import('highlight.js').then(({ default: loaded }) => {
       artifactHljs = loaded;
       artifactPanel.render();
+    });
+
+    // Reflect artifact-setting changes made on the /settings page (in another
+    // tab) without a reload. The `storage` event fires only in other documents,
+    // so this won't double-fire for changes originating in this same tab. A null
+    // key means storage was cleared — refresh to re-read defaults.
+    target.addEventListener('storage', (e) => {
+      if (e.key === null || ARTIFACT_SETTING_KEYS.includes(e.key)) refreshArtifacts();
     });
 
     // Artifacts help (?) modal — shown only on the Artifacts tab via CSS.
