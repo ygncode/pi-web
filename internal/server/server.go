@@ -120,6 +120,11 @@ func New(deps Deps) *Server {
 	if dbErr != nil {
 		fmt.Fprintf(os.Stderr, "failed to open sqlite database: %v\n", dbErr)
 	} else {
+		// SQLite allows only one writer at a time; multiple pooled connections
+		// racing to write surface as "database is locked" errors (e.g. concurrent
+		// annotation writes). Serialize on a single connection so writes queue
+		// instead of failing.
+		db.SetMaxOpenConns(1)
 		_, err := db.Exec(`CREATE TABLE IF NOT EXISTS scratchpads (
 			project_path TEXT PRIMARY KEY,
 			content TEXT,
@@ -144,6 +149,12 @@ func New(deps Deps) *Server {
 		}
 		if _, err := db.Exec(btwSessionsSchema); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to create btw_sessions table: %v\n", err)
+		}
+		if _, err := db.Exec(annotationsSchema); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create annotations table: %v\n", err)
+		}
+		if _, err := db.Exec(annotationsIndex); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to create annotations index: %v\n", err)
 		}
 		migrateLegacyBtwSession(db)
 	}
@@ -229,6 +240,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/git/rename-branch", s.auth.Wrap(s.handleGitRenameBranch))
 	mux.HandleFunc("/custom-themes.css", s.auth.Wrap(s.handleCustomThemes))
 	mux.HandleFunc("/api/scratchpad", s.getPostHandler(s.handleGetScratchpad, s.handleSaveScratchpad))
+	mux.HandleFunc("/api/annotations", s.auth.Wrap(s.handleAnnotations))
 	mux.HandleFunc("/api/settings", s.getPostHandler(s.handleGetSettings, s.handleSaveSettings))
 	mux.HandleFunc("/api/btw", s.auth.Wrap(s.handleGetBtw))
 	mux.HandleFunc("/api/btw/new", s.auth.Wrap(s.handleNewBtw))

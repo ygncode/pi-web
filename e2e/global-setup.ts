@@ -11,13 +11,22 @@ export default async function globalSetup() {
   // intercepting clicks — which silently breaks click-based tests on CI runners
   // in that window (e.g. UTC night). Seed it off in the server-side store so
   // every page hydrates with it disabled.
+  // Also disable auto-titling: with the stub model it appends a session_info
+  // line and broadcasts a "reload" at an unpredictable moment, re-rendering
+  // #messages and racing tests that assert on freshly-created DOM (e.g.
+  // annotation highlights). Deterministic test env > background titling.
   const res = await fetch(`${baseURL}/api/settings`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ settings: { "pi-web:v1:cat:enabled": "false" } }),
+    body: JSON.stringify({
+      settings: {
+        "pi-web:v1:cat:enabled": "false",
+        "pi-web:v1:auto-title:enabled": "false",
+      },
+    }),
   });
   if (!res.ok) {
-    throw new Error(`failed to disable cat gatekeeper: HTTP ${res.status}`);
+    throw new Error(`failed to seed test settings: HTTP ${res.status}`);
   }
 
   const state: ServerState = { baseURL, agentDir, sessionsDir, pid: child.pid! };

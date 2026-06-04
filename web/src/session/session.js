@@ -13,6 +13,10 @@ import * as toggleStateApi from './ui/toggle-state.js';
 import * as sidebarApi from './ui/sidebar.js';
 import * as searchFiltersApi from './ui/search-filters.js';
 import { setupSessionUi } from './ui/session-ui-runner.js';
+import { collectArtifacts } from './artifacts/artifact-registry.js';
+import { createArtifactPanel } from './artifacts/artifact-panel.js';
+import { createAnnotationApi } from './annotations/annotation-api.js';
+import { createAnnotationLayer } from './annotations/annotation-layer.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
 import * as chatApi from './chat/chat-api.js';
@@ -96,6 +100,19 @@ export function runSessionApp({ target = window } = {}) {
     })
   };
 
+  let artifactPanel = null;
+  let annotationLayer = null;
+  function refreshArtifacts() {
+    if (!artifactPanel) return;
+    const artifacts = collectArtifacts(dataModel.entries);
+    artifactPanel.setArtifacts(artifacts);
+    const countEl = documentImpl.getElementById('artifact-tab-count');
+    if (countEl) {
+      countEl.textContent = String(artifacts.length);
+      countEl.hidden = artifacts.length === 0;
+    }
+  }
+
   function replaceMapContents(targetMap, nextMap) {
     targetMap.clear();
     nextMap.forEach((value, key) => targetMap.set(key, value));
@@ -140,6 +157,8 @@ export function runSessionApp({ target = window } = {}) {
       syncTreeRendererState();
       treeRenderer.forceTreeRerender();
     }
+
+    refreshArtifacts();
   }
 
   const sessionTree = {
@@ -214,6 +233,51 @@ export function runSessionApp({ target = window } = {}) {
     navigateTo: (...args) => navigateTo(...args),
     projectPath: dataModel.header?.cwd || ''
   });
+
+  // Artifacts panel (right-sidebar "Artifacts" tab). Live-only: the host element
+  // is rendered only when IsLive, so this is a no-op on export snapshots.
+  const artifactHost = documentImpl.getElementById('artifact-panel-host');
+  if (artifactHost) {
+    let artifactHljs = null;
+    const artifactHighlight = (code, lang) => {
+      if (!artifactHljs) return null;
+      try {
+        return lang && artifactHljs.getLanguage(lang)
+          ? artifactHljs.highlight(code, { language: lang }).value
+          : artifactHljs.highlightAuto(code).value;
+      } catch { return null; }
+    };
+    artifactPanel = createArtifactPanel({
+      host: artifactHost,
+      escapeHtml: sessionFormat.escapeHtml,
+      highlight: artifactHighlight,
+      renderMarkdown: (text) => safeMarkedParse(text, { marked }),
+      documentImpl,
+      windowImpl: target,
+      navigatorImpl: target.navigator,
+      URLImpl: target.URL,
+      BlobImpl: target.Blob
+    });
+    refreshArtifacts();
+    import('highlight.js').then(({ default: loaded }) => {
+      artifactHljs = loaded;
+      artifactPanel.render();
+    });
+
+    // Artifacts help (?) modal — shown only on the Artifacts tab via CSS.
+    const helpBtn = documentImpl.getElementById('artifact-help-btn');
+    const helpModal = documentImpl.getElementById('artifact-help-modal');
+    if (helpBtn && helpModal) {
+      const hideHelp = () => { helpModal.hidden = true; };
+      helpBtn.addEventListener('click', () => { helpModal.hidden = false; });
+      helpModal.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action="close-artifact-help"]')) hideHelp();
+      });
+      target.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !helpModal.hidden) hideHelp();
+      });
+    }
+  }
 
   const navigateTo = (targetId, scrollMode = 'target', scrollToEntryId = null) => navigatorInstance.navigateTo(targetId, scrollMode, scrollToEntryId);
   const renderEntryToNode = (entry) => navigatorInstance.renderEntryToNode(entry);
@@ -300,6 +364,32 @@ export function runSessionApp({ target = window } = {}) {
   // entries below the stub and the conversation appears duplicated.
   navigateTo(currentLeafId, dataModel.urlTargetId ? 'target' : 'bottom', dataModel.urlTargetId || null);
 
+  // Annotation layer (right-sidebar "Notes" tab). Live-only: the host element is
+  // rendered only when IsLive. Anchors to entries by `entry-<id>` + offsets.
+  const annotationListHost = documentImpl.getElementById('annotation-list-host');
+  const messagesEl = documentImpl.getElementById('messages');
+  if (annotationListHost && messagesEl && sessionId) {
+    const annotationArtifactHost = documentImpl.getElementById('artifact-panel-host');
+    annotationLayer = createAnnotationLayer({
+      sessionId,
+      api: createAnnotationApi({ sessionId, fetchImpl: target.fetch.bind(target) }),
+      scopes: [messagesEl, annotationArtifactHost].filter(Boolean),
+      listHost: annotationListHost,
+      composerEl: documentImpl.getElementById('pi-chat-message'),
+      countEl: documentImpl.getElementById('annotation-tab-count'),
+      escapeHtml: sessionFormat.escapeHtml,
+      onSelectArtifact: (artifactId) => {
+        ui.activateRightTab('artifacts');
+        artifactPanel?.selectArtifact(artifactId);
+      },
+      resolveArtifact: (artifactId) => artifactPanel?.getArtifact(artifactId) || null,
+      documentImpl,
+      windowImpl: target
+    });
+    annotationLayer.init();
+    target.addEventListener('pi-session-reload', () => annotationLayer.reapply());
+  }
+
   doneNotifier.setupDoneNotifyToggle({ documentImpl, windowImpl: target });
   target.addEventListener('pi-worker-done', () => {
     doneNotifier.notifyDone({ documentImpl, windowImpl: target });
@@ -327,7 +417,8 @@ export function runSessionApp({ target = window } = {}) {
     resumeButton,
     newSessionButton,
     cwd: dataModel.header?.cwd || '',
-    onSessionDataReload: (data) => syncDataModelEntries(data.entries)
+    onSessionDataReload: (data) => syncDataModelEntries(data.entries),
+    onAnnotations: (list) => annotationLayer?.setAnnotations(list)
   });
 
   setupKeyboardNav({ windowImpl: target, documentImpl });

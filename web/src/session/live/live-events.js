@@ -70,6 +70,7 @@ export function wireSessionEvents({
   eventSource,
   onReload,
   onChatPreview,
+  onAnnotations = null,
   onError = () => {},
   windowImpl = typeof window !== 'undefined' ? window : null,
   CustomEventImpl = typeof CustomEvent !== 'undefined' ? CustomEvent : null
@@ -90,6 +91,16 @@ export function wireSessionEvents({
       onError(error);
     }
   });
+  if (onAnnotations) {
+    eventSource.addEventListener('annotations', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        onAnnotations(Array.isArray(data.annotations) ? data.annotations : []);
+      } catch (error) {
+        onError(error);
+      }
+    });
+  }
   eventSource.onerror = onError;
   return eventSource;
 }

@@ -1,4 +1,4 @@
-import { setupRightSidebar } from './right-sidebar.js';
+import { setupRightSidebar, setupRightSidebarTabs } from './right-sidebar.js';
 
 export function setupSessionUi({
   documentImpl = document,
@@ -44,6 +44,7 @@ export function setupSessionUi({
   }
 
   const rightSidebar = setupRightSidebar({ documentImpl, windowImpl, storage, projectPath });
+  const rightSidebarTabs = setupRightSidebarTabs({ documentImpl, storage });
 
   const toggleController = toggleStateApi.createToggleController({ documentImpl, storage });
   windowImpl.sessionToggleState = toggleController;
@@ -69,5 +70,6 @@ export function setupSessionUi({
     attachHeaderHandlers,
     toggleController,
     toggleRightSidebar: rightSidebar?.toggleSidebar ?? (() => {}),
+    activateRightTab: rightSidebarTabs?.activate ?? (() => {}),
   };
 }

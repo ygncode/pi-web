@@ -11,7 +11,49 @@
 
 const RIGHT_SIDEBAR_COLLAPSED_KEY = 'pi-web:v1:right-sidebar-collapsed';
 const RIGHT_SIDEBAR_WIDTH_KEY = 'pi-web:v1:right-sidebar-width';
+const RIGHT_SIDEBAR_TAB_KEY = 'pi-web:v1:right-sidebar-tab';
 const MIN_CONTENT_WIDTH = 320;
+
+/**
+ * Wire the Scratchpad / Artifacts tab switcher in the right-sidebar header.
+ * Pure DOM toggling; the artifact panel's data is owned by session.js.
+ * Returns { activate } so callers can switch tabs programmatically.
+ */
+export function setupRightSidebarTabs({ documentImpl = document, storage = globalThis.localStorage } = {}) {
+  const tabs = Array.from(documentImpl.querySelectorAll('.right-sidebar-tab'));
+  const panes = Array.from(documentImpl.querySelectorAll('.right-sidebar-pane'));
+  const sidebar = documentImpl.getElementById('right-sidebar');
+  if (tabs.length === 0 || panes.length === 0) return { activate: () => {} };
+
+  function activate(pane) {
+    if (!tabs.some(tab => tab.dataset.pane === pane)) return;
+    for (const tab of tabs) {
+      const isActive = tab.dataset.pane === pane;
+      tab.classList.toggle('active', isActive);
+      tab.setAttribute('aria-selected', String(isActive));
+    }
+    for (const p of panes) {
+      const isActive = p.id === `right-pane-${pane}`;
+      p.classList.toggle('active', isActive);
+      if (isActive) p.removeAttribute('hidden');
+      else p.setAttribute('hidden', '');
+    }
+    // Drives tab-scoped chrome via CSS (e.g. the Artifacts-only help button).
+    if (sidebar) sidebar.dataset.activeTab = pane;
+    try { storage?.setItem(RIGHT_SIDEBAR_TAB_KEY, pane); } catch {}
+  }
+
+  for (const tab of tabs) {
+    tab.addEventListener('click', () => activate(tab.dataset.pane));
+  }
+
+  let initial = '';
+  try { initial = storage?.getItem(RIGHT_SIDEBAR_TAB_KEY) || ''; } catch {}
+  if (initial && initial !== 'scratchpad') activate(initial);
+  if (sidebar && !sidebar.dataset.activeTab) sidebar.dataset.activeTab = 'scratchpad';
+
+  return { activate };
+}
 
 export function setupRightSidebar({
   documentImpl = document,

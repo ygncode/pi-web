@@ -19,7 +19,8 @@ export function runLiveReload({
   resumeButton,
   newSessionButton,
   cwd = '',
-  onSessionDataReload = () => {}
+  onSessionDataReload = () => {},
+  onAnnotations = null
 } = {}) {
   const document = documentImpl;
   const window = windowImpl;
@@ -298,6 +299,7 @@ export function runLiveReload({
         eventSource: es,
         onReload: triggerReload,
         onChatPreview: renderChatPreview,
+        onAnnotations: onAnnotations,
         onError: function() {
           // EventSource fires onerror both for transient blips (browser
           // will auto-retry) and terminal closures (readyState===CLOSED,

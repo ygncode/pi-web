@@ -599,10 +599,177 @@
       letter-spacing: 0.05em;
     }
 
+    .right-sidebar-tabs {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex: 1 1 auto;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .right-sidebar-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .right-sidebar-tab {
+      flex: 0 0 auto;
+      padding: 3px 8px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .right-sidebar-tab:hover {
+      color: var(--text);
+    }
+
+    .right-sidebar-tab.active {
+      color: var(--text);
+      background: var(--selectedBg);
+      border-color: var(--dim);
+    }
+
+    .right-sidebar-tab-count {
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1;
+      padding: 2px 5px;
+      border-radius: 8px;
+      background: var(--dim);
+      color: var(--text);
+    }
+
+    .right-sidebar-pane {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .right-sidebar-pane[hidden] {
+      display: none;
+    }
+
     .right-sidebar-actions {
       display: flex;
       align-items: center;
       gap: 4px;
+      flex: 0 0 auto;
+    }
+
+    /* The help (?) button is relevant only to the Artifacts tab. */
+    .artifact-help-btn {
+      display: none;
+    }
+
+    #right-sidebar[data-active-tab="artifacts"] .artifact-help-btn {
+      display: inline-flex;
+    }
+
+    .artifact-help-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1400;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .artifact-help-modal[hidden] {
+      display: none;
+    }
+
+    .artifact-help-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+    }
+
+    .artifact-help-card {
+      position: relative;
+      max-width: 460px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      background: var(--surface, var(--chrome-bg));
+      border: 1px solid var(--borderMuted);
+      border-radius: 10px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    }
+
+    .artifact-help-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--dim);
+    }
+
+    .artifact-help-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .artifact-help-close {
+      width: 26px;
+      height: 26px;
+      font-size: 20px;
+      line-height: 1;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .artifact-help-close:hover {
+      color: var(--text);
+      background: var(--hover);
+    }
+
+    .artifact-help-body {
+      padding: 14px 16px 18px;
+    }
+
+    .artifact-help-body p {
+      margin: 0 0 11px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    .artifact-help-body code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      padding: 1px 4px;
+      border-radius: 3px;
+      background: var(--selectedBg);
+    }
+
+    .artifact-help-note {
+      color: var(--muted) !important;
+      font-size: 12px !important;
+      border-top: 1px solid var(--dim);
+      padding-top: 11px;
+      margin-bottom: 0 !important;
     }
 
     .right-sidebar-btn {
@@ -677,6 +844,440 @@
 
     .scratchpad-status.saved {
       color: var(--muted);
+    }
+
+    /* ── Artifacts panel (right sidebar "Artifacts" tab) ── */
+    .artifact-panel-host {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .artifact-panel {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .artifact-empty {
+      padding: 16px 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .artifact-list {
+      flex-shrink: 0;
+      max-height: 35%;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding-bottom: 6px;
+      margin-bottom: 6px;
+      border-bottom: 1px solid var(--dim);
+    }
+
+    .artifact-list-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      text-align: left;
+      padding: 5px 7px;
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .artifact-list-item:hover {
+      color: var(--text);
+      background: var(--hover);
+    }
+
+    .artifact-list-item.active {
+      color: var(--text);
+      background: var(--selectedBg);
+      border-color: var(--dim);
+    }
+
+    .artifact-item-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .artifact-item-lang {
+      flex-shrink: 0;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .artifact-badge {
+      flex-shrink: 0;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 1px 5px;
+      border-radius: 8px;
+      background: var(--accent);
+      color: var(--chrome-bg);
+    }
+
+    .artifact-view {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .artifact-view-header {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 6px;
+    }
+
+    .artifact-view-title {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .artifact-view-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+
+    .artifact-action {
+      padding: 3px 8px;
+      font-family: inherit;
+      font-size: 11px;
+      color: var(--muted);
+      background: transparent;
+      border: 1px solid var(--dim);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    .artifact-action:hover {
+      color: var(--text);
+      background: var(--hover);
+      border-color: var(--borderMuted);
+    }
+
+    .artifact-action.copied {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .artifact-action.active {
+      color: var(--text);
+      background: var(--selectedBg);
+      border-color: var(--accent);
+    }
+
+    .artifact-view-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .artifact-preview {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      border: 1px solid var(--dim);
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .artifact-markdown {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 4px 2px;
+      font-size: 13px;
+    }
+
+    .artifact-source {
+      flex: 1;
+      min-height: 0;
+      margin: 0;
+      overflow: auto;
+      font-size: 12px;
+      line-height: var(--line-height);
+    }
+
+    .artifact-source code {
+      white-space: pre;
+    }
+
+    /* ── Annotations (Notes tab + inline highlights) ── */
+    .annotation-list-host {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .annotation-empty {
+      padding: 16px 8px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .annotation-list {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .annotation-item {
+      position: relative;
+      padding: 7px 26px 7px 8px;
+      border: 1px solid var(--dim);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .annotation-item:hover {
+      background: var(--hover);
+      border-color: var(--borderMuted);
+    }
+
+    .annotation-delete {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 18px;
+      height: 18px;
+      line-height: 1;
+      padding: 0;
+      font-size: 14px;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    .annotation-delete:hover {
+      color: var(--error);
+      background: var(--hover);
+    }
+
+    .annotation-quote {
+      font-size: 11px;
+      color: var(--muted);
+      border-left: 2px solid var(--accent);
+      padding-left: 6px;
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .annotation-note {
+      font-size: 12px;
+      color: var(--text);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .annotation-footer {
+      flex-shrink: 0;
+      padding-top: 8px;
+    }
+
+    .annotation-send {
+      width: 100%;
+      padding: 6px 8px;
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--chrome-bg);
+      background: var(--accent);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .annotation-send:hover {
+      opacity: 0.9;
+    }
+
+    mark.pi-annotation {
+      background: color-mix(in srgb, var(--accent) 28%, transparent);
+      color: inherit;
+      border-radius: 2px;
+      padding: 0 1px;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    .annotation-flash {
+      animation: annotation-flash-kf 1.2s ease-out;
+    }
+
+    @keyframes annotation-flash-kf {
+      0%, 30% { background: color-mix(in srgb, var(--accent) 22%, transparent); }
+      100% { background: transparent; }
+    }
+
+    .annotation-popover {
+      position: fixed;
+      /* Above the mobile right-sidebar overlay (z-index 1200) so the popover is
+         clickable when annotating an artifact's source inside the panel. */
+      z-index: 1300;
+      background: var(--chrome-bg);
+      border: 1px solid var(--borderMuted);
+      border-radius: 6px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 240px;
+    }
+
+    .annotation-popover[hidden] {
+      display: none;
+    }
+
+    /* Comfortable touch target so it's easy to hit next to the native menu. */
+    .annotation-pop-btn {
+      padding: 9px 16px;
+      min-height: 38px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      background: transparent;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .annotation-pop-btn:hover {
+      color: var(--chrome-bg);
+      background: var(--accent);
+    }
+
+    /* ── Annotation note input (modal) ── */
+    .annotation-note-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1500;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 12vh 16px 16px;
+    }
+
+    .annotation-note-modal[hidden] {
+      display: none;
+    }
+
+    .annotation-note-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .annotation-note-card {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      background: var(--surface, var(--chrome-bg));
+      border: 1px solid var(--borderMuted);
+      border-radius: 10px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .annotation-note-quote {
+      font-size: 12px;
+      color: var(--muted);
+      border-left: 2px solid var(--accent);
+      padding-left: 8px;
+      max-height: 3.6em;
+      overflow: hidden;
+    }
+
+    .annotation-note-input {
+      width: 100%;
+      box-sizing: border-box;
+      font-family: inherit;
+      font-size: 15px; /* >=16px-ish avoids iOS zoom-on-focus jank */
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--dim);
+      border-radius: 6px;
+      padding: 10px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .annotation-note-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .annotation-note-save,
+    .annotation-note-cancel {
+      padding: 9px 16px;
+      min-height: 38px;
+      font-family: inherit;
+      font-size: 13px;
+      border-radius: 6px;
+      cursor: pointer;
+      border: 1px solid var(--dim);
+    }
+
+    .annotation-note-save {
+      color: var(--chrome-bg);
+      background: var(--accent);
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    .annotation-note-cancel {
+      color: var(--muted);
+      background: transparent;
     }
 
     /* ── Right sidebar expanded popup overlay ── */
