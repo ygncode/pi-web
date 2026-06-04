@@ -54,7 +54,9 @@ Session frontend modules are split by ownership:
 - `web/src/session/navigation/` — session path rendering, header/message navigation, copy-link wiring
 - `web/src/session/chat/` — chat composer, attachments, model and thinking controls
 - `web/src/session/live/` — session SSE/live reload, fork modal, share overlay, command/session palettes, update indicator
-- `web/src/session/ui/` — session page interaction wiring, sidebars, search filters
+- `web/src/session/ui/` — session page interaction wiring, sidebars (incl. the right-sidebar Scratchpad / Artifacts / Annotations tab switcher), search filters
+- `web/src/session/artifacts/` — artifact registry (path-keyed detection of files the agent wrote/edited/renamed, plus sizeable fenced code blocks) and the right-sidebar Artifacts panel (source view, sandboxed HTML/SVG + Markdown preview, copy/download, help modal)
+- `web/src/session/annotations/` — inline review annotations: API client, offset-anchored highlighting, the selection→note flow, the Annotations tab list, and "send notes to pi" (syncs across tabs via the `annotations` SSE event)
 - `web/src/session/cat-gatekeeper/` — the cat gate overlay + its settings
 
 `internal/ui/live_templates/export/app/*.js` is not the source of live interactive session runtime behavior. It is kept only for static/share exports.

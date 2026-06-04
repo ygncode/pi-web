@@ -51,6 +51,7 @@ pi-web/
 │   │   ├── new_session.go      # New-session creation logic
 │   │   ├── git.go              # /api/git/info, /api/git/rename-branch handlers
 │   │   ├── scratchpad.go       # Per-project scratchpad get/save (SQLite)
+│   │   ├── annotations.go      # Per-session review annotations: list/create/delete + SSE snapshot (SQLite)
 │   │   ├── projects.go         # Project visibility prefs: list/toggle/register + index filtering (SQLite)
 │   │   ├── sound.go            # /api/sounds + /sounds/ asset serving
 │   │   ├── push.go             # PushManager: VAPID, subscribe/unsubscribe, NotifyDone
@@ -118,10 +119,13 @@ when `RunInstall`/`RunRestart` are nil the corresponding endpoints respond `503`
 
 On `New`, the server opens (and migrates) a SQLite database at
 `~/.pi/agent/pi-web.sqlite` — a `scratchpads` table keyed by project path, a
-`project_prefs` table recording which projects are enabled, and an `app_settings`
-key/value table holding the project-filter master switch (default off). See
-`projects.go`. A `PushManager` (when configured) persists web-push subscriptions
-and VAPID keys under the agent dir.
+`project_prefs` table recording which projects are enabled, an `app_settings`
+key/value table holding the project-filter master switch (default off), and an
+`annotations` table holding per-session review notes (keyed by session id; see
+`annotations.go`). See `projects.go`. The pool is capped to a single connection
+(`SetMaxOpenConns(1)`) so concurrent writers queue instead of failing with
+"database is locked". A `PushManager` (when configured) persists web-push
+subscriptions and VAPID keys under the agent dir.
 
 ### `sessions.Session`
 
@@ -211,6 +215,7 @@ type piRPCWorker struct {
 | `/api/git/info` | GET | `handleGitInfo` | Branch / dirty / PR-URL info for a project |
 | `/api/git/rename-branch` | POST | `handleGitRenameBranch` | Rename the current git branch |
 | `/api/scratchpad` | GET/POST | `handleGetScratchpad` / `handleSaveScratchpad` | Per-project scratchpad (SQLite) |
+| `/api/annotations` | GET/POST/DELETE | `handleAnnotations` | Per-session review annotations; mutations broadcast an `annotations` SSE snapshot (SQLite) |
 | `/api/projects` | GET/POST | `handleApiProjects` / `handleUpdateProject` | List projects + filter state; enable/disable/register/remove, bulk enable-all/disable-all, enable-filter/disable-filter (SQLite) |
 | `/api/sounds` | GET | `handleApiSounds` | List available notification sounds |
 | `/sounds/` | GET | `handleSounds` | Serve a sound asset (no auth) |
@@ -262,7 +267,7 @@ Request ──▶ auth.Wrap(handler)
 The server maintains a slice of `sseClient` structs. Each client subscribes to a `sessID`:
 
 - `__all__` — index page subscribes here; receives `new-session`, `status-snapshot`, `status-delta`
-- Specific session ID — session page subscribes here; receives `reload` when the file changes
+- Specific session ID — session page subscribes here; receives `reload` when the file changes, `chat-preview` during streaming, and `annotations` (a full annotation snapshot) whenever a note is created/deleted for that session
 
 Broadcasting is fire-and-forget with a buffered channel (16). If the client is slow, keyless events are dropped rather than blocking. Duplicate `reload` and `new-session` events are coalesced per-client while pending.
 

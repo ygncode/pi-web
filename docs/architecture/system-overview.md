@@ -16,7 +16,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 | Live Updates | Server-Sent Events (SSE) |
 | Chat RPC | JSONL over stdin/stdout via `pi --mode rpc` |
 | Session Storage | JSONL files on disk; pi-web creates new session files and appends `session_info` for browser rename |
-| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads, project visibility prefs, and server-backed user settings |
+| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads, per-session review annotations, project visibility prefs, and server-backed user settings |
 | Auth | Token cookie/query/header (optional on localhost) |
 
 ## Component Diagram
@@ -57,6 +57,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   GET  /api/worker-status → handleWorkerStatus                           │
 │   GET  /api/git/info  / POST /api/git/rename-branch                      │
 │   GET/POST /api/scratchpad → scratchpad (SQLite)                         │
+│   GET/POST/DELETE /api/annotations → review annotations (SQLite, SSE)    │
 │   GET/POST /api/settings → user settings (SQLite, write-through cache)   │
 │   GET/POST /api/projects → project visibility prefs (SQLite)             │
 │   GET  /api/sounds  /  GET /sounds/…   (notification sounds)             │
@@ -130,7 +131,7 @@ name, while pi-web itself continues listening only on localhost.
 ├── session-status/
 │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here
 │   └── …
-├── pi-web.sqlite           ← scratchpads + project visibility prefs + user settings
+├── pi-web.sqlite           ← scratchpads + annotations + project visibility prefs + user settings
 └── pi-web/
     ├── pi-web-state.json   ← server state file
     ├── custom-themes.css   ← optional user custom theme
