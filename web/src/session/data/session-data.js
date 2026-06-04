@@ -58,6 +58,15 @@ export function createSessionDataModel(payload, params = new URLSearchParams()) 
   const urlLeafId = params.get('leafId');
   const urlTargetId = params.get('targetId');
 
+  // Pagination metadata for huge sessions. When the server embeds only a
+  // tail window, `total` is the full entry count, `from` is the index in the
+  // full session where the embedded slice starts, and `truncated` is true
+  // when from > 0. Small sessions don't include these fields — defaults
+  // make the model behave as before.
+  const total = Number.isInteger(payload?.total) ? payload.total : entries.length;
+  const from = Number.isInteger(payload?.from) ? payload.from : 0;
+  const truncated = Boolean(payload?.truncated) || from > 0 || entries.length < total;
+
   return {
     payload,
     params,
@@ -70,6 +79,9 @@ export function createSessionDataModel(payload, params = new URLSearchParams()) 
     systemPrompt: payload?.systemPrompt ?? null,
     tools: payload?.tools ?? null,
     renderedTools: payload?.renderedTools ?? null,
+    total,
+    from,
+    truncated,
     ...buildSessionLookups(entries)
   };
 }

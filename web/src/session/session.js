@@ -13,6 +13,7 @@ import * as toggleStateApi from './ui/toggle-state.js';
 import * as sidebarApi from './ui/sidebar.js';
 import * as searchFiltersApi from './ui/search-filters.js';
 import { setupSessionUi } from './ui/session-ui-runner.js';
+import { setupLoadEarlierBanner } from './ui/load-earlier.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
 import * as chatApi from './chat/chat-api.js';
@@ -477,6 +478,18 @@ export function runSessionApp({ target = window } = {}) {
     windowImpl: target,
     cwd: dataModel.header?.cwd || '',
     parentId: getSessionSearchParams({ documentImpl, windowImpl: target }).get('id') || '',
+  });
+
+  // For huge sessions the server embeds only the tail entries in the initial
+  // HTML render. Wire a "Load earlier" banner that fetches preceding windows
+  // via /api/session?id=...&from=N&count=K and merges them into the model.
+  // No-ops on small sessions (dataModel.truncated is false).
+  setupLoadEarlierBanner({
+    dataModel,
+    sessionId,
+    syncDataModelEntries,
+    documentImpl,
+    fetchImpl: target.fetch.bind(target),
   });
 
   // Handle Visual Viewport changes to prevent mobile browsers from shifting

@@ -34,8 +34,23 @@ var chatComposerTmplStr string
 
 var chatComposerTmpl = template.Must(template.New("chat_composer").Parse(chatComposerTmplStr))
 
+// LargeSessionTailEntries controls how many trailing entries get embedded
+// in the initial HTML render for huge sessions. The frontend exposes a
+// "Load earlier" affordance that fetches preceding windows via
+// /api/session?id=...&from=N&count=K. Keep these tunable as exports so
+// tests + future config plumbing can override.
+const (
+	LargeSessionThreshold  = 1500
+	LargeSessionTailEntries = 1000
+)
+
 // prepareSessionPageData computes the shared payload (base64-encoded session
 // data, themed CSS, and body attributes) used by both live and export renders.
+//
+// For sessions with more than LargeSessionThreshold entries we embed only the
+// tail (LargeSessionTailEntries) and add { truncated, total, from } fields so
+// the frontend can render a "Load earlier" banner and lazily fetch preceding
+// windows. Small sessions get the full payload as before — zero behavior change.
 func prepareSessionPageData(session sessions.Session, cssTemplate string) (dataBase64, css, bodyAttrs string) {
 	leafID := ""
 	for i := len(session.Entries) - 1; i >= 0; i-- {
@@ -45,14 +60,27 @@ func prepareSessionPageData(session sessions.Session, cssTemplate string) (dataB
 		}
 	}
 
+	total := len(session.Entries)
+	entries := session.Entries
+	from := 0
+	truncated := false
+	if total > LargeSessionThreshold {
+		from = total - LargeSessionTailEntries
+		entries = session.Entries[from:]
+		truncated = true
+	}
+
 	sessionData := map[string]any{
 		"header":        session.Header,
-		"entries":       session.Entries,
+		"entries":       entries,
 		"name":          session.Name,
 		"leafId":        leafID,
 		"systemPrompt":  nil,
 		"tools":         nil,
 		"renderedTools": nil,
+		"total":         total,
+		"from":          from,
+		"truncated":     truncated,
 	}
 
 	dataJSON, _ := json.Marshal(sessionData)
