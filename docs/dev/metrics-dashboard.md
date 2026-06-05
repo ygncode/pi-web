@@ -14,6 +14,7 @@ or export.
 |---|---|
 | `GET /metrics` | The dashboard HTML page (polls the JSON every 2s) |
 | `GET /api/metrics` | JSON snapshot of process + per-worker resource usage |
+| `GET /api/debug/pprof/` | Go runtime profiler index (+ `cmdline`, `profile`, `symbol`, `trace`) |
 
 Both are behind the normal `auth` middleware, so they inherit `PI_WEB_TOKEN`
 when set. The page's `fetch('/api/metrics')` authenticates automatically via the
@@ -60,12 +61,13 @@ Negligible. Per-PID `MemoryInfo()` / `Times()` are cheap syscalls; sampling a
 handful of workers every couple of seconds is nothing, and the endpoint never
 blocks. `gopsutil` adds only small, pure-Go (no cgo) deps on macOS/Linux.
 
-## Going deeper with pprof (optional)
+## Going deeper with pprof
 
 For "why is the whole app slow" investigations, Go's profiler gives a far more
 detailed picture than the dashboard (which functions burn CPU, what holds
-memory, where goroutines are stuck). If `net/http/pprof` is mounted (e.g. under
-`/api/debug/pprof/`), point the Go tool at it:
+memory, where goroutines are stuck). `net/http/pprof` is mounted under
+`/api/debug/pprof/` (auth-gated, same as everything else). The dashboard footer
+links to it; point the Go tool at it for analysis:
 
 ```bash
 go tool pprof http://localhost:31415/api/debug/pprof/heap
@@ -74,6 +76,11 @@ go tool pprof http://localhost:31415/api/debug/pprof/profile   # 30s CPU profile
 
 The dashboard answers "*which worker* is heavy"; pprof answers "*which code* is
 heavy."
+
+Implementation note: `pprof.Index` hard-codes the `/debug/pprof/` prefix when
+routing to named profiles, so the index handler is mounted with the `/api`
+segment stripped (`http.StripPrefix`). The special endpoints (`cmdline`,
+`profile`, `symbol`, `trace`) read query params and are registered directly.
 
 ## Implementation notes
 

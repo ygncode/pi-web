@@ -212,6 +212,7 @@ type piRPCWorker struct {
 | `/api/worker-status` | GET | `handleWorkerStatus` | Get worker state for session |
 | `/metrics` | GET | `handleMetricsPage` | Worker metrics dashboard (self-contained HTML) |
 | `/api/metrics` | GET | `handleMetrics` | JSON snapshot: process + per-worker CPU/RSS (gopsutil); see `docs/dev/metrics-dashboard.md` |
+| `/api/debug/pprof/` | GET | `pprof.Index` (+ cmdline/profile/symbol/trace) | Go runtime profiler, auth-gated (`/api`-stripped before Index) |
 | `/share` | POST | `handleShare` | Create private GitHub Gist |
 | `/events` | GET | `handleEvents` | SSE stream |
 | `/api/new-session` | POST | `handleNewSession` | Create new session file |

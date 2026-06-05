@@ -3,6 +3,7 @@ package server
 import (
 	_ "embed"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"runtime"
 	"time"
@@ -88,6 +89,26 @@ type cpuMark struct {
 
 //go:embed metrics_dashboard.html
 var metricsDashboardHTML []byte
+
+// registerPprof mounts Go's runtime profiler under /api/debug/pprof/, gated by
+// the same auth middleware as everything else. For deep "why is the app slow"
+// dives, point the Go tool at it, e.g.:
+//
+//	go tool pprof http://localhost:31415/api/debug/pprof/heap
+//
+// pprof.Index hard-codes the /debug/pprof/ path prefix when routing to named
+// profiles (heap, goroutine, …), so the index handler is given a path with the
+// /api segment stripped. The special endpoints (cmdline/profile/symbol/trace)
+// read query params and need no path rewrite, and their more specific patterns
+// take precedence over the index subtree.
+func (s *Server) registerPprof(mux *http.ServeMux) {
+	index := http.StripPrefix("/api", http.HandlerFunc(pprof.Index))
+	mux.HandleFunc("/api/debug/pprof/", s.auth.Wrap(index.ServeHTTP))
+	mux.HandleFunc("/api/debug/pprof/cmdline", s.auth.Wrap(pprof.Cmdline))
+	mux.HandleFunc("/api/debug/pprof/profile", s.auth.Wrap(pprof.Profile))
+	mux.HandleFunc("/api/debug/pprof/symbol", s.auth.Wrap(pprof.Symbol))
+	mux.HandleFunc("/api/debug/pprof/trace", s.auth.Wrap(pprof.Trace))
+}
 
 // handleMetricsPage serves the self-contained dashboard. Same-origin fetches to
 // /api/metrics authenticate automatically via the auth cookie.

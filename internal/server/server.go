@@ -256,6 +256,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/btw/new", s.auth.Wrap(s.handleNewBtw))
 	mux.HandleFunc("/metrics", s.auth.Wrap(s.handleMetricsPage))
 	mux.HandleFunc("/api/metrics", s.auth.Wrap(s.handleMetrics))
+	s.registerPprof(mux)
 	if s.push != nil {
 		s.push.Register(mux, s.auth.Wrap)
 	}

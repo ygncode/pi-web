@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -210,5 +211,45 @@ func TestPruneCPUMarksDropsDeadPIDs(t *testing.T) {
 	}
 	if _, ok := s.metricsCPULast[1]; !ok {
 		t.Error("live PID 1 should remain")
+	}
+}
+
+func TestPprofRoutes(t *testing.T) {
+	s := newMetricsServer(&snapshotSender{}, stubSampler{})
+	mux := http.NewServeMux()
+	s.registerPprof(mux)
+
+	// Index lists available profiles.
+	req := httptest.NewRequest(http.MethodGet, "/api/debug/pprof/", nil)
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("index status = %d, want 200", w.Code)
+	}
+	if !bytes.Contains(w.Body.Bytes(), []byte("goroutine")) {
+		t.Errorf("index should list profiles, got: %s", w.Body.String())
+	}
+
+	// A named profile resolves through the /api-stripped Index handler.
+	req2 := httptest.NewRequest(http.MethodGet, "/api/debug/pprof/heap?debug=1", nil)
+	w2 := httptest.NewRecorder()
+	mux.ServeHTTP(w2, req2)
+	if w2.Code != http.StatusOK {
+		t.Fatalf("heap profile status = %d, want 200", w2.Code)
+	}
+}
+
+func TestPprofRequiresAuth(t *testing.T) {
+	s := newMetricsServer(&snapshotSender{}, stubSampler{})
+	s.auth = auth.New("secret")
+	mux := http.NewServeMux()
+	s.registerPprof(mux)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/debug/pprof/heap", nil)
+	req.Header.Set("Accept", "application/json")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("pprof without token = %d, want 401", w.Code)
 	}
 }
