@@ -19,6 +19,10 @@ var liveSessionHtml string
 
 var liveSessionTmpl = template.Must(template.New("live_session").Parse(liveSessionHtml))
 
+// sessionScriptPath is retained for the legacy live-session renderer used by
+// tests while the production app serves /session through the SPA shell.
+var sessionScriptPath = "/static/assets/session.js"
+
 //go:embed live_templates/styles/theme.css
 var liveThemeCss string
 
@@ -133,8 +137,8 @@ func RenderLiveSessionPage(session sessions.Session, scratchpad string) string {
 		Scratchpad         string
 		LiveDocumentEnd    template.HTML
 	}{
-		IsLive:             true,
-		Title:              session.Name,
+		IsLive: true,
+		Title:  session.Name,
 		LiveDocumentStart: template.HTML(renderLiveDocumentStart(liveDocumentData{
 			Title:     session.Name,
 			Preload:   template.HTML(preload),

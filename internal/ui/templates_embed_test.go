@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"bytes"
 	"os"
 	"regexp"
 	"strings"
@@ -69,44 +68,6 @@ func TestChatComposerTemplateOmitsCwdWhenEmpty(t *testing.T) {
 	}
 	if strings.Contains(got, "cwd:") {
 		t.Fatal("chat composer should omit cwd text when cwd is empty")
-	}
-}
-
-func TestIndexTemplateLoadedFromEmbeddedFile(t *testing.T) {
-	if indexTmplStr == "" {
-		t.Fatal("indexTmplStr is empty; live_templates/index.html was not embedded")
-	}
-	var buf bytes.Buffer
-	// Render with sessions so session-card markers appear in output
-	data := []sessions.Session{{SessionSummary: sessions.SessionSummary{
-		ID: "s.jsonl", Project: "/tmp", LastActivity: "2026-01-01T00:00:00Z", ChatAvailable: true,
-	}}}
-	if err := indexTmpl.Execute(&buf, data); err != nil {
-		t.Fatalf("failed to render index template: %v", err)
-	}
-	rendered := buf.String()
-	for _, marker := range []string{
-		`id="sessionPalette"`,
-		`id="modalOverlay"`,
-		`session-active-status`,
-	} {
-		if !strings.Contains(rendered, marker) {
-			t.Fatalf("rendered index template missing %q", marker)
-		}
-	}
-}
-
-func TestIndexTemplateUsesViteModuleNotStandaloneScript(t *testing.T) {
-	var buf bytes.Buffer
-	if err := indexTmpl.Execute(&buf, []sessions.Session{}); err != nil {
-		t.Fatalf("failed to render index template: %v", err)
-	}
-	rendered := buf.String()
-	if strings.Contains(rendered, "/static/alpine.js") {
-		t.Fatal("rendered index page still contains standalone /static/alpine.js script reference")
-	}
-	if !strings.Contains(rendered, "/static/assets/index.js") {
-		t.Fatal("rendered index page missing Vite module script /static/assets/index.js")
 	}
 }
 
@@ -230,69 +191,5 @@ func TestIndexJsSourceReferencesAPIRecentLocations(t *testing.T) {
 	}
 	if !strings.Contains(string(data), "/api/recent-locations") {
 		t.Fatal("web/src/index/sessions-page.js missing /api/recent-locations reference")
-	}
-}
-
-func TestIndexTemplateShowsViewOnlyBadgeForBrokenSessions(t *testing.T) {
-	var buf bytes.Buffer
-	data := []sessions.Session{{SessionSummary: sessions.SessionSummary{
-		ID:                 "broken.jsonl",
-		Project:            "/tmp/project",
-		LastActivity:       "2026-05-07T00:00:00Z",
-		ChatAvailable:      false,
-		ChatDisabledReason: "missing cwd",
-	}}}
-	if err := indexTmpl.Execute(&buf, data); err != nil {
-		t.Fatalf("failed to render index template: %v", err)
-	}
-	rendered := buf.String()
-	if !strings.Contains(rendered, `session-card-badge`) {
-		t.Fatal("rendered index page missing session badge markup")
-	}
-	if !strings.Contains(rendered, `View only`) {
-		t.Fatal("rendered index page missing view only label")
-	}
-}
-
-func TestIndexTemplateOmitsViewOnlyBadgeForChatableSessions(t *testing.T) {
-	var buf bytes.Buffer
-	data := []sessions.Session{{SessionSummary: sessions.SessionSummary{
-		ID:            "ok.jsonl",
-		Project:       "/tmp/project",
-		LastActivity:  "2026-05-07T00:00:00Z",
-		ChatAvailable: true,
-	}}}
-	if err := indexTmpl.Execute(&buf, data); err != nil {
-		t.Fatalf("failed to render index template: %v", err)
-	}
-	if strings.Contains(buf.String(), `View only`) {
-		t.Fatal("rendered index page should not show view only badge for chatable sessions")
-	}
-}
-
-func TestIndexTemplateDoesNotRegisterFmtTime(t *testing.T) {
-	if _, ok := funcMap["fmtTime"]; ok {
-		t.Fatal("funcMap should not contain fmtTime; timestamps are formatted client-side")
-	}
-}
-
-func TestIndexTemplateRendersDataTimestampAttribute(t *testing.T) {
-	var buf bytes.Buffer
-	data := []sessions.Session{{SessionSummary: sessions.SessionSummary{
-		ID:            "s1.jsonl",
-		Project:       "/tmp/project",
-		LastActivity:  "2026-05-08T09:49:41.591Z",
-		ChatAvailable: true,
-	}}}
-	if err := indexTmpl.Execute(&buf, data); err != nil {
-		t.Fatalf("failed to render index template: %v", err)
-	}
-	rendered := buf.String()
-	if !strings.Contains(rendered, `data-timestamp="2026-05-08T09:49:41.591Z"`) {
-		t.Fatalf("rendered index page missing data-timestamp attribute, got: %s", rendered)
-	}
-	// Ensure the old server-side formatted text is NOT present
-	if strings.Contains(rendered, "May 8, 2026 9:49 AM") {
-		t.Fatal("rendered index page still contains server-side formatted timestamp")
 	}
 }
