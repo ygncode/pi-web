@@ -1,58 +1,20 @@
 <script>
   import { onMount, tick } from 'svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
+  import { firstMessageStub, loadSessionPageState } from './session-page-data.js';
 
   let loading = $state(true);
   let error = $state('');
   let sessionId = $state('');
   let title = $state('Session');
   let payloadBase64 = $state('');
+  let entries = $state([]);
   let scratchpad = $state('');
   let cwd = $state('');
   let chatAvailable = $state(true);
   let chatDisabledReason = $state('');
   let modelLabel = $state('');
 
-  function encodePayload(payload) {
-    const json = JSON.stringify(payload);
-    const bytes = new TextEncoder().encode(json);
-    let binary = '';
-    for (const byte of bytes) binary += String.fromCharCode(byte);
-    return btoa(binary);
-  }
-
-  function newestLeaf(entries = []) {
-    for (let i = entries.length - 1; i >= 0; i -= 1) {
-      if (entries[i]?.id) return entries[i].id;
-    }
-    return '';
-  }
-
-  function firstMessageStub(entries = []) {
-    const entry = entries.find((item) => item?.type === 'message' && item.message?.role === 'user');
-    let content = entry?.message?.content;
-    if (Array.isArray(content)) {
-      content = content.map((part) => typeof part === 'string' ? part : (part?.text || '')).join('');
-    }
-    if (!content) return '';
-    const text = String(content).slice(0, 500)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;');
-    return `<div class="user-message" aria-hidden="true"><div class="markdown-content"><p>${text}</p></div></div>`;
-  }
-
-  async function loadScratchpad(projectPath) {
-    if (!projectPath) return '';
-    try {
-      const resp = await fetch(`/api/scratchpad?project=${encodeURIComponent(projectPath)}`, { headers: { Accept: 'application/json' } });
-      if (!resp.ok) return '';
-      const data = await resp.json();
-      return data?.content || '';
-    } catch {
-      return '';
-    }
-  }
 
   onMount(() => {
     const previousTitle = document.title;
@@ -60,41 +22,18 @@
 
     (async () => {
       try {
-        const params = new URLSearchParams(window.location.search);
-        sessionId = params.get('id') || '';
-        if (!sessionId) throw new Error('Missing session id');
-        const resp = await fetch(`/api/session?id=${encodeURIComponent(sessionId)}`, { headers: { Accept: 'application/json' } });
-        if (!resp.ok) throw new Error(resp.status === 404 ? 'Session not found' : 'Failed to load session');
-        const data = await resp.json();
+        const state = await loadSessionPageState({ locationSearch: window.location.search, fetchImpl: window.fetch.bind(window) });
         if (!active) return;
-        const entries = Array.isArray(data.entries) ? data.entries : [];
-        const header = data.header || {};
-        cwd = header.cwd || '';
-        title = data.name || sessionId;
+        sessionId = state.sessionId;
+        title = state.title;
         document.title = title;
-        scratchpad = await loadScratchpad(cwd);
-        if (!active) return;
-        const leafId = newestLeaf(entries);
-        payloadBase64 = encodePayload({
-          header,
-          entries,
-          name: title,
-          leafId,
-          systemPrompt: null,
-          tools: null,
-          renderedTools: null,
-          total: Number.isInteger(data.total) ? data.total : entries.length,
-          from: Number.isInteger(data.from) ? data.from : 0,
-          truncated: Number.isInteger(data.total) ? entries.length < data.total : false,
-        });
-        chatAvailable = data.chatAvailable ?? data.ChatAvailable ?? true;
-        chatDisabledReason = data.chatDisabledReason || data.ChatDisabledReason || '';
-        if (!chatAvailable && !chatDisabledReason) {
-          chatDisabledReason = 'This session can be viewed, but chat is disabled because its working directory no longer exists.';
-        }
-        const model = data.model || data.Model || '';
-        const provider = data.modelProvider || data.ModelProvider || '';
-        modelLabel = model && provider ? `${model} @ ${provider}` : model;
+        entries = state.entries;
+        cwd = state.cwd;
+        scratchpad = state.scratchpad;
+        payloadBase64 = state.payloadBase64;
+        chatAvailable = state.chatAvailable;
+        chatDisabledReason = state.chatDisabledReason;
+        modelLabel = state.modelLabel;
         loading = false;
         await tick();
         if (!active) return;
@@ -195,7 +134,7 @@
     </aside>
     <div id="sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize session tree sidebar"></div>
     <div id="content-container" class="content-container">
-      <main id="content"><div id="header-container"></div><div id="messages">{@html firstMessageStub(JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(payloadBase64), c => c.charCodeAt(0)))).entries)}</div></main>
+      <main id="content"><div id="header-container"></div><div id="messages">{@html firstMessageStub(entries)}</div></main>
       <form id="pi-chat-composer" class="pi-chat-composer" data-session-id={sessionId} data-chat-available={chatAvailable} data-chat-disabled-reason={chatDisabledReason}>
         <input id="pi-chat-images" name="images" type="file" accept="image/*" multiple hidden disabled={!chatAvailable}>
         <div class="pi-chat-shell">
