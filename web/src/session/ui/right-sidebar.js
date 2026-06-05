@@ -132,6 +132,14 @@ export function setupRightSidebar({
     }
   }
 
+  // Reveal the sidebar without toggling it shut when already open.
+  function openSidebar() {
+    if (isCollapsed()) {
+      setCollapsed(false);
+      loadScratchpad();
+    }
+  }
+
   toggleBtn?.addEventListener('click', toggleSidebar);
 
   closeBtn?.addEventListener('click', () => {
@@ -274,5 +282,5 @@ export function setupRightSidebar({
 
   if (textarea) lastSaved = textarea.value;
 
-  return { toggleSidebar };
+  return { toggleSidebar, openSidebar };
 }

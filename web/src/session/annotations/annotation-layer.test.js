@@ -22,7 +22,7 @@ function fakeApi(initial = []) {
   };
 }
 
-function setup({ api, selectionDelayMs = 250 } = {}) {
+function setup({ api, selectionDelayMs = 250, onCreate = null } = {}) {
   const dom = new JSDOM(
     '<div id="messages"><div id="entry-e1">hello world</div></div>'
     + '<div id="annotation-list-host"></div>'
@@ -38,6 +38,7 @@ function setup({ api, selectionDelayMs = 250 } = {}) {
     composerEl: doc.getElementById('pi-chat-message'),
     countEl: doc.getElementById('annotation-tab-count'),
     escapeHtml,
+    onCreate,
     selectionDelayMs,
     documentImpl: doc,
     windowImpl: win
@@ -97,6 +98,21 @@ describe('annotation layer', () => {
     }));
     expect(doc.querySelector('.annotation-note').textContent).toBe('fix this');
     expect(doc.querySelector('mark.pi-annotation').textContent).toBe('world');
+  });
+
+  it('fires onCreate when a note is saved (to reveal the panel)', async () => {
+    const onCreate = vi.fn();
+    const { doc, win, layer } = setup({ onCreate });
+    layer.init();
+    await tick();
+
+    selectWorld(doc, win);
+    doc.dispatchEvent(new win.MouseEvent('mouseup'));
+    doc.querySelector('[data-action="start-comment"]').click();
+    doc.querySelector('.annotation-note-input').value = 'look here';
+    doc.querySelector('[data-action="save-note"]').click();
+
+    expect(onCreate).toHaveBeenCalledTimes(1);
   });
 
   it('shows the popover from selectionchange (touch, where mouseup never fires)', async () => {

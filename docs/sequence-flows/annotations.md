@@ -82,6 +82,9 @@ Key points:
 - **Optimistic + guarded.** The note is added locally and highlighted before the
   POST resolves. A monotonic load counter ensures a slow in-flight `list()` can't
   clobber a newer optimistic create or SSE snapshot.
+- **Reveal on save.** Saving fires the layer's `onCreate` callback, which
+  `session.js` wires to open the right sidebar if it's collapsed and switch to the
+  Annotations tab — so the just-created note is always visible where it lands.
 
 ## Load flow
 

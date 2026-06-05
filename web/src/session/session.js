@@ -404,6 +404,10 @@ export function runSessionApp({ target = window } = {}) {
         ui.activateRightTab('artifacts');
         artifactPanel?.selectArtifact(artifactId);
       },
+      onCreate: () => {
+        ui.openRightSidebar();
+        ui.activateRightTab('notes');
+      },
       resolveArtifact: (artifactId) => artifactPanel?.getArtifact(artifactId) || null,
       documentImpl,
       windowImpl: target

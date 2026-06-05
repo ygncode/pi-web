@@ -19,6 +19,7 @@ export function createAnnotationLayer({
   countEl = null,
   escapeHtml,
   onSelectArtifact = null,
+  onCreate = null,
   resolveArtifact = null,
   selectionDelayMs = 250,
   documentImpl = document,
@@ -288,6 +289,8 @@ export function createAnnotationLayer({
     noteModal.hidden = true;
     windowImpl.getSelection?.()?.removeAllRanges?.();
     setAnnotations([...annotations, optimistic]); // optimistic; bumps the load guard
+    // Surface the just-created note: open the sidebar if hidden and switch to it.
+    if (typeof onCreate === 'function') onCreate();
     try {
       await api.create(payload);
     } finally {

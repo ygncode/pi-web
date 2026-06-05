@@ -70,6 +70,7 @@ export function setupSessionUi({
     attachHeaderHandlers,
     toggleController,
     toggleRightSidebar: rightSidebar?.toggleSidebar ?? (() => {}),
+    openRightSidebar: rightSidebar?.openSidebar ?? (() => {}),
     activateRightTab: rightSidebarTabs?.activate ?? (() => {}),
   };
 }

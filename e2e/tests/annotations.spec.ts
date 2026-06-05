@@ -15,6 +15,16 @@ async function openRightSidebar(page: import("@playwright/test").Page) {
   }
 }
 
+async function collapseRightSidebar(page: import("@playwright/test").Page) {
+  const collapsed = await page.evaluate(() =>
+    document.body.classList.contains("right-sidebar-collapsed"),
+  );
+  if (!collapsed) {
+    await page.locator("#toggle-right-sidebar-btn").click();
+  }
+  await expect(page.locator("body")).toHaveClass(/right-sidebar-collapsed/);
+}
+
 /**
  * Select a word inside the first assistant message and fire mouseup so the
  * annotation popover appears, then save a note. Selection is built in-page for
@@ -168,5 +178,27 @@ test.describe("annotations", () => {
     await page.locator('.annotation-item [data-action="delete"]').click();
     await expect(page.locator(".annotation-item")).toHaveCount(0);
     await expect(page.locator("#messages mark.pi-annotation")).toHaveCount(0);
+  });
+
+  test("saving a note reveals the sidebar on the Annotations tab", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const { entries } = buildSession({ cwd: realWorkingDir() });
+    const name = uniqueSessionName(testInfo, "ann");
+    const id = writeSession(sessionsDir, name, entries);
+
+    await page.goto(`/session?id=${encodeURIComponent(id)}`);
+
+    // Start with the sidebar hidden, then annotate without touching it manually.
+    await collapseRightSidebar(page);
+    await annotateFirstMessage(page, "open me");
+
+    // onCreate should have opened the sidebar and switched to the Notes tab —
+    // no openRightSidebar() / tab click here on purpose.
+    await expect(page.locator("body")).not.toHaveClass(/right-sidebar-collapsed/);
+    await expect(page.locator("#right-tab-notes")).toHaveClass(/active/);
+    await expect(page.locator("#right-pane-notes")).toBeVisible();
+    await expect(page.locator(".annotation-item .annotation-note")).toHaveText("open me");
   });
 });
