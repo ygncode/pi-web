@@ -164,25 +164,20 @@ func assertCSSCustomPropertiesDefined(t *testing.T, name, html string) {
 	}
 }
 
-func TestExportAppJSManifestMatchesEmbeddedFiles(t *testing.T) {
-	entries, err := appJsFS.ReadDir("live_templates/export/app")
-	if err != nil {
-		t.Fatalf("read live_templates/export/app: %v", err)
+// TestExportBundleIsSelfContained guards the static export runtime built by
+// Vite (web/src/export/export-entry.js). The snapshot must run from a single
+// inlined <script> with no server, so the bundle may not pull in any live-only
+// machinery. If the export entry accidentally imports a module that reaches
+// SSE/chat/live-reload, that symbol leaks into this bundle and fails here.
+func TestExportBundleIsSelfContained(t *testing.T) {
+	if strings.TrimSpace(exportJs) == "" {
+		t.Fatal("embedded export.js is empty — run `npm run build:export` (or `make build`) first")
 	}
-	files := map[string]bool{}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".js") {
-			files[entry.Name()] = true
+	forbidden := []string{"EventSource", "runLiveReload", "live-reload-runner", "chatComposerRunner"}
+	for _, sym := range forbidden {
+		if strings.Contains(exportJs, sym) {
+			t.Fatalf("export bundle contains live-only symbol %q — a live module leaked into the static export graph", sym)
 		}
-	}
-	for _, name := range exportAppJSFiles {
-		if !files[name] {
-			t.Fatalf("exportAppJSFiles references missing file %s", name)
-		}
-		delete(files, name)
-	}
-	if len(files) > 0 {
-		t.Fatalf("live_templates/export/app has JS files missing from exportAppJSFiles manifest: %#v", files)
 	}
 }
 
@@ -208,8 +203,10 @@ func TestSessionPageUsesViteModuleForInteractiveViewer(t *testing.T) {
 
 func TestStaticExportKeepsInlineSessionRenderer(t *testing.T) {
 	html := RenderExportSessionPage(sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Name: "Session"}}, "dark")
-	if !strings.Contains(html, "function renderTree()") {
-		t.Fatal("static export missing inline legacy session renderer")
+	// The export must inline its own self-contained runtime (the IIFE bundle is
+	// exposed under the PiExport global), not pull a server-hosted Vite module.
+	if !strings.Contains(html, "PiExport") {
+		t.Fatal("static export missing inlined self-contained renderer bundle")
 	}
 	if strings.Contains(html, `src="/static/assets/session`) {
 		t.Fatal("static export should not depend on external Vite session asset")

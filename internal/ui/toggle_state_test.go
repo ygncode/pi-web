@@ -6,53 +6,74 @@ import (
 	"testing"
 )
 
-func TestSessionToggleButtonsReflectPersistedActiveState(t *testing.T) {
-	checks := []string{
-		"const TOGGLE_STATE_STORAGE_KEY = 'pi.sessionDetail.toggleState';",
-		"toolsVisible: true",
-		"toolOutputsExpanded: false",
-		"window.sessionToggleState = {",
-		"localStorage.getItem(TOGGLE_STATE_STORAGE_KEY)",
-		"localStorage.setItem(TOGGLE_STATE_STORAGE_KEY, JSON.stringify(toggleState));",
-		"btn.classList.toggle('active', isActive);",
-		"btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');",
-		"data-action=\"toggle-tool-output\"",
-		"Tool output",
-		"T show/hide thinking · O show/hide tools · P expand/collapse tool output",
-		".header-toggle-btn.active",
+// Toggle-state behavior is owned by the shared modules (toggle-state.js,
+// session-ui-runner.js) plus the header markup (session-header-renderer.js) and
+// session CSS. Live and static export both reuse these, so assert against the
+// source rather than the minified export bundle.
+func readSrc(t *testing.T, rel string) string {
+	t.Helper()
+	data, err := os.ReadFile(repoPath(rel))
+	if err != nil {
+		t.Fatalf("read %s: %v", rel, err)
 	}
-	combined := exportJs + liveSessionCss
-	for _, check := range checks {
-		if !strings.Contains(combined, check) {
-			t.Fatalf("session toggle controls missing persisted active-state behavior %q", check)
+	return string(data)
+}
+
+func TestSessionToggleButtonsReflectPersistedActiveState(t *testing.T) {
+	toggleSrc := readSrc(t, "web/src/session/ui/toggle-state.js")
+	runnerSrc := readSrc(t, "web/src/session/ui/session-ui-runner.js")
+	headerSrc := readSrc(t, "web/src/session/render/session-header-renderer.js")
+
+	srcChecks := map[string][]string{
+		toggleSrc: {
+			"const TOGGLE_STATE_STORAGE_KEY = 'pi.sessionDetail.toggleState';",
+			"toolsVisible: true",
+			"toolOutputsExpanded: false",
+			"storage?.getItem(TOGGLE_STATE_STORAGE_KEY)",
+			"storage?.setItem(TOGGLE_STATE_STORAGE_KEY, JSON.stringify(state));",
+			"btn.classList.toggle('active', isActive);",
+			"btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');",
+		},
+		runnerSrc: {"windowImpl.sessionToggleState = toggleController;"},
+		headerSrc: {`data-action="toggle-tool-output"`, "show/hide thinking"},
+	}
+	for src, checks := range srcChecks {
+		for _, check := range checks {
+			if !strings.Contains(src, check) {
+				t.Fatalf("session toggle controls missing persisted active-state behavior %q", check)
+			}
 		}
+	}
+	if !strings.Contains(liveSessionCss, ".header-toggle-btn.active") {
+		t.Fatal("session CSS missing .header-toggle-btn.active styling")
 	}
 }
 
 func TestToolsVisibilityAndOutputExpansionAreSeparateStates(t *testing.T) {
+	src := readSrc(t, "web/src/session/ui/toggle-state.js")
 	checks := []string{
-		"const applyToolsVisibilityState = (root) => {",
-		"root.querySelectorAll('.tool-execution, .compaction').forEach(el => {",
-		"el.style.display = toggleState.toolsVisible ? '' : 'none';",
-		"const applyToolOutputState = (root) => {",
-		"el.classList.toggle('expanded', toggleState.toolOutputsExpanded);",
-		"toggleState.toolsVisible = !toggleState.toolsVisible;",
-		"toggleState.toolOutputsExpanded = !toggleState.toolOutputsExpanded;",
+		"node.querySelectorAll('.tool-execution, .compaction').forEach(el => {",
+		"el.style.display = state.toolsVisible ? '' : 'none';",
+		"node.querySelectorAll('.tool-output.expandable').forEach(el => {",
+		"el.classList.toggle('expanded', state.toolOutputsExpanded);",
+		"toggleToolsVisibility: () => toggle('toolsVisible'),",
+		"toggleToolOutputs: () => toggle('toolOutputsExpanded'),",
 	}
 	for _, check := range checks {
-		if !strings.Contains(exportJs, check) {
+		if !strings.Contains(src, check) {
 			t.Fatalf("tools visibility and output expansion are not separate; missing %q", check)
 		}
 	}
 }
 
 func TestNavigationReappliesCurrentToggleStateAfterRenderingMessages(t *testing.T) {
+	src := readSrc(t, "web/src/session/navigation/session-navigation.js")
 	checks := []string{
 		"messagesEl.appendChild(fragment);",
-		"window.sessionToggleState?.applyToNode(messagesEl);",
+		"applyToggleStateToNode(messagesEl);",
 	}
 	for _, check := range checks {
-		if !strings.Contains(exportJs, check) {
+		if !strings.Contains(src, check) {
 			t.Fatalf("navigation does not reapply persisted toggle state after rendering messages; missing %q", check)
 		}
 	}
@@ -86,16 +107,22 @@ func TestLiveReloadUpdatesExistingAssistantWhenToolResultsArrive(t *testing.T) {
 }
 
 func TestLiveReloadEntriesInheritCurrentToggleState(t *testing.T) {
-	jsChecks := []string{
-		"applyToNode(node) {",
-		"applyThinkingState(node);",
-		"applyToolsVisibilityState(node);",
-		"applyToolOutputState(node);",
-		"window.applyToggleStateToNode = (node) => window.sessionToggleState.applyToNode(node);",
+	// A single shared applyToggleStateToNode hook is reused by the controller,
+	// the live reload path, and static export — assert it exists in source.
+	toggleSrc := readSrc(t, "web/src/session/ui/toggle-state.js")
+	runnerSrc := readSrc(t, "web/src/session/ui/session-ui-runner.js")
+	hookChecks := map[string][]string{
+		toggleSrc: {
+			"export function applyToggleStateToNode(node, state) {",
+			"const applyToNode = (node) => applyToggleStateToNode(node, state);",
+		},
+		runnerSrc: {"windowImpl.applyToggleStateToNode = (node) => toggleController.applyToNode(node);"},
 	}
-	for _, check := range jsChecks {
-		if !strings.Contains(exportJs, check) {
-			t.Fatalf("template JS missing reusable toggle-state hook %q", check)
+	for src, checks := range hookChecks {
+		for _, check := range checks {
+			if !strings.Contains(src, check) {
+				t.Fatalf("template JS missing reusable toggle-state hook %q", check)
+			}
 		}
 	}
 

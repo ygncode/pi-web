@@ -4,8 +4,9 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "build": "vite build",
-    "dev": "vite build --watch"
+    "build": "vite build && npm run build:export",
+    "build:export": "vite build --config vite.config.export.js && cp dist-export/export.js ../internal/ui/live_templates/export/export.js",
+    "dev": "npm run build:export && vite build --watch"
   },
   "dependencies": {
 
