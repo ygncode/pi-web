@@ -27,6 +27,14 @@ describe('App', () => {
     expect(document.querySelector('[data-sessions-content]')).toBeTruthy();
   });
 
+  it('routes /session to the Svelte session page', () => {
+    document.body.innerHTML = '<div id="app"></div>';
+
+    mounted = mountApp({ props: { path: '/session' } });
+
+    expect(document.querySelector('.session-loading')?.textContent).toContain('Loading session');
+  });
+
   it('routes /settings to the Svelte settings page', () => {
     document.body.innerHTML = '<div id="app"></div>';
 

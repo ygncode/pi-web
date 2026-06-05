@@ -57,7 +57,7 @@ export { escapeHtml, formatToolCall, getTreeNodeDisplayHtml, shortenPath, trunca
 
 export const sessionEntrypointLoaded = true;
 
-function applyLazyHighlighting(documentImpl) {
+export function applyLazyHighlighting(documentImpl) {
   import('highlight.js').then(({ default: hljs }) => {
     documentImpl.querySelectorAll('code[data-highlight-pending]').forEach(el => {
       const lang = el.dataset.lang;
@@ -658,8 +658,3 @@ export function runSessionApp({ target = window } = {}) {
   });
 }
 
-
-if (typeof window !== 'undefined' && typeof document !== 'undefined' && document.getElementById('session-data')) {
-  runSessionApp();
-  applyLazyHighlighting(document);
-}

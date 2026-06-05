@@ -78,6 +78,10 @@ func isSPABrowserPath(r *http.Request) bool {
 }
 
 func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
+	if s.renderAppShell != nil {
+		s.handleAppShell(w, r)
+		return
+	}
 	resolved, err := s.cache.Resolve(s.sessionsDir, r.URL.Query().Get("id"))
 	if err != nil {
 		switch {

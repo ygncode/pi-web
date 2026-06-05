@@ -13,7 +13,7 @@ export default defineConfig({
       input: {
         app: resolve(__dirname, 'src/main.js'),
         index: resolve(__dirname, 'src/index/index-entry.js'),
-        session: resolve(__dirname, 'src/session/session.js'),
+        session: resolve(__dirname, 'src/session/session-entry.js'),
         settings: resolve(__dirname, 'src/settings/settings-entry.js'),
         live: resolve(__dirname, 'src/live/live.js')
       },

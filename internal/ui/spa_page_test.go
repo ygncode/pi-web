@@ -28,7 +28,7 @@ func TestAppShellPreservesPWAContract(t *testing.T) {
 		`navigator.windowControlsOverlay`,
 		`<link rel="stylesheet" href="/custom-themes.css">`,
 		`<style id="pi-web-fonts">`,
-		`<div id="app"></div>`,
+		`<div id="spa-root"></div>`,
 		`<script type="module" src="/static/assets/app-test.js"></script>`,
 		`navigator.serviceWorker.register('/sw.js',{scope:'/'})`,
 	} {
