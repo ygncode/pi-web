@@ -20,6 +20,7 @@
   let chatAvailable = $state(true);
   let chatDisabledReason = $state('');
   let modelLabel = $state('');
+  let dataEl = $state(null);
 
 
   onMount(() => {
@@ -43,6 +44,9 @@
         loading = false;
         await tick();
         if (!active) return;
+        // Svelte does not interpolate mustache tags inside a <script> raw-text
+        // element, so the embedded session payload must be assigned directly.
+        if (dataEl) dataEl.textContent = payloadBase64;
         runSessionApp({ target: window });
         applyLazyHighlighting(document);
       } catch (err) {
@@ -82,5 +86,5 @@
   </div>
 
   <ShareDialog />
-  <script id="session-data" type="application/json">{payloadBase64}</script>
+  <script id="session-data" type="application/json" bind:this={dataEl}></script>
 {/if}
