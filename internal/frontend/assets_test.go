@@ -8,19 +8,19 @@ import (
 func TestLoadFrontendScriptsSingleEntrypoint(t *testing.T) {
 	fsys := fstest.MapFS{
 		".vite/manifest.json": &fstest.MapFile{
-			Data: []byte(`{"src/index/index-entry.js":{"file":"assets/index-abc123.js"}}`),
+			Data: []byte(`{"src/main.js":{"file":"assets/app-abc123.js"}}`),
 		},
-		"assets/index-abc123.js": &fstest.MapFile{Data: []byte("console.log('hello')")},
+		"assets/app-abc123.js": &fstest.MapFile{Data: []byte("console.log('hello')")},
 	}
-	scripts, err := loadFrontendScripts(fsys, indexEntry)
+	scripts, err := loadFrontendScripts(fsys, appEntry)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if len(scripts) != 1 {
 		t.Fatalf("len(scripts) = %d, want 1", len(scripts))
 	}
-	if scripts[0].Path != "/static/assets/index-abc123.js" {
-		t.Errorf("path = %q, want %q", scripts[0].Path, "/static/assets/index-abc123.js")
+	if scripts[0].Path != "/static/assets/app-abc123.js" {
+		t.Errorf("path = %q, want %q", scripts[0].Path, "/static/assets/app-abc123.js")
 	}
 	if scripts[0].JS != "console.log('hello')" {
 		t.Errorf("js = %q, want %q", scripts[0].JS, "console.log('hello')")
@@ -30,28 +30,24 @@ func TestLoadFrontendScriptsSingleEntrypoint(t *testing.T) {
 func TestLoadFrontendScriptsLoadsMultipleEntrypoints(t *testing.T) {
 	fsys := fstest.MapFS{
 		".vite/manifest.json": &fstest.MapFile{
-			Data: []byte(`{"src/main.js":{"file":"assets/app-000111.js"},"src/index/index-entry.js":{"file":"assets/index-abc123.js"},"src/session/session-entry.js":{"file":"assets/session-def456.js"},"src/live/live.js":{"file":"assets/live-ghi789.js"}}`),
+			Data: []byte(`{"src/main.js":{"file":"assets/app-000111.js"},"src/other.js":{"file":"assets/other-222333.js"}}`),
 		},
-		"assets/app-000111.js":     &fstest.MapFile{Data: []byte("app")},
-		"assets/index-abc123.js":   &fstest.MapFile{Data: []byte("index")},
-		"assets/session-def456.js": &fstest.MapFile{Data: []byte("session")},
-		"assets/live-ghi789.js":    &fstest.MapFile{Data: []byte("live")},
+		"assets/app-000111.js":   &fstest.MapFile{Data: []byte("app")},
+		"assets/other-222333.js": &fstest.MapFile{Data: []byte("other")},
 	}
-	scripts, err := loadFrontendScripts(fsys, appEntry, indexEntry, sessionEntry, "src/live/live.js")
+	scripts, err := loadFrontendScripts(fsys, appEntry, "src/other.js")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(scripts) != 4 {
-		t.Fatalf("len(scripts) = %d, want 4", len(scripts))
+	if len(scripts) != 2 {
+		t.Fatalf("len(scripts) = %d, want 2", len(scripts))
 	}
 	checks := []struct {
 		path string
 		js   string
 	}{
 		{"/static/assets/app-000111.js", "app"},
-		{"/static/assets/index-abc123.js", "index"},
-		{"/static/assets/session-def456.js", "session"},
-		{"/static/assets/live-ghi789.js", "live"},
+		{"/static/assets/other-222333.js", "other"},
 	}
 	for i, check := range checks {
 		if scripts[i].Path != check.path || scripts[i].JS != check.js {
@@ -61,7 +57,7 @@ func TestLoadFrontendScriptsLoadsMultipleEntrypoints(t *testing.T) {
 }
 
 func TestLoadFrontendScriptsMissingManifest(t *testing.T) {
-	if _, err := loadFrontendScripts(fstest.MapFS{}, indexEntry); err == nil {
+	if _, err := loadFrontendScripts(fstest.MapFS{}, appEntry); err == nil {
 		t.Fatal("expected error for missing manifest")
 	}
 }
@@ -69,10 +65,10 @@ func TestLoadFrontendScriptsMissingManifest(t *testing.T) {
 func TestLoadFrontendScriptsEmptyFile(t *testing.T) {
 	fsys := fstest.MapFS{
 		".vite/manifest.json": &fstest.MapFile{
-			Data: []byte(`{"src/index/index-entry.js":{"file":""}}`),
+			Data: []byte(`{"src/main.js":{"file":""}}`),
 		},
 	}
-	if _, err := loadFrontendScripts(fsys, indexEntry); err == nil {
+	if _, err := loadFrontendScripts(fsys, appEntry); err == nil {
 		t.Fatal("expected error for empty file")
 	}
 }
@@ -80,10 +76,10 @@ func TestLoadFrontendScriptsEmptyFile(t *testing.T) {
 func TestLoadFrontendScriptsAbsolutePath(t *testing.T) {
 	fsys := fstest.MapFS{
 		".vite/manifest.json": &fstest.MapFile{
-			Data: []byte(`{"src/index/index-entry.js":{"file":"/etc/passwd"}}`),
+			Data: []byte(`{"src/main.js":{"file":"/etc/passwd"}}`),
 		},
 	}
-	if _, err := loadFrontendScripts(fsys, indexEntry); err == nil {
+	if _, err := loadFrontendScripts(fsys, appEntry); err == nil {
 		t.Fatal("expected error for absolute path")
 	}
 }
@@ -91,10 +87,10 @@ func TestLoadFrontendScriptsAbsolutePath(t *testing.T) {
 func TestLoadFrontendScriptsPathTraversal(t *testing.T) {
 	fsys := fstest.MapFS{
 		".vite/manifest.json": &fstest.MapFile{
-			Data: []byte(`{"src/index/index-entry.js":{"file":"../etc/passwd"}}`),
+			Data: []byte(`{"src/main.js":{"file":"../etc/passwd"}}`),
 		},
 	}
-	if _, err := loadFrontendScripts(fsys, indexEntry); err == nil {
+	if _, err := loadFrontendScripts(fsys, appEntry); err == nil {
 		t.Fatal("expected error for path traversal")
 	}
 }

@@ -100,17 +100,10 @@ func Main(version string) {
 	dfs := web.DistFS()
 	if scripts, err := frontend.LoadScripts(dfs, frontend.AppEntry); err == nil {
 		for _, script := range scripts {
-			switch script.Entry {
-			case frontend.AppEntry:
+			if script.Entry == frontend.AppEntry {
 				ui.SetAppScriptPath(script.Path)
-			case frontend.IndexEntry:
-				ui.SetIndexScriptPath(script.Path)
-			case frontend.SessionEntry:
-				ui.SetSessionScriptPath(script.Path)
-			case frontend.SettingsEntry:
-				ui.SetSettingsScriptPath(script.Path)
 			}
-			mux.HandleFunc(script.Path, frontend.ServeJS(script.JS, script.Path != "/static/assets/index.js"))
+			mux.HandleFunc(script.Path, frontend.ServeJS(script.JS, true))
 		}
 		// Serve all other hashed assets (lazy chunks, runtime) from the embed FS.
 		mux.HandleFunc("/static/assets/", frontend.ServeStaticAssets(dfs))

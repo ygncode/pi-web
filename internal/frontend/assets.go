@@ -13,17 +13,10 @@ import (
 )
 
 const (
-	AppEntry      = "src/main.js"
-	IndexEntry    = "src/index/index-entry.js"
-	SessionEntry  = "src/session/session-entry.js"
-	SettingsEntry = "src/settings/settings-entry.js"
-	LiveEntry     = "src/live/live.js"
+	AppEntry = "src/main.js"
 
-	// Backward-compatible unexported aliases used by package tests.
-	appEntry     = AppEntry
-	indexEntry   = IndexEntry
-	sessionEntry = SessionEntry
-	liveEntry    = LiveEntry
+	// Backward-compatible unexported alias used by package tests.
+	appEntry = AppEntry
 )
 
 // Script is one Vite-built JavaScript entrypoint ready to be served by Go.
