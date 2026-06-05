@@ -6,6 +6,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"html/template"
+	"os"
+	"strconv"
 	"strings"
 
 	"pi-web/internal/git"
@@ -37,12 +39,24 @@ var chatComposerTmpl = template.Must(template.New("chat_composer").Parse(chatCom
 // LargeSessionTailEntries controls how many trailing entries get embedded
 // in the initial HTML render for huge sessions. The frontend exposes a
 // "Load earlier" affordance that fetches preceding windows via
-// /api/session?id=...&from=N&count=K. Keep these tunable as exports so
-// tests + future config plumbing can override.
-const (
-	LargeSessionThreshold  = 1500
-	LargeSessionTailEntries = 1000
+// /api/session?id=...&from=N&count=K.
+//
+// Defaults are production values; both are overridable via env vars so tests
+// (and future config plumbing) can trigger truncation with a small session
+// instead of rendering thousands of entries. Read once at startup.
+var (
+	LargeSessionThreshold   = envInt("PI_WEB_LARGE_SESSION_THRESHOLD", 1500)
+	LargeSessionTailEntries = envInt("PI_WEB_LARGE_SESSION_TAIL_ENTRIES", 1000)
 )
+
+func envInt(name string, def int) int {
+	if v := os.Getenv(name); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return def
+}
 
 // prepareSessionPageData computes the shared payload (base64-encoded session
 // data, themed CSS, and body attributes) used by both live and export renders.

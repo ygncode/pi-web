@@ -1,22 +1,36 @@
 package ui
 
 import (
+	"os"
 	"strings"
 	"testing"
 
 	"pi-web/internal/sessions"
 )
 
+// Mobile sidebar close-on-navigate is implemented in the shared sidebar and
+// tree-renderer modules (used by both live and static export). Assert against
+// the source rather than the minified export bundle.
 func TestMobileSidebarClosesWhenNavigatingTree(t *testing.T) {
-	checks := []string{
-		"function setSidebarOpen(open)",
-		"document.body.classList.toggle('sidebar-open', open);",
-		"if (isMobileLayout()) closeSidebar();",
+	sidebarSrc, err := os.ReadFile(repoPath("web/src/session/ui/sidebar.js"))
+	if err != nil {
+		t.Fatalf("read sidebar.js: %v", err)
 	}
-	for _, check := range checks {
-		if !strings.Contains(exportJs, check) {
-			t.Fatalf("template JS missing %q; mobile sidebar can remain stuck over chat", check)
+	treeSrc, err := os.ReadFile(repoPath("web/src/session/tree/tree-renderer.js"))
+	if err != nil {
+		t.Fatalf("read tree-renderer.js: %v", err)
+	}
+	sidebarChecks := []string{
+		"export function setSidebarOpen(open, { documentImpl = document } = {}) {",
+		"documentImpl.body?.classList.toggle('sidebar-open', open);",
+	}
+	for _, check := range sidebarChecks {
+		if !strings.Contains(string(sidebarSrc), check) {
+			t.Fatalf("sidebar.js missing %q; mobile sidebar can remain stuck over chat", check)
 		}
+	}
+	if !strings.Contains(string(treeSrc), "if (isMobileLayout()) closeSidebar();") {
+		t.Fatal("tree-renderer.js missing mobile close-on-navigate; sidebar can remain stuck over chat")
 	}
 }
 

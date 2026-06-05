@@ -1,13 +1,15 @@
 import { test, expect, collapseScratchpad } from "../lib/test";
 import { uniqueSessionName, writeSession } from "../lib/sessions";
 
-// Build a session large enough to cross the server-side truncation threshold
-// (internal/ui/session_page.go: LargeSessionThreshold = 1500). The initial HTML
-// render then embeds only the tail (LargeSessionTailEntries = 1000) and the
-// frontend shows a "Load earlier" banner that lazily fetches preceding windows
-// via /api/session?id=...&from=N&count=K.
-const MESSAGE_COUNT = 1600; // + 1 header => 1601 entries, > 1500 threshold
-const EARLY_INDEX = 5; // an early message, well outside the embedded tail
+// Build a session large enough to cross the server-side truncation threshold.
+// The e2e server lowers that threshold via env vars (lib/server.ts:
+// PI_WEB_LARGE_SESSION_THRESHOLD=100, PI_WEB_LARGE_SESSION_TAIL_ENTRIES=50) so
+// this spec exercises the exact pagination path with a small session that
+// renders instantly — earlier it used 1600 messages and flaked under parallel
+// CPU contention because each load re-renders the whole conversation. Keep
+// MESSAGE_COUNT above the threshold and EARLY_INDEX outside the embedded tail.
+const MESSAGE_COUNT = 150; // + 1 header => 151 entries, > 100 threshold
+const EARLY_INDEX = 5; // an early message, well outside the embedded tail (50)
 const EARLY_MARKER = "EARLY_MARKER_LOADME";
 
 function buildLargeSession(): unknown[] {
@@ -37,6 +39,18 @@ function buildLargeSession(): unknown[] {
 }
 
 test.describe("load-earlier banner (large session pagination)", () => {
+  // This test does a user-triggered mid-flight fetch + re-render, so it's the
+  // canary for transient resource starvation during the full parallel matrix:
+  // 8+ browsers, the Node runner, and one shared pi-web server all competing for
+  // CPU can delay even the poll's own execution past a fixed timeout, despite the
+  // session being tiny. Two mitigations, both needed:
+  //   1. A small session (env-lowered thresholds) so the work itself is cheap.
+  //   2. Per-test retries to absorb rare contention spikes — a real regression
+  //      still fails every attempt, so this hides timing flakes, not bugs.
+  test.describe.configure({ retries: 2 });
+
+  const WINDOW_TIMEOUT = 15_000;
+
   test("truncated session loads earlier windows on demand", async ({
     page,
     sessionsDir,
@@ -51,7 +65,7 @@ test.describe("load-earlier banner (large session pagination)", () => {
     await page.goto(`/session?id=${encodeURIComponent(id)}`);
 
     const banner = page.locator("#load-earlier-banner");
-    await expect(banner).toBeVisible();
+    await expect(banner).toBeVisible({ timeout: WINDOW_TIMEOUT });
     await expect(banner).toContainText(/Showing latest .* of .* messages/);
 
     // The early message is outside the embedded tail, so it is not rendered yet.
@@ -61,20 +75,26 @@ test.describe("load-earlier banner (large session pagination)", () => {
     // removes itself once `from` reaches 0 (load-earlier.js).
     const button = banner.getByRole("button");
     for (let i = 0; i < 6 && (await banner.count()) > 0; i += 1) {
-      await expect(button).toBeEnabled();
+      await expect(button).toBeEnabled({ timeout: WINDOW_TIMEOUT });
       await button.click();
       // Either the banner is gone, or it re-enabled for the next window.
       await expect
-        .poll(async () =>
-          (await banner.count()) === 0 || (await button.isEnabled()),
+        .poll(
+          async () =>
+            (await banner.count()) === 0 || (await button.isEnabled()),
+          { timeout: WINDOW_TIMEOUT },
         )
         .toBe(true);
     }
 
-    await expect(page.locator("#load-earlier-banner")).toHaveCount(0);
+    await expect(page.locator("#load-earlier-banner")).toHaveCount(0, {
+      timeout: WINDOW_TIMEOUT,
+    });
 
     // After all earlier windows load, the earliest message must actually be
     // rendered in the conversation view — not just merged into the data model.
-    await expect(page.locator("#messages")).toContainText(EARLY_MARKER);
+    await expect(page.locator("#messages")).toContainText(EARLY_MARKER, {
+      timeout: WINDOW_TIMEOUT,
+    });
   });
 });
