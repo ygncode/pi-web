@@ -96,19 +96,19 @@ LoadAll(dir)
 Browser GET /session?id=<id>
            │
            ▼
-    server.handleSession
+    server.handleSession → SPA shell
+           │
+           ▼
+Browser GET /api/session?id=<id>
+           │
+           ▼
+    server.handleApiSession
            │
            ├──▶ sessions.Cache.Resolve → find file path + parse/cache by modtime
            │
            ├──▶ sessions.ParseFile → Session struct when cache is stale
            │
-           ├──▶ renderLiveSessionPage(session)
-           │         ├──▶ marshal session data → base64
-           │         ├──▶ inject CSS/live template/Vite module
-           │         ├──▶ replace {{TITLE}} with session.Name
-           │         └──▶ inject chat composer HTML
-           │
-           └──▶ Write HTML response
+           └──▶ Write JSON response for SessionPage.svelte
 ```
 
 ## Data Flow: Chat Message

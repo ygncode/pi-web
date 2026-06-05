@@ -25,9 +25,9 @@ Backend:
   short-TTL per-`cwd` walk cache.
 - `internal/files/` — `Walk` (bounded filesystem listing) + `Rank` (pure scoring).
 
-The composer template (`internal/ui/live_templates/chat_composer.html`) holds the
-`#pi-chat-mention-popup` / `#pi-chat-mention-list` elements; the popup reuses the
-slash palette's `.pi-chat-slash-popup` / `.slash-item` styling.
+The Svelte session route renders the `#pi-chat-mention-popup` /
+`#pi-chat-mention-list` elements; the popup reuses the slash palette's
+`.pi-chat-slash-popup` / `.slash-item` styling.
 
 ## Trigger model
 

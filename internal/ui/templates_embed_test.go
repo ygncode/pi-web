@@ -9,70 +9,7 @@ import (
 	"pi-web/internal/sessions"
 )
 
-func TestChatComposerTemplateEscapesSessionID(t *testing.T) {
-	got := chatComposerHtmlForSession(sessions.Session{SessionSummary: sessions.SessionSummary{ID: `"><script>alert(1)</script>`, ChatAvailable: true}})
-	if strings.Contains(got, "<script>alert(1)</script>") {
-		t.Fatalf("chat composer leaked unescaped session id: %s", got)
-	}
-	if !strings.Contains(got, `id="pi-chat-composer"`) {
-		t.Fatal("chat composer template did not render the form")
-	}
-}
-
-func TestChatComposerTemplateInterpolatesPlainSessionID(t *testing.T) {
-	got := chatComposerHtmlForSession(sessions.Session{SessionSummary: sessions.SessionSummary{ID: "abc123.jsonl", ChatAvailable: true}})
-	if !strings.Contains(got, `data-session-id="abc123.jsonl"`) {
-		t.Fatalf("chat composer missing expected session id attribute, got: %s", got)
-	}
-}
-
-func TestChatComposerTemplateRendersCwdFromHeader(t *testing.T) {
-	got := chatComposerHtmlForSession(sessions.Session{
-		SessionSummary: sessions.SessionSummary{ID: "s.jsonl", ChatAvailable: true},
-		Header:         map[string]any{"cwd": "/home/user/project"},
-	})
-	if !strings.Contains(got, "cwd: /home/user/project") {
-		t.Fatalf("chat composer missing expected cwd text, got: %s", got)
-	}
-	if !strings.Contains(got, `class="pi-chat-cwd"`) {
-		t.Fatal("chat composer cwd span missing pi-chat-cwd class")
-	}
-	if !strings.Contains(got, `data-cwd="/home/user/project"`) {
-		t.Fatal("chat composer cwd span missing data-cwd attribute")
-	}
-	if !strings.Contains(got, `title="Click to copy path"`) {
-		t.Fatal("chat composer cwd span missing copy tooltip")
-	}
-}
-
-func TestChatComposerTemplateEscapesCwd(t *testing.T) {
-	got := chatComposerHtmlForSession(sessions.Session{
-		SessionSummary: sessions.SessionSummary{ID: "s.jsonl", ChatAvailable: true},
-		Header:         map[string]any{"cwd": "/tmp/<script>alert(1)</script>"},
-	})
-	if strings.Contains(got, "<script>alert(1)</script>") {
-		t.Fatalf("chat composer leaked unescaped cwd: %s", got)
-	}
-	if !strings.Contains(got, "&lt;script&gt;") {
-		t.Fatal("chat composer did not escape cwd properly")
-	}
-}
-
-func TestChatComposerTemplateOmitsCwdWhenEmpty(t *testing.T) {
-	got := chatComposerHtmlForSession(sessions.Session{
-		SessionSummary: sessions.SessionSummary{ID: "s.jsonl", ChatAvailable: true},
-		Header:         nil,
-	})
-	if strings.Contains(got, "pi-chat-cwd") {
-		t.Fatal("chat composer should omit cwd span when cwd is empty")
-	}
-	if strings.Contains(got, "cwd:") {
-		t.Fatal("chat composer should omit cwd text when cwd is empty")
-	}
-}
-
-func TestRenderedSessionPagesReplaceKnownPlaceholders(t *testing.T) {
-	sessionScriptPath = "/static/assets/session-test.js"
+func TestRenderedExportPageReplacesKnownPlaceholders(t *testing.T) {
 	session := sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Name: "Session"}}
 	placeholders := []string{
 		"{{TITLE}}", "{{SESSION_PRELOAD}}", "{{CSS}}", "{{BODY_ATTRS}}",
@@ -83,27 +20,17 @@ func TestRenderedSessionPagesReplaceKnownPlaceholders(t *testing.T) {
 		"{{BODY_BG_LIGHT}}", "{{CONTAINER_BG_LIGHT}}", "{{INFO_BG_LIGHT}}",
 		"{{SESSION_PALETTE}}",
 	}
-	for name, html := range map[string]string{
-		"live":   renderLiveSessionPage(session),
-		"export": RenderExportSessionPage(session, "dark"),
-	} {
-		for _, placeholder := range placeholders {
-			if strings.Contains(html, placeholder) {
-				t.Fatalf("%s render leaked template placeholder %s", name, placeholder)
-			}
+	html := RenderExportSessionPage(session, "dark")
+	for _, placeholder := range placeholders {
+		if strings.Contains(html, placeholder) {
+			t.Fatalf("export render leaked template placeholder %s", placeholder)
 		}
 	}
 }
 
-func TestRenderedSessionCSSDefinesUsedCustomProperties(t *testing.T) {
-	sessionScriptPath = "/static/assets/session-test.js"
-	session := sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Name: "Session"}}
-	for name, html := range map[string]string{
-		"live":   renderLiveSessionPage(session),
-		"export": RenderExportSessionPage(session, "dark"),
-	} {
-		assertCSSCustomPropertiesDefined(t, name, html)
-	}
+func TestRenderedExportCSSDefinesUsedCustomProperties(t *testing.T) {
+	html := RenderExportSessionPage(sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Name: "Session"}}, "dark")
+	assertCSSCustomPropertiesDefined(t, "export", html)
 }
 
 func assertCSSCustomPropertiesDefined(t *testing.T, name, html string) {
@@ -139,26 +66,6 @@ func TestExportBundleIsSelfContained(t *testing.T) {
 		if strings.Contains(exportJs, sym) {
 			t.Fatalf("export bundle contains live-only symbol %q — a live module leaked into the static export graph", sym)
 		}
-	}
-}
-
-func TestSessionPageUsesViteModuleForInteractiveViewer(t *testing.T) {
-	sessionScriptPath = "/static/assets/session-test.js"
-	html := renderLiveSessionPage(sessions.Session{SessionSummary: sessions.SessionSummary{ID: "s.jsonl", Name: "Session"}})
-	if !strings.Contains(html, `<script type="module" src="/static/assets/session-test.js"></script>`) {
-		t.Fatal("session page missing Vite session module script")
-	}
-	if strings.Contains(html, "new EventSource(") {
-		t.Fatal("session page still inlines live reload JS instead of using Vite session module")
-	}
-	if strings.Contains(html, "{{SESSION_SCRIPT}}") || strings.Contains(html, "{{JS}}") {
-		t.Fatal("session page still contains unreplaced script placeholders")
-	}
-	if strings.Contains(html, "{{TITLE}}") {
-		t.Fatal("session page still contains unreplaced title placeholder")
-	}
-	if !strings.Contains(html, `<span class="session-header-title" id="session-header-title">Session</span>`) {
-		t.Fatal("session header title was not rendered")
 	}
 }
 
