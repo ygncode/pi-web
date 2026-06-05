@@ -9,7 +9,7 @@
     </div>
     <div class="workspace-summary">
       <div class="workspace-stats">
-        <span>Sessions</span>
+        <span data-total-count>0 sessions</span>
         <span class="stat-running" id="statRunning" data-running-stat><span class="status-dot" aria-hidden="true"></span><span data-running-count>0</span><span class="stat-running-label"> active</span></span>
       </div>
       <div class="layout-toggle" aria-label="Session layout">

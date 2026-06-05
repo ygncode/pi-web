@@ -689,6 +689,10 @@ export function runIndexPage({
     documentImpl.querySelectorAll('[data-running-stat]').forEach((statEl) => {
       statEl.classList.toggle('visible', total > 0);
     });
+    const totalSessions = documentImpl.querySelectorAll('.session-card').length;
+    documentImpl.querySelectorAll('[data-total-count]').forEach((el) => {
+      el.textContent = `${totalSessions} sessions`;
+    });
   }
 
   let runningObserver = null;
