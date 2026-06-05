@@ -1,58 +1,11 @@
-{{.LiveDocumentStart}}  <script>try{const c=localStorage.getItem('pi-share:v1:sidebar-collapsed');if(c==='true')document.body.classList.add('sidebar-collapsed');}catch(e){}try{const lw=Number(localStorage.getItem('pi-share:v1:sidebar-width'));if(isFinite(lw)&&lw>0)document.documentElement.style.setProperty('--sidebar-width',Math.round(lw)+'px');}catch(e){}try{const rc=localStorage.getItem('pi-web:v1:right-sidebar-collapsed');const mobile=window.matchMedia&&window.matchMedia('(max-width: 900px)').matches;if(rc==='true'||mobile)document.body.classList.add('right-sidebar-collapsed');}catch(e){}try{const w=Number(localStorage.getItem('pi-web:v1:right-sidebar-width'));if(isFinite(w)&&w>0)document.documentElement.style.setProperty('--right-sidebar-width',Math.round(w)+'px');}catch(e){}</script>
+{{.LiveDocumentStart}}
   {{.ThemeBoot}}
-  {{.ServiceWorker}}
 
-  {{if .IsLive}}
-  <!-- Hidden buttons for backward-compat JS handlers -->
-  <div style="display:none">
-    <button id="theme-toggle" title="Toggle light/dark theme">Theme</button>
-    <button id="notify-toggle" title="Notify when response is ready" aria-pressed="false">Notify</button>
-    <button id="resume-btn" title="Copy pi --session command to clipboard">Terminal</button>
-    <button id="new-btn" title="New Session">Session</button>
-    <button id="share-btn" title="Share session as GitHub Gist">Share</button>
-  </div>
-
-  <div class="session-header-bar">
-    <div class="session-header-left">
-      <a href="/" class="session-header-back"><span>←</span> Sessions</a>
-      <button id="tree-toggle" class="session-header-actions session-header-tree-toggle" title="Toggle session tree" aria-label="Toggle session tree" aria-pressed="true">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2"></rect>
-          <path d="M9 3v18"></path>
-        </svg>
-      </button>
-    </div>
-    <span class="session-header-title" id="session-header-title">{{.Title}}</span>
-    <div class="session-header-right">
-      <button id="new-session-header-btn" class="session-header-new" title="New Session (⌘T)" aria-label="Start a new session">
-        <span aria-hidden="true">+</span><span class="session-header-new-label">New</span>
-      </button>
-      <button id="shortcuts-help-btn" class="session-header-shortcuts-help" title="Show keyboard shortcuts (⌘/)">⌘/</button>
-      <button id="toggle-right-sidebar-btn" class="session-header-actions" title="Toggle scratchpad (⌘⇧N)" aria-label="Toggle scratchpad">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
-      </button>
-      <button id="command-menu-btn" class="session-header-actions" aria-label="Session actions" aria-haspopup="menu" aria-expanded="false" aria-controls="command-menu-popover">⋯</button>
-    </div>
-  </div>
-
-  <!-- Desktop popover menu -->
-  {{.SessionCommandMenu}}
-
-  <!-- Mobile dropdown menu -->
-  <div id="mobile-command-backdrop" class="mobile-command-backdrop" style="display: none;"></div>
-  {{.MobileCommandMenu}}
-
-  {{.SessionPalette}}
-  {{else}}
   <button id="theme-toggle" class="theme-toggle-btn" title="Toggle light/dark theme" style="position:fixed;top:10px;right:10px;z-index:102;padding:4px 10px;font-size:11px;font-family:inherit;background:var(--container-bg);color:var(--muted);border:1px solid var(--dim);border-radius:3px;cursor:pointer;"><span data-theme-icon>◐</span>Theme</button>
   <div class="session-header-bar export-only">
     <span class="session-header-title" id="session-header-title">{{.Title}}</span>
   </div>
   <button id="hamburger" title="Open sidebar"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><rect x="5" y="6" width="2" height="12"/><path d="M6 12h10c1 0 2 0 2-2V8"/></svg></button>
-  {{end}}
 
   <div id="sidebar-overlay"></div>
   <div id="app">
@@ -65,9 +18,7 @@
                 <circle cx="18" cy="6" r="2.5"></circle>
                 <circle cx="18" cy="18" r="2.5"></circle>
                 <circle cx="6" cy="12" r="2.5"></circle>
-
                 <rect x="17" y="6" width="2" height="12"></rect>
-
                 <path d="M18 12H8c-1 0-2 0-2-2V8"></path>
               </svg></button>
           <button id="sidebar-close" class="sidebar-close" title="Close" aria-label="Close session tree">✕</button>
@@ -87,94 +38,13 @@
     <div id="content-container" class="content-container">
       <main id="content">
         <div id="header-container"></div>
-        <div id="messages">{{.FirstMessageStub}}</div>
+        <div id="messages"></div>
       </main>
-      {{if .IsLive}}{{.ChatComposer}}{{end}}
     </div>
-    {{if .IsLive}}
-    <div id="right-sidebar-resizer" class="right-sidebar-resizer" role="separator" aria-orientation="vertical" aria-label="Resize scratchpad sidebar"></div>
-    <aside id="right-sidebar" class="right-sidebar">
-      <div class="right-sidebar-header">
-        <div class="right-sidebar-tabs" role="tablist">
-          <button type="button" id="right-tab-scratchpad" class="right-sidebar-tab active" role="tab" data-pane="scratchpad" aria-selected="true">Scratchpad</button>
-          <button type="button" id="right-tab-notes" class="right-sidebar-tab" role="tab" data-pane="notes" aria-selected="false">Annotations<span id="annotation-tab-count" class="right-sidebar-tab-count" hidden>0</span></button>
-          <button type="button" id="right-tab-artifacts" class="right-sidebar-tab" role="tab" data-pane="artifacts" aria-selected="false">Artifacts<span id="artifact-tab-count" class="right-sidebar-tab-count" hidden>0</span></button>
-        </div>
-        <div class="right-sidebar-actions">
-          <button id="artifact-help-btn" class="right-sidebar-btn artifact-help-btn" title="How artifacts work" aria-label="How artifacts work">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"/>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-              <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-          </button>
-          <button id="expand-right-sidebar" class="right-sidebar-btn" title="Expand panel">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
-            </svg>
-          </button>
-          <button id="close-right-sidebar" class="right-sidebar-btn" title="Hide panel (⌘⇧N)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="right-sidebar-content">
-        <div id="right-pane-scratchpad" class="right-sidebar-pane active" role="tabpanel" aria-labelledby="right-tab-scratchpad">
-          <textarea id="scratchpad-textarea" class="scratchpad-textarea" placeholder="Write project-level notes, scratchpad, tasks...">{{.Scratchpad}}</textarea>
-        </div>
-        <div id="right-pane-artifacts" class="right-sidebar-pane" role="tabpanel" aria-labelledby="right-tab-artifacts" hidden>
-          <div id="artifact-panel-host" class="artifact-panel-host"></div>
-        </div>
-        <div id="right-pane-notes" class="right-sidebar-pane" role="tabpanel" aria-labelledby="right-tab-notes" hidden>
-          <div id="annotation-list-host" class="annotation-list-host"></div>
-        </div>
-      </div>
-      <div class="right-sidebar-footer">
-        <span id="scratchpad-status" class="scratchpad-status">Saved</span>
-      </div>
-    </aside>
-    <div id="right-sidebar-backdrop" class="right-sidebar-backdrop"></div>
-    <div id="artifact-help-modal" class="artifact-help-modal" hidden>
-      <div class="artifact-help-backdrop" data-action="close-artifact-help"></div>
-      <div class="artifact-help-card" role="dialog" aria-modal="true" aria-labelledby="artifact-help-title">
-        <div class="artifact-help-header">
-          <h3 id="artifact-help-title">How artifacts work</h3>
-          <button class="artifact-help-close" data-action="close-artifact-help" aria-label="Close">&times;</button>
-        </div>
-        <div class="artifact-help-body">
-          <p><strong>Artifacts</strong> are the files the agent wrote and the larger code blocks it shared, pulled out of the conversation so you can find, read, copy, or download them in one place.</p>
-          <p><strong>Viewing.</strong> Pick one from the list to see its source. HTML, SVG, and Markdown files also have a <em>Preview</em> toggle — HTML/SVG run in a secure sandbox, Markdown renders as formatted text.</p>
-          <p><strong>Annotating.</strong> Select text in an artifact's source to leave a note. Your notes collect in the <em>Annotations</em> tab, where you can jump back to them or send them to the agent.</p>
-          <p><strong>Staying up to date.</strong> Files the agent <em>writes</em> or <em>edits</em> update automatically, and simple renames or deletes (<code>mv</code>, <code>git mv</code>, <code>rm</code>) are tracked too. But changes made through other shell commands — like <code>sed</code> or output redirects — can't be followed from the conversation, so once in a while an artifact may show an older version. When in doubt, check the file on disk.</p>
-          <p class="artifact-help-note">Artifacts are part of the live view only and aren't included in exported snapshots.</p>
-        </div>
-      </div>
-    </div>
-    {{end}}
     <div id="image-modal" class="image-modal">
       <img id="modal-image" src="" alt="">
     </div>
   </div>
-
-  <div id="share-overlay" class="share-overlay-backdrop" style="display: none;">
-    <div id="share-dialog" class="share-dialog">
-      <h3 id="share-title"></h3>
-      <div id="share-fields">
-        <div class="share-field"><label>Gist URL</label><input id="share-gist-url" readonly class="share-url-input" onclick="this.select()"></div>
-        <div class="share-field"><label>Preview URL</label><input id="share-preview-url" readonly class="share-url-input" onclick="this.select()"></div>
-      </div>
-      <p id="share-error-message" class="share-error-message" style="display: none;"></p>
-      <div class="share-actions">
-        <button id="share-copy-gist" class="share-btn-primary" data-copy-label="Gist">Copy Gist</button>
-        <button id="share-copy-preview" class="share-btn-secondary" data-copy-label="Preview">Copy Preview</button>
-        <button id="share-close" class="share-btn-secondary">Close</button>
-      </div>
-    </div>
-  </div>
-  <div id="share-copy-notice" class="toast-notice"></div>
 
   <script id="session-data" type="application/json">{{.SessionData}}</script>
 

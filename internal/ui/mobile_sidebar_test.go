@@ -34,7 +34,7 @@ func TestMobileSidebarClosesWhenNavigatingTree(t *testing.T) {
 
 func TestMobileSessionActionsStayAtTopAndHideBehindSidebar(t *testing.T) {
 	checks := []string{
-		`class="session-header-bar"`,
+		`class="session-header-bar export-only"`,
 		"@media (max-width: 900px)",
 		".session-header-bar {",
 		"position: fixed;",
