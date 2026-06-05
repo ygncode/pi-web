@@ -9,12 +9,13 @@
     "dev": "npm run build:export && vite build --watch"
   },
   "dependencies": {
-
     "highlight.js": "latest",
     "marked": "latest"
   },
   "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "jsdom": "latest",
+    "svelte": "^5.56.2",
     "vite": "latest",
     "vitest": "latest"
   }
