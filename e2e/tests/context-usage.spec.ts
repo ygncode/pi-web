@@ -45,7 +45,14 @@ test.describe("context usage popover", () => {
     await expect(popover.locator("#pi-popover-val-total")).toHaveText("7.7k");
     await expect(popover.locator(".pi-popover-used")).toHaveText("7.7k");
 
-    // Close: clicking the capsule again hides it.
+    // Close via the × button (the popover is a sibling of the capsule, so this
+    // click does not reach the capsule's own toggle handler).
+    await popover.locator(".pi-popover-close").click();
+    await expect(popover).toBeHidden();
+
+    // Re-open, then close by toggling the capsule again.
+    await capsule.click();
+    await expect(popover).toBeVisible();
     await capsule.click();
     await expect(popover).toBeHidden();
   });

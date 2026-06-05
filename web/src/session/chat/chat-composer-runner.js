@@ -859,7 +859,18 @@ export function runChatComposer({
           positionPopover();
         }
       });
-      
+
+      // The popover renders as a sibling of the capsule (outside the toolbar for
+      // overflow safety), so clicks inside it never reach the capsule listener
+      // above. Handle the close button — and swallow inner clicks so the
+      // document-level outside-click handler doesn't immediately reopen/close.
+      popover.addEventListener('click', (e) => {
+        if (e.target.closest('.pi-popover-close')) {
+          popover.style.display = 'none';
+        }
+        e.stopPropagation();
+      });
+
       // Close popover when clicking anywhere else (excluding capsule and popover itself)
       document.addEventListener('click', (e) => {
         if (popover.style.display !== 'none') {
