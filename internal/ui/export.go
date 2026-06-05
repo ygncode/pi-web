@@ -62,7 +62,7 @@ func RenderExportSessionPage(session sessions.Session, theme string) string {
 	}
 
 	var buf bytes.Buffer
-	if err := liveSessionTmpl.Execute(&buf, data); err != nil {
+	if err := exportSessionTmpl.Execute(&buf, data); err != nil {
 		log.Printf("export: template execution failed for session %q: %v", session.ID, err)
 		return ""
 	}

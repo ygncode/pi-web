@@ -11,10 +11,12 @@ import (
 	"pi-web/internal/sessions"
 )
 
+// session.html renders the static export/share snapshot only; the live
+// session page is the Svelte SPA served via the app.html shell.
 //go:embed embedded/session.html
-var liveSessionHtml string
+var exportSessionHtml string
 
-var liveSessionTmpl = template.Must(template.New("live_session").Parse(liveSessionHtml))
+var exportSessionTmpl = template.Must(template.New("export_session").Parse(exportSessionHtml))
 
 //go:embed embedded/styles/theme.css
 var liveThemeCss string
@@ -50,8 +52,8 @@ func envInt(name string, def int) int {
 	return def
 }
 
-// prepareSessionPageData computes the shared payload (base64-encoded session
-// data, themed CSS, and body attributes) used by both live and export renders.
+// prepareSessionPageData computes the payload (base64-encoded session data,
+// themed CSS, and body attributes) for the static export/share snapshot.
 //
 // For sessions with more than LargeSessionThreshold entries we embed only the
 // tail (LargeSessionTailEntries) and add { truncated, total, from } fields so
