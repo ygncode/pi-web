@@ -488,6 +488,10 @@ export function runSessionApp({ target = window } = {}) {
     dataModel,
     sessionId,
     syncDataModelEntries,
+    // Re-render the conversation from the current leaf so the prepended earlier
+    // entries actually appear in #messages, keeping the viewport anchored on the
+    // message that was previously at the top (anchorId) to avoid a scroll jump.
+    rerender: (anchorId) => navigateTo(dataModel.leafId, anchorId ? 'target' : 'bottom', anchorId || null),
     documentImpl,
     fetchImpl: target.fetch.bind(target),
   });

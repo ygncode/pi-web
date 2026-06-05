@@ -27,6 +27,7 @@ export function setupLoadEarlierBanner({
   dataModel,
   sessionId,
   syncDataModelEntries,
+  rerender,
   documentImpl = document,
   fetchImpl = (typeof window !== 'undefined' ? window.fetch.bind(window) : null),
   windowSize = WINDOW_SIZE,
@@ -73,6 +74,9 @@ export function setupLoadEarlierBanner({
     if (button.disabled) return;
     const requestFrom = Math.max(0, dataModel.from - windowSize);
     const requestCount = dataModel.from - requestFrom;
+    // The message currently at the top of the conversation. We re-anchor the
+    // viewport on it after prepending older entries so the page doesn't jump.
+    const anchorId = dataModel.entries[0]?.id || null;
     button.disabled = true;
     status.textContent = 'Loading…';
     try {
@@ -91,9 +95,13 @@ export function setupLoadEarlierBanner({
         return;
       }
       const merged = [...earlier, ...dataModel.entries];
-      // syncDataModelEntries handles the full re-build: replaces entries,
-      // rebuilds byId/toolCallMap/labelMap, re-renders the tree.
+      // syncDataModelEntries handles the data-model re-build: replaces entries,
+      // rebuilds byId/toolCallMap/labelMap, re-renders the sidebar tree. It does
+      // NOT re-render the #messages conversation (live-reload appends new
+      // entries at the bottom separately), so we must explicitly re-render the
+      // conversation to surface the freshly prepended earlier messages.
       syncDataModelEntries(merged);
+      if (typeof rerender === 'function') rerender(anchorId);
       dataModel.from = requestFrom;
       dataModel.truncated = requestFrom > 0;
       status.textContent = '';
