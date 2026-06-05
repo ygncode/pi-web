@@ -101,7 +101,7 @@ func Main(version string) {
 	srv.Register(mux)
 	ui.RegisterPWAHandlers(mux)
 	dfs := web.DistFS()
-	if scripts, err := frontend.LoadScripts(dfs, frontend.AppEntry, frontend.IndexEntry, frontend.SessionEntry, frontend.SettingsEntry, frontend.LiveEntry); err == nil {
+	if scripts, err := frontend.LoadScripts(dfs, frontend.AppEntry); err == nil {
 		for _, script := range scripts {
 			switch script.Entry {
 			case frontend.AppEntry:
