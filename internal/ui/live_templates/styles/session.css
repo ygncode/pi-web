@@ -1837,22 +1837,31 @@
       animation: chat-preview-working-dots 1.1s steps(4, end) infinite;
     }
 
-    /* Header */
-    .header {
+    /* Header (in-message session metadata card; scoped so it does not
+       collide with the index page's .header bar in the shared SPA stylesheet) */
+    #header-container .header {
       background: var(--container-bg);
       border-radius: 4px;
       padding: var(--line-height);
       margin-bottom: var(--line-height);
+      /* Neutralize the index page's .header bar styles that leak through the
+         shared SPA stylesheet; this in-message card is not a sticky bar. */
+      position: static;
+      top: auto;
+      z-index: auto;
+      border-bottom: 0;
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
     }
 
-    .header h1 {
+    #header-container .header h1 {
       font-size: 12px;
       font-weight: bold;
       color: var(--borderAccent);
       margin-bottom: var(--line-height);
     }
 
-    .header-info {
+    #header-container .header-info {
       display: flex;
       flex-direction: column;
       gap: 0;
