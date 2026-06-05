@@ -1,65 +1,85 @@
 # UI Rendering & Frontend Architecture (`internal/ui/` and `web/`)
 
-This document explains the unified architecture of our HTML template layouts, stylesheet subsystems, and Vite-built frontend runtimes. 
+This document explains how the live Svelte SPA, Go-embedded shell, shared styles, and static export path fit together.
 
 ## Short Version
 
 | Layer / Directory | Purpose |
-|-------------------|---------|
-| `web/` | **Client Runtime Source** — Vite-managed ES modules compiled into production assets (`web/dist/`) and served as `/static/assets/...` |
-| `internal/ui/live_templates/` | **Unified HTML Shells & Style Tokens** — Core Go-embedded template shells (`session.html`, `index.html`) and split theme stylesheets (`styles/theme.css`, `session.css`, `menu.css`, `palette.css`, `index.css`) |
+|---|---|
+| `web/` | Client runtime source — Svelte + Vite modules compiled into `web/dist/` and served as `/static/assets/...` |
+| `internal/ui/live_templates/app.html` | One Go-embedded live SPA shell for browser routes |
+| `internal/ui/live_templates/session.html` | Static export/share shell only; rendered with `IsLive: false` by `internal/ui/export.go` |
+| `internal/ui/live_templates/styles/` | Shared CSS tokens and page styles used by the SPA shell, PWA CSS routes, and export |
 
 ---
 
-## 🎨 Unified Layout Architecture (Single HTML Shell)
+## Live App: One SPA Shell
 
-Historically, this codebase maintained separate template layouts for the **Live Local App** and **Standalone Gist Exports**. They are now unified under one robust, flexible layout engine:
+The live app no longer uses separate Go-rendered `index.html`, `settings.html`, or live `session.html` pages. Browser routes are served by `internal/ui/spa_page.go`, which renders:
 
-- **Unified Template File**: `internal/ui/live_templates/session.html`
-- **CSS Stylesheets** (split by concern, concatenated inline for session page):
-  - `styles/theme.css` — CSS custom properties / theme variables
-  - `styles/session.css` — session page layout, tree, chat, message rendering
-  - `styles/menu.css` — command menu / context menu
-  - `styles/palette.css` — session search palette
-- **Index page** loads `/theme.css`, `/index.css`, `/menu.css`, `/palette.css` as separate stylesheet links
-- **Export page** inlines only `theme.css` + `session.css` (no menus/palettes needed)
+```txt
+internal/ui/live_templates/app.html
+└── web/src/main.js  (Vite entry)
+    └── web/src/App.svelte
+        ├── routes/SessionsPage.svelte  (/)
+        ├── routes/SessionPage.svelte   (/session?id=…)
+        ├── routes/SettingsPage.svelte  (/settings)
+        └── routes/LoginPage.svelte     (/login)
+```
 
-By using Go's `html/template` conditional checks (`{{if .IsLive}} ... {{else}} ... {{end}}`), the same layout shell dynamically adapts to serve both environments:
+The Go shell intentionally preserves the current PWA-first boot path:
 
-| Feature / UI Component | Live App (`/session`) | Standalone Export (Share Gist) |
-|------------------------|------------------------|-------------------------------|
-| **Go Renderer** | `internal/ui/session_page.go` | `internal/ui/export.go` |
-| **HTML Layout Shell** | `live_templates/session.html` (`IsLive: true`) | `live_templates/session.html` (`IsLive: false`) |
-| **Styling Stylesheet** | `live_templates/styles/theme.css` + `session.css` + `menu.css` + `palette.css` | `live_templates/styles/theme.css` + `session.css` |
-| **Theme Cycling Menu** | Yes (Desktop/Mobile dropdowns) | No (Top-right standalone toggle) |
-| **Back Link & popover** | Yes (Desktop command menus) | No |
-| **Chat Composer** | Yes (Server-plumbed input composer) | No |
-| **Javascript Delivery**| Vite script modules (`/static/assets/...`)| Embedded inline IIFE (marked + highlight + runtime)|
-| **Network Requirements**| Yes (Requires local Go RPC server) | No (Fully standalone, serverless HTML)|
+- no-zoom iPhone viewport metadata
+- theme boot before first paint
+- Window Controls Overlay boot
+- manifest/icons/mobile-web-app metadata
+- custom themes stylesheet
+- server-backed font variables
+- service worker registration
+- Vite hashed SPA asset from `web/dist/.vite/manifest.json`
 
----
-
-## 🛠️ Unified CSS Variables Theme Engine
-
-Our styling is based on a **Unified CSS Custom Properties (Variables) design system** in `styles/session.css`. 
-
-In both Live and Export environments, changing the theme simply toggles the `data-theme` attribute on the `<html>` root node:
-- **Obsidian Dark** (`dark`)
-- **Warm Linen Light** (`light`)
-- **Arctic Frost Nord** (`nord`)
-- **Cyberpunk Dracula** (`dracula`)
-- **User Custom taste** (`custom` — serves custom colors loaded from `~/.pi/agent/pi-web/custom-themes.css`)
-
-For export snapshots, the `exportThemeBootScript()` inlines a highly optimized theme toggle and cookie/localStorage boot engine that stays completely active.
+API, SSE, PWA, static asset, sound, and share routes remain server-handled.
 
 ---
 
-## 🚀 Shared Code & Remaining Separation
+## Stylesheets
 
-While our layouts and styling are consolidated:
-1. **Client Runtimes** remain separated by environment requirements:
-   - Live app (`web/src/session/`): Handles SSE dynamic watchers, real-time message streams, chat composition, and service worker push updates.
-   - Export app (`internal/ui/live_templates/export/app/*.js`): Performs static offline client rendering for tree building and list filters.
-2. **Icons & Favicons**:
-   - The live app loads dynamic vector files from `/icon.svg`.
-   - The standalone export snapshot embeds a self-contained base64-encoded SVG favicon so it displays beautifully on all platforms without external network requests.
+The live SPA shell inlines the core CSS needed by all migrated routes:
+
+- `styles/theme.css`
+- `styles/index.css`
+- `styles/settings.css`
+- `styles/session.css`
+- `styles/menu.css`
+- `styles/palette.css`
+
+Some CSS is also exposed as PWA/static routes by `internal/ui/pwa.go` (`/theme.css`, `/index.css`, `/menu.css`, `/palette.css`, `/settings.css`) for compatibility and install/offline behavior.
+
+---
+
+## Static / Share Export
+
+Export/share snapshots are still fully self-contained and must not depend on the live Go backend.
+
+| | Live App | Static Export |
+|---|---|---|
+| Go renderer | `internal/ui/spa_page.go` | `internal/ui/export.go` |
+| HTML shell | `live_templates/app.html` | `live_templates/session.html` (`IsLive: false`) |
+| JS source | `web/src/main.js` | `web/src/export/export-entry.js` |
+| JS delivery | `/static/assets/app-*.js` | inline IIFE `internal/ui/live_templates/export/export.js` |
+| Network required | Yes | No |
+| Chat/SSE | Yes | No |
+
+Do not import live-only modules (SSE, chat, worker status, service-worker live glue) from the export entry. `TestExportBundleIsSelfContained` guards this.
+
+---
+
+## Current Migration State
+
+The SPA owns all live browser routes, but some Svelte route shells still reuse existing DOM-oriented JavaScript modules:
+
+- `web/src/index/` powers behavior for `SessionsPage.svelte`
+- `web/src/settings/settings.js` powers behavior for `SettingsPage.svelte`
+- `web/src/session/` powers rendering/chat/live behavior for `SessionPage.svelte`
+
+Future cleanup should continue extracting these modules into focused Svelte components while keeping export-safe rendering helpers side-effect-free.

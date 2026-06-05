@@ -200,8 +200,8 @@ type piRPCWorker struct {
 
 | Route | Method | Handler | Description |
 |-------|--------|---------|-------------|
-| `/` | GET | `handleIndex` | Render session list (Vite index bundle shell) |
-| `/session` | GET | `handleSession` | Render single session page (Vite session bundle shell) |
+| `/` | GET | `handleIndex` | Render SPA shell for the sessions route |
+| `/session` | GET | `handleSession` | Render SPA shell for the session route |
 | `/api/session` | GET | `handleApiSession` | JSON session data |
 | `/api/sessions` | GET | `handleApiSessions` | JSON list of session summaries |
 | `/api/chat` | POST | `handleChat` | Send chat message (multipart) |

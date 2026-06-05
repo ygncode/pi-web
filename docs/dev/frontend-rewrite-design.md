@@ -47,18 +47,15 @@ web/src/
     navigation/         # selection, deep links, keyboard/mobile navigation
     chat/               # composer, attachments, model/thinking controls
     live/               # SSE reload/status/preview handling
-  live/                 # standalone live entrypoint if still needed
+  routes/               # Svelte route shells
 ```
 
 ### Go/template boundary
-- Go templates should emit page shells and serialized initial data only.
-- Avoid large inline scripts in `internal/ui/live_templates/index.html` and `internal/ui/live_templates/session.html`.
-- Vite entrypoints should own frontend behavior:
-  - `src/index/index.js`
-  - `src/session/session.js`
-  - `src/live/live.js` if still needed after consolidation
+- The live Go template should emit only the SPA shell (`internal/ui/live_templates/app.html`).
+- Avoid reintroducing page-specific live templates for `/`, `/session`, or `/settings`.
+- `web/src/main.js` is the single live Vite entrypoint; route behavior lives under `web/src/routes/` and feature modules.
 - Built assets stay under `web/dist` and are embedded into the Go binary.
-- Manifest lookup should support the needed entrypoints instead of assuming only index behavior matters.
+- Manifest lookup should validate the SPA entrypoint and serve additional hashed chunks from the embedded assets filesystem.
 
 ### UI state layer
 - Vanilla JS remains the primary UI state and interaction layer.

@@ -147,8 +147,8 @@ token is normalized to `*.md`.
 The registry itself is unchanged — it always detects everything, so toggling the
 filter never loses data. When the include list hides detected artifacts, the
 panel's empty state shows a count + a link to Settings rather than a bare "no
-artifacts" message. Settings live in the **Artifacts** section of `/settings`
-(`internal/ui/live_templates/settings.html`).
+artifacts" message. Settings live in the **Artifacts** section of the Svelte
+`/settings` route (`web/src/routes/SettingsPage.svelte`).
 
 ## Annotating artifacts
 

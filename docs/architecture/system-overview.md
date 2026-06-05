@@ -42,9 +42,9 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                              HTTP Router                                  │
 │                                                                           │
-│   GET  /              →  handleIndex      (Vite index bundle)             │
-│   GET  /session       →  handleSession    (Vite session bundle shell)    │
-│   GET  /settings      →  handleSettingsPage (Vite settings bundle shell) │
+│   GET  /              →  handleIndex      (SPA shell)                    │
+│   GET  /session       →  handleSession    (SPA shell)                    │
+│   GET  /settings      →  handleSettingsPage (SPA shell)                  │
 │   GET  /api/session   →  handleApiSession  (JSON)                        │
 │   GET  /api/sessions  →  handleApiSessions (JSON list)                   │
 │   POST /api/chat      →  handleChat        (multipart or JSON)           │

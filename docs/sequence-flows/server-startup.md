@@ -119,10 +119,9 @@ srv := server.New(server.Deps{
             }
         })
     }),
-    Cache:         sessions.NewCache(),
-    RenderIndex:         func(w io.Writer, ss []sessions.SessionSummary) error { … },
-    RenderLiveSession:   renderLiveSessionPage,
-    RenderExportSession: renderExportSessionPage,
+    Cache:               sessions.NewCache(),
+    RenderAppShell:      ui.RenderAppShell,
+    RenderExportSession: ui.RenderExportSessionPage,
     Models:              func(ctx context.Context) (json.RawMessage, error) { … },
 })
 ```
@@ -147,13 +146,16 @@ mux.HandleFunc("/api/chat", s.auth.Wrap(s.handleChat))
 ### 7. Static Asset Loading
 
 ```go
-if scriptPath, js, err := loadIndexScript(distFS()); err == nil {
-    indexScriptPath = scriptPath
-    mux.HandleFunc(scriptPath, serveIndexJS(js, true))
+if scripts, err := frontend.LoadScripts(web.DistFS(), frontend.AppEntry); err == nil {
+    for _, script := range scripts {
+        ui.SetAppScriptPath(script.Path)
+        mux.HandleFunc(script.Path, frontend.ServeJS(script.JS, true))
+    }
+    mux.HandleFunc("/static/assets/", frontend.ServeStaticAssets(web.DistFS()))
 }
 ```
 
-Reads Vite manifest to discover the hashed filename of the index bundle.
+Reads Vite manifest to discover the hashed filename of the SPA bundle.
 
 ### 8. State File
 
