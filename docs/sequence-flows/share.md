@@ -26,7 +26,7 @@ This flow covers a user clicking the **Share** button on a session page, which c
      │             │              │                  │               │              │
      │             │              │─── renderExportSessionPage(session)
      │             │              │                  │               │              │
-     │             │              │                  │─── live_templates/session.html │
+     │             │              │                  │─── embedded/session.html │
      │             │              │                  │─── styles/session.css │
      │             │              │                  │─── exportJs     │              │
      │             │              │                  │─── marked.js    │              │

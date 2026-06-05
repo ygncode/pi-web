@@ -7,43 +7,36 @@ import (
 	"time"
 )
 
-//go:embed live_templates/assets/manifest.webmanifest
+//go:embed embedded/assets/manifest.webmanifest
 var manifestJSON string
 
-//go:embed live_templates/assets/sw.js
+//go:embed embedded/assets/sw.js
 var swJS string
 
-//go:embed live_templates/assets/icon.svg
+//go:embed embedded/assets/icon.svg
 var iconSVG string
 
-//go:embed live_templates/assets/icon-maskable.svg
+//go:embed embedded/assets/icon-maskable.svg
 var iconMaskableSVG string
 
-//go:embed live_templates/assets/pi-logo.svg
+//go:embed embedded/assets/pi-logo.svg
 var piLogoSVG string
 
-//go:embed live_templates/assets/cat.mp3
+//go:embed embedded/assets/cat.mp3
 var CatMP3 []byte
 
-//go:embed live_templates/assets/done.mp3
+//go:embed embedded/assets/done.mp3
 var DoneMP3 []byte
 
-//go:embed live_templates/assets/cat.webm
+//go:embed embedded/assets/cat.webm
 var catWebm []byte
 
-//go:embed live_templates/styles/theme.css
-var themeCSS string
-
-//go:embed live_templates/styles/index.css
+// indexCSS and settingsCSS are inlined into the SPA shell by
+// appStylesheets() (spa_page.go); they are not served as standalone routes.
+//go:embed embedded/styles/index.css
 var indexCSS string
 
-//go:embed live_templates/styles/menu.css
-var menuCSS string
-
-//go:embed live_templates/styles/palette.css
-var paletteCSS string
-
-//go:embed live_templates/styles/settings.css
+//go:embed embedded/styles/settings.css
 var settingsCSS string
 
 // registerPWAHandlers serves the manifest, service worker, and icons.
@@ -82,30 +75,5 @@ func RegisterPWAHandlers(mux *http.ServeMux) {
 		w.Header().Set("Content-Type", "video/webm")
 		w.Header().Set("Cache-Control", "public, max-age=86400")
 		http.ServeContent(w, r, "cat.webm", time.Time{}, bytes.NewReader(catWebm))
-	})
-	mux.HandleFunc("/theme.css", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache")
-		_, _ = w.Write([]byte(themeCSS))
-	})
-	mux.HandleFunc("/index.css", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache")
-		_, _ = w.Write([]byte(indexCSS))
-	})
-	mux.HandleFunc("/menu.css", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache")
-		_, _ = w.Write([]byte(menuCSS))
-	})
-	mux.HandleFunc("/palette.css", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache")
-		_, _ = w.Write([]byte(paletteCSS))
-	})
-	mux.HandleFunc("/settings.css", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/css; charset=utf-8")
-		w.Header().Set("Cache-Control", "no-cache")
-		_, _ = w.Write([]byte(settingsCSS))
 	})
 }

@@ -10,10 +10,10 @@ import (
 	"pi-web/internal/sessions"
 )
 
-//go:embed live_templates/export/vendor/marked.min.js
+//go:embed embedded/export/vendor/marked.min.js
 var markedJs string
 
-//go:embed live_templates/export/vendor/highlight.min.js
+//go:embed embedded/export/vendor/highlight.min.js
 var hljsJs string
 
 // Static export runtime, built by Vite from web/src/export/export-entry.js
@@ -22,7 +22,7 @@ var hljsJs string
 // frontend build must run before `go build` so this embed target exists —
 // the same constraint as web/dist.
 //
-//go:embed live_templates/export/export.js
+//go:embed embedded/export/export.js
 var exportJs string
 
 // renderExportSessionPage renders a self-contained HTML snapshot suitable for

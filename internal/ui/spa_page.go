@@ -7,7 +7,7 @@ import (
 	"io"
 )
 
-//go:embed live_templates/app.html
+//go:embed embedded/app.html
 var appTmplStr string
 
 var appTmpl = template.Must(template.New("app").Parse(appTmplStr))

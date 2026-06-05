@@ -7,9 +7,9 @@ This document explains how the live Svelte SPA, Go-embedded shell, shared styles
 | Layer / Directory | Purpose |
 |---|---|
 | `web/` | Client runtime source — Svelte + Vite modules compiled into `web/dist/` and served as `/static/assets/...` |
-| `internal/ui/live_templates/app.html` | One Go-embedded live SPA shell for browser routes |
-| `internal/ui/live_templates/session.html` | Static export/share shell only; rendered with `IsLive: false` by `internal/ui/export.go` |
-| `internal/ui/live_templates/styles/` | Shared CSS tokens and page styles used by the SPA shell, PWA CSS routes, and export |
+| `internal/ui/embedded/app.html` | One Go-embedded live SPA shell for browser routes |
+| `internal/ui/embedded/session.html` | Static export/share shell only; rendered with `IsLive: false` by `internal/ui/export.go` |
+| `internal/ui/embedded/styles/` | Shared CSS tokens and page styles used by the SPA shell, PWA CSS routes, and export |
 
 ---
 
@@ -18,7 +18,7 @@ This document explains how the live Svelte SPA, Go-embedded shell, shared styles
 The live app no longer uses separate Go-rendered `index.html`, `settings.html`, or live `session.html` pages. Browser routes are served by `internal/ui/spa_page.go`, which renders:
 
 ```txt
-internal/ui/live_templates/app.html
+internal/ui/embedded/app.html
 └── web/src/main.js  (Vite entry)
     └── web/src/App.svelte
         ├── routes/SessionsPage.svelte  (/)
@@ -64,9 +64,9 @@ Export/share snapshots are still fully self-contained and must not depend on the
 | | Live App | Static Export |
 |---|---|---|
 | Go renderer | `internal/ui/spa_page.go` | `internal/ui/export.go` |
-| HTML shell | `live_templates/app.html` | `live_templates/session.html` (`IsLive: false`) |
+| HTML shell | `embedded/app.html` | `embedded/session.html` (`IsLive: false`) |
 | JS source | `web/src/main.js` | `web/src/export/export-entry.js` |
-| JS delivery | `/static/assets/app-*.js` | inline IIFE `internal/ui/live_templates/export/export.js` |
+| JS delivery | `/static/assets/app-*.js` | inline IIFE `internal/ui/embedded/export/export.js` |
 | Network required | Yes | No |
 | Chat/SSE | Yes | No |
 

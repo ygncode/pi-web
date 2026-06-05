@@ -18,7 +18,7 @@ Browser ── GET /events?id=abc ──────▶ Server (SSE)
 
 ### 1. Browser Route Shell
 
-`GET /session?id=...` is handled by `handleSession`, which serves the single SPA shell (`internal/ui/live_templates/app.html`) through `ui.RenderAppShell`. The shell loads the hashed Vite/Svelte SPA entrypoint from `web/dist/.vite/manifest.json`.
+`GET /session?id=...` is handled by `handleSession`, which serves the single SPA shell (`internal/ui/embedded/app.html`) through `ui.RenderAppShell`. The shell loads the hashed Vite/Svelte SPA entrypoint from `web/dist/.vite/manifest.json`.
 
 ### 2. Session Route Data Fetch
 

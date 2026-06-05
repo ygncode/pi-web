@@ -24,7 +24,7 @@ At startup, `internal/frontend/assets.go` + `web/assets_embed.go` reads `.vite/m
 
 ## SPA Shell and Routes
 
-The live app is hosted by `internal/ui/live_templates/app.html`, rendered by `internal/ui/spa_page.go`. The shell preserves the PWA contract: viewport/no-zoom metadata, theme boot, Window Controls Overlay boot, font variables, custom themes, and service-worker registration.
+The live app is hosted by `internal/ui/embedded/app.html`, rendered by `internal/ui/spa_page.go`. The shell preserves the PWA contract: viewport/no-zoom metadata, theme boot, Window Controls Overlay boot, font variables, custom themes, and service-worker registration.
 
 Browser routes served by the SPA shell:
 
@@ -68,7 +68,7 @@ Future migration work should keep extracting these DOM-oriented modules into Sve
 
 ## Static / Share Export
 
-Export/share remains separate and self-contained. `web/src/export/export-entry.js` builds `internal/ui/live_templates/export/export.js`, which is inlined by `internal/ui/export.go` with vendored `marked` and `highlight.js` assets.
+Export/share remains separate and self-contained. `web/src/export/export-entry.js` builds `internal/ui/embedded/export/export.js`, which is inlined by `internal/ui/export.go` with vendored `marked` and `highlight.js` assets.
 
 Export rules:
 
@@ -104,19 +104,19 @@ The index route listens to `/events?id=__all__` for `new-session`, `status-snaps
 |-------|--------|-------------|
 | Vite SPA bundle | `web/dist/assets/app-*.js` | `/static/assets/app-*.js` |
 | Vite lazy chunks | `web/dist/assets/*.js` | `/static/assets/*.js` |
-| Static export JS | `internal/ui/live_templates/export/export.js` + vendors | inline in exported HTML |
-| Theme CSS | `internal/ui/live_templates/styles/theme.css` | `/theme.css` (PWA route) |
-| Index CSS | `internal/ui/live_templates/styles/index.css` | `/index.css` (PWA route) |
-| Session CSS | `internal/ui/live_templates/styles/session.css` | inlined in SPA shell |
-| Menu CSS | `internal/ui/live_templates/styles/menu.css` | `/menu.css` and inlined in SPA shell |
-| Palette CSS | `internal/ui/live_templates/styles/palette.css` | `/palette.css` and inlined in SPA shell |
+| Static export JS | `internal/ui/embedded/export/export.js` + vendors | inline in exported HTML |
+| Theme CSS | `internal/ui/embedded/styles/theme.css` | `/theme.css` (PWA route) |
+| Index CSS | `internal/ui/embedded/styles/index.css` | `/index.css` (PWA route) |
+| Session CSS | `internal/ui/embedded/styles/session.css` | inlined in SPA shell |
+| Menu CSS | `internal/ui/embedded/styles/menu.css` | `/menu.css` and inlined in SPA shell |
+| Palette CSS | `internal/ui/embedded/styles/palette.css` | `/palette.css` and inlined in SPA shell |
 | Custom themes | `~/.pi/agent/pi-web/custom-themes.css` (optional) | `/custom-themes.css` |
-| PWA manifest | `internal/ui/live_templates/assets/manifest.webmanifest` | `/manifest.webmanifest` |
-| Service worker | `internal/ui/live_templates/assets/sw.js` | `/sw.js` |
-| Icons | `internal/ui/live_templates/assets/icon.svg` etc. | `/icon.svg`, `/icon-maskable.svg`, `/pi-logo.svg` |
-| Sound assets | `internal/ui/live_templates/assets/cat.webm` | `/cat.webm` |
+| PWA manifest | `internal/ui/embedded/assets/manifest.webmanifest` | `/manifest.webmanifest` |
+| Service worker | `internal/ui/embedded/assets/sw.js` | `/sw.js` |
+| Icons | `internal/ui/embedded/assets/icon.svg` etc. | `/icon.svg`, `/icon-maskable.svg`, `/pi-logo.svg` |
+| Sound assets | `internal/ui/embedded/assets/cat.webm` | `/cat.webm` |
 | User sound assets | `~/.pi/agent/pi-web/assets/*.mp3` | `/sounds/*.mp3` |
 
 ## Theme System
 
-The live SPA shell uses `theme.css`, `index.css`, `settings.css`, `session.css`, `menu.css`, and `palette.css` from `internal/ui/live_templates/styles/`. The shell still injects the server-backed theme and font variables before the app starts so first paint matches the installed PWA theme without a flash.
+The live SPA shell uses `theme.css`, `index.css`, `settings.css`, `session.css`, `menu.css`, and `palette.css` from `internal/ui/embedded/styles/`. The shell still injects the server-backed theme and font variables before the app starts so first paint matches the installed PWA theme without a flash.

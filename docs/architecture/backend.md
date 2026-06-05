@@ -27,7 +27,7 @@ pi-web/
 │   │   ├── palette.go          # Session-list palette rendering
 │   │   ├── auth_page.go        # Auth/token entry page
 │   │   ├── pwa.go              # PWA routes: manifest, sw.js, icons, css, cat.webm
-│   │   └── live_templates/     # Embedded HTML/CSS/assets (shells, styles, export/)
+│   │   └── embedded/     # Embedded HTML/CSS/assets (shells, styles, export/)
 │   ├── auth/
 │   │   └── auth.go             # Token-based HTTP middleware
 │   ├── chat/
@@ -72,7 +72,7 @@ pi-web/
 │       └── manager.go          # ChatWorker lifecycle: create, cache, reap
 ```
 
-> The embedded standalone export bundle lives at `internal/ui/live_templates/export/`
+> The embedded standalone export bundle lives at `internal/ui/embedded/export/`
 > (`app/*.js` + `vendor/`), **not** at `internal/ui/export/`.
 
 ## Key Types

@@ -23,8 +23,8 @@ function loadServiceWorker({ clients = [] } = {}) {
       showNotification: async (title, options) => { notifications.push({ title, options }); }
     }
   };
-  const code = readFileSync(resolve(process.cwd(), '../internal/ui/live_templates/assets/sw.js'), 'utf8');
-  vm.runInNewContext(code, { self }, { filename: 'internal/ui/live_templates/assets/sw.js' });
+  const code = readFileSync(resolve(process.cwd(), '../internal/ui/embedded/assets/sw.js'), 'utf8');
+  vm.runInNewContext(code, { self }, { filename: 'internal/ui/embedded/assets/sw.js' });
   return { listeners, notifications, badge };
 }
 

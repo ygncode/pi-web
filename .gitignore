@@ -7,7 +7,7 @@ pi-sessions-viewer
 web/node_modules/
 web/dist/
 web/dist-export/
-internal/ui/live_templates/export/export.js
+internal/ui/embedded/export/export.js
 .pi/extensions/node_modules/
 .pi/APPEND_SYSTEM.md
 

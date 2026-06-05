@@ -32,7 +32,7 @@ If this PR touches session rendering, remember pi-web has two render paths
 
 - [ ] Not applicable — this PR doesn't touch session rendering
 - [ ] Considered both the live app and the export snapshot
-- [ ] Kept `internal/ui/live_templates/` in sync with `web/src/session/` changes
+- [ ] Kept `internal/ui/embedded/` in sync with `web/src/session/` changes
 - [ ] No live-only chrome (Vite scripts, active composer, SSE/API) leaked into export
 
 ## Testing

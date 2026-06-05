@@ -11,21 +11,21 @@ import (
 	"pi-web/internal/sessions"
 )
 
-//go:embed live_templates/session.html
+//go:embed embedded/session.html
 var liveSessionHtml string
 
 var liveSessionTmpl = template.Must(template.New("live_session").Parse(liveSessionHtml))
 
-//go:embed live_templates/styles/theme.css
+//go:embed embedded/styles/theme.css
 var liveThemeCss string
 
-//go:embed live_templates/styles/session.css
+//go:embed embedded/styles/session.css
 var liveSessionCss string
 
-//go:embed live_templates/styles/menu.css
+//go:embed embedded/styles/menu.css
 var liveMenuCss string
 
-//go:embed live_templates/styles/palette.css
+//go:embed embedded/styles/palette.css
 var livePaletteCss string
 
 // LargeSessionTailEntries controls how many trailing entries get embedded
