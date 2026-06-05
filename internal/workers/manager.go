@@ -34,6 +34,27 @@ type SlashCommand struct {
 	Source      string `json:"source"`
 }
 
+// WorkerSnapshot is a point-in-time view of a single live worker for the
+// metrics dashboard. PID/UptimeS/IdleForS are only populated for workers that
+// implement the optional inspector interface (real pi processes); test fakes
+// that don't will report zero values for those fields.
+type WorkerSnapshot struct {
+	SessionID string  `json:"session_id"`
+	PID       int     `json:"pid"`
+	State     State   `json:"state"`
+	Model     string  `json:"model,omitempty"`
+	UptimeS   float64 `json:"uptime_s"`
+	IdleForS  float64 `json:"idle_for_s"`
+}
+
+// inspector is the optional interface a worker implements to expose
+// process-level details for the metrics dashboard.
+type inspector interface {
+	PID() int
+	StartedAt() time.Time
+	IdleSince(now time.Time) time.Duration
+}
+
 type ChatWorker interface {
 	Prompt(ctx context.Context, chat chat.Request) error
 	SetModel(ctx context.Context, provider, modelID string) error
@@ -64,7 +85,11 @@ type createCall struct {
 	err    error
 }
 
-const defaultIdleTTL = 10 * time.Minute
+// DefaultIdleTTL is how long a worker may sit idle before the reaper closes it.
+// The metrics dashboard uses it as the threshold for flagging "zombie" workers.
+const DefaultIdleTTL = 10 * time.Minute
+
+const defaultIdleTTL = DefaultIdleTTL
 
 func NewManager(factory Factory) *Manager {
 	return NewManagerWithTTL(factory, defaultIdleTTL)
@@ -136,6 +161,33 @@ func (m *Manager) Send(ctx context.Context, sessionID, sessionPath string, chat 
 		return err
 	}
 	return worker.Prompt(ctx, chat)
+}
+
+// Snapshot returns a point-in-time view of every live worker, for the metrics
+// dashboard. It does not spawn workers and never blocks on the workers
+// themselves beyond reading their cached status.
+func (m *Manager) Snapshot() []WorkerSnapshot {
+	now := time.Now()
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make([]WorkerSnapshot, 0, len(m.workers))
+	for id, w := range m.workers {
+		st := w.Status()
+		snap := WorkerSnapshot{
+			SessionID: id,
+			State:     st.State,
+			Model:     st.Model,
+		}
+		if ins, ok := w.(inspector); ok {
+			snap.PID = ins.PID()
+			if started := ins.StartedAt(); !started.IsZero() {
+				snap.UptimeS = now.Sub(started).Seconds()
+			}
+			snap.IdleForS = ins.IdleSince(now).Seconds()
+		}
+		out = append(out, snap)
+	}
+	return out
 }
 
 func (m *Manager) Status(sessionID string) WorkerStatus {

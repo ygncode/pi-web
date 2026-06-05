@@ -89,6 +89,14 @@ type Server struct {
 	runRestart          func() error
 	updateMu            sync.Mutex // serializes install/restart operations
 
+	// Metrics dashboard (see metrics.go). startedAt drives process uptime;
+	// metricsSampler is swappable for tests; metricsCPULast holds per-PID CPU
+	// baselines for delta-based %CPU.
+	startedAt      time.Time
+	metricsSampler processSampler
+	metricsCPUMu   sync.Mutex
+	metricsCPULast map[int]cpuMark
+
 	// Auto-title bookkeeping (see auto_title.go). Guards against re-titling
 	// loops and clobbering user-set names.
 	titleMu        sync.Mutex
@@ -183,6 +191,8 @@ func New(deps Deps) *Server {
 		updater:             deps.Updater,
 		runInstall:          deps.RunInstall,
 		runRestart:          deps.RunRestart,
+		startedAt:           now(),
+		metricsCPULast:      make(map[int]cpuMark),
 	}
 	if pm, err := NewPushManager(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "push notifications unavailable: %v\n", err)
@@ -244,6 +254,8 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/settings", s.getPostHandler(s.handleGetSettings, s.handleSaveSettings))
 	mux.HandleFunc("/api/btw", s.auth.Wrap(s.handleGetBtw))
 	mux.HandleFunc("/api/btw/new", s.auth.Wrap(s.handleNewBtw))
+	mux.HandleFunc("/metrics", s.auth.Wrap(s.handleMetricsPage))
+	mux.HandleFunc("/api/metrics", s.auth.Wrap(s.handleMetrics))
 	if s.push != nil {
 		s.push.Register(mux, s.auth.Wrap)
 	}
@@ -279,6 +291,10 @@ func (s *Server) loadSummaries() ([]sessions.SessionSummary, error) {
 
 // SetShareRunner is exposed for tests that want to stub `gh` invocations.
 func (s *Server) SetShareRunner(r shareCmdRunner) { s.shareRunner = r }
+
+// SetMetricsSampler is exposed for tests that want to inject canned per-PID
+// resource readings instead of sampling real OS processes.
+func (s *Server) SetMetricsSampler(sampler processSampler) { s.metricsSampler = sampler }
 
 // ── SSE clients ────────────────────────────────────────────────────────────
 

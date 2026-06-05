@@ -21,6 +21,7 @@ type piRPCWorker struct {
 	mu                   sync.Mutex
 	writeMu              sync.Mutex
 	sessionPath          string
+	startedAt            time.Time
 	cmd                  *exec.Cmd
 	stdin                io.WriteCloser
 	status               workers.WorkerStatus
@@ -58,6 +59,20 @@ func (w *piRPCWorker) IdleSince(now time.Time) time.Duration {
 	return now.Sub(time.Unix(0, last))
 }
 
+// PID returns the operating-system process ID of the underlying pi worker, or
+// 0 if the process has not started or has already exited.
+func (w *piRPCWorker) PID() int {
+	if w.cmd == nil || w.cmd.Process == nil {
+		return 0
+	}
+	return w.cmd.Process.Pid
+}
+
+// StartedAt reports when the worker process was spawned (for uptime).
+func (w *piRPCWorker) StartedAt() time.Time {
+	return w.startedAt
+}
+
 func NewPiWorkerWithStream(sessionPath string, streamSink StreamEventSink) (workers.ChatWorker, error) {
 	if _, err := exec.LookPath("pi"); err != nil {
 		return nil, fmt.Errorf("pi executable not found: %w", err)
@@ -75,6 +90,7 @@ func NewPiWorkerWithStream(sessionPath string, streamSink StreamEventSink) (work
 	cmd.Stderr = &stderrBuf
 	worker := &piRPCWorker{
 		sessionPath:   sessionPath,
+		startedAt:     time.Now(),
 		cmd:           cmd,
 		stdin:         stdin,
 		status:        workers.WorkerStatus{State: workers.WorkerStateIdle},
