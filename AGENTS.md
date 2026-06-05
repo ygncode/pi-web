@@ -86,6 +86,10 @@ make e2e        # build binary + run Playwright E2E (not part of test/check)
 
 **Critical:** `go build ./cmd/pi-web` requires `web/dist` to exist first because of `//go:embed`. Always run `make build`, never `go build` alone.
 
+### Local development — do NOT rely on a launchd agent
+
+For development, start pi-web with `make dev` (Vite watcher + Go hot-reload) or run the freshly built `./pi-web` binary directly. Do **not** depend on a macOS LaunchAgent (e.g. `~/Library/LaunchAgents/com.pi-web.plist`) to run it — a `KeepAlive` agent pins port `31415` to the installed `~/.pi/agent/bin/pi-web` binary and will auto-respawn the old build, masking your local changes. If such an agent exists, unload it (`launchctl bootout gui/$(id -u)/com.pi-web`) and remove the plist before developing.
+
 ## Testing
 
 - **Go:** Table-driven tests in `*_test.go` alongside source
@@ -106,4 +110,3 @@ make e2e        # build binary + run Playwright E2E (not part of test/check)
 4. **One worker per session.** Reused for subsequent messages. Crashed = evicted + replaced. Idle workers reaped after 10 min.
 5. **SSE topics:** `globalSessID = "__all__"` for index-wide events; session ID for per-session events.
 6. **Default port:** `31415`. State file: `~/.pi/agent/pi-web/pi-web-state.json`.
-
