@@ -10,8 +10,14 @@ import (
 	"time"
 )
 
-// handleSettingsPage renders the global /settings page.
+// handleSettingsPage renders the global /settings page. Prefer the SPA shell
+// once available; keep the legacy Go template as a temporary fallback while
+// the migration proceeds.
 func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
+	if s.renderAppShell != nil {
+		s.handleAppShell(w, r)
+		return
+	}
 	if s.renderSettings == nil {
 		http.NotFound(w, r)
 		return

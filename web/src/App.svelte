@@ -1,7 +1,13 @@
 <script>
-  let { name = 'pi-web' } = $props();
+  import SettingsPage from './routes/SettingsPage.svelte';
+
+  let { path = typeof window !== 'undefined' ? window.location.pathname : '/' } = $props();
 </script>
 
-<section class="svelte-spa-probe" aria-label="Svelte app probe">
-  Svelte ready for {name}
-</section>
+{#if path === '/settings'}
+  <SettingsPage />
+{:else}
+  <section class="svelte-spa-probe" aria-label="Svelte app probe">
+    Svelte ready for pi-web
+  </section>
+{/if}

@@ -299,7 +299,3 @@ function readFromStorage(storage, controls) {
   }
   return out;
 }
-
-if (typeof document !== 'undefined' && typeof window !== 'undefined') {
-  runSettingsPage();
-}
