@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { setupListSessionsPalette } from './list-sessions-palette.js';
+import { setupSessionListPalette as setupListSessionsPalette } from './session-list-palette.js';
 
 function makeDom() {
   return new JSDOM(`<!doctype html><html><head><title>Test</title></head><body>

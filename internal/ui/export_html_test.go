@@ -10,14 +10,6 @@ import (
 	"pi-web/internal/sessions"
 )
 
-func minimalSessionForExport() sessions.Session {
-	return sessions.Session{
-		SessionSummary: sessions.SessionSummary{ID: "test.jsonl", Filename: "test.jsonl", ChatAvailable: true},
-		Header:         map[string]any{"cwd": "/tmp", "name": "Test"},
-		Entries:        []map[string]any{},
-	}
-}
-
 func TestSessionViteSourceIncludesChatPreviewSSEHandling(t *testing.T) {
 	events, err := os.ReadFile(repoPath("web/src/session/live/live-events.js"))
 	if err != nil {

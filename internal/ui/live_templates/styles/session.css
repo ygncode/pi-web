@@ -1463,10 +1463,6 @@
       color: var(--warning);
     }
 
-    .tree-custom-message {
-      color: var(--customMessageLabel);
-    }
-
     .tree-status {
       display: flex;
       align-items: center;
@@ -1557,53 +1553,6 @@
       background: var(--accent);
       border-color: var(--accent);
       color: var(--body-bg);
-    }
-
-    .model-dropdown {
-      position: relative;
-      display: inline-block;
-    }
-
-    .model-dropdown-toggle {
-      font-size: 10px;
-      padding: 2px 8px;
-      background: var(--container-bg);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      color: var(--text);
-      cursor: pointer;
-      font-family: inherit;
-      max-width: 180px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .model-dropdown-toggle:hover {
-      background: var(--hover);
-      border-color: var(--borderAccent);
-    }
-
-    .model-dropdown-toggle:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .model-dropdown-menu {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      margin-top: 4px;
-      min-width: 260px;
-      max-width: 320px;
-      max-height: 360px;
-      overflow-y: auto;
-      background: var(--container-bg);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-      z-index: 1000;
-      padding: 6px 0;
     }
 
     .model-search {
@@ -2331,10 +2280,6 @@
       cursor: not-allowed;
     }
 
-    .ansi-line {
-      white-space: pre-wrap;
-    }
-
     .tool-images {
     }
 
@@ -2452,17 +2397,6 @@
 
     .system-prompt.expanded .system-prompt-full {
       display: block;
-    }
-
-    .system-prompt.provider-prompt {
-      border-left: 3px solid var(--warning);
-    }
-
-    .system-prompt-note {
-      font-size: 10px;
-      font-style: italic;
-      color: var(--muted);
-      margin-top: 4px;
     }
 
     /* Tools list */
@@ -3085,12 +3019,6 @@
       margin-left: auto;
     }
 
-    .pi-git-actions {
-      display: inline-flex;
-      align-items: center;
-      flex-shrink: 0;
-    }
-    .pi-git-actions > [hidden] { display: none; }
     .pi-git-pr {
       position: relative;
       flex-shrink: 0;
@@ -4196,10 +4124,6 @@
     }
     .pi-sheet-panel.pi-sheet-mobile.open {
       transform: translateY(0);
-    }
-
-    .pi-sheet-handle {
-      display: none;
     }
 
     .pi-sheet-panel.pi-sheet-mobile .pi-sheet-header {

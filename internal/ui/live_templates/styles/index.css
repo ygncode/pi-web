@@ -358,7 +358,6 @@ a { color: inherit; }
     gap: 7px;
     flex-shrink: 0;
 }
-.session-running-loader { display: none; }
 .session-card-badge {
     color: var(--muted);
     border: 1px solid var(--dim);
@@ -504,7 +503,6 @@ body.modal-sheet-open { overflow: hidden; }
 }
 .modal-error { color: var(--danger); min-height: 16px; margin-top: 8px; font-size: 11px; }
 
-.modal-hint { color: var(--muted); font-size: 12px; margin-bottom: 12px; line-height: 1.5; }
 .projects-filter-switch {
     display: flex;
     align-items: center;

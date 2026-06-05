@@ -244,10 +244,3 @@ func chatComposerHtmlForSession(session sessions.Session) string {
 	}
 	return buf.String()
 }
-
-func replaceRequired(s, placeholder, value string) string {
-	if !strings.Contains(s, placeholder) {
-		panic("template placeholder " + placeholder + " not found")
-	}
-	return strings.Replace(s, placeholder, value, 1)
-}

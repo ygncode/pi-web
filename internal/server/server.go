@@ -296,13 +296,6 @@ func (s *Server) loadSummaries() ([]sessions.SessionSummary, error) {
 	return s.cache.LoadAll(s.sessionsDir)
 }
 
-// SetShareRunner is exposed for tests that want to stub `gh` invocations.
-func (s *Server) SetShareRunner(r shareCmdRunner) { s.shareRunner = r }
-
-// SetMetricsSampler is exposed for tests that want to inject canned per-PID
-// resource readings instead of sampling real OS processes.
-func (s *Server) SetMetricsSampler(sampler processSampler) { s.metricsSampler = sampler }
-
 // ── SSE clients ────────────────────────────────────────────────────────────
 
 type sseClient struct {
