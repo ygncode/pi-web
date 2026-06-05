@@ -12,6 +12,7 @@ export function runIndexPage({
   windowImpl = window,
   setTimeoutImpl = setTimeout,
   clearTimeoutImpl = clearTimeout,
+  refreshOnStart = false,
 } = {}) {
   configureSettingsSync({ fetchImpl: windowImpl.fetch ? windowImpl.fetch.bind(windowImpl) : undefined });
 
@@ -579,7 +580,12 @@ export function runIndexPage({
   page.filter();
   sessionPalette.refresh();
   page.subscribe();
-  if (initialLayout === 'projects') {
+  if (refreshOnStart) {
+    page.refreshSessions()
+      .then(() => sessionPalette.refresh())
+      .catch(() => {})
+      .finally(markLayoutReady);
+  } else if (initialLayout === 'projects') {
     page.setLayout('projects')
       .then(() => sessionPalette.refresh())
       .catch(() => {})
@@ -701,12 +707,4 @@ export function runIndexPage({
 
   documentImpl.addEventListener('pi-index-sessions-rendered', start);
   start();
-}
-
-if (typeof window !== 'undefined' && typeof document !== 'undefined' && (document.getElementById('session-palette-search') || document.getElementById('search') || document.querySelector('[data-sessions-content]'))) {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => runIndexPage());
-  } else {
-    runIndexPage();
-  }
 }

@@ -14,7 +14,7 @@ import (
 
 const (
 	AppEntry      = "src/main.js"
-	IndexEntry    = "src/index/index.js"
+	IndexEntry    = "src/index/index-entry.js"
 	SessionEntry  = "src/session/session.js"
 	SettingsEntry = "src/settings/settings-entry.js"
 	LiveEntry     = "src/live/live.js"

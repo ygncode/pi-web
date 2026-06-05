@@ -20,7 +20,7 @@ func TestSPAFallbackServesBrowserRoutesButNotAPIsOrAssets(t *testing.T) {
 	mux := http.NewServeMux()
 	s.Register(mux)
 
-	for _, path := range []string{"/login", "/settings", "/future-route", "/settings/profile"} {
+	for _, path := range []string{"/", "/login", "/settings", "/future-route", "/settings/profile"} {
 		rec := httptest.NewRecorder()
 		mux.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, path, nil))
 		if rec.Code != http.StatusOK || rec.Body.String() != "spa shell" {

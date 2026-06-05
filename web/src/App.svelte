@@ -1,10 +1,13 @@
 <script>
+  import SessionsPage from './routes/SessionsPage.svelte';
   import SettingsPage from './routes/SettingsPage.svelte';
 
   let { path = typeof window !== 'undefined' ? window.location.pathname : '/' } = $props();
 </script>
 
-{#if path === '/settings'}
+{#if path === '/'}
+  <SessionsPage />
+{:else if path === '/settings'}
   <SettingsPage />
 {:else}
   <section class="svelte-spa-probe" aria-label="Svelte app probe">

@@ -18,12 +18,13 @@ describe('App', () => {
     expect(mountApp()).toBeNull();
   });
 
-  it('mounts the Svelte probe component into #app', () => {
+  it('routes / to the Svelte sessions page', () => {
     document.body.innerHTML = '<div id="app"></div>';
 
-    mounted = mountApp();
+    mounted = mountApp({ props: { path: '/' } });
 
-    expect(document.querySelector('[aria-label="Svelte app probe"]')?.textContent).toContain('Svelte ready for pi-web');
+    expect(document.querySelector('.header h1')?.textContent).toContain('Sessions');
+    expect(document.querySelector('[data-sessions-content]')).toBeTruthy();
   });
 
   it('routes /settings to the Svelte settings page', () => {
@@ -33,5 +34,13 @@ describe('App', () => {
 
     expect(document.querySelector('.settings-page h1')?.textContent).toBe('Settings');
     expect(document.querySelector('[data-setting="pi-web-theme"]')).toBeTruthy();
+  });
+
+  it('mounts the fallback probe for unmigrated SPA routes', () => {
+    document.body.innerHTML = '<div id="app"></div>';
+
+    mounted = mountApp({ props: { path: '/login' } });
+
+    expect(document.querySelector('[aria-label="Svelte app probe"]')?.textContent).toContain('Svelte ready for pi-web');
   });
 });
