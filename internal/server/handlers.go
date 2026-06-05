@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -203,10 +204,40 @@ func (s *Server) handleApiSession(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+
+	// Optional pagination: ?from=N&count=K returns entries[N:N+K]. Used by the
+	// "Load earlier" affordance in the frontend for huge sessions whose tails
+	// were the only thing embedded in the initial HTML render. Both params
+	// must be present and parse as non-negative ints to enable windowing;
+	// otherwise the full entries slice is returned for backwards compat.
+	entries := resolved.Session.Entries
+	total := len(entries)
+	from := 0
+	q := r.URL.Query()
+	fromStr := q.Get("from")
+	countStr := q.Get("count")
+	if fromStr != "" && countStr != "" {
+		f, errF := strconv.Atoi(fromStr)
+		c, errC := strconv.Atoi(countStr)
+		if errF == nil && errC == nil && f >= 0 && c >= 0 {
+			if f > total {
+				f = total
+			}
+			end := f + c
+			if end > total {
+				end = total
+			}
+			entries = entries[f:end]
+			from = f
+		}
+	}
+
 	writeJSON(w, 0, map[string]any{
 		"header":  resolved.Session.Header,
-		"entries": resolved.Session.Entries,
+		"entries": entries,
 		"name":    resolved.Session.Name,
+		"total":   total,
+		"from":    from,
 	})
 }
 

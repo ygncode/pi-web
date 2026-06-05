@@ -18,6 +18,7 @@ import { createArtifactPanel } from './artifacts/artifact-panel.js';
 import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './artifacts/artifact-filter.js';
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { createAnnotationLayer } from './annotations/annotation-layer.js';
+import { setupLoadEarlierBanner } from './ui/load-earlier.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
 import * as chatApi from './chat/chat-api.js';
@@ -599,6 +600,22 @@ export function runSessionApp({ target = window } = {}) {
     windowImpl: target,
     cwd: dataModel.header?.cwd || '',
     parentId: getSessionSearchParams({ documentImpl, windowImpl: target }).get('id') || '',
+  });
+
+  // For huge sessions the server embeds only the tail entries in the initial
+  // HTML render. Wire a "Load earlier" banner that fetches preceding windows
+  // via /api/session?id=...&from=N&count=K and merges them into the model.
+  // No-ops on small sessions (dataModel.truncated is false).
+  setupLoadEarlierBanner({
+    dataModel,
+    sessionId,
+    syncDataModelEntries,
+    // Re-render the conversation from the current leaf so the prepended earlier
+    // entries actually appear in #messages, keeping the viewport anchored on the
+    // message that was previously at the top (anchorId) to avoid a scroll jump.
+    rerender: (anchorId) => navigateTo(dataModel.leafId, anchorId ? 'target' : 'bottom', anchorId || null),
+    documentImpl,
+    fetchImpl: target.fetch.bind(target),
   });
 
   // Handle Visual Viewport changes to prevent mobile browsers from shifting
