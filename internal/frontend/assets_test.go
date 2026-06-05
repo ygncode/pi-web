@@ -30,23 +30,25 @@ func TestLoadFrontendScriptsSingleEntrypoint(t *testing.T) {
 func TestLoadFrontendScriptsLoadsMultipleEntrypoints(t *testing.T) {
 	fsys := fstest.MapFS{
 		".vite/manifest.json": &fstest.MapFile{
-			Data: []byte(`{"src/index/index.js":{"file":"assets/index-abc123.js"},"src/session/session.js":{"file":"assets/session-def456.js"},"src/live/live.js":{"file":"assets/live-ghi789.js"}}`),
+			Data: []byte(`{"src/main.js":{"file":"assets/app-000111.js"},"src/index/index.js":{"file":"assets/index-abc123.js"},"src/session/session.js":{"file":"assets/session-def456.js"},"src/live/live.js":{"file":"assets/live-ghi789.js"}}`),
 		},
+		"assets/app-000111.js":     &fstest.MapFile{Data: []byte("app")},
 		"assets/index-abc123.js":   &fstest.MapFile{Data: []byte("index")},
 		"assets/session-def456.js": &fstest.MapFile{Data: []byte("session")},
 		"assets/live-ghi789.js":    &fstest.MapFile{Data: []byte("live")},
 	}
-	scripts, err := loadFrontendScripts(fsys, "src/index/index.js", "src/session/session.js", "src/live/live.js")
+	scripts, err := loadFrontendScripts(fsys, appEntry, "src/index/index.js", "src/session/session.js", "src/live/live.js")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(scripts) != 3 {
-		t.Fatalf("len(scripts) = %d, want 3", len(scripts))
+	if len(scripts) != 4 {
+		t.Fatalf("len(scripts) = %d, want 4", len(scripts))
 	}
 	checks := []struct {
 		path string
 		js   string
 	}{
+		{"/static/assets/app-000111.js", "app"},
 		{"/static/assets/index-abc123.js", "index"},
 		{"/static/assets/session-def456.js", "session"},
 		{"/static/assets/live-ghi789.js", "live"},

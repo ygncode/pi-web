@@ -24,6 +24,23 @@ func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleAppShell renders the Svelte SPA shell for browser-owned routes. During
+// migration the legacy Go-rendered /, /session, and /settings handlers remain
+// in place; this shell is used by explicit SPA routes such as /login and by the
+// safe browser fallback in handleIndex.
+func (s *Server) handleAppShell(w http.ResponseWriter, r *http.Request) {
+	if s.renderAppShell == nil {
+		http.NotFound(w, r)
+		return
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if err := s.renderAppShell(w); err != nil {
+		if !isBrokenPipe(err) {
+			fmt.Fprintf(os.Stderr, "app shell template error: %v\n", err)
+		}
+	}
+}
+
 // settingDefaults defines the server-backed user settings and their default
 // values. The keys mirror the localStorage keys the frontend already uses so
 // the write-through cache maps 1:1. Only keys listed here are accepted by

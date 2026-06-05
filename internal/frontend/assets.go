@@ -13,12 +13,14 @@ import (
 )
 
 const (
+	AppEntry      = "src/main.js"
 	IndexEntry    = "src/index/index.js"
 	SessionEntry  = "src/session/session.js"
 	SettingsEntry = "src/settings/settings.js"
 	LiveEntry     = "src/live/live.js"
 
 	// Backward-compatible unexported aliases used by package tests.
+	appEntry     = AppEntry
 	indexEntry   = IndexEntry
 	sessionEntry = SessionEntry
 	liveEntry    = LiveEntry

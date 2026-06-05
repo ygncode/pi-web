@@ -23,6 +23,10 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	// is a genuine 404. Serving index HTML for e.g. a missing /static/assets/*.js
 	// would surface in the browser as a "module script has MIME text/html" error.
 	if r.URL.Path != "/" {
+		if s.renderAppShell != nil && isSPABrowserPath(r) {
+			s.handleAppShell(w, r)
+			return
+		}
 		http.NotFound(w, r)
 		return
 	}
@@ -41,6 +45,32 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(os.Stderr, "template error: %v\n", err)
 		}
 	}
+}
+
+func isSPABrowserPath(r *http.Request) bool {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		return false
+	}
+	path := r.URL.Path
+	if path == "" || path == "/" {
+		return false
+	}
+	for _, prefix := range []string{
+		"/api/",
+		"/api",
+		"/static/",
+		"/sounds/",
+		"/debug/",
+	} {
+		if path == prefix || strings.HasPrefix(path, prefix) {
+			return false
+		}
+	}
+	last := path[strings.LastIndex(path, "/")+1:]
+	if strings.Contains(last, ".") {
+		return false
+	}
+	return true
 }
 
 func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {

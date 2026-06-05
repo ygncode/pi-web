@@ -85,6 +85,7 @@ func Main(version string) {
 		RenderLiveSession:   ui.RenderLiveSessionPage,
 		RenderExportSession: ui.RenderExportSessionPage,
 		RenderSettings:      ui.RenderSettings,
+		RenderAppShell:      ui.RenderAppShell,
 		Models: func(ctx context.Context) (json.RawMessage, error) {
 			return defaultModelsCache.get(ctx)
 		},
@@ -100,9 +101,11 @@ func Main(version string) {
 	srv.Register(mux)
 	ui.RegisterPWAHandlers(mux)
 	dfs := web.DistFS()
-	if scripts, err := frontend.LoadScripts(dfs, frontend.IndexEntry, frontend.SessionEntry, frontend.SettingsEntry, frontend.LiveEntry); err == nil {
+	if scripts, err := frontend.LoadScripts(dfs, frontend.AppEntry, frontend.IndexEntry, frontend.SessionEntry, frontend.SettingsEntry, frontend.LiveEntry); err == nil {
 		for _, script := range scripts {
 			switch script.Entry {
+			case frontend.AppEntry:
+				ui.SetAppScriptPath(script.Path)
 			case frontend.IndexEntry:
 				ui.SetIndexScriptPath(script.Path)
 			case frontend.SessionEntry:

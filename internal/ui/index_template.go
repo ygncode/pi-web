@@ -17,10 +17,12 @@ var indexTmplStr string
 // served. It defaults to a stable path and is overwritten at startup if a
 // hashed asset is found in the Vite manifest. The index template reads it via
 // funcMap so the rendered <script src> tracks the build hash.
+var appScriptPath = "/static/assets/app.js"
 var indexScriptPath = "/static/assets/index.js"
 var sessionScriptPath = "/static/assets/session.js"
 var settingsScriptPath = "/static/assets/settings.js"
 
+func SetAppScriptPath(path string)      { appScriptPath = path }
 func SetIndexScriptPath(path string)    { indexScriptPath = path }
 func SetSessionScriptPath(path string)  { sessionScriptPath = path }
 func SetSettingsScriptPath(path string) { settingsScriptPath = path }
