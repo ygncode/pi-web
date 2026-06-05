@@ -241,7 +241,7 @@ PWA / static asset routes (registered outside `Server.Register`):
 | Route | Source |
 |-------|--------|
 | `/manifest.webmanifest`, `/sw.js`, `/icon.svg`, `/icon-maskable.svg`, `/pi-logo.svg`, `/cat.webm`, `/theme.css`, `/index.css`, `/menu.css`, `/palette.css` | `internal/ui/pwa.go` (embedded assets) |
-| `/static/assets/index-*.js`, `/static/assets/...` | Embedded Vite bundles (`internal/app/app.go` + `internal/frontend`) |
+| `/static/assets/app-*.js`, `/static/assets/...` | Embedded Vite SPA bundle and chunks (`internal/app/app.go` + `internal/frontend`) |
 
 ## Auth Flow
 
