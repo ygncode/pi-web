@@ -320,6 +320,32 @@ func TestRenameSessionRejectsEmptyName(t *testing.T) {
 	}
 }
 
+func TestParseSummaryHandlesLargeToolResultLine(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "s.jsonl")
+
+	// A single tool-result message line larger than the old 4MB scanner cap.
+	// Before the buffer bump, scanner.Err() returns bufio.ErrTooLong and the
+	// whole session is dropped from the index.
+	big := strings.Repeat("a", 8*1024*1024)
+	content := `{"type":"session","name":"Big Session","timestamp":"2026-05-08T10:00:00Z"}` + "\n" +
+		`{"type":"message","timestamp":"2026-05-08T10:00:01Z","message":{"role":"user","content":"hello"}}` + "\n" +
+		`{"type":"message","timestamp":"2026-05-08T10:00:02Z","message":{"role":"assistant","content":"` + big + `"}}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	s, err := ParseSummary(path, "--proj--", "s.jsonl")
+	if err != nil {
+		t.Fatalf("ParseSummary returned error on large line: %v", err)
+	}
+	if s.Name != "Big Session" {
+		t.Errorf("Name = %q, want %q", s.Name, "Big Session")
+	}
+	if s.MessageCount != 2 {
+		t.Errorf("MessageCount = %d, want 2", s.MessageCount)
+	}
+}
+
 func TestParseSummaryUsesHeaderName(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "s.jsonl")
