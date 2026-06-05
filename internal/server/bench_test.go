@@ -47,16 +47,16 @@ func newBenchServer(b *testing.B, numSessions, messagesPerSession int) (*Server,
 	}
 
 	srv := New(Deps{
-		AgentDir:    dir,
-		SessionsDir: dir,
-		Auth:        auth.New(""),
-		Cache:       sessions.NewCache(),
-		RenderIndex: func(w io.Writer, _ []sessions.SessionSummary) error { return nil },
-		RenderLiveSession: func(s sessions.Session, _ string) string {
-			return fmt.Sprintf("<html><body>%d entries</body></html>", len(s.Entries))
-		},
+		AgentDir:            dir,
+		SessionsDir:         dir,
+		Auth:                auth.New(""),
+		Cache:               sessions.NewCache(),
 		RenderExportSession: func(s sessions.Session, theme string) string { return "" },
-		Models:              func(ctx context.Context) (json.RawMessage, error) { return nil, nil },
+		RenderAppShell: func(w io.Writer) error {
+			_, err := w.Write([]byte("<html><body>spa</body></html>"))
+			return err
+		},
+		Models: func(ctx context.Context) (json.RawMessage, error) { return nil, nil },
 	})
 	return srv, lastID
 }

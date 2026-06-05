@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -30,25 +28,7 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if s.renderAppShell != nil {
-		s.handleAppShell(w, r)
-		return
-	}
-	summaries, err := s.loadSummaries()
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-	s.reapOrphanedBtw(summaries)
-	summaries = s.filterEnabledSummaries(summaries)
-	summaries = s.filterBtwSummaries(summaries)
-	sessions.SortSummariesByActivity(summaries)
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.renderIndex(w, summaries); err != nil {
-		if !isBrokenPipe(err) {
-			fmt.Fprintf(os.Stderr, "template error: %v\n", err)
-		}
-	}
+	s.handleAppShell(w, r)
 }
 
 func isSPABrowserPath(r *http.Request) bool {
@@ -78,32 +58,7 @@ func isSPABrowserPath(r *http.Request) bool {
 }
 
 func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
-	if s.renderAppShell != nil {
-		s.handleAppShell(w, r)
-		return
-	}
-	resolved, err := s.cache.Resolve(s.sessionsDir, r.URL.Query().Get("id"))
-	if err != nil {
-		switch {
-		case errors.Is(err, sessions.ErrInvalidSessionID):
-			http.Error(w, "invalid session id", 400)
-		case errors.Is(err, sessions.ErrSessionNotFound):
-			http.Error(w, "session not found", 404)
-		default:
-			http.Error(w, err.Error(), 500)
-		}
-		return
-	}
-	scratchpad := ""
-	if resolved.Session.Header != nil {
-		if cwd, ok := resolved.Session.Header["cwd"].(string); ok && cwd != "" {
-			if content, err := s.lookupScratchpad(cwd); err == nil {
-				scratchpad = content
-			}
-		}
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	io.WriteString(w, s.renderLiveSession(resolved.Session, scratchpad))
+	s.handleAppShell(w, r)
 }
 
 func (s *Server) handleApiForkSession(w http.ResponseWriter, r *http.Request) {

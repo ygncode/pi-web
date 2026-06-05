@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"testing"
 	"time"
 
@@ -15,14 +14,12 @@ func newTestServer(t *testing.T) *Server {
 	t.Helper()
 	dir := t.TempDir()
 	return New(Deps{
-		AgentDir:      dir,
-		SessionsDir:   dir,
-		Auth:          auth.New(""),
-		Cache:         sessions.NewCache(),
-		RenderIndex:   func(w io.Writer, _ []sessions.SessionSummary) error { return nil },
-		RenderLiveSession:   func(s sessions.Session, _ string) string { return "" },
+		AgentDir:            dir,
+		SessionsDir:         dir,
+		Auth:                auth.New(""),
+		Cache:               sessions.NewCache(),
 		RenderExportSession: func(s sessions.Session, theme string) string { return "" },
-		Models:        func(ctx context.Context) (json.RawMessage, error) { return nil, nil },
+		Models:              func(ctx context.Context) (json.RawMessage, error) { return nil, nil },
 	})
 }
 

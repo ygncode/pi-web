@@ -81,10 +81,7 @@ func Main(version string) {
 		Auth:                authMiddleware,
 		ChatSender:          manager,
 		Cache:               sessions.NewCache(),
-		RenderIndex:         ui.RenderIndex,
-		RenderLiveSession:   ui.RenderLiveSessionPage,
 		RenderExportSession: ui.RenderExportSessionPage,
-		RenderSettings:      ui.RenderSettings,
 		RenderAppShell:      ui.RenderAppShell,
 		Models: func(ctx context.Context) (json.RawMessage, error) {
 			return defaultModelsCache.get(ctx)

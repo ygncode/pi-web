@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
-
-	"pi-web/internal/sessions"
 
 	_ "modernc.org/sqlite"
 )
@@ -172,47 +170,21 @@ func TestHandleSaveScratchpad(t *testing.T) {
 	}
 }
 
-// TestHandleSessionRendersScratchpad verifies the session page is pre-filled
-// with the saved scratchpad for the session's cwd, so the textarea is present
-// on first paint instead of blanking until the async fetch resolves.
-func TestHandleSessionRendersScratchpad(t *testing.T) {
-	db := newTestDB(t)
-	if _, err := db.Exec(`INSERT INTO scratchpads (project_path, content, updated_at) VALUES (?, ?, datetime('now'))`, "/home/user/project-a", "my saved notes"); err != nil {
-		t.Fatalf("failed to insert scratchpad: %v", err)
-	}
-
-	sessionsDir := t.TempDir()
-	writeSessionWithCWD(t, filepath.Join(sessionsDir, "sub"), "with-pad.jsonl", "/home/user/project-a")
-	writeSessionWithCWD(t, filepath.Join(sessionsDir, "sub"), "no-pad.jsonl", "/home/user/project-b")
-
+func TestHandleSessionUsesSPAShell(t *testing.T) {
 	s := &Server{
-		db:          db,
-		sessionsDir: sessionsDir,
-		cache:       sessions.NewCache(),
-		renderLiveSession: func(_ sessions.Session, scratchpad string) string {
-			return "[scratchpad:" + scratchpad + "]"
+		renderAppShell: func(w io.Writer) error {
+			_, err := io.WriteString(w, "spa shell")
+			return err
 		},
 	}
 
-	// Session whose cwd has a saved scratchpad gets it rendered into the page.
 	req := httptest.NewRequest(http.MethodGet, "/session?id=with-pad.jsonl", nil)
 	w := httptest.NewRecorder()
 	s.handleSession(w, req)
 	if w.Code != http.StatusOK {
 		t.Fatalf("status = %d", w.Code)
 	}
-	if got := w.Body.String(); got != "[scratchpad:my saved notes]" {
-		t.Fatalf("expected scratchpad rendered into page, got %q", got)
-	}
-
-	// Session whose cwd has no scratchpad renders an empty string, not an error.
-	req2 := httptest.NewRequest(http.MethodGet, "/session?id=no-pad.jsonl", nil)
-	w2 := httptest.NewRecorder()
-	s.handleSession(w2, req2)
-	if w2.Code != http.StatusOK {
-		t.Fatalf("status = %d", w2.Code)
-	}
-	if got := w2.Body.String(); got != "[scratchpad:]" {
-		t.Fatalf("expected empty scratchpad, got %q", got)
+	if got := w.Body.String(); got != "spa shell" {
+		t.Fatalf("expected SPA shell, got %q", got)
 	}
 }

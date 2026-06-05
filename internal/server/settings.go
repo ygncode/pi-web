@@ -10,24 +10,9 @@ import (
 	"time"
 )
 
-// handleSettingsPage renders the global /settings page. Prefer the SPA shell
-// once available; keep the legacy Go template as a temporary fallback while
-// the migration proceeds.
+// handleSettingsPage renders the global /settings page through the SPA shell.
 func (s *Server) handleSettingsPage(w http.ResponseWriter, r *http.Request) {
-	if s.renderAppShell != nil {
-		s.handleAppShell(w, r)
-		return
-	}
-	if s.renderSettings == nil {
-		http.NotFound(w, r)
-		return
-	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := s.renderSettings(w); err != nil {
-		if !isBrokenPipe(err) {
-			fmt.Fprintf(os.Stderr, "settings template error: %v\n", err)
-		}
-	}
+	s.handleAppShell(w, r)
 }
 
 // handleAppShell renders the Svelte SPA shell for browser-owned routes. During
