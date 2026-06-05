@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>pi-web · worker metrics</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --ok: #3fb950;
+    --warn: #d29922;
+    --bad: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    padding: 24px;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin-bottom: 20px; font-size: 12px; }
+  .cards { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    min-width: 120px;
+  }
+  .card .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .card .value { font-size: 20px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:last-child td { border-bottom: none; }
+  .state { padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+  .state.idle { background: rgba(139,148,158,.15); color: var(--muted); }
+  .state.running { background: rgba(63,185,80,.15); color: var(--ok); }
+  .state.error { background: rgba(248,81,73,.15); color: var(--bad); }
+  .zombie { color: var(--warn); font-weight: 600; }
+  .sid { color: var(--accent); }
+  .empty { color: var(--muted); padding: 24px; text-align: center; }
+  .err { color: var(--bad); margin-bottom: 12px; }
+  .foot { color: var(--muted); font-size: 11px; margin-top: 16px; }
+  .foot a { color: var(--accent); text-decoration: none; }
+  .foot a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+  <h1>worker metrics</h1>
+  <div class="sub">live view of <code>pi --mode rpc</code> workers · auto-refresh every 2s</div>
+
+  <div id="err" class="err" hidden></div>
+
+  <div class="cards" id="process"></div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>session</th>
+        <th>pid</th>
+        <th>state</th>
+        <th>model</th>
+        <th class="num">cpu %</th>
+        <th class="num">rss</th>
+        <th class="num">uptime</th>
+        <th class="num">idle</th>
+      </tr>
+    </thead>
+    <tbody id="workers"></tbody>
+  </table>
+
+  <div class="foot">
+    <span id="updated"></span>
+    · <a href="/api/debug/pprof/" title="Go runtime profiler — use with: go tool pprof &lt;url&gt;">pprof</a>
+  </div>
+
+<script>
+  const REFRESH_MS = 2000;
+
+  function fmtBytes(n) {
+    if (!n) return "0";
+    const u = ["B", "KB", "MB", "GB", "TB"];
+    let i = 0, v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return v.toFixed(i === 0 ? 0 : 1) + " " + u[i];
+  }
+
+  function fmtDur(s) {
+    s = Math.floor(s || 0);
+    if (s < 60) return s + "s";
+    if (s < 3600) return Math.floor(s / 60) + "m " + (s % 60) + "s";
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+    return h + "h " + m + "m";
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+    }[c]));
+  }
+
+  function renderProcess(p) {
+    const cards = [
+      ["pid", p.pid],
+      ["uptime", fmtDur(p.uptime_s)],
+      ["goroutines", p.goroutines],
+      ["heap", fmtBytes(p.heap_alloc_bytes)],
+      ["sse clients", p.sse_clients],
+      ["watched files", p.watched_files],
+    ];
+    document.getElementById("process").innerHTML = cards.map(([label, value]) =>
+      `<div class="card"><div class="label">${esc(label)}</div><div class="value">${esc(value)}</div></div>`
+    ).join("");
+  }
+
+  function renderWorkers(workers) {
+    const tbody = document.getElementById("workers");
+    if (!workers || workers.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="8" class="empty">no live workers</td></tr>`;
+      return;
+    }
+    workers.sort((a, b) => (b.cpu_percent || 0) - (a.cpu_percent || 0) || (b.rss_bytes || 0) - (a.rss_bytes || 0));
+    tbody.innerHTML = workers.map(w => {
+      const state = esc(w.state || "idle");
+      const cpu = w.sampled ? (w.cpu_percent || 0).toFixed(1) + "%" : "—";
+      const rss = w.sampled ? fmtBytes(w.rss_bytes) : "—";
+      const idle = w.zombie
+        ? `<span class="zombie" title="idle past reap TTL but still alive">${fmtDur(w.idle_for_s)} ⚠</span>`
+        : fmtDur(w.idle_for_s);
+      return `<tr>
+        <td class="sid">${esc(w.session_id)}</td>
+        <td class="num">${esc(w.pid || "—")}</td>
+        <td><span class="state ${state}">${state}</span></td>
+        <td>${esc(w.model || "—")}</td>
+        <td class="num">${cpu}</td>
+        <td class="num">${rss}</td>
+        <td class="num">${fmtDur(w.uptime_s)}</td>
+        <td class="num">${idle}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  async function tick() {
+    const errEl = document.getElementById("err");
+    try {
+      const res = await fetch("/api/metrics", { headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      errEl.hidden = true;
+      renderProcess(data.process || {});
+      renderWorkers(data.workers || []);
+      document.getElementById("updated").textContent = "updated " + new Date().toLocaleTimeString();
+    } catch (e) {
+      errEl.hidden = false;
+      errEl.textContent = "failed to load metrics: " + e.message;
+    }
+  }
+
+  tick();
+  setInterval(tick, REFRESH_MS);
+</script>
+</body>
+</html>

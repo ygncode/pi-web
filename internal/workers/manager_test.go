@@ -253,6 +253,88 @@ func (erroredWorker) Status() WorkerStatus {
 }
 func (erroredWorker) Close() error { return nil }
 
+// inspectableWorker implements the optional inspector interface so Snapshot can
+// surface PID, uptime, and idle duration.
+type inspectableWorker struct {
+	pid       int
+	startedAt time.Time
+	idleFor   time.Duration
+	status    WorkerStatus
+}
+
+func (w *inspectableWorker) Prompt(context.Context, chat.Request) error    { return nil }
+func (w *inspectableWorker) SetModel(context.Context, string, string) error { return nil }
+func (w *inspectableWorker) SetThinkingLevel(context.Context, string) error { return nil }
+func (w *inspectableWorker) Abort(context.Context) error                    { return nil }
+func (w *inspectableWorker) GetState(context.Context) (WorkerStatus, error) { return w.status, nil }
+func (w *inspectableWorker) GetCommands(context.Context) ([]SlashCommand, error) {
+	return nil, nil
+}
+func (w *inspectableWorker) Status() WorkerStatus                  { return w.status }
+func (w *inspectableWorker) Close() error                          { return nil }
+func (w *inspectableWorker) PID() int                              { return w.pid }
+func (w *inspectableWorker) StartedAt() time.Time                  { return w.startedAt }
+func (w *inspectableWorker) IdleSince(now time.Time) time.Duration { return w.idleFor }
+
+func TestManagerSnapshotEmptyWhenNoWorkers(t *testing.T) {
+	manager := NewManager(func(string, string) (ChatWorker, error) { return &fakeChatWorker{}, nil })
+	if snaps := manager.Snapshot(); len(snaps) != 0 {
+		t.Fatalf("Snapshot() = %#v, want empty", snaps)
+	}
+}
+
+func TestManagerSnapshotReportsInspectorFields(t *testing.T) {
+	w := &inspectableWorker{
+		pid:       4242,
+		startedAt: time.Now().Add(-90 * time.Second),
+		idleFor:   30 * time.Second,
+		status:    WorkerStatus{State: WorkerStateIdle, Model: "claude-opus"},
+	}
+	manager := NewManager(func(string, string) (ChatWorker, error) { return w, nil })
+	if err := manager.EnsureWorker(context.Background(), "a.jsonl", "/tmp/a.jsonl"); err != nil {
+		t.Fatal(err)
+	}
+	snaps := manager.Snapshot()
+	if len(snaps) != 1 {
+		t.Fatalf("Snapshot() len = %d, want 1", len(snaps))
+	}
+	s := snaps[0]
+	if s.SessionID != "a.jsonl" {
+		t.Errorf("SessionID = %q, want a.jsonl", s.SessionID)
+	}
+	if s.PID != 4242 {
+		t.Errorf("PID = %d, want 4242", s.PID)
+	}
+	if s.State != WorkerStateIdle {
+		t.Errorf("State = %q, want idle", s.State)
+	}
+	if s.Model != "claude-opus" {
+		t.Errorf("Model = %q, want claude-opus", s.Model)
+	}
+	if s.UptimeS < 80 || s.UptimeS > 120 {
+		t.Errorf("UptimeS = %v, want ~90", s.UptimeS)
+	}
+	if s.IdleForS < 29 || s.IdleForS > 31 {
+		t.Errorf("IdleForS = %v, want ~30", s.IdleForS)
+	}
+}
+
+func TestManagerSnapshotHandlesNonInspectableWorker(t *testing.T) {
+	manager := NewManager(func(string, string) (ChatWorker, error) {
+		return &fakeChatWorker{}, nil
+	})
+	if err := manager.EnsureWorker(context.Background(), "a.jsonl", "/tmp/a.jsonl"); err != nil {
+		t.Fatal(err)
+	}
+	snaps := manager.Snapshot()
+	if len(snaps) != 1 {
+		t.Fatalf("Snapshot() len = %d, want 1", len(snaps))
+	}
+	if snaps[0].PID != 0 || snaps[0].UptimeS != 0 {
+		t.Errorf("non-inspectable worker should report zero PID/uptime, got %#v", snaps[0])
+	}
+}
+
 func TestBusyWorkerUsesSteeringCommand(t *testing.T) {
 	worker := &fakeChatWorker{streaming: true}
 	manager := NewManager(func(sessionID, sessionPath string) (ChatWorker, error) { return worker, nil })

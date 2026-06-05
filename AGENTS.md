@@ -15,6 +15,7 @@ Before making structural changes, read the relevant doc in `docs/`:
 | Working on annotations | `docs/sequence-flows/annotations.md` |
 | Working on the @mention path autocomplete | `docs/sequence-flows/mention-autocomplete.md` |
 | Working on export/share | `docs/sequence-flows/share.md` |
+| Working on the worker metrics dashboard | `docs/dev/metrics-dashboard.md` |
 | Writing or debugging E2E / browser tests | `docs/dev/e2e-testing.md` |
 
 The most important doc for frontend work is **`docs/dev/templates-vs-web.md`** — it explains the unified rendering where `web/` provides the live Vite app, and `internal/ui/live_templates/` provides the Go-embedded shells and consolidated `export/` JS.
@@ -57,6 +58,7 @@ The most important doc for frontend work is **`docs/dev/templates-vs-web.md`** �
 - `internal/ui/session_page.go` — **Live session page** rendering (`internal/ui/live_templates/session.html`, chat composer)
 - `internal/ui/export.go` — **Export/share snapshot** rendering (using `internal/ui/live_templates/session.html`, inlined JS, no server deps)
 - `internal/ui/live_templates/styles/session.css` — Live session & export CSS
+- `internal/server/metrics.go` + `internal/server/metrics_dashboard.html` — Worker metrics dashboard: `/api/metrics` JSON (process + per-worker CPU/RSS via gopsutil) and the self-contained `/metrics` page
 - `.pi/extensions/pi-web.ts` — Pi extension with `/pi-web`, `/pi-web token`, `/pi-web set-token`, `/remote`, `/refresh` commands
 
 ### Live App vs. Export — DO NOT MIX THESE UP

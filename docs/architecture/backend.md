@@ -166,6 +166,11 @@ type Manager struct {
 }
 ```
 
+`Manager.Snapshot()` returns one `WorkerSnapshot` per live worker (session ID,
+state, model, plus PID/uptime/idle for workers implementing the optional
+`inspector` interface). The metrics dashboard consumes it — see
+`docs/dev/metrics-dashboard.md`.
+
 ### `rpc.piRPCWorker`
 
 A single `pi --mode rpc` subprocess. Communicates via JSONL on stdin/stdout.
@@ -205,6 +210,9 @@ type piRPCWorker struct {
 | `/api/set-thinking-level` | POST | `handleSetThinkingLevel` | Change thinking level |
 | `/api/models` | GET | `handleAvailableModels` | List available AI models |
 | `/api/worker-status` | GET | `handleWorkerStatus` | Get worker state for session |
+| `/metrics` | GET | `handleMetricsPage` | Worker metrics dashboard (self-contained HTML) |
+| `/api/metrics` | GET | `handleMetrics` | JSON snapshot: process + per-worker CPU/RSS (gopsutil); see `docs/dev/metrics-dashboard.md` |
+| `/api/debug/pprof/` | GET | `pprof.Index` (+ cmdline/profile/symbol/trace) | Go runtime profiler, auth-gated (`/api`-stripped before Index) |
 | `/share` | POST | `handleShare` | Create private GitHub Gist |
 | `/events` | GET | `handleEvents` | SSE stream |
 | `/api/new-session` | POST | `handleNewSession` | Create new session file |
