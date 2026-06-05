@@ -2706,7 +2706,7 @@
     }
 
     @media (min-width: 901px) {
-      html, body {
+      html.pi-session-page, body.pi-session-page {
         height: 100vh;
         overflow: hidden;
       }
@@ -2732,7 +2732,7 @@
 
 
     @media (max-width: 900px) {
-      html, body {
+      html.pi-session-page, body.pi-session-page {
         height: 100%;
       }
 
@@ -2742,7 +2742,7 @@
          can't be shifted, and its height tracks the visible viewport
          (--viewport-height, kept in sync from visualViewport in session.js), so
          the composer always sits just above the keyboard. */
-      body {
+      body.pi-session-page {
         position: fixed;
         top: 0;
         left: 0;

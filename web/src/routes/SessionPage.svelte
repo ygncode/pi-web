@@ -26,6 +26,11 @@
   onMount(() => {
     const previousTitle = document.title;
     let active = true;
+    // The session view is a fixed app shell (no body scroll, internal scroll
+    // containers). Mark the document so the session-only layout rules in the
+    // shared SPA stylesheet do not pin body height on the index/settings pages.
+    document.documentElement.classList.add('pi-session-page');
+    document.body.classList.add('pi-session-page');
 
     (async () => {
       try {
@@ -59,6 +64,8 @@
     return () => {
       active = false;
       document.title = previousTitle;
+      document.documentElement.classList.remove('pi-session-page');
+      document.body.classList.remove('pi-session-page');
     };
   });
 </script>
