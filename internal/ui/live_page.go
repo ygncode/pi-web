@@ -66,7 +66,13 @@ const wcoBootScript = `<script>
 (function(){
   var chromeBgs = {dark:'#0f0f14',light:'#ddddda',nord:'#292f3a',dracula:'#242631'};
   var bodyBgs   = {dark:'#111116',light:'#f6f5f2',nord:'#2e3440',dracula:'#282a36'};
+  // Detect WCO via the display-mode media query — the reliable, synchronous
+  // signal. navigator.windowControlsOverlay.visible is commonly false during
+  // initial load (and the SPA shell renders an empty body first), so relying on
+  // it left the .wco class unset and the header showing the standalone body-bg.
+  var mql = window.matchMedia('(display-mode: window-controls-overlay)');
   var o = navigator.windowControlsOverlay;
+  function isWCO(){ return mql.matches || !!(o && o.visible); }
   function serverTheme(){
     var m = document.querySelector('meta[name="pi-web-theme"]');
     return m && m.content ? m.content : '';
@@ -74,18 +80,16 @@ const wcoBootScript = `<script>
   function applyBg(){
     var t = serverTheme();
     if(!t){ try{ t = localStorage.getItem('pi-web-theme') || 'dark'; }catch(e){ t = 'dark'; } }
-    var isWCO = o && o.visible;
-    var map = isWCO ? chromeBgs : bodyBgs;
+    var map = isWCO() ? chromeBgs : bodyBgs;
     document.documentElement.style.backgroundColor = map[t] || map.dark;
   }
-  applyBg();
-  if(!o) return;
   function sync(){
-    document.documentElement.classList.toggle('wco', !!o.visible);
+    document.documentElement.classList.toggle('wco', isWCO());
     applyBg();
   }
   sync();
-  try{ o.addEventListener('geometrychange', sync); }catch(e){}
+  try{ mql.addEventListener('change', sync); }catch(e){ try{ mql.addListener(sync); }catch(e2){} }
+  if(o){ try{ o.addEventListener('geometrychange', sync); }catch(e){} }
 })();
 </script>`
 
@@ -167,7 +171,7 @@ func themeBootScript(defaultTheme string) template.HTML {
     else if(t === 'custom') icon = '⚙';
     document.querySelectorAll('[data-theme-icon]').forEach(function(el){ el.textContent = icon; });
     document.querySelectorAll('[data-command-theme-icon]').forEach(function(el){ el.textContent = icon; });
-    var isWCO = navigator.windowControlsOverlay && navigator.windowControlsOverlay.visible;
+    var isWCO = (window.matchMedia && window.matchMedia('(display-mode: window-controls-overlay)').matches) || (navigator.windowControlsOverlay && navigator.windowControlsOverlay.visible);
     var chromeBg = '#0f0f14', bodyBg = '#111116';
     if(t === 'light')   { chromeBg = '#ddddda'; bodyBg = '#f6f5f2'; }
     else if(t === 'nord')    { chromeBg = '#292f3a'; bodyBg = '#2e3440'; }
@@ -209,6 +213,8 @@ func themeBootScript(defaultTheme string) template.HTML {
     var btn = document.getElementById('theme-toggle');
     if(btn) btn.addEventListener('click', toggleTheme);
   }
+  // Keep theme-color/html background in sync if WCO turns on/off after load.
+  try{ window.matchMedia('(display-mode: window-controls-overlay)').addEventListener('change', updateBtn); }catch(e){}
 })();
 </script>`, defaultTheme))
 }
