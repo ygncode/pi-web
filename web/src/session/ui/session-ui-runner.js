@@ -71,6 +71,7 @@ export function setupSessionUi({
     toggleController,
     toggleRightSidebar: rightSidebar?.toggleSidebar ?? (() => {}),
     openRightSidebar: rightSidebar?.openSidebar ?? (() => {}),
+    collapseRightSidebar: rightSidebar?.collapseSidebar ?? (() => {}),
     activateRightTab: rightSidebarTabs?.activate ?? (() => {}),
   };
 }

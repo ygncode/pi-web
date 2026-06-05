@@ -149,6 +149,11 @@ The message opens with an explicit, directive framing ("…continuation of our
 current task, not a new or separate request") so a weaker model treats it as
 follow-up edits rather than a fresh conversation.
 
+On mobile the sidebar is a full-screen overlay, so sending fires the layer's
+`onSend` callback — `session.js` wires it to collapse the right sidebar (mobile
+only) before the composer is focused, so the filled composer is actually visible
+and ready to type into.
+
 ## Live-only
 
 Like artifacts, the annotation layer mounts only on the live session page

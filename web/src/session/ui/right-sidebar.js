@@ -140,6 +140,12 @@ export function setupRightSidebar({
     }
   }
 
+  // Hide the sidebar (and exit expand mode) regardless of current state.
+  function collapseSidebar() {
+    setExpanded(false);
+    setCollapsed(true);
+  }
+
   toggleBtn?.addEventListener('click', toggleSidebar);
 
   closeBtn?.addEventListener('click', () => {
@@ -282,5 +288,5 @@ export function setupRightSidebar({
 
   if (textarea) lastSaved = textarea.value;
 
-  return { toggleSidebar, openSidebar };
+  return { toggleSidebar, openSidebar, collapseSidebar };
 }

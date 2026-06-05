@@ -22,7 +22,7 @@ function fakeApi(initial = []) {
   };
 }
 
-function setup({ api, selectionDelayMs = 250, onCreate = null } = {}) {
+function setup({ api, selectionDelayMs = 250, onCreate = null, onSend = null } = {}) {
   const dom = new JSDOM(
     '<div id="messages"><div id="entry-e1">hello world</div></div>'
     + '<div id="annotation-list-host"></div>'
@@ -39,6 +39,7 @@ function setup({ api, selectionDelayMs = 250, onCreate = null } = {}) {
     countEl: doc.getElementById('annotation-tab-count'),
     escapeHtml,
     onCreate,
+    onSend,
     selectionDelayMs,
     documentImpl: doc,
     windowImpl: win
@@ -153,6 +154,20 @@ describe('annotation layer', () => {
     expect(composer.value).toContain('In this conversation:');
     expect(composer.value).toContain('"hello"');
     expect(composer.value).toContain('rename this');
+  });
+
+  it('fires onSend before focusing the composer on send-to-pi', () => {
+    const calls = [];
+    const onSend = vi.fn(() => calls.push('onSend'));
+    const { doc, layer } = setup({ onSend });
+    const composer = doc.getElementById('pi-chat-message');
+    composer.focus = vi.fn(() => calls.push('focus'));
+    layer.setAnnotations([
+      { id: 'a1', anchorId: 'entry-e1', startOffset: 0, endOffset: 5, text: 'note', original: 'hello' }
+    ]);
+    doc.querySelector('[data-action="send-to-pi"]').click();
+    expect(onSend).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual(['onSend', 'focus']); // collapse the overlay, then focus
   });
 
   it('includes file path and line numbers for artifact notes', () => {

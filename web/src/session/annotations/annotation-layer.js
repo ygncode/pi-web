@@ -20,6 +20,7 @@ export function createAnnotationLayer({
   escapeHtml,
   onSelectArtifact = null,
   onCreate = null,
+  onSend = null,
   resolveArtifact = null,
   selectionDelayMs = 250,
   documentImpl = document,
@@ -167,6 +168,9 @@ export function createAnnotationLayer({
     if (!composerEl || annotations.length === 0) return;
     composerEl.value = formatForPi();
     composerEl.dispatchEvent(new windowImpl.Event('input', { bubbles: true }));
+    // Let the host get out of the way (e.g. collapse the mobile overlay sidebar)
+    // before focusing, so the composer is actually visible when the keyboard opens.
+    if (typeof onSend === 'function') onSend();
     composerEl.focus();
   }
 

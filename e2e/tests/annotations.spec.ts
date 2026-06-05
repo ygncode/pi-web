@@ -201,4 +201,39 @@ test.describe("annotations", () => {
     await expect(page.locator("#right-pane-notes")).toBeVisible();
     await expect(page.locator(".annotation-item .annotation-note")).toHaveText("open me");
   });
+
+  test("sending notes to pi collapses the sidebar and focuses the composer on mobile", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const { entries } = buildSession({ cwd: realWorkingDir() });
+    const name = uniqueSessionName(testInfo, "ann");
+    const id = writeSession(sessionsDir, name, entries);
+
+    await page.goto(`/session?id=${encodeURIComponent(id)}`);
+
+    // Create a note; onCreate opens the sidebar on the Notes tab, where the
+    // "Send … to pi" button lives.
+    await annotateFirstMessage(page, "ship it");
+    const sendBtn = page.locator('[data-action="send-to-pi"]');
+    await expect(sendBtn).toBeVisible();
+
+    const mobile = await page.evaluate(() =>
+      window.matchMedia("(max-width: 900px)").matches,
+    );
+
+    await sendBtn.click();
+
+    // The composer is filled regardless of layout.
+    await expect(page.locator("#pi-chat-message")).toHaveValue(/ship it/);
+
+    if (mobile) {
+      // The overlay sidebar gets out of the way and the composer takes focus.
+      await expect(page.locator("body")).toHaveClass(/right-sidebar-collapsed/);
+      await expect(page.locator("#pi-chat-message")).toBeFocused();
+    } else {
+      // Desktop keeps the sidebar in place beside the content.
+      await expect(page.locator("body")).not.toHaveClass(/right-sidebar-collapsed/);
+    }
+  });
 });

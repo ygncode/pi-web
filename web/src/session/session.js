@@ -408,6 +408,11 @@ export function runSessionApp({ target = window } = {}) {
         ui.openRightSidebar();
         ui.activateRightTab('notes');
       },
+      onSend: () => {
+        // On mobile the sidebar is a full-screen overlay; collapse it so the
+        // composer it just filled is visible and ready to type into.
+        if (ui.isMobileLayout()) ui.collapseRightSidebar();
+      },
       resolveArtifact: (artifactId) => artifactPanel?.getArtifact(artifactId) || null,
       documentImpl,
       windowImpl: target
