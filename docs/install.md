@@ -116,6 +116,25 @@ The frontend bundle is embedded by `web/assets_embed.go`, so `go build` needs
 by hand, run `npm --prefix web install && npm --prefix web run build` before
 `go build ./cmd/pi-web`.
 
+## Uninstall
+
+```bash
+pi remove npm:@ygncode/pi-web@beta
+```
+
+This runs the package `preuninstall` script (`bash uninstall.sh`), which stops
+the running instance and removes:
+
+- the pi-web binary (`~/.pi/agent/bin/pi-web`, or `/usr/local/bin/pi-web` for standalone installs)
+- the version file (`~/.pi/agent/pi-web-version`)
+- the runtime state file (`~/.pi/agent/pi-web/pi-web-state.json`)
+- the auto-start config (launchd plist on macOS, systemd user service on Linux)
+
+Your data is preserved so a later reinstall picks up where you left off:
+`~/.pi/agent/pi-web.sqlite`, `~/.pi/agent/pi-web-memory.sqlite`, your session
+files under `~/.pi/agent/sessions/`, and `~/.config/pi-web/env` (including
+`PI_WEB_TOKEN`). Remove those manually if you want a clean slate.
+
 ## Usage
 
 ```bash
