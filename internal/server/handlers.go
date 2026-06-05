@@ -13,6 +13,7 @@ import (
 
 	"pi-web/internal/agentdir"
 	"pi-web/internal/sessions"
+	"pi-web/internal/ui"
 )
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -223,6 +224,17 @@ func (s *Server) handleApiSession(w http.ResponseWriter, r *http.Request) {
 			entries = entries[f:end]
 			from = f
 		}
+	} else if q.Get("paginate") == "1" && total > ui.LargeSessionThreshold {
+		// Initial SPA page load for a huge session: embed only the tail and let
+		// the frontend "Load earlier" affordance fetch preceding windows via
+		// ?from=N&count=K. Mirrors the legacy server-rendered page truncation.
+		// Only the session page sends paginate=1; other callers (live reload,
+		// btw, command menu) still receive the full session.
+		from = total - ui.LargeSessionTailEntries
+		if from < 0 {
+			from = 0
+		}
+		entries = entries[from:]
 	}
 
 	writeJSON(w, 0, map[string]any{

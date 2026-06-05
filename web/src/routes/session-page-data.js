@@ -83,7 +83,7 @@ export async function loadSessionPageState({ locationSearch = '', fetchImpl = fe
   const sessionId = params.get('id') || '';
   if (!sessionId) throw new Error('Missing session id');
 
-  const resp = await fetchImpl(`/api/session?id=${encodeURIComponent(sessionId)}`, { headers: { Accept: 'application/json' } });
+  const resp = await fetchImpl(`/api/session?id=${encodeURIComponent(sessionId)}&paginate=1`, { headers: { Accept: 'application/json' } });
   if (!resp.ok) throw new Error(resp.status === 404 ? 'Session not found' : 'Failed to load session');
   const data = await resp.json();
   const scratchpad = await loadScratchpad(data?.header?.cwd || '', { fetchImpl });

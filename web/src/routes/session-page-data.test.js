@@ -71,7 +71,7 @@ describe('session-page-data', () => {
     expect(state.title).toBe('Loaded');
     expect(state.scratchpad).toBe('pad');
     expect(seen).toEqual([
-      '/api/session?id=s.jsonl',
+      '/api/session?id=s.jsonl&paginate=1',
       '/api/scratchpad?project=%2Ftmp%2Fspace%20path',
     ]);
   });
