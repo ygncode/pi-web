@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { isEditableTarget, setupKeyboardNav } from './keyboard-nav.js';
+import { isComposerPopupOpen, isEditableTarget, setupKeyboardNav } from './keyboard-nav.js';
 
 describe('isEditableTarget', () => {
   it('returns false for null/undefined', () => {
@@ -43,6 +43,20 @@ describe('isEditableTarget', () => {
     const child = document.createElement('span');
     parent.appendChild(child);
     expect(isEditableTarget(child)).toBe(true);
+  });
+});
+
+describe('isComposerPopupOpen', () => {
+  it('is true when a composer popup has a non-none display', () => {
+    const doc = { querySelectorAll: () => [{ style: { display: 'block' } }] };
+    expect(isComposerPopupOpen(doc)).toBe(true);
+  });
+
+  it('is false when popups are hidden or absent', () => {
+    expect(isComposerPopupOpen({ querySelectorAll: () => [{ style: { display: 'none' } }] })).toBe(false);
+    expect(isComposerPopupOpen({ querySelectorAll: () => [{ style: { display: '' } }] })).toBe(false);
+    expect(isComposerPopupOpen({ querySelectorAll: () => [] })).toBe(false);
+    expect(isComposerPopupOpen({})).toBe(false);
   });
 });
 
@@ -108,6 +122,34 @@ describe('setupKeyboardNav', () => {
     expect(blur).toHaveBeenCalled();
     expect(e.preventDefault).toHaveBeenCalled();
     expect(e.stopPropagation).toHaveBeenCalled();
+  });
+
+  it('does not blur (lets Escape bubble) when a composer popup is open', () => {
+    const blur = vi.fn();
+    const active = { tagName: 'TEXTAREA', blur };
+    const doc = createMockDocument(active);
+    // A visible @mention popup means the composer owns Escape.
+    doc.querySelectorAll = vi.fn(() => [{ style: { display: 'block' } }]);
+    const win = createMockWindow();
+
+    setupKeyboardNav({ windowImpl: win, documentImpl: doc });
+    const e = doc._dispatch('keydown', { key: 'Escape' });
+
+    expect(blur).not.toHaveBeenCalled();
+    expect(e.stopPropagation).not.toHaveBeenCalled();
+  });
+
+  it('still blurs when the composer popup is hidden', () => {
+    const blur = vi.fn();
+    const active = { tagName: 'TEXTAREA', blur };
+    const doc = createMockDocument(active);
+    doc.querySelectorAll = vi.fn(() => [{ style: { display: 'none' } }]);
+    const win = createMockWindow();
+
+    setupKeyboardNav({ windowImpl: win, documentImpl: doc });
+    doc._dispatch('keydown', { key: 'Escape' });
+
+    expect(blur).toHaveBeenCalled();
   });
 
   it('does not blur non-editable element on Escape', () => {

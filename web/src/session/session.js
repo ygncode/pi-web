@@ -29,6 +29,7 @@ import * as chatSelectors from './chat/chat-selectors.js';
 import * as thinkingSelector from './chat/thinking-selector.js';
 import * as modelSelector from './chat/model-selector.js';
 import * as slashSelector from './chat/slash-command.js';
+import * as mentionSelector from './chat/mention-autocomplete.js';
 import * as liveReloadRunner from './live/live-reload-runner.js';
 import * as liveScroll from './live/live-scroll.js';
 import * as liveStats from './live/live-stats.js';
@@ -582,6 +583,7 @@ export function runSessionApp({ target = window } = {}) {
     modelSelector,
     thinkingSelector,
     slashSelector,
+    mentionSelector,
     FormDataImpl: target.FormData,
     URLSearchParamsImpl: target.URLSearchParams,
     CustomEventImpl: target.CustomEvent,

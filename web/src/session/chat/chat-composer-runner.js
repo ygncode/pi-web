@@ -13,6 +13,7 @@ export function runChatComposer({
   modelSelector,
   thinkingSelector,
   slashSelector,
+  mentionSelector,
   FormDataImpl = FormData,
   URLSearchParamsImpl = URLSearchParams,
   CustomEventImpl = CustomEvent,
@@ -27,6 +28,7 @@ export function runChatComposer({
   const __piModelSelector = modelSelector;
   const __piThinkingSelector = thinkingSelector;
   const __piSlashSelector = slashSelector;
+  const __piMentionSelector = mentionSelector;
   const FormData = FormDataImpl;
   const URLSearchParams = URLSearchParamsImpl;
   const CustomEvent = CustomEventImpl;
@@ -550,6 +552,7 @@ export function runChatComposer({
       // Slash-command palette gets first dibs on navigation keys while open so
       // Enter selects a command instead of submitting the message.
       if (_slashSelectorApi && _slashSelectorApi.handleKeydown(event)) return;
+      if (_mentionSelectorApi && _mentionSelectorApi.handleKeydown(event)) return;
       if (event.key === 'Enter' && !event.shiftKey) {
         if (isMobileTextInputMode()) return;
         event.preventDefault();
@@ -880,6 +883,7 @@ export function runChatComposer({
   let _modelSelectorApi = null;
   let _thinkingSelectorApi = null;
   let _slashSelectorApi = null;
+  let _mentionSelectorApi = null;
 
   function initPiChatControls() {
     setupCwdCopy();
@@ -906,6 +910,7 @@ export function runChatComposer({
     _modelSelectorApi = loadModelSelector();
     _thinkingSelectorApi = setupThinkingLevelSelector();
     _slashSelectorApi = loadSlashSelector();
+    _mentionSelectorApi = loadMentionSelector();
   }
 
   if (document.readyState === 'loading') {
@@ -940,6 +945,21 @@ export function runChatComposer({
     const sessionId = new URLSearchParams(window.location.search).get('id') || (document.getElementById('pi-chat-composer') || {}).dataset?.sessionId || '';
     return __piSlashSelector.setupSlashCommands({
       documentImpl: document,
+      sessionId,
+      chatApi: __piChatApi,
+      escapeHtml
+    });
+  }
+
+  // ── @mention path autocomplete ───────────────────────────────────────
+  function loadMentionSelector() {
+    if (!__piMentionSelector || typeof __piMentionSelector.setupMentionAutocomplete !== 'function') {
+      return { handleKeydown: () => false };
+    }
+    const sessionId = new URLSearchParams(window.location.search).get('id') || (document.getElementById('pi-chat-composer') || {}).dataset?.sessionId || '';
+    return __piMentionSelector.setupMentionAutocomplete({
+      documentImpl: document,
+      windowImpl: window,
       sessionId,
       chatApi: __piChatApi,
       escapeHtml

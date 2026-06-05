@@ -13,6 +13,7 @@ Before making structural changes, read the relevant doc in `docs/`:
 | Working on chat, SSE, or live-reload | `docs/sequence-flows/chat.md`, `docs/sequence-flows/live-reload.md` |
 | Working on artifacts | `docs/sequence-flows/artifacts.md` |
 | Working on annotations | `docs/sequence-flows/annotations.md` |
+| Working on the @mention path autocomplete | `docs/sequence-flows/mention-autocomplete.md` |
 | Working on export/share | `docs/sequence-flows/share.md` |
 | Writing or debugging E2E / browser tests | `docs/dev/e2e-testing.md` |
 
@@ -42,6 +43,7 @@ The most important doc for frontend work is **`docs/dev/templates-vs-web.md`** â
 |-----------|---------|
 | `web/src/index/` | Sessions list page (Vite) |
 | `web/src/session/` | Session viewer â€” tree rendering, chat composer, live reload |
+| `web/src/session/chat/` | Chat composer: send/cancel, model & thinking selectors, slash-command palette, `@mention` path autocomplete (`mention-autocomplete.js`, backed by `GET /api/files`) |
 | `web/src/session/artifacts/` | Artifact registry (path-keyed files + fenced snippets) + right-sidebar Artifacts panel (preview/source, help modal) |
 | `web/src/session/annotations/` | Inline review annotations (offset-anchored highlights, Annotations tab, send-to-pi); synced via the `annotations` SSE event |
 | `web/src/shared/` | API helpers, escape, storage, status events |

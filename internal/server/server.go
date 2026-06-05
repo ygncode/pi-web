@@ -89,6 +89,11 @@ type Server struct {
 	runRestart          func() error
 	updateMu            sync.Mutex // serializes install/restart operations
 
+	// fileWalk caches bounded directory listings per cwd for the @mention
+	// autocomplete so rapid keystrokes reuse a single filesystem walk.
+	fileWalk     *fileWalkCache
+	fileWalkOnce sync.Once
+
 	// Auto-title bookkeeping (see auto_title.go). Guards against re-titling
 	// loops and clobbering user-set names.
 	titleMu        sync.Mutex
@@ -236,6 +241,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
 	mux.HandleFunc("/api/recent-locations", s.auth.Wrap(s.handleRecentLocations))
 	mux.HandleFunc("/api/projects", s.getPostHandler(s.handleApiProjects, s.handleUpdateProject))
+	mux.HandleFunc("/api/files", s.auth.Wrap(s.handleApiFiles))
 	mux.HandleFunc("/api/git/info", s.auth.Wrap(s.handleGitInfo))
 	mux.HandleFunc("/api/git/rename-branch", s.auth.Wrap(s.handleGitRenameBranch))
 	mux.HandleFunc("/custom-themes.css", s.auth.Wrap(s.handleCustomThemes))

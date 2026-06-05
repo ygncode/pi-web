@@ -16,6 +16,23 @@ export function isEditableTarget(element) {
 }
 
 /**
+ * Returns true when a composer autocomplete popup (slash palette or @mention
+ * file list) is currently displayed. These popups handle their own Escape via
+ * the composer keydown listener, so document-level nav must not intercept it.
+ */
+export function isComposerPopupOpen(documentImpl = document) {
+  const popups = documentImpl.querySelectorAll?.(
+    '#pi-chat-slash-popup, #pi-chat-mention-popup',
+  );
+  if (!popups) return false;
+  for (const popup of popups) {
+    const display = popup.style?.display;
+    if (display && display !== 'none') return true;
+  }
+  return false;
+}
+
+/**
  * Installs vim-style document-level keyboard navigation:
  *
  * 1. <kbd>Escape</kbd> blurs the active editable element so the user
@@ -45,6 +62,11 @@ export function setupKeyboardNav({
       if (!isEditableTarget(active)) return;
       // Don't steal Escape from popups / modals / overlays.
       if (active.closest?.('.pi-chat-model-popup, .pi-chat-thinking-popup, [role="menu"], [role="dialog"], .command-menu-popover, .mobile-command-panel, .share-overlay-backdrop, .mobile-command-backdrop, #commandPalette, #sessionPalette, .model-selector-dropdown, .modal-overlay, .modal')) return;
+      // The slash and @mention popups anchor to the main composer textarea (a
+      // sibling, not an ancestor), so closest() above can't see them. When one
+      // is open, let Escape bubble to the composer's own close handler instead
+      // of blurring the textarea.
+      if (isComposerPopupOpen(documentImpl)) return;
       e.preventDefault();
       e.stopPropagation();
       active.blur();

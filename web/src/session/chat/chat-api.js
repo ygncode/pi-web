@@ -23,6 +23,11 @@ export function getCommands(sessionId, { load = false } = {}, { fetchImpl = fetc
   return fetchImpl(url);
 }
 
+export function getFiles(sessionId, query, { signal, fetchImpl = fetch } = {}) {
+  const url = chatUrl('/api/files', sessionId) + '&q=' + encodeURIComponent(query || '');
+  return fetchImpl(url, { signal });
+}
+
 export function setModel(sessionId, { provider, modelId }, { fetchImpl = fetch } = {}) {
   return fetchImpl(chatUrl('/api/set-model', sessionId), {
     method: 'POST',

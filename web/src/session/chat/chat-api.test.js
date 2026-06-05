@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { cancelChat, chatUrl, getCommands, getWorkerStatus, listModels, sendChat, setModel, setThinkingLevel } from './chat-api.js';
+import { cancelChat, chatUrl, getCommands, getFiles, getWorkerStatus, listModels, sendChat, setModel, setThinkingLevel } from './chat-api.js';
 
 describe('chat api helpers', () => {
   it('builds encoded session URLs', () => {
@@ -39,5 +39,14 @@ describe('chat api helpers', () => {
     await getCommands('s.jsonl', { load: true }, { fetchImpl });
     expect(fetchImpl).toHaveBeenNthCalledWith(1, '/api/commands?id=s.jsonl');
     expect(fetchImpl).toHaveBeenNthCalledWith(2, '/api/commands?id=s.jsonl&load=1');
+  });
+
+  it('builds file-listing URLs with an encoded query and forwards the abort signal', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response('{}')));
+    const signal = {};
+    await getFiles('s.jsonl', 'src/a b', { fetchImpl, signal });
+    await getFiles('s.jsonl', '', { fetchImpl });
+    expect(fetchImpl).toHaveBeenNthCalledWith(1, '/api/files?id=s.jsonl&q=src%2Fa%20b', { signal });
+    expect(fetchImpl).toHaveBeenNthCalledWith(2, '/api/files?id=s.jsonl&q=', { signal: undefined });
   });
 });

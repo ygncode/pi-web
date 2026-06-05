@@ -10,4 +10,5 @@ This directory documents the key runtime sequences in pi-web.
 | [live-reload.md](./live-reload.md) | How file changes propagate to the browser |
 | [artifacts.md](./artifacts.md) | Detecting (path-keyed/edit-aware), rendering, and sandbox-previewing artifacts |
 | [annotations.md](./annotations.md) | Anchoring, persisting, syncing, and sending review notes |
+| [mention-autocomplete.md](./mention-autocomplete.md) | `@`-triggered file/folder path autocomplete in the chat composer |
 | [share.md](./share.md) | Exporting a session to a private GitHub Gist |
