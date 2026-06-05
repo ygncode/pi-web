@@ -54,51 +54,61 @@
     }
   }
 
-  onMount(async () => {
+  onMount(() => {
     const previousTitle = document.title;
-    try {
-      const params = new URLSearchParams(window.location.search);
-      sessionId = params.get('id') || '';
-      if (!sessionId) throw new Error('Missing session id');
-      const resp = await fetch(`/api/session?id=${encodeURIComponent(sessionId)}`, { headers: { Accept: 'application/json' } });
-      if (!resp.ok) throw new Error(resp.status === 404 ? 'Session not found' : 'Failed to load session');
-      const data = await resp.json();
-      const entries = Array.isArray(data.entries) ? data.entries : [];
-      const header = data.header || {};
-      cwd = header.cwd || '';
-      title = data.name || sessionId;
-      document.title = title;
-      scratchpad = await loadScratchpad(cwd);
-      const leafId = newestLeaf(entries);
-      payloadBase64 = encodePayload({
-        header,
-        entries,
-        name: title,
-        leafId,
-        systemPrompt: null,
-        tools: null,
-        renderedTools: null,
-        total: Number.isInteger(data.total) ? data.total : entries.length,
-        from: Number.isInteger(data.from) ? data.from : 0,
-        truncated: Number.isInteger(data.total) ? entries.length < data.total : false,
-      });
-      chatAvailable = data.chatAvailable ?? data.ChatAvailable ?? true;
-      chatDisabledReason = data.chatDisabledReason || data.ChatDisabledReason || '';
-      if (!chatAvailable && !chatDisabledReason) {
-        chatDisabledReason = 'This session can be viewed, but chat is disabled because its working directory no longer exists.';
+    let active = true;
+
+    (async () => {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        sessionId = params.get('id') || '';
+        if (!sessionId) throw new Error('Missing session id');
+        const resp = await fetch(`/api/session?id=${encodeURIComponent(sessionId)}`, { headers: { Accept: 'application/json' } });
+        if (!resp.ok) throw new Error(resp.status === 404 ? 'Session not found' : 'Failed to load session');
+        const data = await resp.json();
+        if (!active) return;
+        const entries = Array.isArray(data.entries) ? data.entries : [];
+        const header = data.header || {};
+        cwd = header.cwd || '';
+        title = data.name || sessionId;
+        document.title = title;
+        scratchpad = await loadScratchpad(cwd);
+        if (!active) return;
+        const leafId = newestLeaf(entries);
+        payloadBase64 = encodePayload({
+          header,
+          entries,
+          name: title,
+          leafId,
+          systemPrompt: null,
+          tools: null,
+          renderedTools: null,
+          total: Number.isInteger(data.total) ? data.total : entries.length,
+          from: Number.isInteger(data.from) ? data.from : 0,
+          truncated: Number.isInteger(data.total) ? entries.length < data.total : false,
+        });
+        chatAvailable = data.chatAvailable ?? data.ChatAvailable ?? true;
+        chatDisabledReason = data.chatDisabledReason || data.ChatDisabledReason || '';
+        if (!chatAvailable && !chatDisabledReason) {
+          chatDisabledReason = 'This session can be viewed, but chat is disabled because its working directory no longer exists.';
+        }
+        const model = data.model || data.Model || '';
+        const provider = data.modelProvider || data.ModelProvider || '';
+        modelLabel = model && provider ? `${model} @ ${provider}` : model;
+        loading = false;
+        await tick();
+        if (!active) return;
+        runSessionApp({ target: window });
+        applyLazyHighlighting(document);
+      } catch (err) {
+        if (!active) return;
+        error = err?.message || 'Failed to load session';
+        loading = false;
       }
-      const model = data.model || data.Model || '';
-      const provider = data.modelProvider || data.ModelProvider || '';
-      modelLabel = model && provider ? `${model} @ ${provider}` : model;
-      loading = false;
-      await tick();
-      runSessionApp({ target: window });
-      applyLazyHighlighting(document);
-    } catch (err) {
-      error = err?.message || 'Failed to load session';
-      loading = false;
-    }
+    })();
+
     return () => {
+      active = false;
       document.title = previousTitle;
     };
   });
