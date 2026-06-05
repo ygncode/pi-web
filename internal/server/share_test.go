@@ -48,6 +48,36 @@ func TestHandleShareRejectsGet(t *testing.T) {
 	}
 }
 
+func TestHandleSharePreviewReturnsHTMLWithoutGist(t *testing.T) {
+	runner := &fakeShareRunner{}
+	s, _ := newShareTestServer(t, runner)
+	req := httptest.NewRequest(http.MethodGet, "/share?id=session.jsonl&preview=1", nil)
+	rec := httptest.NewRecorder()
+	s.handleShare(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %q", rec.Code, rec.Body.String())
+	}
+	if ct := rec.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Fatalf("content-type = %q, want text/html", ct)
+	}
+	if !strings.Contains(rec.Body.String(), "<html>") {
+		t.Fatalf("body missing rendered export HTML: %q", rec.Body.String())
+	}
+	if runner.createCalled {
+		t.Fatal("preview must not create a gist")
+	}
+}
+
+func TestHandleSharePreviewRequiresID(t *testing.T) {
+	s, _ := newShareTestServer(t, &fakeShareRunner{})
+	req := httptest.NewRequest(http.MethodGet, "/share?preview=1", nil)
+	rec := httptest.NewRecorder()
+	s.handleShare(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
+	}
+}
+
 func TestHandleShareRequiresID(t *testing.T) {
 	s, _ := newShareTestServer(t, &fakeShareRunner{})
 	req := httptest.NewRequest(http.MethodPost, "/share", nil)

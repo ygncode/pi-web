@@ -60,12 +60,35 @@ type Dependencies struct {
 }
 
 func Handle(w http.ResponseWriter, r *http.Request, deps Dependencies) {
+	id := r.URL.Query().Get("id")
+
+	// Local preview: render and return the export HTML directly, skipping the
+	// GitHub gist round-trip entirely. Lets you eyeball a snapshot before
+	// sharing, and gives tests a network-free way to load the real exported page
+	// (e.g. inside a sandboxed iframe). GET-only; no gh required.
+	if r.URL.Query().Get("preview") == "1" {
+		if r.Method != http.MethodGet {
+			writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
+			return
+		}
+		if id == "" {
+			writeJSONError(w, http.StatusBadRequest, "missing id")
+			return
+		}
+		html, ok := renderExportHTML(w, r, deps, id)
+		if !ok {
+			return
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		_, _ = w.Write([]byte(html))
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
 
-	id := r.URL.Query().Get("id")
 	if id == "" {
 		writeJSONError(w, http.StatusBadRequest, "missing id")
 		return
@@ -90,18 +113,8 @@ func Handle(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		return
 	}
 
-	resolved, err := deps.Resolve(id)
-	if err != nil {
-		writeJSONError(w, http.StatusNotFound, "session not found")
-		return
-	}
-	theme := "dark"
-	if cookie, err := r.Cookie("pi-web-theme"); err == nil {
-		theme = cookie.Value
-	}
-	html := deps.RenderExport(resolved, theme)
-	if html == "" {
-		writeJSONError(w, http.StatusNotFound, "session not found")
+	html, ok := renderExportHTML(w, r, deps, id)
+	if !ok {
 		return
 	}
 
@@ -134,6 +147,26 @@ func Handle(w http.ResponseWriter, r *http.Request, deps Dependencies) {
 		"gistId":     gistId,
 		"previewUrl": "https://pi.dev/session/#" + gistId,
 	})
+}
+
+// renderExportHTML resolves the session and renders its self-contained export
+// snapshot. On any failure it writes the JSON error response and returns ok=false.
+func renderExportHTML(w http.ResponseWriter, r *http.Request, deps Dependencies, id string) (string, bool) {
+	resolved, err := deps.Resolve(id)
+	if err != nil {
+		writeJSONError(w, http.StatusNotFound, "session not found")
+		return "", false
+	}
+	theme := "dark"
+	if cookie, err := r.Cookie("pi-web-theme"); err == nil {
+		theme = cookie.Value
+	}
+	html := deps.RenderExport(resolved, theme)
+	if html == "" {
+		writeJSONError(w, http.StatusNotFound, "session not found")
+		return "", false
+	}
+	return html, true
 }
 
 func writeJSONError(w http.ResponseWriter, status int, message string) {

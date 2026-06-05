@@ -46,10 +46,33 @@ import * as searchFiltersApi from '../session/ui/search-filters.js';
 import { setupSessionUi } from '../session/ui/session-ui-runner.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 
+// In a sandboxed iframe (e.g. a srcdoc preview without `allow-same-origin`),
+// even *reading* the `localStorage` property throws SecurityError — which would
+// abort the whole bootstrap and leave a blank page. A static snapshot has
+// nothing meaningful to persist, so fall back to an in-memory shim. Returning a
+// shim (never undefined) also keeps the shared modules off their
+// `globalThis.localStorage` default, which would throw the same way.
+function safeLocalStorage(target) {
+  try {
+    const ls = target.localStorage;
+    if (ls) return ls;
+  } catch {
+    /* sandboxed: fall through to the in-memory shim */
+  }
+  const mem = new Map();
+  return {
+    getItem: (key) => (mem.has(key) ? mem.get(key) : null),
+    setItem: (key, value) => { mem.set(key, String(value)); },
+    removeItem: (key) => { mem.delete(key); },
+    clear: () => { mem.clear(); },
+  };
+}
+
 export function runExportApp({ target = window } = {}) {
   const documentImpl = target.document;
   const marked = target.marked;
   const hljs = target.hljs || null;
+  const storage = safeLocalStorage(target);
 
   const dataModel = loadSessionData({
     documentImpl,
@@ -133,7 +156,7 @@ export function runExportApp({ target = window } = {}) {
   const ui = setupSessionUi({
     documentImpl,
     windowImpl: target,
-    storage: target.localStorage,
+    storage,
     marked,
     hljs,
     escapeHtml: sessionFormat.escapeHtml,
