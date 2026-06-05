@@ -61,7 +61,7 @@ func TestPrepareSessionPageData_SmallSessionNotTruncated(t *testing.T) {
 }
 
 func TestPrepareSessionPageData_LargeSessionTailEmbedded(t *testing.T) {
-	const n = LargeSessionThreshold + 500
+	n := LargeSessionThreshold + 500
 	sess := sessionWithNEntries(n)
 	dataBase64, _, _ := prepareSessionPageData(sess, "")
 
@@ -90,7 +90,7 @@ func TestPrepareSessionPageData_LargeSessionTailEmbedded(t *testing.T) {
 }
 
 func TestPrepareSessionPageData_LeafIDStillTailWhenTruncated(t *testing.T) {
-	const n = LargeSessionThreshold + 100
+	n := LargeSessionThreshold + 100
 	sess := sessionWithNEntries(n)
 	dataBase64, _, _ := prepareSessionPageData(sess, "")
 
