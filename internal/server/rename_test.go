@@ -67,6 +67,18 @@ func TestHandleApiSessionIncludesSessionName(t *testing.T) {
 	if payload["name"] != "Live Title" {
 		t.Fatalf("name = %#v, want Live Title", payload["name"])
 	}
+	if payload["chatAvailable"] != true {
+		t.Fatalf("chatAvailable = %#v, want true", payload["chatAvailable"])
+	}
+	if _, ok := payload["chatDisabledReason"]; !ok {
+		t.Fatal("payload missing chatDisabledReason")
+	}
+	if _, ok := payload["model"]; !ok {
+		t.Fatal("payload missing model")
+	}
+	if _, ok := payload["modelProvider"]; !ok {
+		t.Fatal("payload missing modelProvider")
+	}
 }
 
 func TestHandleRenameSessionRejectsEmptyName(t *testing.T) {

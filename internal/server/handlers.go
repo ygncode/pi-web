@@ -271,11 +271,15 @@ func (s *Server) handleApiSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, 0, map[string]any{
-		"header":  resolved.Session.Header,
-		"entries": entries,
-		"name":    resolved.Session.Name,
-		"total":   total,
-		"from":    from,
+		"header":             resolved.Session.Header,
+		"entries":            entries,
+		"name":               resolved.Session.Name,
+		"total":              total,
+		"from":               from,
+		"chatAvailable":      resolved.Session.ChatAvailable || resolved.Session.ChatDisabledReason == "",
+		"chatDisabledReason": resolved.Session.ChatDisabledReason,
+		"model":              resolved.Session.Model,
+		"modelProvider":      resolved.Session.ModelProvider,
 	})
 }
 
