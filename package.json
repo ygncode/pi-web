@@ -15,6 +15,7 @@
   },
   "scripts": {
     "postinstall": "bash install.sh",
+    "preuninstall": "bash uninstall.sh",
     "test:extensions": "vitest run --config tests/extensions/vitest.config.ts"
   },
   "dependencies": {
