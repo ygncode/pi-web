@@ -35,19 +35,29 @@ func newFileWalkCache(now func() time.Time) *fileWalkCache {
 	return &fileWalkCache{ttl: fileWalkTTL, now: now, entries: map[string]fileWalkRecord{}}
 }
 
-// get returns the cached listing for cwd, walking via fn on a miss or expiry.
-func (c *fileWalkCache) get(cwd string, fn func() ([]files.Entry, error)) ([]files.Entry, error) {
+// get returns the cached listing for key, listing via fn on a miss or expiry.
+func (c *fileWalkCache) get(key string, fn func() ([]files.Entry, error)) ([]files.Entry, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if rec, ok := c.entries[cwd]; ok && c.now().Before(rec.expires) {
+	if rec, ok := c.entries[key]; ok && c.now().Before(rec.expires) {
 		return rec.list, nil
 	}
 	list, err := fn()
 	if err != nil {
 		return nil, err
 	}
-	c.entries[cwd] = fileWalkRecord{list: list, expires: c.now().Add(c.ttl)}
+	c.entries[key] = fileWalkRecord{list: list, expires: c.now().Add(c.ttl)}
 	return list, nil
+}
+
+// fileWalkKey namespaces a cached listing by cwd, scope, and strategy so a
+// shallow TopLevel and a deep WalkScoped of the same directory don't collide.
+func fileWalkKey(cwd, scope string, deep bool) string {
+	mode := "top"
+	if deep {
+		mode = "walk"
+	}
+	return mode + "\x00" + cwd + "\x00" + scope
 }
 
 func (s *Server) fileWalkCache() *fileWalkCache {
@@ -72,8 +82,22 @@ func (s *Server) handleApiFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	entries, err := s.fileWalkCache().get(cwd, func() ([]files.Entry, error) {
-		return files.Walk(cwd, files.Options{})
+	query := r.URL.Query().Get("q")
+	scope, term := files.SplitQuery(query)
+
+	// Cheap path: while the user is browsing or has typed only a character or
+	// two, list just the immediate children of the (scoped) directory — one
+	// ReadDir, no recursion. Only a longer term triggers a recursive walk, and
+	// only of that scope's subtree. This keeps the common case light on small
+	// hardware. Cache key distinguishes shallow vs deep and the scope so the two
+	// listings never clobber each other.
+	deep := len(term) >= files.DeepQueryThreshold
+	key := fileWalkKey(cwd, scope, deep)
+	entries, err := s.fileWalkCache().get(key, func() ([]files.Entry, error) {
+		if deep {
+			return files.WalkScoped(cwd, scope, files.Options{})
+		}
+		return files.TopLevel(cwd, scope)
 	})
 	if err != nil {
 		if errors.Is(err, files.ErrNotDir) {
@@ -84,6 +108,6 @@ func (s *Server) handleApiFiles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ranked := files.Rank(entries, r.URL.Query().Get("q"), 0)
+	ranked := files.Rank(entries, term, 0)
 	writeJSON(w, 0, map[string]any{"files": ranked})
 }

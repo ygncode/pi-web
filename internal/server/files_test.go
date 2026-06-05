@@ -74,6 +74,34 @@ func TestHandleApiFiles_EmptyQueryLists(t *testing.T) {
 	}
 }
 
+func TestHandleApiFiles_ShortQueryStaysShallow(t *testing.T) {
+	// A nested match must not surface for an empty or single-char query: those
+	// only list immediate children, avoiding a recursive walk.
+	s, _ := newFilesTestServer(t, "app.js", "deep/appendix.js")
+	for _, q := range []string{"", "a"} {
+		got := decodeFiles(t, getFiles(t, s, q))
+		for _, f := range got {
+			if f["path"] == "deep/appendix.js" {
+				t.Fatalf("query %q recursed into nested file: %v", q, got)
+			}
+		}
+	}
+}
+
+func TestHandleApiFiles_LongQueryGoesDeep(t *testing.T) {
+	s, _ := newFilesTestServer(t, "deep/nested/appendix.js", "top.txt")
+	got := decodeFiles(t, getFiles(t, s, "appendix"))
+	found := false
+	for _, f := range got {
+		if f["path"] == "deep/nested/appendix.js" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("long query should recurse to nested match, got %v", got)
+	}
+}
+
 func TestHandleApiFiles_MethodNotAllowed(t *testing.T) {
 	s, _ := newFilesTestServer(t)
 	req := httptest.NewRequest(http.MethodPost, "/api/files?id=s.jsonl", nil)

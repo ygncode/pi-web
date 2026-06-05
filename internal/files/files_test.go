@@ -147,9 +147,9 @@ func TestRankMaxResults(t *testing.T) {
 	}
 }
 
-func TestWalkMaxDepth(t *testing.T) {
+func TestWalkScopedMaxDepth(t *testing.T) {
 	root := seedTree(t, "a/b/c/d/deep.txt", "shallow.txt")
-	entries, err := Walk(root, Options{MaxDepth: 1})
+	entries, err := WalkScoped(root, "", Options{MaxDepth: 1})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -160,18 +160,72 @@ func TestWalkMaxDepth(t *testing.T) {
 	}
 }
 
-func TestWalkMaxEntries(t *testing.T) {
+func TestWalkScopedMaxEntries(t *testing.T) {
 	var seed []string
 	for i := 0; i < 30; i++ {
 		seed = append(seed, "f"+string(rune('a'+i))+".txt")
 	}
 	root := seedTree(t, seed...)
-	entries, err := Walk(root, Options{MaxEntries: 7})
+	entries, err := WalkScoped(root, "", Options{MaxEntries: 7})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(entries) > 7 {
 		t.Fatalf("MaxEntries=7 not honored, got %d", len(entries))
+	}
+}
+
+func TestTopLevelIsShallow(t *testing.T) {
+	root := seedTree(t, "a.txt", "sub/deep.txt", "node_modules/x/y.js")
+	entries, err := TopLevel(root, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := paths(entries)
+	// Only immediate children: a.txt and the sub/ dir. Never the nested file or
+	// a heavy dir.
+	if !contains(got, "a.txt") || !contains(got, "sub") {
+		t.Fatalf("want a.txt and sub, got %v", got)
+	}
+	for _, p := range got {
+		if strings.Contains(p, "/") || strings.HasPrefix(p, "node_modules") {
+			t.Fatalf("TopLevel returned a non-top-level or heavy entry: %v", got)
+		}
+	}
+}
+
+func TestTopLevelScoped(t *testing.T) {
+	root := seedTree(t, "src/a.go", "src/inner/b.go", "other/c.go")
+	got := paths(mustTopLevel(t, root, "src"))
+	if !contains(got, "src/a.go") || !contains(got, "src/inner") {
+		t.Fatalf("want src/a.go and src/inner, got %v", got)
+	}
+	if contains(got, "src/inner/b.go") {
+		t.Fatalf("TopLevel should not recurse into src/inner: %v", got)
+	}
+	if contains(got, "other/c.go") {
+		t.Fatalf("scoped TopLevel leaked another dir: %v", got)
+	}
+}
+
+func TestListShortQueryStaysShallow(t *testing.T) {
+	// A single-character term must not trigger a recursive walk: a deeply nested
+	// match should be absent, but a matching top-level entry present.
+	root := seedTree(t, "app.go", "deep/appendix.go")
+	got := paths(mustList(t, root, "a"))
+	if !contains(got, "app.go") {
+		t.Fatalf("want top-level app.go for short query, got %v", got)
+	}
+	if contains(got, "deep/appendix.go") {
+		t.Fatalf("short query must not recurse: %v", got)
+	}
+}
+
+func TestListLongQueryGoesDeep(t *testing.T) {
+	root := seedTree(t, "deep/nested/appendix.go", "top.txt")
+	got := paths(mustList(t, root, "appendix"))
+	if !contains(got, "deep/nested/appendix.go") {
+		t.Fatalf("long query should recurse to find nested match, got %v", got)
 	}
 }
 
@@ -234,9 +288,9 @@ func TestSplitQuery(t *testing.T) {
 		{"", "", ""},
 	}
 	for _, c := range cases {
-		scope, term := splitQuery(c.in)
+		scope, term := SplitQuery(c.in)
 		if scope != c.scope || term != c.term {
-			t.Errorf("splitQuery(%q)=(%q,%q) want (%q,%q)", c.in, scope, term, c.scope, c.term)
+			t.Errorf("SplitQuery(%q)=(%q,%q) want (%q,%q)", c.in, scope, term, c.scope, c.term)
 		}
 	}
 }
@@ -247,6 +301,19 @@ func MustList(t *testing.T, cwd, query string) []Entry {
 	got, err := List(cwd, query, 0)
 	if err != nil {
 		t.Fatalf("List(%q,%q): %v", cwd, query, err)
+	}
+	return got
+}
+
+// mustList is the lowercase alias used by newer tests.
+func mustList(t *testing.T, cwd, query string) []Entry { return MustList(t, cwd, query) }
+
+// mustTopLevel runs TopLevel and fails the test on error.
+func mustTopLevel(t *testing.T, cwd, scope string) []Entry {
+	t.Helper()
+	got, err := TopLevel(cwd, scope)
+	if err != nil {
+		t.Fatalf("TopLevel(%q,%q): %v", cwd, scope, err)
 	}
 	return got
 }

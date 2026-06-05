@@ -45,12 +45,16 @@ test.describe("@mention path autocomplete (real cwd)", () => {
 
     const popup = page.locator("#pi-chat-mention-popup");
     await expect(popup).toBeVisible();
-    // An empty query lists everything under cwd: app.js, app.test.js, README.md,
-    // lib/ (dir), and lib/util.js — five entries.
-    await expect(page.locator("#pi-chat-mention-popup .slash-item")).toHaveCount(5);
+    // An empty query lists only the immediate (top-level) children — app.js,
+    // app.test.js, README.md, lib/ (dir) — and never recurses into lib/, so
+    // lib/util.js is absent. Four entries.
+    await expect(page.locator("#pi-chat-mention-popup .slash-item")).toHaveCount(4);
     await expect(
       page.locator('#pi-chat-mention-popup .slash-item[data-insert="lib"]'),
     ).toBeVisible();
+    await expect(
+      page.locator('#pi-chat-mention-popup .slash-item[data-insert="lib/util.js"]'),
+    ).toHaveCount(0);
   });
 
   test("filters as the query narrows", async ({

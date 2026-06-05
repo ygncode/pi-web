@@ -1,15 +1,21 @@
 // Package files provides a bounded, read-only directory listing for the chat
-// composer's @mention autocomplete. It walks a session's working directory and
-// ranks files and folders against a query.
+// composer's @mention autocomplete. It lists files and folders under a session's
+// working directory and ranks them against a query.
 //
-// The walk is deliberately bounded on every axis (entries collected, entries
-// scanned, recursion depth) and skips heavy build/VCS directories, so a single
-// request can never fan out across a giant tree. Symlinks are never followed,
-// which both bounds traversal and guarantees results stay inside cwd.
+// Two listing strategies keep this cheap on small hardware (e.g. Raspberry Pi):
 //
-// Walk (the filesystem hit) and Rank (pure scoring) are separate so a caller
-// can walk a cwd once, cache the result, and re-rank it cheaply as the user
-// types — no filesystem access per keystroke.
+//   - TopLevel: a single os.ReadDir of one directory (depth 1). Used for the
+//     common "just opened the popup" / short-query case. It is O(children of one
+//     dir) — no recursion.
+//   - WalkScoped: a bounded recursive walk of a subtree. Used only once the user
+//     has typed a real search term (DeepQueryThreshold+ characters), so the
+//     expensive cross-tree scan never runs while the user is just browsing.
+//
+// Both skip heavy build/VCS directories, never follow symlinks (which bounds
+// traversal and keeps results inside cwd), and produce cwd-relative slash paths.
+// WalkScoped is additionally capped on entries collected, entries scanned, and
+// recursion depth. Listing (filesystem) and Rank (pure scoring) are separate so
+// a caller can list once, cache it, and re-rank cheaply as the user types.
 package files
 
 import (
@@ -28,11 +34,11 @@ type Entry struct {
 	IsDir bool   `json:"isDir"`
 }
 
-// Options bounds a Walk. Zero values fall back to the defaults below.
+// Options bounds a WalkScoped. Zero values fall back to the defaults below.
 type Options struct {
 	MaxEntries int // entries collected before the walk stops
 	MaxScanned int // directory entries visited before the walk gives up
-	MaxDepth   int // recursion depth below cwd
+	MaxDepth   int // recursion depth below the walk root
 }
 
 const (
@@ -43,13 +49,18 @@ const (
 	// DefaultMaxResults is the number of ranked entries Rank returns when the
 	// caller passes a non-positive limit.
 	DefaultMaxResults = 20
+
+	// DeepQueryThreshold is the trailing-term length at which listing switches
+	// from a cheap one-directory TopLevel to a recursive WalkScoped. Below it,
+	// the popup only shows immediate children of the (scoped) directory.
+	DeepQueryThreshold = 2
 )
 
 // ErrNotDir is returned when cwd is empty or does not resolve to a directory.
 var ErrNotDir = errors.New("cwd is not a directory")
 
-// skipDirs are never descended into: large, machine-generated, or VCS internals
-// that no one wants to @mention and that would blow the scan budget.
+// skipDirs are never listed or descended into: large, machine-generated, or VCS
+// internals that no one wants to @mention and that would blow the scan budget.
 var skipDirs = map[string]bool{
 	".git":          true,
 	"node_modules":  true,
@@ -85,30 +96,85 @@ func (o Options) withDefaults() Options {
 	return o
 }
 
-// Walk returns a bounded, unranked listing of files and folders under cwd,
-// sorted by path. Heavy directories are skipped, symlinks are not followed, and
-// the walk stops once any budget is hit. The result is suitable for caching and
-// repeated Rank calls.
-func Walk(cwd string, opts Options) ([]Entry, error) {
-	opts = opts.withDefaults()
+// resolveRoot validates cwd is a directory and returns the listing root
+// (cwd joined with the optional scope), ensuring the scope cannot escape cwd.
+func resolveRoot(cwd, scope string) (string, error) {
 	if cwd == "" {
-		return nil, ErrNotDir
+		return "", ErrNotDir
 	}
 	if info, err := os.Stat(cwd); err != nil || !info.IsDir() {
-		return nil, ErrNotDir
+		return "", ErrNotDir
+	}
+	if scope == "" {
+		return cwd, nil
+	}
+	root := filepath.Join(cwd, filepath.FromSlash(scope))
+	if !withinRoot(cwd, root) {
+		return "", ErrNotDir
+	}
+	return root, nil
+}
+
+// relToCwd converts an absolute path under cwd to a cwd-relative slash path,
+// returning ok=false if it would escape cwd.
+func relToCwd(cwd, path string) (string, bool) {
+	rel, err := filepath.Rel(cwd, path)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return "", false
+	}
+	return filepath.ToSlash(rel), true
+}
+
+// TopLevel lists the immediate children (depth 1) of cwd/scope with paths
+// relative to cwd. It is a single os.ReadDir — no recursion — so it stays cheap
+// even on large trees. Heavy directories are omitted. A scope that points at a
+// missing path or a file yields an empty list rather than an error.
+func TopLevel(cwd, scope string) ([]Entry, error) {
+	root, err := resolveRoot(cwd, scope)
+	if err != nil {
+		return nil, err
+	}
+	dirents, err := os.ReadDir(root)
+	if err != nil {
+		return []Entry{}, nil // scope points at a file or nothing to list
+	}
+	out := make([]Entry, 0, len(dirents))
+	for _, d := range dirents {
+		if d.IsDir() && skipDirs[d.Name()] {
+			continue
+		}
+		rel, ok := relToCwd(cwd, filepath.Join(root, d.Name()))
+		if !ok {
+			continue
+		}
+		out = append(out, Entry{Path: rel, IsDir: d.IsDir()})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Path < out[j].Path })
+	return out, nil
+}
+
+// WalkScoped returns a bounded, unranked recursive listing of files and folders
+// under cwd/scope, with paths relative to cwd, sorted by path. Heavy directories
+// are skipped, symlinks are not followed, and the walk stops once any budget is
+// hit. The result is suitable for caching and repeated Rank calls.
+func WalkScoped(cwd, scope string, opts Options) ([]Entry, error) {
+	opts = opts.withDefaults()
+	root, err := resolveRoot(cwd, scope)
+	if err != nil {
+		return nil, err
 	}
 
 	var out []Entry
 	scanned := 0
 
-	walkErr := filepath.WalkDir(cwd, func(path string, d fs.DirEntry, err error) error {
+	walkErr := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			if d != nil && d.IsDir() {
 				return fs.SkipDir // unreadable subtree: skip it, don't abort
 			}
 			return nil
 		}
-		if path == cwd {
+		if path == root {
 			return nil
 		}
 		if scanned >= opts.MaxScanned || len(out) >= opts.MaxEntries {
@@ -120,21 +186,25 @@ func Walk(cwd string, opts Options) ([]Entry, error) {
 			return fs.SkipDir
 		}
 
-		rel, relErr := filepath.Rel(cwd, path)
-		if relErr != nil || strings.HasPrefix(rel, "..") {
-			if d.IsDir() {
-				return fs.SkipDir
+		// Depth is measured from the walk root so a scoped walk isn't penalized
+		// for how deep the scope itself sits under cwd.
+		if rootRel, err := filepath.Rel(root, path); err == nil {
+			if strings.Count(filepath.ToSlash(rootRel), "/")+1 > opts.MaxDepth {
+				if d.IsDir() {
+					return fs.SkipDir
+				}
+				return nil
 			}
-			return nil
-		}
-		if strings.Count(filepath.ToSlash(rel), "/")+1 > opts.MaxDepth {
-			if d.IsDir() {
-				return fs.SkipDir
-			}
-			return nil
 		}
 
-		out = append(out, Entry{Path: filepath.ToSlash(rel), IsDir: d.IsDir()})
+		rel, ok := relToCwd(cwd, path)
+		if !ok {
+			if d.IsDir() {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		out = append(out, Entry{Path: rel, IsDir: d.IsDir()})
 		return nil
 	})
 	if walkErr != nil && !errors.Is(walkErr, errBudgetExhausted) {
@@ -145,19 +215,14 @@ func Walk(cwd string, opts Options) ([]Entry, error) {
 	return out, nil
 }
 
-// Rank filters and scores entries against query and returns the top max matches
-// (DefaultMaxResults when max <= 0). A query may carry a directory scope:
-// "src/foo" only considers entries under src/ and matches "foo" against their
-// basenames; a bare "foo" considers everything. Rank is pure — no I/O — so it is
-// safe to call repeatedly over a cached Walk result.
-func Rank(entries []Entry, query string, max int) []Entry {
+// Rank filters and scores entries against term and returns the top max matches
+// (DefaultMaxResults when max <= 0). Entries are expected to already be scoped
+// (e.g. from TopLevel/WalkScoped of the query's scope dir); Rank matches term
+// against each entry's basename. Rank is pure — no I/O — so it is safe to call
+// repeatedly over a cached listing.
+func Rank(entries []Entry, term string, max int) []Entry {
 	if max <= 0 {
 		max = DefaultMaxResults
-	}
-	scope, term := splitQuery(query)
-	scopePrefix := ""
-	if scope != "" {
-		scopePrefix = scope + "/"
 	}
 
 	type scored struct {
@@ -166,9 +231,6 @@ func Rank(entries []Entry, query string, max int) []Entry {
 	}
 	var matched []scored
 	for _, e := range entries {
-		if scope != "" && e.Path != scope && !strings.HasPrefix(e.Path, scopePrefix) {
-			continue
-		}
 		score := scoreEntry(e.Path, term, e.IsDir)
 		if score <= 0 {
 			continue
@@ -193,19 +255,28 @@ func Rank(entries []Entry, query string, max int) []Entry {
 	return out
 }
 
-// List walks cwd and ranks the result in one call. Convenience for callers that
-// do not cache; the server uses Walk + Rank separately.
+// List lists and ranks cwd against query in one call, picking the cheap
+// TopLevel strategy for short queries and the recursive WalkScoped for longer
+// ones. Convenience for callers that do not cache; the server lists and ranks
+// separately so it can cache the listing.
 func List(cwd, query string, max int) ([]Entry, error) {
-	entries, err := Walk(cwd, Options{})
+	scope, term := SplitQuery(query)
+	var entries []Entry
+	var err error
+	if len(term) < DeepQueryThreshold {
+		entries, err = TopLevel(cwd, scope)
+	} else {
+		entries, err = WalkScoped(cwd, scope, Options{})
+	}
 	if err != nil {
 		return nil, err
 	}
-	return Rank(entries, query, max), nil
+	return Rank(entries, term, max), nil
 }
 
-// splitQuery separates a directory scope from the trailing match term. The term
+// SplitQuery separates a directory scope from the trailing match term. The term
 // is the part after the final slash; everything before it is the scope.
-func splitQuery(query string) (scope, term string) {
+func SplitQuery(query string) (scope, term string) {
 	query = strings.TrimPrefix(query, "/")
 	idx := strings.LastIndex(query, "/")
 	if idx < 0 {
@@ -245,4 +316,13 @@ func scoreEntry(rel, term string, isDir bool) int {
 	default:
 		return 0
 	}
+}
+
+// withinRoot reports whether target is root itself or nested inside it.
+func withinRoot(root, target string) bool {
+	rel, err := filepath.Rel(root, target)
+	if err != nil {
+		return false
+	}
+	return rel == "." || !strings.HasPrefix(rel, "..")
 }
