@@ -61,7 +61,21 @@ func TestExportBundleIsSelfContained(t *testing.T) {
 	if strings.TrimSpace(exportJs) == "" {
 		t.Fatal("embedded export.js is empty — run `npm run build:export` (or `make build`) first")
 	}
-	forbidden := []string{"EventSource", "runLiveReload", "live-reload-runner", "chatComposerRunner"}
+	// Symbols that uniquely identify live-only machinery (SSE, live-reload, the
+	// chat composer, and the tier-3 sidebar panels). If any appears, a shared
+	// (tier-2) component imported a live-only module — fix the import, do not
+	// loosen this list. See docs/dev/svelte-migration-plan.md §6.
+	//
+	// NOTE: "fetch(" and "/api/" are NOT yet forbidden — a pre-existing dead
+	// (host-less) path still pulls them into the bundle. Add them here once the
+	// live-only modules are gone (migration Phase 3 cleanup).
+	forbidden := []string{
+		"EventSource", "WebSocket",
+		"runLiveReload", "live-reload-runner", "live-reload",
+		"chatComposerRunner", "ChatComposer",
+		"ArtifactPanel", "AnnotationLayer",
+		"applyLiveUpdate",
+	}
 	for _, sym := range forbidden {
 		if strings.Contains(exportJs, sym) {
 			t.Fatalf("export bundle contains live-only symbol %q — a live module leaked into the static export graph", sym)
