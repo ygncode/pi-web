@@ -33,12 +33,11 @@ describe('i18n', () => {
     expect(getLocale()).toBe('en');
   });
 
-  it('uses a built-in locale when selected, falling back to English per-key', () => {
+  it('uses a built-in locale when selected', () => {
     localStorage.setItem(LOCALE_KEY, 'es');
-    registerCustomLocales([]); // no-op
     resetI18n();
-    // es.js is empty for now, so everything falls back to English.
-    expect(t('settings.title')).toBe('Settings');
+    expect(t('settings.title')).toBe('Ajustes');
+    expect(t('composer.send')).toBe('Enviar');
   });
 
   it('registers and uses a custom locale from the setting', () => {
