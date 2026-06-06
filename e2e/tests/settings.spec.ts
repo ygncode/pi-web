@@ -1,4 +1,21 @@
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { test, expect } from "../lib/test";
+import { STATE_FILE, type ServerState } from "../lib/paths";
+
+function writeCustomThemeFixture() {
+  const state = JSON.parse(readFileSync(STATE_FILE, "utf8")) as ServerState;
+  const webDir = join(state.agentDir, "pi-web");
+  mkdirSync(webDir, { recursive: true });
+  const css = [
+    `[data-theme="custom"] {`,
+    `  --body-bg: rgb(1, 2, 3);`,
+    `  --surface: rgb(4, 5, 6);`,
+    `  --text: rgb(240, 241, 242);`,
+    `}`,
+  ].join("\n");
+  writeFileSync(join(webDir, "custom-themes.css"), css);
+}
 
 const LAYOUT = '[data-setting="pi-sessions:view-layout"]';
 // Isolated setting that nothing else asserts on, so the round-trip can mutate
@@ -9,6 +26,40 @@ test.describe("settings page", () => {
   test("loads with controls", async ({ page }) => {
     await page.goto("/settings");
     await expect(page.locator(LAYOUT)).toBeVisible();
+  });
+
+  test("loads and applies a custom theme stylesheet", async ({ page }) => {
+    writeCustomThemeFixture();
+
+    const css = await page.request.get("/custom-themes.css");
+    expect(css.ok()).toBeTruthy();
+    expect(css.headers()["content-type"]).toContain("text/css");
+    expect(await css.text()).toContain(`--body-bg: rgb(1, 2, 3)`);
+
+    await page.goto("/settings");
+    const select = page.locator('[data-setting="pi-web-theme"]');
+    await expect(select).toBeVisible();
+
+    if ((await select.inputValue()) === "custom") {
+      const savedDark = page.waitForResponse(
+        (r) => r.url().includes("/api/settings") && r.request().method() === "POST",
+      );
+      await select.selectOption("dark");
+      await savedDark;
+    }
+
+    const savedCustom = page.waitForResponse(
+      (r) => r.url().includes("/api/settings") && r.request().method() === "POST",
+    );
+    await select.selectOption("custom");
+    await savedCustom;
+
+    await expect
+      .poll(() => page.evaluate(() => document.documentElement.dataset.theme))
+      .toBe("custom");
+    await expect
+      .poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor))
+      .toBe("rgb(1, 2, 3)");
   });
 
   // Settings persist in one global server-side store; running this on all 7
