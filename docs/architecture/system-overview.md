@@ -9,14 +9,13 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 | Layer | Technology |
 |-------|------------|
 | Backend | Go 1.25+ |
-| Frontend (index) | Vite + vanilla JS |
-| Frontend (session) | Vite + vanilla JS (Go renders only the HTML shell + initial data) |
-| Static export | Go `html/template` + inlined JS/CSS (self-contained Gist) |
+| Frontend (live app) | Svelte 5 SPA (`web/src/main.js` → `App.svelte`) over vanilla-JS runtime modules, built by Vite; Go serves a single embedded shell (`internal/ui/embedded/app.html`) + injects bootstrap data |
+| Static export | Go `html/template` (`internal/ui/embedded/session.html`) + inlined `export.js`/CSS, built from the same `web/src/session/` modules (self-contained Gist) |
 | Styling | Custom CSS (multi-theme: dark/light/nord/dracula/custom) |
 | Live Updates | Server-Sent Events (SSE) |
 | Chat RPC | JSONL over stdin/stdout via `pi --mode rpc` |
 | Session Storage | JSONL files on disk; pi-web creates new session files and appends `session_info` for browser rename |
-| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads, per-session review annotations, project visibility prefs, and server-backed user settings |
+| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads, per-session review annotations, project visibility prefs, server-backed user settings, and the btw scratch-chat registry |
 | Auth | Token cookie/query/header (optional on localhost) |
 
 ## Component Diagram
@@ -25,16 +24,17 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 ┌──────────────────────────────────────────────────────────────────────────┐
 │                                 Browser                                   │
 │                                                                           │
-│   ┌─────────────┐      ┌─────────────┐      ┌─────────────────────────┐  │
-│   │ Index Page  │      │ Session Page│      │   EventSource Client    │  │
-│   │  /index.js  │      │  (embedded) │      │      /events?id=…       │  │
-│   │  vanilla JS │      │  marked.js  │      │                         │  │
-│   │  highlight  │      │  highlight  │      │  • reload (session)     │  │
-│   │             │      │  chat UI    │      │  • new-session (index)  │  │
-│   │  Search     │      │  Share btn  │      │  • status-delta         │  │
-│   │  New Sess   │      │  Model sel  │      │  • status-snapshot      │  │
-│   │  Run badges │      │  Thinking   │      │                         │  │
-│   └─────────────┘      └─────────────┘      └─────────────────────────┘  │
+│   ┌──────────────────────────────────────┐  ┌─────────────────────────┐  │
+│   │        Svelte 5 SPA (#spa-root)       │  │   EventSource Client    │  │
+│   │  main.js → App.svelte (path router)   │  │      /events?id=…       │  │
+│   │                                       │  │                         │  │
+│   │  / → SessionsPage    (index runtime)  │  │  • reload (session)     │  │
+│   │  /session → SessionPage (viewer +     │  │  • new-session (index)  │  │
+│   │     chat, marked.js, highlight)       │  │  • status-delta         │  │
+│   │  /settings → SettingsPage             │  │  • status-snapshot      │  │
+│   │  /login → LoginPage                   │  │  • annotations, btw…    │  │
+│   │  delegates to web/src/{session,index} │  │                         │  │
+│   └──────────────────────────────────────┘  └─────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────────┘
                                     │
                                     │ HTTP
@@ -53,8 +53,12 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   POST /api/set-thinking-level → handleSetThinkingLevel                  │
 │   POST /api/new-session / fork-session / clone-session                   │
 │   POST /api/rename-session → handleRenameSession                         │
+│   POST /api/label-session → handleLabelSessionEntry                      │
 │   GET  /api/models    →  handleAvailableModels                           │
+│   GET  /api/commands  →  handleCommands       (slash-command palette)    │
 │   GET  /api/worker-status → handleWorkerStatus                           │
+│   GET  /api/btw / POST /api/btw/new → btw scratch-chats (SQLite, SSE)    │
+│   GET  /api/files     →  handleApiFiles       (@mention autocomplete)    │
 │   GET  /api/git/info  / POST /api/git/rename-branch                      │
 │   GET/POST /api/scratchpad → scratchpad (SQLite)                         │
 │   GET/POST/DELETE /api/annotations → review annotations (SQLite, SSE)    │
@@ -67,6 +71,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   GET  /custom-themes.css → handleCustomThemes                           │
 │   /api/push/{vapid,subscribe,unsubscribe}  (web-push, optional)         │
 │   /api/{version,check-update,update,restart} (self-update, optional)    │
+│   GET  /metrics / /api/metrics → worker metrics dashboard (gopsutil)    │
 │   PWA: /manifest.webmanifest, /sw.js, /icon.svg, /cat.webm, …           │
 │   GET  /static/…      →  embedded Vite assets                            │
 │                                                                           │
@@ -131,7 +136,7 @@ name, while pi-web itself continues listening only on localhost.
 ├── session-status/
 │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here
 │   └── …
-├── pi-web.sqlite           ← scratchpads + annotations + project visibility prefs + user settings
+├── pi-web.sqlite           ← scratchpads + annotations + project visibility prefs + user settings + btw registry
 └── pi-web/
     ├── pi-web-state.json   ← server state file
     ├── custom-themes.css   ← optional user custom theme

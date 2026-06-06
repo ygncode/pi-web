@@ -11,4 +11,5 @@ This directory documents the key runtime sequences in pi-web.
 | [artifacts.md](./artifacts.md) | Detecting (path-keyed/edit-aware), rendering, and sandbox-previewing artifacts |
 | [annotations.md](./annotations.md) | Anchoring, persisting, syncing, and sending review notes |
 | [mention-autocomplete.md](./mention-autocomplete.md) | `@`-triggered file/folder path autocomplete in the chat composer |
+| [btw.md](./btw.md) | Throwaway "btw" floating scratch-chats attached to a session page |
 | [share.md](./share.md) | Exporting a session to a private GitHub Gist |

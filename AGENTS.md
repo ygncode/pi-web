@@ -14,6 +14,7 @@ Before making structural changes, read the relevant doc in `docs/`:
 | Working on artifacts | `docs/sequence-flows/artifacts.md` |
 | Working on annotations | `docs/sequence-flows/annotations.md` |
 | Working on the @mention path autocomplete | `docs/sequence-flows/mention-autocomplete.md` |
+| Working on btw floating scratch-chats | `docs/sequence-flows/btw.md` |
 | Working on export/share | `docs/sequence-flows/share.md` |
 | Working on the worker metrics dashboard | `docs/dev/metrics-dashboard.md` |
 | Writing or debugging E2E / browser tests | `docs/dev/e2e-testing.md` |
@@ -33,11 +34,19 @@ The most important doc for frontend work is **`docs/dev/templates-vs-web.md`**. 
 ### Backend (`internal/`)
 | Package | Purpose |
 |---------|---------|
-| `server` | HTTP handlers, SSE plumbing, file watcher, chat orchestration |
-| `sessions` | JSONL parsing, caching, lookup by ID |
+| `server` | HTTP handlers, SSE plumbing, file watcher, chat orchestration (incl. btw scratch-chats, auto-titling, metrics, push) |
+| `sessions` | JSONL parsing, caching, lookup by ID, new-session/fork/clone creation |
 | `auth` | Token middleware (`Authorization: Bearer`, `X-Pi-Token`, `?token=` cookie) |
 | `workers` | Per-session `pi --mode rpc` lifecycle (spawn, reuse, reap, crash recovery) |
 | `rpc` | Subprocess wrapper + streaming previews |
+| `share` | Export a session to a private GitHub Gist via the `gh` CLI (`Runner` interface) |
+| `git` | Low-level git queries used by `/api/git/*` (branch info, rename) |
+| `files` | Bounded filesystem walk backing the `@mention` autocomplete (`GET /api/files`) |
+| `updater` | Self-update version/changelog checks (powers `/api/version`, `/api/check-update`) |
+| `render` | Tiny shared HTTP/render helpers (Vite manifest lookup, JSON responses) |
+| `frontend` | Vite output embedding + manifest parsing + static asset serving |
+| `agentdir` | Resolves the `~/.pi/agent` base directory |
+| `ui` | Live SPA shell + export-snapshot rendering (see Key Files) |
 
 ### Frontend
 
