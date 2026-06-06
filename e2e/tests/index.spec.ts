@@ -25,10 +25,15 @@ test.describe("sessions index", () => {
   test("card links to its session view", async ({ page }) => {
     await page.goto("/");
 
+    // The index re-renders the cards once its initial refresh finishes (marked
+    // by .index-layout-ready). Clicking before that can land on a card that's
+    // replaced mid-click, so the navigation never fires. Wait for it to settle.
+    await page.locator("[data-sessions-content].index-layout-ready").waitFor();
+
     const notes = page.locator(".session-card", { hasText: "Fix the failing unit test" });
     await expect(notes).toHaveAttribute("href", /\/session\?id=/);
 
     await notes.click();
-    await expect(page).toHaveURL(/\/session\?id=/);
+    await expect(page).toHaveURL(/\/session\?id=/, { timeout: 15000 });
   });
 });
