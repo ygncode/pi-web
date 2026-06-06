@@ -8,13 +8,13 @@ Drive your [pi](https://pi.dev) coding agent from any browser on your network �
 ## Screenshots
 
 <div align="center">
-  <img src="assets/desktop-dark-mode.png" alt="Desktop — dark mode" width="90%" /><br />
+  <img src="user-docs/assets/desktop-dark-mode.png" alt="Desktop — dark mode" width="90%" /><br />
   <em>Desktop — dark mode</em>
   <br /><br />
-  <img src="assets/desktop-white-mode.png" alt="Desktop — light mode" width="90%" /><br />
+  <img src="user-docs/assets/desktop-white-mode.png" alt="Desktop — light mode" width="90%" /><br />
   <em>Desktop — light mode</em>
   <br /><br />
-  <img src="assets/mobile-pwa.png" alt="Mobile PWA" width="90%" /><br />
+  <img src="user-docs/assets/mobile-pwa.png" alt="Mobile PWA" width="90%" /><br />
   <em>Mobile PWA</em>
 </div>
 
@@ -50,7 +50,7 @@ That's it — it downloads the matching binary, sets up auto‑start, and regist
 
 Once installed, open `http://127.0.0.1:31415` in your browser. From pi, use `/web` to open the current session in your browser instantly. If Tailscale is running on your machine, pi-web automatically publishes an HTTPS endpoint on your tailnet — use `/remote` from pi to get a QR code and URL for any device on your tailnet.
 
-For manual installs, binary downloads, or building from source, see [docs/install.md](docs/install.md).
+For manual installs, binary downloads, or building from source, see [user-docs/install.md](user-docs/install.md).
 
 ## Pi Integration
 
@@ -85,7 +85,7 @@ To set a token for remote access, create `~/.config/pi-web/env`:
 PI_WEB_TOKEN=your-token-here
 ```
 
-For more details (manual setup, custom ports, non-loopback binds), see [docs/install.md](docs/install.md).
+For more details (manual setup, custom ports, non-loopback binds), see [user-docs/install.md](user-docs/install.md).
 
 ## Development
 
