@@ -7,6 +7,7 @@
  * artifact panel host. Highlights are re-applied whenever a scope re-renders
  * (navigation, live reload, artifact selection) via a MutationObserver.
  */
+import { t } from '../../shared/i18n.js';
 import { getSelectionInfo, applyHighlights } from './annotation-range.js';
 
 export function createAnnotationLayer({
@@ -81,19 +82,20 @@ export function createAnnotationLayer({
   // ── Notes list ────────────────────────────────────────────────────────────
   function renderList() {
     if (annotations.length === 0) {
-      listHost.innerHTML = '<div class="annotation-empty">Select text in a message or artifact to add a note.</div>';
+      listHost.innerHTML = `<div class="annotation-empty">${esc(t('annotation.empty'))}</div>`;
       return;
     }
     let html = '<div class="annotation-list">';
     for (const a of annotations) {
       html += `<div class="annotation-item" data-annotation-id="${esc(a.id)}" data-anchor-id="${esc(a.anchorId)}">`
-        + `<button type="button" class="annotation-delete" data-action="delete" title="Delete note">×</button>`
+        + `<button type="button" class="annotation-delete" data-action="delete" title="${esc(t('annotation.deleteNote'))}">×</button>`
         + (a.original ? `<div class="annotation-quote">${esc(a.original)}</div>` : '')
         + (a.text ? `<div class="annotation-note">${esc(a.text)}</div>` : '')
         + `</div>`;
     }
     html += '</div>';
-    html += `<div class="annotation-footer"><button type="button" class="annotation-send" data-action="send-to-pi">Send ${annotations.length} note${annotations.length === 1 ? '' : 's'} to pi</button></div>`;
+    const noteNoun = annotations.length === 1 ? t('annotation.noteOne') : t('annotation.noteMany');
+    html += `<div class="annotation-footer"><button type="button" class="annotation-send" data-action="send-to-pi">${esc(t('annotation.sendNotesToPi', { count: annotations.length, noun: noteNoun }))}</button></div>`;
     listHost.innerHTML = html;
   }
 
@@ -219,12 +221,12 @@ export function createAnnotationLayer({
   noteModal.hidden = true;
   noteModal.innerHTML =
     '<div class="annotation-note-backdrop" data-action="cancel-note"></div>'
-    + '<div class="annotation-note-card" role="dialog" aria-modal="true" aria-label="Add a note">'
+    + `<div class="annotation-note-card" role="dialog" aria-modal="true" aria-label="${esc(t('annotation.addNote'))}">`
     + '<div class="annotation-note-quote"></div>'
-    + '<textarea class="annotation-note-input" placeholder="Add a note…" rows="3"></textarea>'
+    + `<textarea class="annotation-note-input" placeholder="${esc(t('annotation.addNotePlaceholder'))}" rows="3"></textarea>`
     + '<div class="annotation-note-actions">'
-    + '<button type="button" class="annotation-note-cancel" data-action="cancel-note">Cancel</button>'
-    + '<button type="button" class="annotation-note-save" data-action="save-note">Save note</button>'
+    + `<button type="button" class="annotation-note-cancel" data-action="cancel-note">${esc(t('annotation.cancel'))}</button>`
+    + `<button type="button" class="annotation-note-save" data-action="save-note">${esc(t('annotation.saveNote'))}</button>`
     + '</div></div>';
   documentImpl.body.appendChild(noteModal);
   const noteInput = noteModal.querySelector('.annotation-note-input');
@@ -248,7 +250,7 @@ export function createAnnotationLayer({
   }
 
   function showCommentButton(rect) {
-    popover.innerHTML = '<button type="button" class="annotation-pop-btn" data-action="start-comment">Comment</button>';
+    popover.innerHTML = `<button type="button" class="annotation-pop-btn" data-action="start-comment">${esc(t('annotation.comment'))}</button>`;
     positionPopover(rect);
     popover.hidden = false;
   }

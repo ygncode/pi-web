@@ -74,11 +74,10 @@ export function createArtifactPanel({
   function listHtml() {
     if (artifacts.length === 0) {
       if (hiddenCount > 0) {
-        const noun = hiddenCount === 1 ? 'artifact' : 'artifacts';
-        return `<div class="artifact-empty">${hiddenCount} ${noun} hidden by your filter — `
-          + `adjust in <a href="/settings">Settings</a>.</div>`;
+        const noun = hiddenCount === 1 ? t('artifact.nounOne') : t('artifact.nounMany');
+        return `<div class="artifact-empty">${t('artifact.emptyHidden', { count: hiddenCount, noun })}</div>`;
       }
-      return '<div class="artifact-empty">No artifacts in this session yet.</div>';
+      return `<div class="artifact-empty">${escapeHtml(t('artifact.emptyNone'))}</div>`;
     }
     let html = '<div class="artifact-list" role="tablist">';
     for (const a of artifacts) {
