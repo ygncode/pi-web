@@ -39,6 +39,8 @@ func (s *Server) handleAppShell(w http.ResponseWriter, r *http.Request, bootstra
 // listed here — it stays in localStorage only.
 var settingDefaults = map[string]string{
 	"pi-web-theme":                 "dark",
+	"pi-web:v1:locale":             "en",
+	"pi-web:v1:custom-languages":   "",
 	"pi-web:v1:font-ui":            "mono",
 	"pi-web:v1:font-content":       "mono",
 	"pi-web:v1:font-ui-size":       "12",

@@ -1,6 +1,7 @@
 import { configureSettingsSync, hydrateSettings, writeSetting } from '../shared/settings-store.js';
 import { applyTheme } from '../shared/theme.js';
 import { applyFonts } from '../shared/fonts.js';
+import { CUSTOM_LANGUAGES_KEY, englishTemplate } from '../shared/i18n.js';
 import {
   fetchAvailableSounds,
   getSelectedSound,
@@ -82,6 +83,12 @@ export async function runSettingsPage({
       if (el.dataset.settingTheme !== undefined) {
         // applyTheme writes through (theme + cookie) and updates the DOM live.
         applyTheme(windowImpl, documentImpl, el.value);
+      } else if (el.dataset.settingLocale !== undefined) {
+        // Language affects strings baked into both Svelte and once-rendered
+        // vanilla-JS DOM, so reload to re-render everything in the new locale.
+        writeSetting(key, el.value, { storage });
+        windowImpl.location.reload();
+        return;
       } else if (el.dataset.settingSize !== undefined) {
         writeSetting(key, el.value, { storage });
         applyFonts(documentImpl, el.dataset.settingSize === 'ui'
@@ -100,6 +107,8 @@ export async function runSettingsPage({
       flashSaved();
     });
   }
+
+  setupCustomLanguages({ documentImpl, windowImpl, storage });
 
   // Font family controls (separate from the generic loop): a curated select
   // plus "Detect installed fonts…" (Local Font Access API) and "Custom…" paths.
@@ -216,6 +225,77 @@ export async function runSettingsPage({
       await registerPushSubscription({ windowImpl, fetchImpl: fetchImpl || fetch });
     }
   }
+}
+
+// Custom-language editor: a JSON textarea backed by pi-web:v1:custom-languages,
+// a "Copy English keys" template button, and a "Save & apply" button that
+// validates the JSON, persists it, and reloads so the registry + picker refresh.
+export function setupCustomLanguages({ documentImpl = document, windowImpl = window, storage } = {}) {
+  const textarea = documentImpl.querySelector('[data-custom-languages]');
+  if (!textarea) return;
+  const copyBtn = documentImpl.querySelector('[data-copy-en-keys]');
+  const saveBtn = documentImpl.querySelector('[data-save-custom-languages]');
+  const status = documentImpl.querySelector('[data-custom-languages-status]');
+
+  function showStatus(message, isError) {
+    if (!status) return;
+    status.textContent = message;
+    status.hidden = !message;
+    status.classList.toggle('is-error', !!isError);
+  }
+
+  // Hydrate from storage, pretty-printed when it parses.
+  let stored = '';
+  try {
+    stored = storage?.getItem(CUSTOM_LANGUAGES_KEY) || '';
+  } catch {
+    stored = '';
+  }
+  if (stored) {
+    try {
+      textarea.value = JSON.stringify(JSON.parse(stored), null, 2);
+    } catch {
+      textarea.value = stored;
+    }
+  }
+
+  copyBtn?.addEventListener('click', async () => {
+    const template = JSON.stringify(
+      [{ code: 'xx', label: 'My Language', strings: englishTemplate() }],
+      null,
+      2,
+    );
+    try {
+      await windowImpl.navigator?.clipboard?.writeText(template);
+      showStatus('Copied an English template to the clipboard.', false);
+    } catch {
+      // Clipboard unavailable: drop it into the textarea so it's still usable.
+      textarea.value = template;
+      showStatus('Clipboard unavailable — inserted the template below.', false);
+    }
+  });
+
+  saveBtn?.addEventListener('click', () => {
+    const raw = textarea.value.trim();
+    if (raw === '') {
+      writeSetting(CUSTOM_LANGUAGES_KEY, '', { storage });
+      windowImpl.location.reload();
+      return;
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      showStatus('Invalid JSON: ' + (err?.message || 'parse error'), true);
+      return;
+    }
+    if (!Array.isArray(parsed) || parsed.some((l) => !l || typeof l.code !== 'string' || !l.code.trim())) {
+      showStatus('Expected an array of { "code", "label", "strings" } objects.', true);
+      return;
+    }
+    writeSetting(CUSTOM_LANGUAGES_KEY, JSON.stringify(parsed), { storage });
+    windowImpl.location.reload();
+  });
 }
 
 // Wire the back link so it returns to the previous in-app page (a session

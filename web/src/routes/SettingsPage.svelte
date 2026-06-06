@@ -4,6 +4,7 @@
   import AppearanceSettings from '../components/settings/AppearanceSettings.svelte';
   import ArtifactSettings from '../components/settings/ArtifactSettings.svelte';
   import CatGatekeeperSettings from '../components/settings/CatGatekeeperSettings.svelte';
+  import LanguageSettings from '../components/settings/LanguageSettings.svelte';
   import NotificationSettings from '../components/settings/NotificationSettings.svelte';
   import SessionsListSettings from '../components/settings/SessionsListSettings.svelte';
   import SessionTitleSettings from '../components/settings/SessionTitleSettings.svelte';
@@ -26,6 +27,7 @@
   </div>
 
   <AppearanceSettings />
+  <LanguageSettings />
   <SessionsListSettings />
   <SessionTitleSettings />
   <ArtifactSettings />
