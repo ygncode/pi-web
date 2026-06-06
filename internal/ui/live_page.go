@@ -29,18 +29,18 @@ func SetThemeProvider(fn func() string) {
 const defaultMonoStack = "ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace"
 
 // fontProvider returns the resolved CSS font-family stacks and pixel sizes for
-// the interface (--font-sans / --font-size-ui) and content (--font-content /
-// --font-content-size). Injected into the shell so the page paints with the
-// chosen fonts/sizes before any JS runs. Defaults to the monospace stack; app
-// wiring overrides it via SetFontProvider to read the DB.
-var fontProvider = func() (uiStack, contentStack, uiSize, contentSize string) {
-	return defaultMonoStack, defaultMonoStack, "12", "13"
+// the interface (--font-sans / --font-size-ui), content (--font-content /
+// --font-content-size) and code (--font-code). Injected into the shell so the
+// page paints with the chosen fonts/sizes before any JS runs. Defaults to the
+// monospace stack; app wiring overrides it via SetFontProvider to read the DB.
+var fontProvider = func() (uiStack, contentStack, codeStack, uiSize, contentSize string) {
+	return defaultMonoStack, defaultMonoStack, defaultMonoStack, "12", "13"
 }
 
 // SetFontProvider installs the function used to resolve the current
-// server-backed interface/content font stacks and sizes for server-side
+// server-backed interface/content/code font stacks and sizes for server-side
 // injection.
-func SetFontProvider(fn func() (string, string, string, string)) {
+func SetFontProvider(fn func() (string, string, string, string, string)) {
 	if fn != nil {
 		fontProvider = fn
 	}
@@ -122,11 +122,13 @@ func renderLiveDocumentStart(data liveDocumentData) string {
 		b.WriteByte('\n')
 	}
 	b.WriteString("<link rel=\"stylesheet\" href=\"/custom-themes.css\">\n")
-	fontUI, fontContent, fontUISize, fontContentSize := fontProvider()
+	fontUI, fontContent, fontCode, fontUISize, fontContentSize := fontProvider()
 	b.WriteString("<style id=\"pi-web-fonts\">:root{--font-sans:")
 	b.WriteString(fontUI)
 	b.WriteString(";--font-content:")
 	b.WriteString(fontContent)
+	b.WriteString(";--font-code:")
+	b.WriteString(fontCode)
 	b.WriteString(";--font-size-ui:")
 	b.WriteString(fontUISize)
 	b.WriteString("px;--font-content-size:")

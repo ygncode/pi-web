@@ -112,7 +112,7 @@ export async function runSettingsPage({
 
   // Font family controls (separate from the generic loop): a curated select
   // plus "Detect installed fonts…" (Local Font Access API) and "Custom…" paths.
-  const FONT_KEYS = { ui: 'pi-web:v1:font-ui', content: 'pi-web:v1:font-content' };
+  const FONT_KEYS = { ui: 'pi-web:v1:font-ui', content: 'pi-web:v1:font-content', code: 'pi-web:v1:font-code' };
   const fontControls = [];
 
   function injectDetectedFonts(select, families) {
@@ -175,7 +175,7 @@ export async function runSettingsPage({
 
     function commit(value) {
       writeSetting(key, value, { storage });
-      applyFonts(documentImpl, kind === 'ui' ? { ui: value } : { content: value });
+      applyFonts(documentImpl, { [kind]: value });
       flashSaved();
     }
 
@@ -207,6 +207,7 @@ export async function runSettingsPage({
 
   setupFontControl('ui');
   setupFontControl('content');
+  setupFontControl('code');
 
   // Enabling notifications also requests browser permission and registers a
   // push subscription for THIS device (the subscription is per-device and is

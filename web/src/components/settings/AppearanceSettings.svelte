@@ -79,4 +79,25 @@
       <input type="number" min="8" max="32" data-setting="pi-web:v1:font-content-size" data-setting-size="content">
     </div>
   </div>
+  <div class="settings-row">
+    <div class="settings-row-label">
+      <span class="name">{t('settings.codeFont')}</span>
+      <span class="hint">{t('settings.codeFontHint')}</span>
+    </div>
+    <div class="settings-control settings-font-control">
+      <select data-font-select="code">
+        <optgroup label={t('settings.fontBuiltIn')}>
+          <option value="mono">{t('settings.fontMono')}</option>
+          <option value="system">{t('settings.fontSystem')}</option>
+          <option value="sans">{t('settings.fontSans')}</option>
+          <option value="serif">{t('settings.fontSerif')}</option>
+        </optgroup>
+        <optgroup label={t('settings.fontActions')}>
+          <option value="__detect__">{t('settings.fontDetect')}</option>
+          <option value="__custom__">{t('settings.fontCustomOption')}</option>
+        </optgroup>
+      </select>
+      <input type="text" class="settings-font-custom" data-font-custom="code" placeholder={t('settings.fontFamilyPlaceholder')} hidden>
+    </div>
+  </div>
 </section>

@@ -15,6 +15,10 @@
     /* Font for rendered message content; falls back to the interface font and
        is overridden by the server-injected #pi-web-fonts style when set. */
     --font-content: var(--font-sans);
+    /* Font for code/commands/tool output. Defaults to monospace (independent of
+       the interface font) and is overridden by the server-injected
+       #pi-web-fonts style when set. */
+    --font-code: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
     /* Adjustable font sizes (overridden by the server-injected #pi-web-fonts
        style and live by the settings page). */
     --font-size-ui: 12px;

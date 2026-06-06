@@ -57,6 +57,14 @@ describe('applyFonts', () => {
     expect(doc._props['--font-content']).toBeUndefined();
   });
 
+  it('sets the code font custom property independently', () => {
+    const doc = fakeDoc();
+    applyFonts(doc, { code: 'Fira Code' });
+    expect(doc._props['--font-code']).toBe(`'Fira Code', ${FONT_KEYWORDS.mono}`);
+    expect(doc._props['--font-sans']).toBeUndefined();
+    expect(doc._props['--font-content']).toBeUndefined();
+  });
+
   it('clamps sizes when applied', () => {
     const doc = fakeDoc();
     applyFonts(doc, { contentSize: '999' });
