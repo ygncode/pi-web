@@ -2904,6 +2904,12 @@
       #app {
         flex: 1;
         min-height: 0;
+        /* Track the visible viewport, not 100vh. The base #app rule sizes to
+           calc(100vh - 52px); on iOS 100vh is the LARGE viewport (keyboard
+           excluded), so when the keyboard opens #app stays full-height and its
+           bottom-docked composer is pushed under the keyboard even though the
+           fixed body already shrank to --viewport-height. Mirror the body fix. */
+        height: calc(var(--viewport-height, 100svh) - 52px);
       }
 
       #sidebar {
