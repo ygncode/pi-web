@@ -22,7 +22,7 @@ function fakeApi(initial = []) {
   };
 }
 
-function setup({ api, selectionDelayMs = 250, onCreate = null, onSend = null } = {}) {
+function setup({ api, selectionDelayMs = 250, onCreate = null, onSend = null, onAddToChat = null } = {}) {
   const dom = new JSDOM(
     '<div id="messages"><div id="entry-e1">hello world</div></div>'
     + '<div id="annotation-list-host"></div>'
@@ -40,6 +40,7 @@ function setup({ api, selectionDelayMs = 250, onCreate = null, onSend = null } =
     escapeHtml,
     onCreate,
     onSend,
+    onAddToChat,
     selectionDelayMs,
     documentImpl: doc,
     windowImpl: win
@@ -99,6 +100,28 @@ describe('annotation layer', () => {
     }));
     expect(doc.querySelector('.annotation-note').textContent).toBe('fix this');
     expect(doc.querySelector('mark.pi-annotation').textContent).toBe('world');
+  });
+
+  it('hands a selection to the composer via onAddToChat without saving it', async () => {
+    const api = fakeApi();
+    const onAddToChat = vi.fn();
+    const { doc, win, layer } = setup({ api, onAddToChat });
+    layer.init();
+    await tick();
+
+    selectWorld(doc, win);
+    doc.dispatchEvent(new win.MouseEvent('mouseup'));
+    doc.querySelector('[data-action="start-comment"]').click();
+
+    doc.querySelector('.annotation-note-input').value = 'use this snippet';
+    doc.querySelector('[data-action="add-to-chat"]').click();
+    await tick();
+
+    expect(onAddToChat).toHaveBeenCalledWith({ original: 'world', note: 'use this snippet' });
+    expect(api.create).not.toHaveBeenCalled();
+    // Modal closes and nothing is added to the Notes list.
+    expect(doc.querySelector('.annotation-note-modal').hidden).toBe(true);
+    expect(doc.querySelector('.annotation-item')).toBeNull();
   });
 
   it('fires onCreate when a note is saved (to reveal the panel)', async () => {

@@ -227,6 +227,51 @@ describe('chat composer runner', () => {
     expect(dom.window.document.getElementById('pi-chat-attachments').children.length).toBe(1);
   });
 
+  it('adds a text attachment from pi-chat-attach-text and folds it into the sent message', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const dom = new JSDOM('<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><div class="pi-chat-shell"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span></div><div id="pi-chat-attachment-modal" hidden><pre class="pi-chat-attachment-card-quote"></pre><div class="pi-chat-attachment-card-note" hidden></div><button type="button" data-action="close-attachment"></button></div></form></body>');
+    const sendChat = vi.fn(() => Promise.resolve(new Response('{"status":"queued"}', { status: 200 })));
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      chatApi: { getWorkerStatus: () => Promise.resolve(new Response('{}', { status: 500 })), sendChat },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: { setupModelSelector: vi.fn() },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+      FormDataImpl: dom.window.FormData,
+      CustomEventImpl: dom.window.CustomEvent,
+      setIntervalImpl: () => {}
+    });
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+
+    dom.window.dispatchEvent(new dom.window.CustomEvent('pi-chat-attach-text', {
+      detail: { original: 'hello world', note: 'rename this' }
+    }));
+
+    // A clickable text chip appears and enables Send even with an empty textarea.
+    const chip = dom.window.document.querySelector('.pi-chat-attachment-text');
+    expect(chip).toBeTruthy();
+    expect(dom.window.document.getElementById('pi-chat-send').disabled).toBe(false);
+
+    // Clicking the chip opens the viewer showing the original selection.
+    chip.click();
+    expect(dom.window.document.getElementById('pi-chat-attachment-modal').hidden).toBe(false);
+    expect(dom.window.document.querySelector('.pi-chat-attachment-card-quote').textContent).toBe('hello world');
+    dom.window.document.querySelector('[data-action="close-attachment"]').click();
+    expect(dom.window.document.getElementById('pi-chat-attachment-modal').hidden).toBe(true);
+
+    // Submitting folds the selection (as a blockquote + note) before the typed text.
+    dom.window.document.getElementById('pi-chat-message').value = 'please fix';
+    dom.window.document.getElementById('pi-chat-composer')
+      .dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+    await tick();
+
+    expect(sendChat).toHaveBeenCalled();
+    expect(sendChat.mock.calls[0][1].get('message')).toBe('> hello world\n\nrename this\n\nplease fix');
+    // Attachments clear after a successful send.
+    expect(dom.window.document.querySelector('.pi-chat-attachment-text')).toBeNull();
+  });
+
   it('focuses the message textarea on page load', () => {
     const dom = new JSDOM('<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span></form></body>');
     const textarea = dom.window.document.getElementById('pi-chat-message');

@@ -37,6 +37,7 @@ import {
   Snowflake,
   SquarePen,
   Sun,
+  TextQuote,
   X,
 } from 'lucide';
 
@@ -124,5 +125,6 @@ export {
   Snowflake,
   SquarePen,
   Sun,
+  TextQuote,
   X,
 };

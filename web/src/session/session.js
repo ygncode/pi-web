@@ -20,6 +20,7 @@ import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { createAnnotationLayer } from './annotations/annotation-layer.js';
 import { setupLoadEarlierBanner } from './ui/load-earlier.js';
+import { setupImageModal } from './ui/image-modal.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
 import * as chatApi from './chat/chat-api.js';
@@ -416,6 +417,10 @@ export function runSessionApp({ target = window } = {}) {
         // composer it just filled is visible and ready to type into.
         if (ui.isMobileLayout()) ui.collapseRightSidebar();
       },
+      onAddToChat: (attachment) => {
+        target.dispatchEvent(new target.CustomEvent('pi-chat-attach-text', { detail: attachment }));
+        if (ui.isMobileLayout()) ui.collapseRightSidebar();
+      },
       resolveArtifact: (artifactId) => artifactPanel?.getArtifact(artifactId) || null,
       documentImpl,
       windowImpl: target
@@ -423,6 +428,8 @@ export function runSessionApp({ target = window } = {}) {
     annotationLayer.init();
     target.addEventListener('pi-session-reload', () => annotationLayer.reapply());
   }
+
+  setupImageModal({ documentImpl });
 
   doneNotifier.setupDoneNotifyToggle({ documentImpl, windowImpl: target });
   doneNotifier.setupAppBadgeClearing({ documentImpl, windowImpl: target });

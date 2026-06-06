@@ -13,7 +13,6 @@
       <button type="button" id="right-tab-artifacts" class="right-sidebar-tab" role="tab" data-pane="artifacts" aria-selected="false">{t('sidebar.artifacts')}<span id="artifact-tab-count" class="right-sidebar-tab-count" hidden>0</span></button>
     </div>
     <div class="right-sidebar-actions">
-      <button id="artifact-help-btn" class="right-sidebar-btn artifact-help-btn" title={t('sidebar.howArtifactsWork')} aria-label={t('sidebar.howArtifactsWork')}>{@html icon(CircleHelp, { size: 15 })}</button>
       <button id="expand-right-sidebar" class="right-sidebar-btn" title={t('sidebar.expandPanel')}>{@html icon(Maximize2, { size: 14 })}</button>
       <button id="close-right-sidebar" class="right-sidebar-btn" title={`${t('sidebar.hidePanel')} (⌘⇧N)`}>{@html icon(X, { size: 15 })}</button>
     </div>
@@ -23,6 +22,7 @@
       <textarea id="scratchpad-textarea" class="scratchpad-textarea" placeholder={t('sidebar.scratchpadPlaceholder')}>{scratchpad}</textarea>
     </div>
     <div id="right-pane-artifacts" class="right-sidebar-pane" role="tabpanel" aria-labelledby="right-tab-artifacts" hidden>
+      <button id="artifact-help-btn" class="right-sidebar-btn artifact-help-btn" title={t('sidebar.howArtifactsWork')} aria-label={t('sidebar.howArtifactsWork')}>{@html icon(CircleHelp, { size: 15 })}</button>
       <div id="artifact-panel-host" class="artifact-panel-host"></div>
     </div>
     <div id="right-pane-notes" class="right-sidebar-pane" role="tabpanel" aria-labelledby="right-tab-notes" hidden>

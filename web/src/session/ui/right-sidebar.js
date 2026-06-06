@@ -38,7 +38,7 @@ export function setupRightSidebarTabs({ documentImpl = document, storage = globa
       if (isActive) p.removeAttribute('hidden');
       else p.setAttribute('hidden', '');
     }
-    // Drives tab-scoped chrome via CSS (e.g. the Artifacts-only help button).
+    // Exposes the active tab for any tab-scoped chrome/styling hooks.
     if (sidebar) sidebar.dataset.activeTab = pane;
     try { storage?.setItem(RIGHT_SIDEBAR_TAB_KEY, pane); } catch {}
   }

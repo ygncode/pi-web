@@ -679,13 +679,19 @@
       flex: 0 0 auto;
     }
 
-    /* The help (?) button is relevant only to the Artifacts tab. */
-    .artifact-help-btn {
-      display: none;
+    /* The help (?) button floats in the Artifacts pane's top-right corner.
+       Each artifact state reserves a right gutter at the top so content flows
+       beside the button instead of under it (no wasted strip, no overlap). */
+    #right-pane-artifacts {
+      position: relative;
     }
 
-    #right-sidebar[data-active-tab="artifacts"] .artifact-help-btn {
-      display: inline-flex;
+    .artifact-help-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 3;
+      background: var(--chrome-bg);
     }
 
     .artifact-help-modal {
@@ -871,7 +877,8 @@
     }
 
     .artifact-empty {
-      padding: 16px 8px;
+      /* Extra right padding keeps the message clear of the floating help button. */
+      padding: 16px 44px 16px 8px;
       font-size: 12px;
       color: var(--muted);
     }
@@ -903,6 +910,11 @@
       border-radius: 3px;
       cursor: pointer;
       transition: color 0.15s, background 0.15s, border-color 0.15s;
+    }
+
+    /* First row sits under the floating help button — give it room on the right. */
+    .artifact-list-item:first-child {
+      padding-right: 38px;
     }
 
     .artifact-list-item:hover {
@@ -959,6 +971,8 @@
       justify-content: space-between;
       gap: 8px;
       padding-bottom: 6px;
+      /* Keep the copy/download actions clear of the floating help button. */
+      padding-right: 40px;
     }
 
     .artifact-view-title {
@@ -1260,11 +1274,13 @@
 
     .annotation-note-actions {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       justify-content: flex-end;
     }
 
     .annotation-note-save,
+    .annotation-note-addchat,
     .annotation-note-cancel {
       padding: 9px 16px;
       min-height: 38px;
@@ -1282,9 +1298,18 @@
       font-weight: 600;
     }
 
+    .annotation-note-addchat {
+      color: var(--accent);
+      background: transparent;
+      border-color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* Push Cancel to the left; Add-to-chat + Save group on the right. */
     .annotation-note-cancel {
       color: var(--muted);
       background: transparent;
+      margin-right: auto;
     }
 
     /* ── Right sidebar expanded popup overlay ── */
@@ -2535,6 +2560,32 @@
       max-height: 400px;
       border-radius: 4px;
       margin: var(--line-height) 0;
+      cursor: zoom-in;
+    }
+
+    /* Full-size image overlay (click-to-zoom for transcript + composer images) */
+    .image-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 1500;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: color-mix(in srgb, var(--bg) 78%, #000 22%);
+      cursor: zoom-out;
+    }
+
+    .image-modal.open {
+      display: flex;
+    }
+
+    .image-modal img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
     }
 
     .markdown-content {
@@ -3665,6 +3716,7 @@
       object-fit: contain;
       border-radius: 4px;
       background: var(--bg);
+      cursor: zoom-in;
     }
 
     .pi-chat-attachment-name {
@@ -3687,6 +3739,132 @@
       top: 6px;
       right: 6px;
       background: color-mix(in srgb, var(--container-bg) 92%, transparent);
+    }
+
+    /* Text selection chips ("Add to chat") — clickable to view the full text. */
+    .pi-chat-attachment-text {
+      cursor: pointer;
+    }
+
+    .pi-chat-attachment-text:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+
+    .pi-chat-attachment-text:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 1px;
+    }
+
+    .pi-chat-attachment-text .pi-chat-attachment-name {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .pi-chat-attachment-text .pi-chat-attachment-name svg {
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+
+    .pi-chat-attachment-text .pi-chat-attachment-name > span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Text-attachment viewer modal */
+    .pi-chat-attachment-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 1500;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 12vh 16px 16px;
+    }
+
+    .pi-chat-attachment-modal[hidden] {
+      display: none;
+    }
+
+    .pi-chat-attachment-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+    }
+
+    .pi-chat-attachment-card {
+      position: relative;
+      width: 100%;
+      max-width: 520px;
+      max-height: 70vh;
+      background: var(--surface, var(--chrome-bg));
+      border: 1px solid var(--borderMuted);
+      border-radius: 10px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .pi-chat-attachment-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .pi-chat-attachment-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .pi-chat-attachment-card-close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+      border: none;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .pi-chat-attachment-card-close:hover {
+      color: var(--text);
+      background: var(--container-bg);
+    }
+
+    .pi-chat-attachment-card-quote {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: var(--text);
+      background: var(--bg);
+      border-left: 2px solid var(--accent);
+      border-radius: 4px;
+      padding: 10px;
+      overflow: auto;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .pi-chat-attachment-card-note {
+      font-size: 13px;
+      color: var(--muted);
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .pi-chat-attachment-card-note[hidden] {
+      display: none;
     }
 
     .pi-chat-cwd {

@@ -64,5 +64,16 @@
       </div>
     </div>
   </div>
+  <div id="pi-chat-attachment-modal" class="pi-chat-attachment-modal" hidden>
+    <div class="pi-chat-attachment-backdrop" data-action="close-attachment"></div>
+    <div class="pi-chat-attachment-card" role="dialog" aria-modal="true" aria-label={t('composer.attachmentText')}>
+      <div class="pi-chat-attachment-card-header">
+        <span class="pi-chat-attachment-card-title">{t('composer.attachmentText')}</span>
+        <button type="button" class="pi-chat-attachment-card-close" data-action="close-attachment" aria-label={t('common.close')}>{@html icon(X, { size: 15 })}</button>
+      </div>
+      <pre class="pi-chat-attachment-card-quote"></pre>
+      <div class="pi-chat-attachment-card-note" hidden></div>
+    </div>
+  </div>
   <div class="pi-git-bar" id="pi-git-bar" data-git-repo="false" data-git-branch="" data-git-default="false" data-git-has-changes="false"><div class="pi-git-branch" id="pi-git-branch" hidden><span class="pi-git-branch-name" id="pi-git-branch-name" title={t('git.currentBranch')}></span><button type="button" class="pi-git-edit" id="pi-git-branch-edit" title={t('git.renameBranch')} aria-label={t('git.renameBranch')}></button><input type="text" class="pi-git-branch-input" id="pi-git-branch-input" autocomplete="off" spellcheck="false" aria-label={t('git.newBranchName')} hidden></div><div class="pi-git-right"><button type="button" class="pi-git-pr-button pi-btw-button" id="pi-btw-button" title="btw">btw</button><div class="pi-git-pr" id="pi-git-pr" hidden><button type="button" class="pi-git-pr-button pi-git-primary" id="pi-git-primary"><span id="pi-git-primary-label">{t('git.createPr')}</span></button><button type="button" class="pi-git-pr-button pi-git-caret" id="pi-git-caret" aria-haspopup="true" aria-expanded="false" aria-label={t('git.moreActions')}>{@html icon(ChevronDown, { size: 12 })}</button><div class="pi-git-pr-menu" id="pi-git-pr-menu" role="menu" hidden><button type="button" class="pi-git-pr-item" id="pi-git-pr-view" role="menuitem" hidden>{t('git.viewPr')} {@html icon(ExternalLink, { size: 12 })}</button><button type="button" class="pi-git-pr-item" id="pi-git-pr-draft" role="menuitem" hidden>{t('git.createDraftPr')}</button><button type="button" class="pi-git-pr-item" id="pi-git-pr-manual" role="menuitem">{t('git.createPrManually')} {@html icon(ExternalLink, { size: 12 })}</button><button type="button" class="pi-git-pr-item" id="pi-git-pr-merge" role="menuitem" hidden>{t('git.mergePr')}</button><button type="button" class="pi-git-pr-item" id="pi-git-pr-commit" role="menuitem" hidden>{t('git.commitPush')}</button></div></div></div></div>
 </form>

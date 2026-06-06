@@ -115,6 +115,9 @@ export default {
   'composer.idle': 'idle',
   'composer.unavailable': 'unavailable',
   'composer.attachPhotos': 'Attach photos',
+  'composer.attachmentText': 'Selected text',
+  'composer.viewAttachment': 'View selected text',
+  'composer.removeAttachment': 'Remove attachment',
   'composer.expand': 'Expand composer',
   'composer.searchModels': 'Search models…',
   'composer.switchModel': 'Switch model',
@@ -286,7 +289,8 @@ export default {
   'annotation.addNotePlaceholder': 'Add a note…',
   'annotation.cancel': 'Cancel',
   'annotation.saveNote': 'Save note',
-  'annotation.comment': 'Comment',
+  'annotation.addToChat': 'Add to chat',
+  'annotation.comment': 'Annotate',
 
   // ── Artifacts help modal (HTML — rendered via {@html}) ──
   'artifactHelp.intro': '<strong>Artifacts</strong> are the files the agent wrote and the larger code blocks it shared, pulled out of the conversation so you can find, read, copy, or download them in one place.',

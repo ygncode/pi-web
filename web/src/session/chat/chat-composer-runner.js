@@ -1,4 +1,4 @@
-import { icon, X } from '../../shared/icons.js';
+import { icon, TextQuote, X } from '../../shared/icons.js';
 import { t } from '../../shared/i18n.js';
 
 export function runChatComposer({
@@ -366,6 +366,9 @@ export function runChatComposer({
     const sendButton = document.getElementById('pi-chat-send');
     const cancelButton = document.getElementById('pi-chat-cancel');
     let selectedChatFiles = [];
+    // Text selections added via the annotations "Add to chat" button. Rendered as
+    // clickable chips alongside image attachments and folded into the message on send.
+    let selectedTextAttachments = [];
     const attachmentObjectUrls = new WeakMap();
 
     function updateComposerHeightVar() {
@@ -399,7 +402,9 @@ export function runChatComposer({
     // Enable Send only when there is text or an attachment.
     function hasComposerContent() {
       const v = textarea ? textarea.value : '';
-      return (v && v.trim().length > 0) || (typeof selectedChatFiles !== 'undefined' && selectedChatFiles.length > 0);
+      return (v && v.trim().length > 0)
+        || (typeof selectedChatFiles !== 'undefined' && selectedChatFiles.length > 0)
+        || (typeof selectedTextAttachments !== 'undefined' && selectedTextAttachments.length > 0);
     }
     function updateSendEnabled() {
       if (!sendButton) return;
@@ -517,11 +522,109 @@ export function runChatComposer({
         item.appendChild(remove);
         fragment.appendChild(item);
       });
+
+      selectedTextAttachments.forEach((att, index) => {
+        const item = document.createElement('span');
+        item.className = 'pi-chat-attachment pi-chat-attachment-text';
+        item.setAttribute('role', 'button');
+        item.tabIndex = 0;
+        item.title = t('composer.viewAttachment');
+
+        const name = document.createElement('span');
+        name.className = 'pi-chat-attachment-name';
+        name.innerHTML = icon(TextQuote, { size: 12 });
+        const label = document.createElement('span');
+        label.textContent = textAttachmentLabel(att);
+        name.appendChild(label);
+        item.appendChild(name);
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.className = 'pi-chat-remove';
+        remove.setAttribute('aria-label', t('composer.removeAttachment'));
+        remove.innerHTML = icon(X, { size: 13 });
+        remove.addEventListener('click', (event) => {
+          event.stopPropagation();
+          selectedTextAttachments.splice(index, 1);
+          renderAttachments();
+        });
+        item.appendChild(remove);
+
+        item.addEventListener('click', (event) => {
+          if (event.target.closest('.pi-chat-remove')) return;
+          openTextAttachment(att);
+        });
+        item.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openTextAttachment(att);
+          }
+        });
+        fragment.appendChild(item);
+      });
+
       attachmentList.replaceChildren(fragment);
       updateSendEnabled();
     }
 
+    function textAttachmentLabel(att) {
+      const snippet = String(att.original || '').replace(/\s+/g, ' ').trim();
+      return snippet.length > 48 ? snippet.slice(0, 48) + '…' : (snippet || t('composer.attachmentText'));
+    }
+
     attachButton.addEventListener('click', () => fileInput.click());
+
+    // ── text-attachment viewer ("take a look" at a Add-to-chat selection) ──────
+    const attachmentModal = document.getElementById('pi-chat-attachment-modal');
+    const attachmentQuote = attachmentModal ? attachmentModal.querySelector('.pi-chat-attachment-card-quote') : null;
+    const attachmentNote = attachmentModal ? attachmentModal.querySelector('.pi-chat-attachment-card-note') : null;
+
+    function openTextAttachment(att) {
+      if (!attachmentModal) return;
+      if (attachmentQuote) attachmentQuote.textContent = att.original || '';
+      if (attachmentNote) {
+        attachmentNote.textContent = att.note || '';
+        attachmentNote.hidden = !att.note;
+      }
+      attachmentModal.hidden = false;
+    }
+    function closeTextAttachment() {
+      if (attachmentModal) attachmentModal.hidden = true;
+    }
+    if (attachmentModal) {
+      attachmentModal.addEventListener('click', (event) => {
+        if (event.target.closest('[data-action="close-attachment"]')) closeTextAttachment();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !attachmentModal.hidden) closeTextAttachment();
+      });
+    }
+
+    // Selections handed off from the annotations layer ("Add to chat").
+    window.addEventListener('pi-chat-attach-text', (event) => {
+      const detail = (event && event.detail) || {};
+      const original = String(detail.original || '').trim();
+      if (!original) return;
+      selectedTextAttachments.push({
+        id: 'txt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+        original,
+        note: String(detail.note || '').trim(),
+      });
+      renderAttachments();
+      if (textarea && typeof textarea.focus === 'function') textarea.focus();
+    });
+
+    // Fold text attachments into the outgoing message: each selection becomes a
+    // blockquote (plus its note), with the typed message last.
+    function composeMessage(typed) {
+      if (selectedTextAttachments.length === 0) return typed;
+      const blocks = selectedTextAttachments.map((att) => {
+        const quoted = att.original.split('\n').map((line) => '> ' + line).join('\n');
+        return att.note ? quoted + '\n\n' + att.note : quoted;
+      });
+      if (typed) blocks.push(typed);
+      return blocks.join('\n\n');
+    }
 
     if (cancelButton) {
       cancelButton.addEventListener('click', async () => {
@@ -646,8 +749,10 @@ export function runChatComposer({
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const message = textarea.value.trim();
+      const typed = textarea.value.trim();
       const filesToSend = selectedChatFiles.slice();
+      const textAttachmentsToSend = selectedTextAttachments.slice();
+      const message = composeMessage(typed);
       if (!message && filesToSend.length === 0) {
         setStatus('message or image required', 'error');
         return;
@@ -659,6 +764,7 @@ export function runChatComposer({
       // pi accepts it, restore the draft so the user can retry.
       textarea.value = '';
       clearSelectedChatFiles();
+      selectedTextAttachments = [];
       fileInput.value = '';
       renderAttachments();
       autoResizeTextarea();
@@ -666,8 +772,9 @@ export function runChatComposer({
 
       const sent = await sendChatMessage(message, filesToSend);
       if (!sent) {
-        textarea.value = message;
+        textarea.value = typed;
         selectedChatFiles = filesToSend;
+        selectedTextAttachments = textAttachmentsToSend;
         renderAttachments();
         autoResizeTextarea();
         updateSendEnabled();

@@ -44,6 +44,7 @@ import * as toggleStateApi from '../session/ui/toggle-state.js';
 import * as sidebarApi from '../session/ui/sidebar.js';
 import * as searchFiltersApi from '../session/ui/search-filters.js';
 import { setupSessionUi } from '../session/ui/session-ui-runner.js';
+import { setupImageModal } from '../session/ui/image-modal.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 
 // In a sandboxed iframe (e.g. a srcdoc preview without `allow-same-origin`),
@@ -217,6 +218,7 @@ export function runExportApp({ target = window } = {}) {
   target.__piSessionNavigator = navigatorInstance;
 
   setupKeyboardNav({ windowImpl: target, documentImpl });
+  setupImageModal({ documentImpl });
 
   // Initial render: deep-link to the target message when the URL carries one,
   // otherwise show the active leaf path from the top.

@@ -22,6 +22,7 @@ export function createAnnotationLayer({
   onSelectArtifact = null,
   onCreate = null,
   onSend = null,
+  onAddToChat = null,
   resolveArtifact = null,
   selectionDelayMs = 250,
   documentImpl = document,
@@ -226,6 +227,7 @@ export function createAnnotationLayer({
     + `<textarea class="annotation-note-input" placeholder="${esc(t('annotation.addNotePlaceholder'))}" rows="3"></textarea>`
     + '<div class="annotation-note-actions">'
     + `<button type="button" class="annotation-note-cancel" data-action="cancel-note">${esc(t('annotation.cancel'))}</button>`
+    + `<button type="button" class="annotation-note-addchat" data-action="add-to-chat">${esc(t('annotation.addToChat'))}</button>`
     + `<button type="button" class="annotation-note-save" data-action="save-note">${esc(t('annotation.saveNote'))}</button>`
     + '</div></div>';
   documentImpl.body.appendChild(noteModal);
@@ -267,6 +269,19 @@ export function createAnnotationLayer({
   function closeNote() {
     noteModal.hidden = true;
     pending = null;
+  }
+
+  // "Add to chat": attach the selection (and optional note) to the composer as a
+  // clickable chip instead of saving it to the Notes list. The composer owns the
+  // chip + send formatting; we just hand off the text.
+  function addToChat() {
+    if (!pending) return;
+    const note = noteInput.value.trim();
+    const original = pending.text;
+    pending = null;
+    noteModal.hidden = true;
+    windowImpl.getSelection?.()?.removeAllRanges?.();
+    if (typeof onAddToChat === 'function') onAddToChat({ original, note });
   }
 
   async function saveComment() {
@@ -311,6 +326,7 @@ export function createAnnotationLayer({
   noteModal.addEventListener('click', (e) => {
     const action = e.target.closest?.('[data-action]')?.dataset.action;
     if (action === 'save-note') saveComment();
+    else if (action === 'add-to-chat') addToChat();
     else if (action === 'cancel-note') closeNote();
   });
 
