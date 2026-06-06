@@ -12,6 +12,14 @@ import fr from './locales/fr.js';
 import de from './locales/de.js';
 import zh from './locales/zh.js';
 import ja from './locales/ja.js';
+import id from './locales/id.js';
+import ms from './locales/ms.js';
+import vi from './locales/vi.js';
+import th from './locales/th.js';
+import fil from './locales/fil.js';
+import my from './locales/my.js';
+import km from './locales/km.js';
+import lo from './locales/lo.js';
 
 export const LOCALE_KEY = 'pi-web:v1:locale';
 export const CUSTOM_LANGUAGES_KEY = 'pi-web:v1:custom-languages';
@@ -25,6 +33,14 @@ const BUILTIN = {
   de: { label: 'Deutsch', strings: de },
   zh: { label: '中文', strings: zh },
   ja: { label: '日本語', strings: ja },
+  id: { label: 'Bahasa Indonesia', strings: id },
+  ms: { label: 'Bahasa Melayu', strings: ms },
+  vi: { label: 'Tiếng Việt', strings: vi },
+  th: { label: 'ไทย', strings: th },
+  fil: { label: 'Filipino', strings: fil },
+  my: { label: 'မြန်မာ', strings: my },
+  km: { label: 'ភាសាខ្មែរ', strings: km },
+  lo: { label: 'ລາວ', strings: lo },
 };
 
 // code -> { label, strings, custom? }. User-defined locales are merged in.

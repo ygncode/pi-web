@@ -58,6 +58,35 @@ test.describe("i18n", () => {
     );
   });
 
+  test("renders settings in a built-in ASEAN locale", async ({ page }) => {
+    // Vietnamese is one of the 8 ASEAN built-ins; proves the new locale files
+    // load and resolve through t().
+    await setLocale(page, "vi");
+    await page.goto("/settings");
+
+    await expect(page.locator(".settings-header h1")).toHaveText("Cài đặt");
+    await expect(page.locator(".settings-section-title").first()).toHaveText(
+      "Giao diện",
+    );
+  });
+
+  test("language picker lists every built-in locale", async ({ page }) => {
+    await page.goto("/settings");
+
+    // 6 original + 8 ASEAN built-ins must all be selectable.
+    const codes = await page
+      .locator("[data-setting-locale] option")
+      .evaluateAll((opts) =>
+        opts.map((o) => (o as HTMLOptionElement).value),
+      );
+    for (const code of [
+      "en", "es", "fr", "de", "zh", "ja",
+      "id", "ms", "vi", "th", "fil", "my", "km", "lo",
+    ]) {
+      expect(codes).toContain(code);
+    }
+  });
+
   test("falls back to English for the default locale", async ({ page }) => {
     // No init script: default locale is English.
     await page.goto("/settings");

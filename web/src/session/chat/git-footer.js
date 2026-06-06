@@ -5,6 +5,7 @@
 // current state, plus a caret revealing the remaining relevant actions.
 
 import { icon, ExternalLink } from '../../shared/icons.js';
+import { t } from '../../shared/i18n.js';
 
 export const DRAFT_PR_PROMPT =
   'Commit any uncommitted changes on this branch with a clear message, push ' +
@@ -74,11 +75,11 @@ export function setupGitFooter({
   // in a new tab, so their label gets a trailing external-link icon. The plan
   // picks one primary plus a list of secondary actions shown under the caret.
   const ACTIONS = {
-    draft: { label: 'Create PR', run: () => insertPrompt(DRAFT_PR_PROMPT) },
-    manual: { label: 'Create PR manually', external: true, run: () => openUrl(prCreateUrl) },
-    view: { label: 'View PR', external: true, run: () => openUrl(existingPrUrl) },
-    merge: { label: 'Merge PR', run: () => insertPrompt(MERGE_PR_PROMPT) },
-    commit: { label: 'Commit & push', run: () => insertPrompt(COMMIT_PUSH_PROMPT) }
+    draft: { label: t('git.createPr'), run: () => insertPrompt(DRAFT_PR_PROMPT) },
+    manual: { label: t('git.createPrManually'), external: true, run: () => openUrl(prCreateUrl) },
+    view: { label: t('git.viewPr'), external: true, run: () => openUrl(existingPrUrl) },
+    merge: { label: t('git.mergePr'), run: () => insertPrompt(MERGE_PR_PROMPT) },
+    commit: { label: t('git.commitPush'), run: () => insertPrompt(COMMIT_PUSH_PROMPT) }
   };
 
   // Decide the primary action + secondary list from the current git state.
@@ -112,7 +113,7 @@ export function setupGitFooter({
     prCreateUrl = info.prCreateUrl || '';
     existingPrUrl = info.prUrl || '';
     if (nameEl) nameEl.textContent = info.branch;
-    if (items.manual) items.manual.title = prCreateUrl ? prCreateUrl : 'No GitHub remote configured';
+    if (items.manual) items.manual.title = prCreateUrl ? prCreateUrl : t('git.noRemote');
 
     const isDefault = !!info.isDefault;
     const hasPr = !isDefault && !!existingPrUrl;
@@ -196,7 +197,7 @@ export function setupGitFooter({
       })
       .catch((err) => {
         if (input) {
-          input.title = (err && err.message) || 'Rename failed';
+          input.title = (err && err.message) || t('git.renameFailed');
           input.focus();
           input.select();
         }

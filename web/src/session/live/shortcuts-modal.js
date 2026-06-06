@@ -4,38 +4,43 @@
  */
 
 import { showSheet } from './full-screen-sheet.js';
+import { t } from '../../shared/i18n.js';
 
-const SHORTCUTS = [
-  {
-    category: 'General',
-    items: [
-      { desc: 'Search sessions', keys: ['⌘', 'K'], keysWin: ['Ctrl', 'K'] },
-      { desc: 'Toggle sidebar (tree)', keys: ['⌘', 'B'], keysWin: ['Ctrl', 'B'] },
-      { desc: 'New session', keys: ['⌘', 'T'], keysWin: ['Ctrl', 'T'] },
-      { desc: 'Toggle theme (dark/light)', keys: ['⌘', '⇧', 'L'], keysWin: ['Ctrl', 'Shift', 'L'] },
-      { desc: 'Toggle shortcuts help', keys: ['⌘', '/'], keysWin: ['Ctrl', '/'] },
-    ]
-  },
-  {
-    category: 'Chat Composer',
-    items: [
-      { desc: 'Focus chat input', keys: ['⇧', 'I'], keysWin: ['Shift', 'I'], note: 'Outside input' },
-      { desc: 'Cycle thinking mode', keys: ['⇧', '⇥'], keysWin: ['Shift', 'Tab'], note: 'Inside input' },
-      { desc: 'Choose/switch model', keys: ['⌃', 'I'], keysWin: ['Ctrl', 'I'], note: 'Inside input' },
-      { desc: 'Submit message', keys: ['↩'], keysWin: ['Enter'], note: 'Inside input' },
-    ]
-  },
-  {
-    category: 'Vim Navigation',
-    note: 'When chat input is not active',
-    items: [
-      { desc: 'Scroll down', keys: ['J'], keysWin: ['J'] },
-      { desc: 'Scroll up', keys: ['K'], keysWin: ['K'] },
-      { desc: 'Scroll to top', keys: ['G', 'G'], keysWin: ['G', 'G'] },
-      { desc: 'Scroll to bottom', keys: ['⇧', 'G'], keysWin: ['Shift', 'G'] },
-    ]
-  }
-];
+// Built fresh each time the modal opens so labels reflect the active locale
+// (the locale is fixed for a page load; changing it reloads — see i18n.js).
+function getShortcuts() {
+  return [
+    {
+      category: t('shortcuts.catGeneral'),
+      items: [
+        { desc: t('shortcuts.searchSessions'), keys: ['⌘', 'K'], keysWin: ['Ctrl', 'K'] },
+        { desc: t('shortcuts.toggleSidebar'), keys: ['⌘', 'B'], keysWin: ['Ctrl', 'B'] },
+        { desc: t('shortcuts.newSession'), keys: ['⌘', 'T'], keysWin: ['Ctrl', 'T'] },
+        { desc: t('shortcuts.toggleTheme'), keys: ['⌘', '⇧', 'L'], keysWin: ['Ctrl', 'Shift', 'L'] },
+        { desc: t('shortcuts.toggleHelp'), keys: ['⌘', '/'], keysWin: ['Ctrl', '/'] },
+      ]
+    },
+    {
+      category: t('shortcuts.catComposer'),
+      items: [
+        { desc: t('shortcuts.focusInput'), keys: ['⇧', 'I'], keysWin: ['Shift', 'I'], note: t('shortcuts.noteOutsideInput') },
+        { desc: t('shortcuts.cycleThinking'), keys: ['⇧', '⇥'], keysWin: ['Shift', 'Tab'], note: t('shortcuts.noteInsideInput') },
+        { desc: t('shortcuts.switchModel'), keys: ['⌃', 'I'], keysWin: ['Ctrl', 'I'], note: t('shortcuts.noteInsideInput') },
+        { desc: t('shortcuts.submit'), keys: ['↩'], keysWin: ['Enter'], note: t('shortcuts.noteInsideInput') },
+      ]
+    },
+    {
+      category: t('shortcuts.catVim'),
+      note: t('shortcuts.vimNote'),
+      items: [
+        { desc: t('shortcuts.scrollDown'), keys: ['J'], keysWin: ['J'] },
+        { desc: t('shortcuts.scrollUp'), keys: ['K'], keysWin: ['K'] },
+        { desc: t('shortcuts.scrollTop'), keys: ['G', 'G'], keysWin: ['G', 'G'] },
+        { desc: t('shortcuts.scrollBottom'), keys: ['⇧', 'G'], keysWin: ['Shift', 'G'] },
+      ]
+    }
+  ];
+}
 
 export function showShortcutsModal({
   documentImpl = document,
@@ -43,8 +48,10 @@ export function showShortcutsModal({
 } = {}) {
   const isMac = windowImpl.navigator?.platform?.toUpperCase().indexOf('MAC') >= 0;
 
+  const SHORTCUTS = getShortcuts();
+
   const sheet = showSheet({
-    title: 'Keyboard shortcuts',
+    title: t('shortcuts.title'),
     showBack: true,
     showClose: false,
     closeOnEscape: true,
@@ -66,10 +73,10 @@ export function showShortcutsModal({
       const search = documentImpl.createElement('input');
       search.className = 'shortcuts-search-input';
       search.type = 'search';
-      search.placeholder = 'Search shortcuts...';
+      search.placeholder = t('shortcuts.searchPlaceholder');
       search.autocomplete = 'off';
       search.spellcheck = false;
-      search.setAttribute('aria-label', 'Search keyboard shortcuts');
+      search.setAttribute('aria-label', t('shortcuts.searchAria'));
       searchWrap.appendChild(search);
 
       const content = documentImpl.createElement('div');
@@ -119,7 +126,7 @@ export function showShortcutsModal({
         });
 
         if (matchCount === 0) {
-          content.innerHTML = `<div class="shortcuts-empty-state">No matching shortcuts found</div>`;
+          content.innerHTML = `<div class="shortcuts-empty-state">${t('shortcuts.empty')}</div>`;
         } else {
           content.innerHTML = html;
         }

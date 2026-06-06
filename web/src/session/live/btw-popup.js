@@ -19,6 +19,7 @@ import { marked } from 'marked';
 import { safeMarkedParse } from '../render/markdown.js';
 import { formatToolCall } from '../render/session-format.js';
 import { getSpinnerConfig } from './chat-preview.js';
+import { t } from '../../shared/i18n.js';
 
 const POS_KEY = 'pi-btw:window';
 // Sentinel matching the server's btwGlobalParent for a btw opened with no parent
@@ -111,14 +112,14 @@ export function setupBtwPopup({
       <div class="pi-btw-header">
         <span class="pi-btw-title">btw</span>
         <div class="pi-btw-actions">
-          <button type="button" class="pi-btw-new" title="New btw chat">new</button>
-          <button type="button" class="pi-btw-close" aria-label="Close">×</button>
+          <button type="button" class="pi-btw-new" title="${escape(t('btw.newChat'))}">${escape(t('btw.new'))}</button>
+          <button type="button" class="pi-btw-close" aria-label="${escape(t('common.close'))}">×</button>
         </div>
       </div>
       <div class="pi-btw-body" id="pi-btw-body"></div>
       <form class="pi-btw-input-row" id="pi-btw-form">
-        <input type="text" class="pi-btw-input" id="pi-btw-input" placeholder="Type something..." autocomplete="off" />
-        <button type="button" class="pi-btw-send" id="pi-btw-send" aria-label="Send">▷</button>
+        <input type="text" class="pi-btw-input" id="pi-btw-input" placeholder="${escape(t('btw.inputPlaceholder'))}" autocomplete="off" />
+        <button type="button" class="pi-btw-send" id="pi-btw-send" aria-label="${escape(t('composer.send'))}">▷</button>
       </form>
     `;
 
@@ -238,14 +239,14 @@ export function setupBtwPopup({
     if (running || streamingText) {
       const inner = streamingText
         ? `<div class="pi-btw-md">${toHtml(streamingText)}</div>`
-        : `<span class="pi-btw-working">${spinnerHtml()}<span class="pi-btw-working-label">Working…</span></span>`;
+        : `<span class="pi-btw-working">${spinnerHtml()}<span class="pi-btw-working-label">${escape(t('btw.working'))}</span></span>`;
       rows.push(`<div class="pi-btw-msg assistant working">${inner}</div>`);
     }
 
     if (rows.length === 0) {
       els.body.innerHTML = sessionId
-        ? '<div class="pi-btw-empty">No messages yet — say hello.</div>'
-        : '<div class="pi-btw-empty">Type a message to start a btw chat, or hit “new”.</div>';
+        ? `<div class="pi-btw-empty">${escape(t('btw.emptyHasSession'))}</div>`
+        : `<div class="pi-btw-empty">${escape(t('btw.emptyNoSession'))}</div>`;
     } else {
       els.body.innerHTML = rows.join('');
     }
@@ -368,8 +369,8 @@ export function setupBtwPopup({
     if (els && els.send) {
       els.send.textContent = running ? '◼' : '▷';
       els.send.classList.toggle('cancel', running);
-      els.send.setAttribute('aria-label', running ? 'Cancel' : 'Send');
-      els.send.title = running ? 'Stop' : 'Send';
+      els.send.setAttribute('aria-label', running ? t('composer.cancel') : t('composer.send'));
+      els.send.title = running ? t('btw.stop') : t('composer.send');
     }
     if (running) startSpinner();
     else stopSpinner();

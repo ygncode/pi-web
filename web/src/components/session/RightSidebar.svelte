@@ -37,11 +37,11 @@
   <div class="artifact-help-card" role="dialog" aria-modal="true" aria-labelledby="artifact-help-title">
     <div class="artifact-help-header"><h3 id="artifact-help-title">{t('sidebar.howArtifactsWork')}</h3><button class="artifact-help-close" data-action="close-artifact-help" aria-label={t('common.close')}>{@html icon(X, { size: 16 })}</button></div>
     <div class="artifact-help-body">
-      <p><strong>Artifacts</strong> are the files the agent wrote and the larger code blocks it shared, pulled out of the conversation so you can find, read, copy, or download them in one place.</p>
-      <p><strong>Viewing.</strong> Pick one from the list to see its source. HTML, SVG, and Markdown files also have a <em>Preview</em> toggle — HTML/SVG run in a secure sandbox, Markdown renders as formatted text.</p>
-      <p><strong>Annotating.</strong> Select text in an artifact's source to leave a note. Your notes collect in the <em>Annotations</em> tab, where you can jump back to them or send them to the agent.</p>
-      <p><strong>Staying up to date.</strong> Files the agent <em>writes</em> or <em>edits</em> update automatically, and simple renames or deletes (<code>mv</code>, <code>git mv</code>, <code>rm</code>) are tracked too. But changes made through other shell commands — like <code>sed</code> or output redirects — can't be followed from the conversation, so once in a while an artifact may show an older version. When in doubt, check the file on disk.</p>
-      <p class="artifact-help-note">Artifacts are part of the live view only and aren't included in exported snapshots.</p>
+      <p>{@html t('artifactHelp.intro')}</p>
+      <p>{@html t('artifactHelp.viewing')}</p>
+      <p>{@html t('artifactHelp.annotating')}</p>
+      <p>{@html t('artifactHelp.upToDate')}</p>
+      <p class="artifact-help-note">{t('artifactHelp.note')}</p>
     </div>
   </div>
 </div>
