@@ -10,6 +10,8 @@
  * mirroring the shape of right-sidebar.js and session-entry-renderer.js.
  */
 
+import { t } from '../../shared/i18n.js';
+
 export function createArtifactPanel({
   host,
   escapeHtml,
@@ -98,7 +100,7 @@ export function createArtifactPanel({
     const isPreview = a.kind === 'preview';
     // 'markdown' renders inline (sanitized) so the label is a gentle "Preview";
     // executable html/svg keep the click-to-run "Run preview".
-    const previewLabel = previewing ? 'Show source' : (a.previewType === 'markdown' ? 'Preview' : 'Run preview');
+    const previewLabel = previewing ? t('artifact.showSource') : (a.previewType === 'markdown' ? t('artifact.preview') : t('artifact.runPreview'));
     const previewToggle = isPreview
       ? `<button type="button" class="artifact-action${previewing ? ' active' : ''}" data-action="toggle-preview">${previewLabel}</button>`
       : '';
@@ -112,8 +114,8 @@ export function createArtifactPanel({
         <span class="artifact-view-title">${escapeHtml(a.title)}</span>
         <div class="artifact-view-actions">
           ${previewToggle}
-          <button type="button" class="artifact-action" data-action="copy" title="Copy source">Copy</button>
-          <button type="button" class="artifact-action" data-action="download" title="Download">Download</button>
+          <button type="button" class="artifact-action" data-action="copy" title="${escapeHtml(t('artifact.copySource'))}">${escapeHtml(t('artifact.copy'))}</button>
+          <button type="button" class="artifact-action" data-action="download" title="${escapeHtml(t('artifact.download'))}">${escapeHtml(t('artifact.download'))}</button>
         </div>
       </div>
       ${body}
@@ -176,7 +178,7 @@ export function createArtifactPanel({
     }
     if (ok && button) {
       const original = button.textContent;
-      button.textContent = 'Copied';
+      button.textContent = t('common.copied');
       button.classList.add('copied');
       windowImpl.setTimeout(() => {
         button.textContent = original;

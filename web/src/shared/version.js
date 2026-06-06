@@ -1,5 +1,6 @@
 import { escapeHtml } from './escape.js';
 import { icon, ExternalLink } from './icons.js';
+import { t } from './i18n.js';
 
 // Module-level reference to the page's single controller so menu dispatchers
 // (which only know the action name) can open the modal without threading a
@@ -14,7 +15,7 @@ export function openVersionModal() {
 // XSS-safe HTML fragment. Everything is escaped first; only a handful of
 // line-level constructs are then re-expanded.
 export function renderChangelog(markdown) {
-  if (!markdown) return '<p class="version-changelog-empty">No release notes.</p>';
+  if (!markdown) return `<p class="version-changelog-empty">${escapeHtml(t('version.noReleaseNotes'))}</p>`;
   const lines = String(markdown).replace(/\r\n/g, '\n').split('\n');
   const out = [];
   let inList = false;
@@ -144,7 +145,7 @@ export function createVersionController({
         <div class="version-modal-header">
           <span class="version-modal-title">pi-web</span>
           <span class="version-modal-current"></span>
-          <button type="button" class="version-modal-close" aria-label="Close">×</button>
+          <button type="button" class="version-modal-close" aria-label="${escapeHtml(t('common.close'))}">×</button>
         </div>
         <div class="version-modal-body"></div>
         <div class="version-modal-status" hidden></div>
@@ -179,42 +180,42 @@ export function createVersionController({
     setStatus('');
 
     if (!info) {
-      body.innerHTML = '<p>Version information is unavailable.</p>';
-      const retryBtn = makeButton('Check for updates', 'ghost', () => doManualCheck(retryBtn));
+      body.innerHTML = `<p>${escapeHtml(t('version.unavailable'))}</p>`;
+      const retryBtn = makeButton(t('version.checkForUpdates'), 'ghost', () => doManualCheck(retryBtn));
       actions.append(retryBtn);
       return;
     }
 
     if (info.isDev) {
       const latestNote = info.latest
-        ? `<p class="version-modal-notes">Latest published: ${escapeHtml(cleanVersion(info.latest))}</p>`
+        ? `<p class="version-modal-notes">${escapeHtml(t('version.latestPublished', { version: cleanVersion(info.latest) }))}</p>`
         : '';
       body.innerHTML =
-        `<p>You're running a local development build.</p>` +
+        `<p>${escapeHtml(t('version.devBuild'))}</p>` +
         latestNote +
-        `<p class="version-modal-notes">In-app update is disabled here so it can't overwrite local changes.</p>`;
-      const checkBtn = makeButton('Check for updates', 'ghost', () => doManualCheck(checkBtn));
+        `<p class="version-modal-notes">${escapeHtml(t('version.devUpdateDisabled'))}</p>`;
+      const checkBtn = makeButton(t('version.checkForUpdates'), 'ghost', () => doManualCheck(checkBtn));
       actions.append(checkBtn);
       return;
     }
 
     if (info.hasUpdate) {
       const link = info.changelogUrl
-        ? ` <a href="${escapeHtml(info.changelogUrl)}" target="_blank" rel="noreferrer">release notes ${icon(ExternalLink, { size: 12 })}</a>`
+        ? ` <a href="${escapeHtml(info.changelogUrl)}" target="_blank" rel="noreferrer">${escapeHtml(t('version.releaseNotes'))} ${icon(ExternalLink, { size: 12 })}</a>`
         : '';
       body.innerHTML =
-        `<p class="version-modal-lead">Update available: <strong>${escapeHtml(cleanVersion(info.current))} → ${escapeHtml(cleanVersion(info.latest))}</strong></p>` +
+        `<p class="version-modal-lead">${escapeHtml(t('version.updateAvailable'))} <strong>${escapeHtml(cleanVersion(info.current))} → ${escapeHtml(cleanVersion(info.latest))}</strong></p>` +
         `<div class="version-changelog">${renderChangelog(info.changelog)}</div>` +
         (link ? `<p class="version-modal-notes">${link}</p>` : '');
-      const updateBtn = makeButton('Update & Restart', 'primary', () => runUpdate());
-      const laterBtn = makeButton('Later', 'ghost', closeModal);
+      const updateBtn = makeButton(t('version.updateRestart'), 'primary', () => runUpdate());
+      const laterBtn = makeButton(t('version.later'), 'ghost', closeModal);
       actions.append(updateBtn, laterBtn);
     } else {
       const checkedNote = info.checkedAt
-        ? `<p class="version-modal-notes">Last checked ${new Date(info.checkedAt).toLocaleString()}.</p>`
+        ? `<p class="version-modal-notes">${escapeHtml(t('version.lastChecked', { when: new Date(info.checkedAt).toLocaleString() }))}</p>`
         : '';
-      body.innerHTML = `<p>You're on the latest version.</p>${checkedNote}`;
-      const checkBtn = makeButton('Check for updates', 'ghost', () => doManualCheck(checkBtn));
+      body.innerHTML = `<p>${escapeHtml(t('version.onLatest'))}</p>${checkedNote}`;
+      const checkBtn = makeButton(t('version.checkForUpdates'), 'ghost', () => doManualCheck(checkBtn));
       actions.append(checkBtn);
     }
   }
@@ -240,7 +241,7 @@ export function createVersionController({
     const label = btn.textContent;
     btn.disabled = true;
     btn.classList.add('is-loading');
-    btn.textContent = 'Checking…';
+    btn.textContent = t('version.checking');
     const startedAt = Date.now();
     try {
       await refresh(true);
@@ -253,7 +254,7 @@ export function createVersionController({
       btn.classList.remove('is-loading');
       btn.textContent = label;
       btn.disabled = false;
-      setStatus('Could not check for updates.', 'error');
+      setStatus(t('version.couldNotCheck'), 'error');
     }
   }
 
@@ -265,7 +266,7 @@ export function createVersionController({
     if (busy) return;
     busy = true;
     setActionsDisabled(true);
-    setStatus('Installing update…', 'info');
+    setStatus(t('version.installing'), 'info');
     try {
       const res = await fetchImpl('/api/update', {
         method: 'POST',
@@ -273,20 +274,20 @@ export function createVersionController({
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
-      setStatus('Restarting server…', 'info');
+      setStatus(t('version.restarting'), 'info');
       // Fire the restart; the connection will drop mid-flight, so don't depend
       // on this resolving.
       fetchImpl('/api/restart', { method: 'POST', headers: { Accept: 'application/json' } }).catch(() => {});
       awaitReconnect();
     } catch (err) {
-      setStatus('Update failed: ' + (err && err.message ? err.message : String(err)), 'error');
+      setStatus(t('version.updateFailed', { error: err && err.message ? err.message : String(err) }), 'error');
       setActionsDisabled(false);
       busy = false;
     }
   }
 
   function awaitReconnect() {
-    setStatus('Reconnecting…', 'info');
+    setStatus(t('version.reconnecting'), 'info');
     const startedAt = Date.now();
     const maxWaitMs = 90_000;
     // Grace period so the old process has a moment to be torn down before we
@@ -294,7 +295,7 @@ export function createVersionController({
     const graceMs = 2500;
     const tick = async () => {
       if (Date.now() - startedAt > maxWaitMs) {
-        setStatus('Server did not come back. Reload the page manually.', 'error');
+        setStatus(t('version.serverNotBack'), 'error');
         setActionsDisabled(false);
         busy = false;
         return;

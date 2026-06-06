@@ -367,7 +367,7 @@ export function runIndexPage({
         noResults = documentImpl.createElement('div');
         noResults.className = 'projects-empty';
         noResults.setAttribute('data-projects-no-results', '');
-        noResults.textContent = 'No projects match your search.';
+        noResults.textContent = t('index.noProjectsMatch');
         projectsList.appendChild(noResults);
       }
       noResults.classList.remove('hidden');
@@ -379,7 +379,7 @@ export function runIndexPage({
   function updateToggleAllLabel() {
     if (!projectsToggleAllBtn) return;
     const allEnabled = projectsCache.length > 0 && projectsCache.every((p) => p.enabled);
-    projectsToggleAllBtn.textContent = allEnabled ? 'Deselect all' : 'Select all';
+    projectsToggleAllBtn.textContent = allEnabled ? t('index.deselectAll') : t('index.selectAll');
     projectsToggleAllBtn.dataset.target = allEnabled ? 'disable' : 'enable';
     projectsToggleAllBtn.disabled = projectsCache.length === 0;
   }
@@ -392,7 +392,7 @@ export function runIndexPage({
     if (!projects.length) {
       const empty = documentImpl.createElement('div');
       empty.className = 'projects-empty';
-      empty.textContent = 'No projects found yet.';
+      empty.textContent = t('index.noProjectsFound');
       projectsList.appendChild(empty);
       return;
     }
@@ -410,7 +410,7 @@ export function runIndexPage({
           await page.setProjectEnabled(project.path, checkbox.checked);
         } catch (err) {
           checkbox.checked = !checkbox.checked;
-          if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to update project';
+          if (projectsModalError) projectsModalError.textContent = err.message || t('index.failedUpdateProject');
         } finally {
           checkbox.disabled = false;
         }
@@ -442,7 +442,7 @@ export function runIndexPage({
         const remove = documentImpl.createElement('button');
         remove.type = 'button';
         remove.className = 'project-row-remove';
-        remove.textContent = 'Remove';
+        remove.textContent = t('index.removeProject');
         remove.addEventListener('click', async () => {
           remove.disabled = true;
           try {
@@ -450,7 +450,7 @@ export function runIndexPage({
             await refreshProjectsList();
           } catch (err) {
             remove.disabled = false;
-            if (projectsModalError) projectsModalError.textContent = err.message || 'Failed to remove project';
+            if (projectsModalError) projectsModalError.textContent = err.message || t('index.failedRemoveProject');
           }
         });
         row.appendChild(remove);
@@ -466,8 +466,8 @@ export function runIndexPage({
     if (projectsConfig) projectsConfig.classList.toggle('filter-off', !filterEnabled);
     if (projectsFilterDesc) {
       projectsFilterDesc.textContent = filterEnabled
-        ? 'Only checked projects appear on the homepage.'
-        : 'All projects are shown. Turn on to show only the checked ones.';
+        ? t('index.filterOnDesc')
+        : t('index.filterOffDesc');
     }
   }
 

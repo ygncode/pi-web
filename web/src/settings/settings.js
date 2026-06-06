@@ -1,7 +1,7 @@
 import { configureSettingsSync, hydrateSettings, writeSetting } from '../shared/settings-store.js';
 import { applyTheme } from '../shared/theme.js';
 import { applyFonts } from '../shared/fonts.js';
-import { CUSTOM_LANGUAGES_KEY, englishTemplate } from '../shared/i18n.js';
+import { CUSTOM_LANGUAGES_KEY, englishTemplate, t } from '../shared/i18n.js';
 import {
   fetchAvailableSounds,
   getSelectedSound,
@@ -267,11 +267,11 @@ export function setupCustomLanguages({ documentImpl = document, windowImpl = win
     );
     try {
       await windowImpl.navigator?.clipboard?.writeText(template);
-      showStatus('Copied an English template to the clipboard.', false);
+      showStatus(t('settings.copiedTemplate'), false);
     } catch {
       // Clipboard unavailable: drop it into the textarea so it's still usable.
       textarea.value = template;
-      showStatus('Clipboard unavailable — inserted the template below.', false);
+      showStatus(t('settings.clipboardUnavailable'), false);
     }
   });
 
@@ -286,11 +286,11 @@ export function setupCustomLanguages({ documentImpl = document, windowImpl = win
     try {
       parsed = JSON.parse(raw);
     } catch (err) {
-      showStatus('Invalid JSON: ' + (err?.message || 'parse error'), true);
+      showStatus(t('settings.invalidJson', { error: err?.message || 'parse error' }), true);
       return;
     }
     if (!Array.isArray(parsed) || parsed.some((l) => !l || typeof l.code !== 'string' || !l.code.trim())) {
-      showStatus('Expected an array of { "code", "label", "strings" } objects.', true);
+      showStatus(t('settings.expectedArray'), true);
       return;
     }
     writeSetting(CUSTOM_LANGUAGES_KEY, JSON.stringify(parsed), { storage });

@@ -1,4 +1,5 @@
 import { icon, Share2 } from '../../shared/icons.js';
+import { t } from '../../shared/i18n.js';
 
 export function hideShareOverlay(state, { documentImpl = document } = {}) {
   const overlay = documentImpl.getElementById('share-overlay');
@@ -9,7 +10,7 @@ export function hideShareOverlay(state, { documentImpl = document } = {}) {
 export function showShareCopiedNotice(label, text, state, { documentImpl = document, setTimeoutImpl = setTimeout, clearTimeoutImpl = clearTimeout } = {}) {
   const notice = documentImpl.getElementById('share-copy-notice');
   if (!notice) return;
-  notice.textContent = label + ' copied';
+  notice.textContent = t('share.copiedSuffix', { label });
   notice.title = text;
   clearTimeoutImpl(state.shareCopyHideTimer);
   notice.classList.add('visible');

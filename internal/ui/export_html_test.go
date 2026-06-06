@@ -121,7 +121,7 @@ func TestShareResultCopyButtonsUseClipboardFallbackAndToast(t *testing.T) {
 		"navigatorImpl.clipboard && navigatorImpl.clipboard.writeText",
 		"documentImpl.execCommand('copy')",
 		"share-copy-notice",
-		"label + ' copied'",
+		"t('share.copiedSuffix', { label })",
 	} {
 		if !strings.Contains(string(source), want) {
 			t.Fatalf("share copy source missing %q", want)

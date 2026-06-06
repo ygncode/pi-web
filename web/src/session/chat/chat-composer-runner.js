@@ -1,4 +1,5 @@
 import { icon, X } from '../../shared/icons.js';
+import { t } from '../../shared/i18n.js';
 
 export function runChatComposer({
   documentImpl = document,
@@ -339,9 +340,9 @@ export function runChatComposer({
         }
       }
       if (ok) {
-        showCwdToast('Path copied');
+        showCwdToast(t('composer.pathCopied'));
       } else {
-        showCwdToast('Copy failed', true);
+        showCwdToast(t('common.copyFailed'), true);
       }
     });
   }

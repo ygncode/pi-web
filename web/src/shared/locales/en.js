@@ -12,6 +12,8 @@ export default {
   'common.search': 'Search...',
   'common.settings': 'Settings',
   'common.version': 'Version',
+  'common.copied': 'Copied',
+  'common.copyFailed': 'Copy failed',
 
   // ── Sessions index ──
   'index.title': 'Sessions',
@@ -43,6 +45,13 @@ export default {
   'index.sessionLayout': 'Session layout',
   'index.closeNewSession': 'Close Start a new session',
   'index.closeManageProjects': 'Close Manage projects',
+  'index.noProjectsMatch': 'No projects match your search.',
+  'index.noProjectsFound': 'No projects found yet.',
+  'index.removeProject': 'Remove',
+  'index.failedUpdateProject': 'Failed to update project',
+  'index.failedRemoveProject': 'Failed to remove project',
+  'index.filterOnDesc': 'Only checked projects appear on the homepage.',
+  'index.filterOffDesc': 'All projects are shown. Turn on to show only the checked ones.',
 
   // ── Command palette ──
   'palette.listSessions': 'List sessions',
@@ -114,6 +123,10 @@ export default {
   'composer.focusShortcut': 'Shift + i to focus',
   'composer.cancelRunning': 'Cancel running response',
   'composer.contextDetails': 'Click for details',
+  'composer.pathCopied': 'Path copied',
+
+  // ── Share / export ──
+  'share.copiedSuffix': '{label} copied',
 
   // ── Settings ──
   'settings.title': 'Settings',
@@ -252,10 +265,45 @@ export default {
   'btw.emptyHasSession': 'No messages yet — say hello.',
   'btw.emptyNoSession': 'Type a message to start a btw chat, or hit “new”.',
 
+  // ── Artifacts panel actions ──
+  'artifact.copy': 'Copy',
+  'artifact.copySource': 'Copy source',
+  'artifact.download': 'Download',
+  'artifact.preview': 'Preview',
+  'artifact.runPreview': 'Run preview',
+  'artifact.showSource': 'Show source',
+
   // ── Artifacts help modal (HTML — rendered via {@html}) ──
   'artifactHelp.intro': '<strong>Artifacts</strong> are the files the agent wrote and the larger code blocks it shared, pulled out of the conversation so you can find, read, copy, or download them in one place.',
   'artifactHelp.viewing': '<strong>Viewing.</strong> Pick one from the list to see its source. HTML, SVG, and Markdown files also have a <em>Preview</em> toggle — HTML/SVG run in a secure sandbox, Markdown renders as formatted text.',
   'artifactHelp.annotating': '<strong>Annotating.</strong> Select text in an artifact\'s source to leave a note. Your notes collect in the <em>Annotations</em> tab, where you can jump back to them or send them to the agent.',
   'artifactHelp.upToDate': '<strong>Staying up to date.</strong> Files the agent <em>writes</em> or <em>edits</em> update automatically, and simple renames or deletes (<code>mv</code>, <code>git mv</code>, <code>rm</code>) are tracked too. But changes made through other shell commands — like <code>sed</code> or output redirects — can\'t be followed from the conversation, so once in a while an artifact may show an older version. When in doubt, check the file on disk.',
   'artifactHelp.note': 'Artifacts are part of the live view only and aren\'t included in exported snapshots.',
+
+  // ── Version modal ──
+  'version.unavailable': 'Version information is unavailable.',
+  'version.checkForUpdates': 'Check for updates',
+  'version.checking': 'Checking…',
+  'version.couldNotCheck': 'Could not check for updates.',
+  'version.devBuild': 'You\'re running a local development build.',
+  'version.latestPublished': 'Latest published: {version}',
+  'version.devUpdateDisabled': 'In-app update is disabled here so it can\'t overwrite local changes.',
+  'version.updateAvailable': 'Update available:',
+  'version.releaseNotes': 'release notes',
+  'version.updateRestart': 'Update & Restart',
+  'version.later': 'Later',
+  'version.lastChecked': 'Last checked {when}.',
+  'version.onLatest': 'You\'re on the latest version.',
+  'version.noReleaseNotes': 'No release notes.',
+  'version.installing': 'Installing update…',
+  'version.restarting': 'Restarting server…',
+  'version.updateFailed': 'Update failed: {error}',
+  'version.reconnecting': 'Reconnecting…',
+  'version.serverNotBack': 'Server did not come back. Reload the page manually.',
+
+  // ── Custom-language editor (settings) ──
+  'settings.copiedTemplate': 'Copied an English template to the clipboard.',
+  'settings.clipboardUnavailable': 'Clipboard unavailable — inserted the template below.',
+  'settings.invalidJson': 'Invalid JSON: {error}',
+  'settings.expectedArray': 'Expected an array of { "code", "label", "strings" } objects.',
 };

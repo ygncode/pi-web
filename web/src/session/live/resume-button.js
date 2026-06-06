@@ -1,3 +1,5 @@
+import { t } from '../../shared/i18n.js';
+
 export function showResumeCopiedNotice(command, state, { documentImpl = document, setTimeoutImpl = setTimeout, clearTimeoutImpl = clearTimeout } = {}) {
   let notice = documentImpl.getElementById('resume-copy-notice');
   if (!notice) {
@@ -6,7 +8,7 @@ export function showResumeCopiedNotice(command, state, { documentImpl = document
     notice.className = 'toast-notice';
     documentImpl.body.appendChild(notice);
   }
-  notice.textContent = 'Copied';
+  notice.textContent = t('common.copied');
   notice.title = command;
   clearTimeoutImpl(state.hideTimer);
   notice.classList.add('visible');
