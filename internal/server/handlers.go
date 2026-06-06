@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -23,13 +24,13 @@ func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
 	// would surface in the browser as a "module script has MIME text/html" error.
 	if r.URL.Path != "/" {
 		if s.renderAppShell != nil && isSPABrowserPath(r) {
-			s.handleAppShell(w, r)
+			s.handleAppShell(w, r, "")
 			return
 		}
 		http.NotFound(w, r)
 		return
 	}
-	s.handleAppShell(w, r)
+	s.handleAppShell(w, r, "")
 }
 
 func isSPABrowserPath(r *http.Request) bool {
@@ -59,7 +60,14 @@ func isSPABrowserPath(r *http.Request) bool {
 }
 
 func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {
-	s.handleAppShell(w, r)
+	// Embed the session payload so the SPA paints without round-trips to
+	// /api/session and /api/scratchpad. Empty when the id is missing/unresolved;
+	// the client then falls back to fetching (and shows a proper error).
+	bootstrap := ""
+	if id := r.URL.Query().Get("id"); id != "" {
+		bootstrap = s.sessionBootstrap(id)
+	}
+	s.handleAppShell(w, r, bootstrap)
 }
 
 func (s *Server) handleApiForkSession(w http.ResponseWriter, r *http.Request) {
@@ -224,30 +232,72 @@ func (s *Server) handleApiSession(w http.ResponseWriter, r *http.Request) {
 			entries = entries[f:end]
 			from = f
 		}
-	} else if q.Get("paginate") == "1" && total > ui.LargeSessionThreshold {
-		// Initial SPA page load for a huge session: embed only the tail and let
-		// the frontend "Load earlier" affordance fetch preceding windows via
-		// ?from=N&count=K. Mirrors the legacy server-rendered page truncation.
-		// Only the session page sends paginate=1; other callers (live reload,
-		// btw, command menu) still receive the full session.
+	} else if q.Get("paginate") == "1" {
+		entries, total, from = paginatedEntries(resolved.Session.Entries)
+	}
+
+	writeJSON(w, 0, sessionResponseMap(resolved.Session, entries, total, from))
+}
+
+// paginatedEntries returns the tail window embedded on the initial session load
+// for huge sessions (mirrors the ?paginate=1 API path). `total` is always the
+// full count; `from` is the index the returned window starts at.
+func paginatedEntries(entries []map[string]any) (out []map[string]any, total, from int) {
+	total = len(entries)
+	out = entries
+	if total > ui.LargeSessionThreshold {
 		from = total - ui.LargeSessionTailEntries
 		if from < 0 {
 			from = 0
 		}
-		entries = entries[from:]
+		out = entries[from:]
 	}
+	return out, total, from
+}
 
-	writeJSON(w, 0, map[string]any{
-		"header":             resolved.Session.Header,
+// sessionResponseMap is the JSON shape the SPA consumes for a session, shared by
+// the /api/session endpoint and the bootstrap embedded in the page shell.
+func sessionResponseMap(session sessions.Session, entries []map[string]any, total, from int) map[string]any {
+	return map[string]any{
+		"header":             session.Header,
 		"entries":            entries,
-		"name":               resolved.Session.Name,
+		"name":               session.Name,
 		"total":              total,
 		"from":               from,
-		"chatAvailable":      resolved.Session.ChatAvailable || resolved.Session.ChatDisabledReason == "",
-		"chatDisabledReason": resolved.Session.ChatDisabledReason,
-		"model":              resolved.Session.Model,
-		"modelProvider":      resolved.Session.ModelProvider,
-	})
+		"chatAvailable":      session.ChatAvailable || session.ChatDisabledReason == "",
+		"chatDisabledReason": session.ChatDisabledReason,
+		"model":              session.Model,
+		"modelProvider":      session.ModelProvider,
+	}
+}
+
+// sessionBootstrap builds the base64 payload embedded in the session page shell
+// so the SPA can render its first paint without round-trips to /api/session and
+// /api/scratchpad. Returns "" when the id can't be resolved — the client then
+// falls back to fetching, which surfaces a proper 404/error state.
+func (s *Server) sessionBootstrap(id string) string {
+	if s.cache == nil {
+		return ""
+	}
+	resolved, err := s.cache.Resolve(s.sessionsDir, id)
+	if err != nil {
+		return ""
+	}
+	entries, total, from := paginatedEntries(resolved.Session.Entries)
+	data := sessionResponseMap(resolved.Session, entries, total, from)
+
+	scratchpad := ""
+	if cwd, _ := resolved.Session.Header["cwd"].(string); cwd != "" {
+		if content, err := s.lookupScratchpad(cwd); err == nil {
+			scratchpad = content
+		}
+	}
+
+	raw, err := json.Marshal(map[string]any{"id": id, "data": data, "scratchpad": scratchpad})
+	if err != nil {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(raw)
 }
 
 func (s *Server) handleNewSession(w http.ResponseWriter, r *http.Request) {

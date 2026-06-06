@@ -12,7 +12,7 @@ import (
 func TestSPAFallbackServesBrowserRoutesButNotAPIsOrAssets(t *testing.T) {
 	s := &Server{
 		auth: auth.New(""),
-		renderAppShell: func(w io.Writer) error {
+		renderAppShell: func(w io.Writer, bootstrap string) error {
 			_, err := io.WriteString(w, "spa shell")
 			return err
 		},

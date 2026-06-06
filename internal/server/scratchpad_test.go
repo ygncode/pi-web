@@ -172,7 +172,7 @@ func TestHandleSaveScratchpad(t *testing.T) {
 
 func TestHandleSessionUsesSPAShell(t *testing.T) {
 	s := &Server{
-		renderAppShell: func(w io.Writer) error {
+		renderAppShell: func(w io.Writer, bootstrap string) error {
 			_, err := io.WriteString(w, "spa shell")
 			return err
 		},

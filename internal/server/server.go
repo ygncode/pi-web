@@ -42,7 +42,7 @@ type Deps struct {
 	ChatSender          ChatSender
 	Cache               *sessions.Cache
 	RenderExportSession func(s sessions.Session, theme string) string
-	RenderAppShell      func(w io.Writer) error
+	RenderAppShell      func(w io.Writer, bootstrap string) error
 	Models              func(ctx context.Context) (json.RawMessage, error)
 	Now                 func() time.Time
 	// Updater reports current/latest version + changelog. Optional; when nil
@@ -71,7 +71,7 @@ type Server struct {
 	shareRunner         shareCmdRunner
 	now                 func() time.Time
 	renderExportSession func(s sessions.Session, theme string) string
-	renderAppShell      func(w io.Writer) error
+	renderAppShell      func(w io.Writer, bootstrap string) error
 	models              func(ctx context.Context) (json.RawMessage, error)
 	lastKnown           map[string]struct{} // session ids currently broadcast as running
 	lastKnownMu         sync.Mutex
@@ -228,7 +228,9 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/", s.auth.Wrap(s.handleIndex))
 	mux.HandleFunc("/session", s.auth.Wrap(s.handleSession))
 	mux.HandleFunc("/settings", s.auth.Wrap(s.handleSettingsPage))
-	mux.HandleFunc("/login", s.auth.Wrap(s.handleAppShell))
+	mux.HandleFunc("/login", s.auth.Wrap(func(w http.ResponseWriter, r *http.Request) {
+		s.handleAppShell(w, r, "")
+	}))
 	mux.HandleFunc("/api/session", s.auth.Wrap(s.handleApiSession))
 	mux.HandleFunc("/api/sessions", s.auth.Wrap(s.handleApiSessions))
 	mux.HandleFunc("/api/chat", s.auth.Wrap(s.handleChat))

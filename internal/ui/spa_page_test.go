@@ -11,7 +11,7 @@ func TestAppShellPreservesPWAContract(t *testing.T) {
 	defer func() { appScriptPath = old }()
 
 	var b strings.Builder
-	if err := RenderAppShell(&b); err != nil {
+	if err := RenderAppShell(&b, ""); err != nil {
 		t.Fatalf("RenderAppShell: %v", err)
 	}
 	html := b.String()

@@ -52,7 +52,7 @@ func newBenchServer(b *testing.B, numSessions, messagesPerSession int) (*Server,
 		Auth:                auth.New(""),
 		Cache:               sessions.NewCache(),
 		RenderExportSession: func(s sessions.Session, theme string) string { return "" },
-		RenderAppShell: func(w io.Writer) error {
+		RenderAppShell: func(w io.Writer, bootstrap string) error {
 			_, err := w.Write([]byte("<html><body>spa</body></html>"))
 			return err
 		},

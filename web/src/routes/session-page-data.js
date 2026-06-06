@@ -1,3 +1,20 @@
+import { decodeBase64JSON } from '../session/data/session-data.js';
+
+// The session route's HTML shell embeds the session payload (and scratchpad) in
+// a <script id="pi-session-bootstrap"> so the first paint needs no round-trip to
+// /api/session or /api/scratchpad. Returns { id, data, scratchpad } or null.
+export function readSessionBootstrap({ documentImpl, atobImpl, TextDecoderImpl } = {}) {
+  const doc = documentImpl || (typeof document !== 'undefined' ? document : null);
+  const el = doc?.getElementById?.('pi-session-bootstrap');
+  const raw = el && el.textContent ? el.textContent.trim() : '';
+  if (!raw) return null;
+  try {
+    return decodeBase64JSON(raw, { atobImpl, TextDecoderImpl });
+  } catch {
+    return null;
+  }
+}
+
 export function encodePayload(payload, { btoaImpl = globalThis.btoa, TextEncoderImpl = globalThis.TextEncoder } = {}) {
   const json = JSON.stringify(payload);
   const bytes = new TextEncoderImpl().encode(json);
@@ -78,10 +95,16 @@ export function buildSessionPageState({ sessionId, data, scratchpad = '', btoaIm
   };
 }
 
-export async function loadSessionPageState({ locationSearch = '', fetchImpl = fetch, btoaImpl, TextEncoderImpl } = {}) {
+export async function loadSessionPageState({ locationSearch = '', fetchImpl = fetch, btoaImpl, TextEncoderImpl, documentImpl, atobImpl, TextDecoderImpl } = {}) {
   const params = new URLSearchParams(locationSearch);
   const sessionId = params.get('id') || '';
   if (!sessionId) throw new Error('Missing session id');
+
+  // Prefer the payload embedded in the page shell — no fetch on first paint.
+  const boot = readSessionBootstrap({ documentImpl, atobImpl, TextDecoderImpl });
+  if (boot && boot.id === sessionId && boot.data) {
+    return buildSessionPageState({ sessionId, data: boot.data, scratchpad: boot.scratchpad || '', btoaImpl, TextEncoderImpl });
+  }
 
   const resp = await fetchImpl(`/api/session?id=${encodeURIComponent(sessionId)}&paginate=1`, { headers: { Accept: 'application/json' } });
   if (!resp.ok) throw new Error(resp.status === 404 ? 'Session not found' : 'Failed to load session');

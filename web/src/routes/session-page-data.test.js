@@ -75,4 +75,65 @@ describe('session-page-data', () => {
       '/api/scratchpad?project=%2Ftmp%2Fspace%20path',
     ]);
   });
+
+  it('uses the embedded bootstrap payload without fetching', async () => {
+    const b64utf8 = (value) => Buffer.from(value, 'utf8').toString('base64');
+    const bootstrap = b64utf8(
+      JSON.stringify({
+        id: 's.jsonl',
+        data: {
+          name: 'Embedded',
+          header: { cwd: '/tmp/x' },
+          entries: [],
+          model: 'haiku',
+          modelProvider: 'anthropic',
+          chatAvailable: true,
+        },
+        scratchpad: 'notes',
+      }),
+    );
+    const documentImpl = {
+      getElementById: (id) =>
+        id === 'pi-session-bootstrap' ? { textContent: bootstrap } : null,
+    };
+    let fetched = false;
+    const fetchImpl = async () => {
+      fetched = true;
+      throw new Error('should not fetch when bootstrap is present');
+    };
+
+    const state = await loadSessionPageState({
+      locationSearch: '?id=s.jsonl',
+      fetchImpl,
+      btoaImpl,
+      documentImpl,
+    });
+
+    expect(fetched).toBe(false);
+    expect(state.title).toBe('Embedded');
+    expect(state.scratchpad).toBe('notes');
+    expect(state.modelLabel).toBe('haiku @ anthropic');
+  });
+
+  it('falls back to fetch when the bootstrap is for a different session', async () => {
+    const b64utf8 = (value) => Buffer.from(value, 'utf8').toString('base64');
+    const bootstrap = b64utf8(JSON.stringify({ id: 'other.jsonl', data: { name: 'Other', entries: [] } }));
+    const documentImpl = {
+      getElementById: (id) =>
+        id === 'pi-session-bootstrap' ? { textContent: bootstrap } : null,
+    };
+    let fetched = false;
+    const fetchImpl = async (url) => {
+      fetched = true;
+      if (url.startsWith('/api/session')) {
+        return { ok: true, json: async () => ({ name: 'Fetched', header: {}, entries: [] }) };
+      }
+      return { ok: true, json: async () => ({ content: '' }) };
+    };
+
+    const state = await loadSessionPageState({ locationSearch: '?id=s.jsonl', fetchImpl, btoaImpl, documentImpl });
+
+    expect(fetched).toBe(true);
+    expect(state.title).toBe('Fetched');
+  });
 });

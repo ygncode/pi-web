@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, afterEach } from 'vitest';
-import { unmount } from 'svelte';
+import { flushSync, unmount } from 'svelte';
 import { mountApp } from './main.js';
 
 let mounted;
@@ -31,8 +31,11 @@ describe('App', () => {
     document.body.innerHTML = '<div id="app"></div>';
 
     mounted = mountApp({ props: { path: '/session' } });
+    // SessionPage marks the document on mount; the loading indicator itself is
+    // delayed (no flash) so the class is the reliable "mounted" signal.
+    flushSync();
 
-    expect(document.querySelector('.session-loading')?.textContent).toContain('Loading session');
+    expect(document.documentElement.classList.contains('pi-session-page')).toBe(true);
   });
 
   it('routes /settings to the Svelte settings page', () => {
