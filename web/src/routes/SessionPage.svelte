@@ -10,6 +10,7 @@
   import { firstMessageStub, loadSessionPageState } from './session-page-data.js';
 
   let loading = $state(true);
+  let showLoading = $state(false);
   let error = $state('');
   let sessionId = $state('');
   let title = $state('Session');
@@ -32,6 +33,12 @@
     document.documentElement.classList.add('pi-session-page');
     document.body.classList.add('pi-session-page');
 
+    // Avoid flashing the loading text on fast (localhost) loads: only reveal the
+    // indicator if the fetch is still pending after a short delay.
+    const loadingTimer = setTimeout(() => {
+      if (active && loading) showLoading = true;
+    }, 200);
+
     (async () => {
       try {
         const state = await loadSessionPageState({ locationSearch: window.location.search, fetchImpl: window.fetch.bind(window) });
@@ -47,6 +54,7 @@
         chatDisabledReason = state.chatDisabledReason;
         modelLabel = state.modelLabel;
         loading = false;
+        clearTimeout(loadingTimer);
         await tick();
         if (!active) return;
         // Svelte does not interpolate mustache tags inside a <script> raw-text
@@ -58,11 +66,13 @@
         if (!active) return;
         error = err?.message || 'Failed to load session';
         loading = false;
+        clearTimeout(loadingTimer);
       }
     })();
 
     return () => {
       active = false;
+      clearTimeout(loadingTimer);
       document.title = previousTitle;
       document.documentElement.classList.remove('pi-session-page');
       document.body.classList.remove('pi-session-page');
@@ -71,7 +81,7 @@
 </script>
 
 {#if loading}
-  <div class="session-loading">Loading session…</div>
+  {#if showLoading}<div class="session-loading">Loading session…</div>{/if}
 {:else if error}
   <div class="session-loading"><h1>{error}</h1><p><a href="/">Back to sessions</a></p></div>
 {:else}
