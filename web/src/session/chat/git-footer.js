@@ -2,7 +2,9 @@
 // composer. The bar stays hidden unless the session cwd is a git repo.
 //
 // The right-hand control is a split button: a primary action chosen for the
-// current state, plus a caret (▾) revealing the remaining relevant actions.
+// current state, plus a caret revealing the remaining relevant actions.
+
+import { icon, ExternalLink } from '../../shared/icons.js';
 
 export const DRAFT_PR_PROMPT =
   'Commit any uncommitted changes on this branch with a clear message, push ' +
@@ -68,12 +70,13 @@ export function setupGitFooter({
     if (url && typeof windowImpl.open === 'function') windowImpl.open(url, '_blank', 'noopener');
   }
 
-  // Each action is { id, label, run }. The plan picks one primary plus a list
-  // of secondary actions shown under the caret.
+  // Each action is { id, label, run, external? }. `external` actions open a URL
+  // in a new tab, so their label gets a trailing external-link icon. The plan
+  // picks one primary plus a list of secondary actions shown under the caret.
   const ACTIONS = {
     draft: { label: 'Create PR', run: () => insertPrompt(DRAFT_PR_PROMPT) },
-    manual: { label: 'Create PR manually ↗', run: () => openUrl(prCreateUrl) },
-    view: { label: 'View PR ↗', run: () => openUrl(existingPrUrl) },
+    manual: { label: 'Create PR manually', external: true, run: () => openUrl(prCreateUrl) },
+    view: { label: 'View PR', external: true, run: () => openUrl(existingPrUrl) },
     merge: { label: 'Merge PR', run: () => insertPrompt(MERGE_PR_PROMPT) },
     commit: { label: 'Commit & push', run: () => insertPrompt(COMMIT_PUSH_PROMPT) }
   };
@@ -120,7 +123,10 @@ export function setupGitFooter({
     const plan = planActions({ isDefault, hasPr, hasChanges });
     const primary = plan.primary ? ACTIONS[plan.primary] : null;
     if (primary) {
-      if (primaryLabel) primaryLabel.textContent = primary.label;
+      if (primaryLabel) {
+        primaryLabel.textContent = primary.label;
+        if (primary.external) primaryLabel.innerHTML += ' ' + icon(ExternalLink, { size: 12 });
+      }
       primaryAction = primary.run;
     } else {
       primaryAction = () => {};

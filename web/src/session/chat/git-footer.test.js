@@ -100,7 +100,8 @@ describe('setupGitFooter', () => {
     const gitApi = { getGitInfo: vi.fn().mockResolvedValue({ isRepo: true, branch: 'feature/x', isDefault: false, hasChanges: false, prUrl: 'https://github.com/o/r/pull/42' }) };
     setupGitFooter({ documentImpl: document, windowImpl: win, sessionId: 's', gitApi });
     await flush();
-    expect(id('pi-git-primary-label').textContent).toBe('View PR ↗');
+    expect(id('pi-git-primary-label').textContent.trim()).toBe('View PR');
+    expect(id('pi-git-primary-label').querySelector('svg')).not.toBeNull();
     expect(id('pi-git-pr-merge').hidden).toBe(false);
     expect(id('pi-git-pr-commit').hidden).toBe(true);
     id('pi-git-primary').click();
