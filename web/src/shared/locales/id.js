@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'Hanya entri berlabel',
   'session.filterAllTitle': 'Tampilkan semuanya',
   'session.resizeTree': 'Ubah ukuran bilah pohon sesi',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Cari Sesi',
   'menu.rename': 'Ganti nama',

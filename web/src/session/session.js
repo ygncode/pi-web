@@ -49,7 +49,9 @@ import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
 import { showShortcutsModal } from './live/shortcuts-modal.js';
 import { setupCatGatekeeper } from './cat-gatekeeper/cat-gatekeeper.js';
+import { openLabelModal } from './ui/label-modal.js';
 import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
+import { t } from '../shared/i18n.js';
 export { buildSessionLookups, createSessionDataModel, decodeBase64JSON, getSessionSearchParams, loadSessionData, readSessionPayload } from './data/session-data.js';
 export { buildActivePathIds, buildTree, buildTreeNodeMap, buildTreePrefix, findNewestLeaf, flattenTree, getPath } from './tree/session-tree.js';
 export { createTreeRenderer } from './tree/tree-renderer.js';
@@ -151,7 +153,7 @@ export function runSessionApp({ target = window } = {}) {
       : '';
     if (!nextLeafId) {
       for (let i = dataModel.entries.length - 1; i >= 0; i -= 1) {
-        if (dataModel.entries[i]?.id) {
+        if (dataModel.entries[i]?.id && dataModel.entries[i]?.type !== 'label') {
           nextLeafId = dataModel.entries[i].id;
           break;
         }
@@ -372,11 +374,33 @@ export function runSessionApp({ target = window } = {}) {
             }
           }
         })
-        .catch((err) => {
+        .catch(() => {
           btn.innerHTML = originalHtml;
           btn.disabled = false;
           target.alert('Fork failed');
         });
+    },
+    onLabel: (entryId) => {
+      openLabelModal({
+        entryId,
+        currentLabel: dataModel.labelMap.get(entryId) || '',
+        documentImpl,
+        onSave: ({ entryId: id, label }) => {
+          target.fetch(`/api/label-session?id=${encodeURIComponent(sessionId)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ entryId: id, label }),
+          })
+            .then(async (res) => {
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok || data.error) throw new Error(data.error || t('session.labelSaveFailed'));
+              if (label) dataModel.labelMap.set(id, label);
+              else dataModel.labelMap.delete(id);
+              forceTreeRerender();
+            })
+            .catch((err) => target.alert(err?.message || t('session.labelSaveFailed')));
+        }
+      });
     }
   });
 

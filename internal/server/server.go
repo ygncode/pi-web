@@ -246,6 +246,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/fork-session", s.auth.Wrap(s.handleApiForkSession))
 	mux.HandleFunc("/api/clone-session", s.auth.Wrap(s.handleApiCloneSession))
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
+	mux.HandleFunc("/api/label-session", s.auth.Wrap(s.handleLabelSessionEntry))
 	mux.HandleFunc("/api/recent-locations", s.auth.Wrap(s.handleRecentLocations))
 	mux.HandleFunc("/api/projects", s.getPostHandler(s.handleApiProjects, s.handleUpdateProject))
 	mux.HandleFunc("/api/files", s.auth.Wrap(s.handleApiFiles))

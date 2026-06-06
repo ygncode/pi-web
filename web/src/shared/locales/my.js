@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'အညွှန်းတပ် ထည့်သွင်းမှုများသာ',
   'session.filterAllTitle': 'အားလုံး ပြ',
   'session.resizeTree': 'ဆက်ရှင်သစ်ပင် ဘေးဘားတန်း အရွယ်ပြောင်း',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'ဆက်ရှင်များ ရှာဖွေ',
   'menu.rename': 'အမည်ပြောင်း',

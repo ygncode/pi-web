@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'Chỉ các mục có nhãn',
   'session.filterAllTitle': 'Hiển thị mọi thứ',
   'session.resizeTree': 'Thay đổi kích thước thanh cây phiên',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Tìm phiên',
   'menu.rename': 'Đổi tên',

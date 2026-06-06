@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'Uniquement les entrées étiquetées',
   'session.filterAllTitle': 'Tout afficher',
   'session.resizeTree': 'Redimensionner la barre de l’arbre de session',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Rechercher des sessions',
   'menu.rename': 'Renommer',

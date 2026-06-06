@@ -323,6 +323,7 @@ func truncate(s string, n int) string {
 }
 
 var ErrEmptySessionName = errors.New("session name is empty")
+var ErrSessionEntryNotFound = errors.New("session entry not found")
 
 // RenameSession persists a user display-name change by appending a session_info
 // entry. Parsers already treat the latest session_info.name as authoritative,
@@ -336,6 +337,79 @@ func RenameSession(path, name string, now func() time.Time) error {
 // apart from a user's manual rename and re-title safely across restarts.
 func AutoTitleSession(path, name string, now func() time.Time) error {
 	return appendSessionName(path, name, true, now)
+}
+
+func loadEntriesFromFile(path string) ([]map[string]any, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	lines := strings.Split(string(data), "\n")
+	entries := make([]map[string]any, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		var entry map[string]any
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			continue
+		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
+
+func LabelSessionEntry(path, targetID, label string, now func() time.Time) error {
+	targetID = strings.TrimSpace(targetID)
+	if targetID == "" {
+		return ErrSessionEntryNotFound
+	}
+	label = strings.TrimSpace(label)
+	if now == nil {
+		now = time.Now
+	}
+
+	entries, err := loadEntriesFromFile(path)
+	if err != nil {
+		return err
+	}
+	ids := make(map[string]struct{}, len(entries))
+	var parentID any
+	for _, entry := range entries {
+		id, _ := entry["id"].(string)
+		if id == "" {
+			continue
+		}
+		ids[id] = struct{}{}
+		parentID = id
+	}
+	if _, ok := ids[targetID]; !ok {
+		return ErrSessionEntryNotFound
+	}
+
+	entry := map[string]any{
+		"type":      "label",
+		"id":        randomEntryID(),
+		"parentId":  parentID,
+		"timestamp": now().UTC().Format(time.RFC3339Nano),
+		"targetId":  targetID,
+	}
+	if label != "" {
+		entry["label"] = label
+	}
+	data, err := json.Marshal(entry)
+	if err != nil {
+		return err
+	}
+
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND, 0)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Write(append(data, '\n'))
+	return err
 }
 
 func appendSessionName(path, name string, auto bool, now func() time.Time) error {

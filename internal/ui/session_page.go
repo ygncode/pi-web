@@ -62,6 +62,9 @@ func envInt(name string, def int) int {
 func prepareSessionPageData(session sessions.Session, cssTemplate string) (dataBase64, css, bodyAttrs string) {
 	leafID := ""
 	for i := len(session.Entries) - 1; i >= 0; i-- {
+		if typ, _ := session.Entries[i]["type"].(string); typ == "label" {
+			continue
+		}
 		if id, ok := session.Entries[i]["id"].(string); ok && id != "" {
 			leafID = id
 			break

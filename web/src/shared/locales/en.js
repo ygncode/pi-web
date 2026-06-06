@@ -86,6 +86,11 @@ export default {
   'session.filterLabeledTitle': 'Only labeled entries',
   'session.filterAllTitle': 'Show everything',
   'session.resizeTree': 'Resize session tree sidebar',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   // ── Session command menu ──
   'menu.searchSessions': 'Search Sessions',

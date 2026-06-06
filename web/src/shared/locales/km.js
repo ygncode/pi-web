@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'តែធាតុមានស្លាក',
   'session.filterAllTitle': 'បង្ហាញអ្វីៗទាំងអស់',
   'session.resizeTree': 'ប្ដូរទំហំរបារមែកធាងវគ្គ',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'ស្វែងរកវគ្គ',
   'menu.rename': 'ប្ដូរឈ្មោះ',

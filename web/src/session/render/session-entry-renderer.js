@@ -1,4 +1,5 @@
-import { icon, GitFork, Link2, Check } from '../../shared/icons.js';
+import { icon, GitFork, Link2, Check, Tag } from '../../shared/icons.js';
+import { t } from '../../shared/i18n.js';
 
 export function createSessionEntryRenderer({
   entries,
@@ -486,6 +487,15 @@ export function createSessionEntryRenderer({
   }
 
   /**
+   * Render the label button HTML for a message.
+   */
+  function renderLabelButton(entryId) {
+    const isLive = documentImpl.getElementById('pi-chat-composer') !== null;
+    if (!isLive) return '';
+    return `<button class="label-btn" data-entry-id="${entryId}" title="${escapeHtml(t('session.labelEntry'))}" aria-label="${escapeHtml(t('session.labelEntry'))}">${icon(Tag, { size: 13 })}</button>`;
+  }
+
+  /**
    * Render the copy-link button HTML for a message.
    */
   function renderCopyLinkButton(entryId) {
@@ -497,13 +507,14 @@ export function createSessionEntryRenderer({
     const tsHtml = ts ? `<div class="message-timestamp">${ts}</div>` : '';
     const entryId = `entry-${entry.id}`;
     const copyBtnHtml = renderCopyLinkButton(entry.id);
+    const labelBtnHtml = renderLabelButton(entry.id);
     const forkBtnHtml = renderForkButton(entry.id);
 
     if (entry.type === 'message') {
       const msg = entry.message;
 
       if (msg.role === 'user') {
-        let html = `<div class="user-message" id="${entryId}">${forkBtnHtml}${copyBtnHtml}${tsHtml}`;
+        let html = `<div class="user-message" id="${entryId}">${forkBtnHtml}${labelBtnHtml}${copyBtnHtml}${tsHtml}`;
         const content = msg.content;
 
         if (Array.isArray(content)) {
@@ -527,7 +538,7 @@ export function createSessionEntryRenderer({
       }
 
       if (msg.role === 'assistant') {
-        let html = `<div class="assistant-message" id="${entryId}">${forkBtnHtml}${copyBtnHtml}${tsHtml}`;
+        let html = `<div class="assistant-message" id="${entryId}">${forkBtnHtml}${labelBtnHtml}${copyBtnHtml}${tsHtml}`;
 
         for (const block of msg.content) {
           if (block.type === 'text' && block.text.trim()) {

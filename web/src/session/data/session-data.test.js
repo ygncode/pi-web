@@ -22,6 +22,16 @@ describe('session data helpers', () => {
     expect(lookups.labelMap.get('a1')).toBe('Important');
   });
 
+  it('applies label clear entries when building label lookups', () => {
+    const entries = [
+      { id: 'a1', type: 'message', message: { role: 'assistant', content: 'done' } },
+      { id: 'l1', type: 'label', targetId: 'a1', label: 'Important' },
+      { id: 'l2', type: 'label', targetId: 'a1' }
+    ];
+    const lookups = buildSessionLookups(entries);
+    expect(lookups.labelMap.has('a1')).toBe(false);
+  });
+
   it('prefers deep linked leaf id over default leaf id', () => {
     const model = createSessionDataModel({ leafId: 'default', entries: [] }, new URLSearchParams('leafId=linked&targetId=t1'));
     expect(model.defaultLeafId).toBe('default');

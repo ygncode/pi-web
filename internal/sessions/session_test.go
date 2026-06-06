@@ -1,6 +1,8 @@
 package sessions
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -307,6 +309,56 @@ func TestRenameSessionAppendsSessionInfo(t *testing.T) {
 	}
 	if s.Name != "New Name" {
 		t.Fatalf("Name = %q, want New Name", s.Name)
+	}
+}
+
+func TestLabelSessionEntryAppendsLabelAndClearEntries(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "s.jsonl")
+	content := `{"type":"session","version":3,"id":"sid","timestamp":"2026-05-08T10:00:00Z"}` + "\n" +
+		`{"type":"message","id":"target1","parentId":null,"timestamp":"2026-05-08T10:00:01Z","message":{"role":"user","content":"hello"}}` + "\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	now := func() time.Time { return time.Date(2026, 5, 8, 10, 1, 2, 0, time.UTC) }
+	if err := LabelSessionEntry(path, "target1", " Important ", now); err != nil {
+		t.Fatalf("LabelSessionEntry set failed: %v", err)
+	}
+	if err := LabelSessionEntry(path, "target1", "  ", now); err != nil {
+		t.Fatalf("LabelSessionEntry clear failed: %v", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(strings.TrimSpace(string(data)), "\n")
+	if len(lines) != 4 {
+		t.Fatalf("line count = %d, want 4: %q", len(lines), string(data))
+	}
+	var setEntry, clearEntry map[string]any
+	if err := json.Unmarshal([]byte(lines[2]), &setEntry); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal([]byte(lines[3]), &clearEntry); err != nil {
+		t.Fatal(err)
+	}
+	if setEntry["type"] != "label" || setEntry["targetId"] != "target1" || setEntry["label"] != "Important" {
+		t.Fatalf("set entry = %#v", setEntry)
+	}
+	if clearEntry["type"] != "label" || clearEntry["targetId"] != "target1" {
+		t.Fatalf("clear entry = %#v", clearEntry)
+	}
+	if _, ok := clearEntry["label"]; ok {
+		t.Fatalf("clear entry should omit label: %#v", clearEntry)
+	}
+}
+
+func TestLabelSessionEntryRejectsMissingTarget(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "s.jsonl")
+	if err := os.WriteFile(path, []byte(`{"type":"session"}`+"\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := LabelSessionEntry(path, "missing", "label", nil); !errors.Is(err, ErrSessionEntryNotFound) {
+		t.Fatalf("err = %v, want ErrSessionEntryNotFound", err)
 	}
 }
 

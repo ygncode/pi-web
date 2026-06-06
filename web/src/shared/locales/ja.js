@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'ラベル付きエントリのみ',
   'session.filterAllTitle': 'すべて表示',
   'session.resizeTree': 'セッションツリーのサイドバーをリサイズ',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'セッションを検索',
   'menu.rename': '名前を変更',

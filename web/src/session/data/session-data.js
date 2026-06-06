@@ -43,8 +43,9 @@ export function buildSessionLookups(entries = []) {
       }
     }
 
-    if (entry?.type === 'label' && entry.targetId && entry.label) {
-      labelMap.set(entry.targetId, entry.label);
+    if (entry?.type === 'label' && entry.targetId) {
+      if (entry.label) labelMap.set(entry.targetId, entry.label);
+      else labelMap.delete(entry.targetId);
     }
   }
 

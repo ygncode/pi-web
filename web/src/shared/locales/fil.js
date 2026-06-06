@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'Mga entry lang na may label',
   'session.filterAllTitle': 'Ipakita ang lahat',
   'session.resizeTree': 'I-resize ang sidebar ng session tree',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Maghanap ng Session',
   'menu.rename': 'Palitan ang pangalan',

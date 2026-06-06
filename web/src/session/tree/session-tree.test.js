@@ -56,6 +56,14 @@ describe('session tree helpers', () => {
     expect(findNewestLeaf('missing', roots)).toBe('missing');
   });
 
+  it('does not treat label bookkeeping entries as newest navigable leaves', () => {
+    const roots = buildTree([
+      ...entries,
+      { id: 'label-only', type: 'label', parentId: 'leaf', targetId: 'leaf', label: 'Done', timestamp: '2026-01-01T00:04:00Z' }
+    ]);
+    expect(findNewestLeaf('leaf', roots)).toBe('leaf');
+  });
+
   it('flattens active branch first and builds prefixes', () => {
     const roots = buildTree(entries);
     const flat = flattenTree(roots, buildActivePathIds('leaf', byId()));

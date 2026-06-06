@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'Nur markierte Einträge',
   'session.filterAllTitle': 'Alles anzeigen',
   'session.resizeTree': 'Sitzungsbaum-Seitenleiste anpassen',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Sitzungen suchen',
   'menu.rename': 'Umbenennen',

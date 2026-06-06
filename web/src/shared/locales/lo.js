@@ -72,6 +72,11 @@ export default {
   'session.filterLabeledTitle': 'ສະເພາະລາຍການທີ່ມີປ້າຍກຳກັບ',
   'session.filterAllTitle': 'ສະແດງທຸກຢ່າງ',
   'session.resizeTree': 'ປ່ຽນຂະໜາດແຖບແຜນຜັງເຊດຊັນ',
+  'session.labelEntry': 'Add or edit label',
+  'session.labelInput': 'Label',
+  'session.removeLabel': 'Remove label',
+  'session.labelPrompt': 'Label (empty to remove):',
+  'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'ຄົ້ນຫາເຊດຊັນ',
   'menu.rename': 'ປ່ຽນຊື່',

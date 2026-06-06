@@ -81,6 +81,46 @@ func TestHandleApiSessionIncludesSessionName(t *testing.T) {
 	}
 }
 
+func TestHandleLabelSessionEntryAppendsLabel(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "test-project", "session.jsonl")
+	s := &Server{
+		sessionsDir: root,
+		cache:       sessions.NewCache(),
+		now:         func() time.Time { return time.Date(2026, 5, 8, 10, 1, 2, 0, time.UTC) },
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/label-session?id=session.jsonl", strings.NewReader(`{"entryId":"aaaaaaaa","label":"Checkpoint"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	s.handleLabelSessionEntry(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", w.Code, w.Body.String())
+	}
+	resolved, err := sessions.ResolveByID(root, "session.jsonl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := resolved.Session.Entries[len(resolved.Session.Entries)-1]
+	if last["type"] != "label" || last["targetId"] != "aaaaaaaa" || last["label"] != "Checkpoint" {
+		t.Fatalf("last entry = %#v", last)
+	}
+}
+
+func TestHandleLabelSessionEntryRejectsMissingEntry(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "test-project", "session.jsonl")
+	s := &Server{sessionsDir: root, cache: sessions.NewCache()}
+
+	req := httptest.NewRequest(http.MethodPost, "/api/label-session?id=session.jsonl", strings.NewReader(`{"entryId":"missing","label":"Checkpoint"}`))
+	w := httptest.NewRecorder()
+	s.handleLabelSessionEntry(w, req)
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404, body = %s", w.Code, w.Body.String())
+	}
+}
+
 func TestHandleRenameSessionRejectsEmptyName(t *testing.T) {
 	root := t.TempDir()
 	writeSessionFile(t, root, "test-project", "session.jsonl")

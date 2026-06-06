@@ -1995,7 +1995,7 @@
       z-index: 10;
     }
 
-    .fork-btn {
+    .label-btn {
       position: absolute;
       top: 8px;
       right: 42px;
@@ -2015,14 +2015,37 @@
       z-index: 10;
     }
 
+    .fork-btn {
+      position: absolute;
+      top: 8px;
+      right: 76px;
+      width: 28px;
+      height: 28px;
+      padding: 6.5px;
+      background: var(--container-bg);
+      border: 1px solid var(--dim);
+      border-radius: 4px;
+      color: var(--muted);
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s, color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
     .user-message:hover .copy-link-btn,
     .assistant-message:hover .copy-link-btn,
+    .user-message:hover .label-btn,
+    .assistant-message:hover .label-btn,
     .user-message:hover .fork-btn,
     .assistant-message:hover .fork-btn {
       opacity: 1;
     }
 
     .copy-link-btn:hover,
+    .label-btn:hover,
     .fork-btn:hover {
       background: var(--accent);
       color: var(--body-bg);
@@ -2033,6 +2056,78 @@
       background: var(--success, #22c55e);
       color: white;
       border-color: var(--success, #22c55e);
+    }
+
+    .label-modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      z-index: 2200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+
+    .label-modal {
+      width: min(420px, 100%);
+      background: var(--container-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+      padding: 16px;
+      color: var(--text);
+    }
+
+    .label-modal h3 {
+      margin: 0 0 12px;
+      font-size: 15px;
+    }
+
+    .label-modal-field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .label-modal-field input {
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--input-bg, var(--body-bg));
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 9px 10px;
+      font: inherit;
+    }
+
+    .label-modal-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .label-modal-spacer { flex: 1; }
+
+    .label-modal-actions button {
+      border: 1px solid var(--border);
+      background: var(--container-bg);
+      color: var(--text);
+      border-radius: 7px;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+
+    .label-modal-save {
+      background: var(--accent) !important;
+      border-color: var(--accent) !important;
+      color: var(--body-bg) !important;
+    }
+
+    .label-modal-remove {
+      color: var(--error, #ef4444) !important;
     }
 
     /* Highlight effect for deep-linked messages */

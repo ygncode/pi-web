@@ -72,11 +72,16 @@ export function findNewestLeaf(nodeId, rootsOrNodeMap = []) {
   const treeNodeMap = rootsOrNodeMap instanceof Map ? rootsOrNodeMap : buildTreeNodeMap(rootsOrNodeMap);
   const node = treeNodeMap.get(nodeId);
   if (!node) return nodeId;
-  let current = node;
-  while (current.children.length > 0) {
-    current = current.children[current.children.length - 1];
+
+  function newestNavigable(current) {
+    for (let i = current.children.length - 1; i >= 0; i -= 1) {
+      const candidate = newestNavigable(current.children[i]);
+      if (candidate) return candidate;
+    }
+    return current.entry.type === 'label' ? null : current.entry.id;
   }
-  return current.entry.id;
+
+  return newestNavigable(node) || nodeId;
 }
 
 export function flattenTree(roots, activePathIds) {

@@ -393,6 +393,63 @@ func (s *Server) handleRenameSession(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 0, map[string]any{"ok": true, "name": name})
 }
 
+func (s *Server) handleLabelSessionEntry(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	var body struct {
+		EntryID string `json:"entryId"`
+		Label   string `json:"label"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSONError(w, http.StatusBadRequest, "invalid json body")
+		return
+	}
+	entryID := strings.TrimSpace(body.EntryID)
+	if entryID == "" {
+		writeJSONError(w, http.StatusBadRequest, "entryId is required")
+		return
+	}
+
+	id := r.URL.Query().Get("id")
+	var resolved sessions.ResolvedSession
+	var err error
+	if s.cache != nil {
+		resolved, err = s.cache.Resolve(s.sessionsDir, id)
+	} else {
+		resolved, err = sessions.ResolveByID(s.sessionsDir, id)
+	}
+	if err != nil {
+		switch {
+		case errors.Is(err, sessions.ErrInvalidSessionID):
+			writeJSONError(w, http.StatusBadRequest, "invalid session id")
+		case errors.Is(err, sessions.ErrSessionNotFound):
+			writeJSONError(w, http.StatusNotFound, "not found")
+		default:
+			writeJSONError(w, http.StatusInternalServerError, err.Error())
+		}
+		return
+	}
+
+	label := strings.TrimSpace(body.Label)
+	if err := sessions.LabelSessionEntry(resolved.Path, entryID, label, s.now); err != nil {
+		if errors.Is(err, sessions.ErrSessionEntryNotFound) {
+			writeJSONError(w, http.StatusNotFound, "entry not found")
+			return
+		}
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if s.fileMod != nil {
+		if info, err := os.Stat(resolved.Path); err == nil {
+			s.recordModTime(resolved.Session.ID, info.ModTime())
+		}
+	}
+	s.broadcast(resolved.Session.ID, "reload")
+	writeJSON(w, 0, map[string]any{"ok": true, "entryId": entryID, "label": label})
+}
+
 func (s *Server) handleRecentLocations(w http.ResponseWriter, r *http.Request) {
 	locations, err := sessions.ListRecentLocations(s.sessionsDir)
 	if err != nil {

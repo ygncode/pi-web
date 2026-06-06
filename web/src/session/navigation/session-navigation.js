@@ -10,7 +10,8 @@ export function createSessionNavigator({
   copyToClipboard,
   applyToggleStateToNode = (node) => windowImpl.sessionToggleState?.applyToNode(node),
   onNavigate = () => {},
-  onFork = null
+  onFork = null,
+  onLabel = null
 } = {}) {
   const entryCache = new Map();
 
@@ -61,6 +62,16 @@ export function createSessionNavigator({
           const entryId = btn.dataset.entryId;
           if (typeof onFork === 'function') {
             onFork(entryId, btn);
+          }
+        });
+      });
+
+      messagesEl.querySelectorAll('.label-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const entryId = btn.dataset.entryId;
+          if (typeof onLabel === 'function') {
+            onLabel(entryId, btn);
           }
         });
       });

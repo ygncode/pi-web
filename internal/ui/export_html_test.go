@@ -89,10 +89,11 @@ func TestGenerateExportHtmlOmitsChatComposerForShare(t *testing.T) {
 	}
 }
 
-func TestPrepareSessionPageDataUsesLastEntryWithIDAsLeaf(t *testing.T) {
+func TestPrepareSessionPageDataUsesLastNonLabelEntryWithIDAsLeaf(t *testing.T) {
 	session := sessions.Session{Entries: []map[string]any{
 		{"id": "root"},
 		{"id": "leaf"},
+		{"id": "label1", "type": "label", "targetId": "leaf", "label": "Done"},
 		{"type": "session_info", "name": "Renamed"},
 	}}
 	dataBase64, _, _ := prepareSessionPageData(session, liveSessionCss)
@@ -196,4 +197,3 @@ func TestSanitizeTheme(t *testing.T) {
 		}
 	}
 }
-
