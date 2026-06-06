@@ -1,0 +1,434 @@
+# Frontend → Full Svelte 5 Migration Plan
+
+**Status:** approved, ready to execute. **Owner:** intern bring-up (or autonomous goal).
+
+This plan is **self-contained and executable without further questions** — the
+four shaping decisions below are already locked. Do not re-open them; if a new
+question arises, prefer the lower-risk option and note it in the PR.
+
+## Locked decisions
+
+| Decision | Choice | Consequence |
+|---|---|---|
+| Export/share snapshot | **Full Svelte everywhere** | Export mounts the *same* Svelte components as the live app, rendered once (no SSE/chat/fetch). Shared components must never import a live-only module. |
+| Test strategy | **Full rewrite** | Replace all `jsdom` + `documentImpl`/`windowImpl` DI tests with `@testing-library/svelte`. Retire the DI plumbing once a module's tests are ported. |
+| TypeScript | **Defer** | Migrate to `.svelte` / `.svelte.js` (plain JS) now. `.ts` conversion is a separate follow-up. |
+| Rollout gate | **None — straight into full migration** | No proof-of-concept gate. Still phase-by-phase with green CI per phase (no big-bang branch). |
+
+## Goal & success criteria
+
+Replace the hybrid (Svelte shells delegating to vanilla `innerHTML` runtimes)
+with self-contained Svelte 5 components + `.svelte.js` reactive models, used by
+**both** the live SPA (`web/src/main.js`) and the static export
+(`web/src/export/`).
+
+**Done when:**
+
+1. No `web/src/**/*.js` performs `innerHTML`-based view rendering. (Pure data/util
+   modules and `.svelte.js` reactive models are fine.)
+2. The live app and export render from the **same** Svelte components.
+3. `TestExportBundleIsSelfContained` passes **and is hardened** (see §6).
+4. `make check` (Go test+build+vet), `web` `npm run test`, and `make e2e` are all
+   green.
+5. `npm run knip` reports no leftover dead modules from the list in §8.
+6. The deleted-module list in §8 is fully removed.
+
+**Non-goals (this effort):** TypeScript, visual redesign, changing the Go
+backend beyond the export guard test, touching `web/src/shared/locales/*`.
+
+---
+
+## 1. Ground truth (measured, not estimated)
+
+Inventory taken from the repo, not the docs. Use these numbers to re-baseline —
+the earlier "5000→2500 LOC" figure was wrong.
+
+- Non-test `.js` under `web/src`: **~18,855 LOC** (incl. ~4,400 LOC of
+  `locales/*` that do **not** change).
+- `.svelte` today: **~957 LOC** (thin shells only).
+- `.test.js`: **~8,633 LOC** — the largest single body of work. Full rewrite.
+- `.svelte.js` files today: **0** (the reactive-model pattern is net-new).
+- Biggest modules: `chat/chat-composer-runner.js` (1121), `index/index.js`
+  (718), `session/session.js` (692), `render/session-entry-renderer.js` (638),
+  `live/btw-popup.js` (621).
+
+### The shared (live + export) set — authoritative
+
+Export reuse is defined by **what `web/src/export/export-entry.js` imports
+today**. These 15 modules (and only these) are rendered in both contexts and
+must become **shared, live-safe** components / `.svelte.js`:
+
+```
+data/session-data.js            tree/session-tree.js        tree/session-filter.js
+render/session-format.js        render/markdown.js          render/session-header-renderer.js
+render/session-entry-renderer.js tree/tree-renderer.js      navigation/session-navigation.js
+ui/toggle-state.js              ui/sidebar.js               ui/search-filters.js
+ui/session-ui-runner.js         ui/image-modal.js           shared/keyboard-nav.js
+```
+
+**Everything else under `web/src/session/`, `web/src/index/`,
+`web/src/settings/` is live-only** and may freely use SSE / `fetch` / `onMount`.
+
+### Tooling already present (no install needed)
+
+`svelte@5.56.2`, `@sveltejs/vite-plugin-svelte@7.1.2`, `vite`, `vitest`,
+`jsdom`, `knip`. `web/vitest.config.js` already wires the svelte plugin +
+`environment: 'jsdom'`.
+
+### Tooling to ADD (Phase 1)
+
+```
+npm i -D @testing-library/svelte @testing-library/jest-dom @testing-library/user-event
+```
+
+Add a vitest setup file (`web/vitest.setup.js`) importing
+`@testing-library/jest-dom/vitest` and register it via `test.setupFiles` in
+`web/vitest.config.js`.
+
+### Build pipeline facts (don't rediscover these)
+
+- `web/package.json` `build` = `vite build` (live → `dist/`, manifested) **+**
+  `build:export`.
+- `build:export` = `vite build --config vite.config.export.js`
+  (→ `dist-export/export.js`, single IIFE) **+** `cp` to
+  `internal/ui/embedded/export/export.js` (Go `//go:embed`).
+- **`web/vite.config.export.js` currently has NO svelte plugin.** It must gain
+  `plugins: [svelte()]` in Phase 2, or the export build cannot compile
+  `.svelte` files. (Set the plugin's `emitCss: false` if it ever complains;
+  today components have no `<style>` blocks — all CSS lives in
+  `internal/ui/embedded/styles/session.css` — so no CSS chunk is produced.)
+- Go embed location does **not** move. Only the *content* of `export.js`
+  changes (now Svelte-compiled). No `export.go` change beyond the guard test.
+
+---
+
+## 2. Target architecture
+
+### One reactive model per page (Svelte context)
+
+`session/data/session-data.svelte.js` exports a `SessionDataModel` class:
+
+```js
+export class SessionDataModel {
+  entries  = $state([]);
+  header   = $state(null);
+  labelMap = $state(new Map());
+
+  byId        = $derived(buildById(this.entries));
+  toolCallMap = $derived(buildToolCallMap(this.entries));
+  tree        = $derived(buildTree(this.entries, this.labelMap));
+  nodeMap     = $derived(buildTreeNodeMap(this.tree));
+  flatNodes   = $derived(flattenTree(this.tree));
+
+  // view state
+  currentLeafId   = $state(null);
+  currentTargetId = $state(null);
+  filterMode      = $state('default');
+  searchQuery     = $state('');
+
+  constructor(payload) { /* loadSessionData → set $state */ }
+  applyLiveUpdate(payload) { this.entries = payload.entries; /* … */ }  // live only
+}
+```
+
+Create it once in the page (`SessionPage.svelte` / `ExportApp.svelte`), provide
+via `setContext`, read via `getContext` in children. **Live reload becomes
+`model.applyLiveUpdate(...)`** — no manual DOM diffing (`live-renderer.js`
+disappears).
+
+### Three component tiers (enforce the layering)
+
+1. **Pure `.svelte.js` (no DOM, no `$state` needed):** `session-format`,
+   `markdown`, `session-tree`, `session-filter`, `artifact-registry`,
+   `artifact-filter`, `annotation-range`. Plain exported functions; trivial unit
+   tests.
+2. **Shared presentational components (live + export — MUST NOT import any
+   live-only module):** `SessionTree`/`TreeNode`, `SessionContent`/`SessionEntry`,
+   `SessionHeader`. State injected via props/context only.
+3. **Live-only components:** everything that touches SSE/`fetch`/clipboard/etc.
+   — `ChatComposer`, `LiveReload`, `RightSidebar`, `ArtifactPanel`,
+   `AnnotationLayer`, all modals/popups, page orchestrators.
+
+**Hard rule (CI-enforced in §6):** a tier-2 component importing a tier-3 module
+is a bug — it would leak live-only code into the export bundle.
+
+---
+
+## 3. Phase plan (each phase ends green; ship per-phase PRs)
+
+> No PoC gate. But still incremental: every phase must leave
+> `make check` + `npm run test` + `make e2e` green and a runnable binary.
+
+### Phase 1 — Reactive foundation (additive, zero deletions)
+
+- Add testing deps + vitest setup (§1).
+- Create the pure `.svelte.js` modules (rename/copy logic; keep old `.js` for
+  now so nothing breaks): `session-format`, `markdown`, `session-tree`,
+  `session-filter`, `session-data` (pure parts) and the `SessionDataModel` /
+  filter state.
+- Port **their** unit tests to plain vitest (pure functions — no DOM).
+- Introduce the Svelte context provider scaffold in `SessionPage.svelte`
+  (model created, provided, not yet consumed by children).
+- **Exit:** green CI. Nothing visually changed.
+
+### Phase 2 — Shared rendering components (live + export switch together) ⚠️ riskiest
+
+This is the phase that touches the export invariant. Do it as one PR.
+
+- Build tier-2 components: `SessionTree.svelte` + `TreeNode.svelte` (recursive),
+  `SessionContent.svelte` + `SessionEntry.svelte`, expand `SessionHeader.svelte`.
+  They read the model via context; **no live-only imports**.
+- **Live:** `session.js` mounts these instead of calling `tree-renderer` /
+  `session-entry-renderer` / `session-header-renderer` / `session-navigation`.
+- **Export:** add `plugins: [svelte()]` to `web/vite.config.export.js`; create
+  `web/src/export/ExportApp.svelte`; rewrite `export-entry.js` to
+  `mount(ExportApp, { target, props })` (still exports `runExportApp` + the
+  bottom auto-run guard). Imports tier-1/tier-2 only.
+- Harden the guard test (§6) and run the export build.
+- **Delete:** `render/session-entry-renderer.js`,
+  `render/session-header-renderer.js`, `navigation/session-navigation.js`,
+  `tree/tree-renderer.js`, and the DI bootstrap body of `export-entry.js`.
+- **Exit:** green CI **including** `npm run build:export`, the hardened guard
+  test, and `make e2e` (export-preview e2e specifically — see
+  `docs/dev/e2e-testing.md`).
+
+### Phase 3 — Live-only session components
+
+- `ChatComposer.svelte` (absorbs `chat-composer-runner`, `chat-selectors`,
+  `chat-api`, `git-footer`, `done-notifier`) + children `ModelSelector`,
+  `ThinkingSelector`, `SlashPalette`, `MentionAutocomplete`.
+- `LiveReload.svelte` (SSE in `onMount`, calls `model.applyLiveUpdate`) +
+  `LiveStats`, `ChatPreview`, `ResumeButton`, `NewSessionButton`. **Delete**
+  `live-renderer.js` and `live-scroll.js` (replace with `scrollIntoView` +
+  CSS `scroll-behavior`).
+- `RightSidebar.svelte` (absorbs `ui/right-sidebar`, `ui/sidebar`,
+  `ui/search-filters`, `ui/session-ui-runner`, `ui/toggle-state`,
+  `ui/load-earlier`), `ArtifactPanel.svelte`, `AnnotationLayer.svelte`.
+- Modals/popups → components: `BtwPopup`, `CommandMenu`, `ForkModal`,
+  `FullScreenSheet`, `ModelUsageModal`, `ShortcutsModal`, `ShareOverlay`,
+  `LabelModal`, `ImageModal`, `CatGatekeeper`.
+- Expand `SessionPage.svelte` to orchestrate; **delete `session/session.js`**.
+- **Exit:** green CI + e2e (chat stub, artifacts, annotations, btw, mobile).
+
+### Phase 4 — Index + Settings pages
+
+- Index: `SessionsList.svelte`, `SessionCard.svelte`, wire existing
+  `NewSessionModal`/`ProjectsModal`/`HomeMenu`/`IndexHeader` shells; expand
+  `SessionsPage.svelte`. `shared/session-list-palette.js` →
+  `CommandPalette.svelte`. **Delete** `index/index.js`,
+  `index/sessions-page.js`, `index/session-card.js`.
+- Settings: give each `components/settings/*Settings.svelte` local `$state` +
+  `onchange → writeSetting()`; **delete `settings/settings.js`**.
+  `cat-gatekeeper/cat-settings.js` folds into `CatGatekeeperSettings.svelte`.
+- `shared/version.js` update-checker UI → component(s) used by AboutSettings /
+  CommandMenu.
+- **Exit:** green CI + e2e (index, search, new-session, settings, projects).
+
+### Phase 5 — Test rewrite completion + cleanup
+
+- Finish porting every remaining `.test.js` to `@testing-library/svelte`
+  (`render`, `screen.getByRole/Text`, `fireEvent`/`user-event`).
+- Remove all `documentImpl` / `windowImpl` DI parameters now that nothing uses
+  them.
+- `npm run knip` → delete any module it flags from §8; confirm none survive.
+- Docs: update `AGENTS.md` (frontend tables + coding standards), `docs/dev/
+  templates-vs-web.md`, `docs/architecture/{system-overview,frontend}.md` to
+  describe pure-Svelte live+export.
+- **Exit:** all success criteria in "Done when" met.
+
+---
+
+## 4. Per-phase definition of done (verification commands)
+
+Run from repo root unless noted:
+
+```bash
+(cd web && npm run test)     # vitest (ported + new component tests)
+make check                   # go test ./... + build + vet  (also builds export.js)
+make e2e                     # Playwright across desktop/mobile/iPad
+(cd web && npm run knip)     # dead-code check (esp. Phases 2–5)
+```
+
+A phase PR may not merge unless all four are green (knip advisory until Phase 5,
+mandatory at Phase 5).
+
+---
+
+## 5. Module → target map (complete; nothing omitted)
+
+🔄 = becomes `.svelte.js` (pure)  ·  ✨ = becomes Svelte component  ·
+✅ = stays as-is (framework-agnostic util)  ·  🗑️ = deleted after absorption
+
+### Shared (live + export)
+| Module | Target |
+|---|---|
+| `render/session-format.js` | 🔄 `session-format.svelte.js` |
+| `render/markdown.js` | 🔄 `markdown.svelte.js` |
+| `tree/session-tree.js` | 🔄 `session-tree.svelte.js` |
+| `tree/session-filter.js` | 🔄 `session-filter.svelte.js` |
+| `data/session-data.js` | 🔄 `session-data.svelte.js` (+ `SessionDataModel`) |
+| `render/session-entry-renderer.js` | ✨ `SessionContent` + `SessionEntry` |
+| `render/session-header-renderer.js` | ✨ `SessionHeader` (expand) |
+| `tree/tree-renderer.js` | ✨ `SessionTree` + `TreeNode` |
+| `navigation/session-navigation.js` | ✨ logic in `SessionPage` / nav helper |
+| `ui/sidebar.js`, `ui/search-filters.js`, `ui/toggle-state.js`, `ui/session-ui-runner.js` | ✨ absorbed into `SessionTree`/`RightSidebar` |
+| `ui/image-modal.js` | ✨ `ImageModal` (shared) |
+| `shared/keyboard-nav.js` | ✅ keep as util/action |
+
+### Live-only — session viewer
+| Module(s) | Target |
+|---|---|
+| `chat/chat-composer-runner.js` (1121), `chat/chat-selectors.js`, `chat/chat-api.js`, `chat/git-footer.js`, `chat/done-notifier.js`, `chat/git-api.js` | ✨ `ChatComposer` (+ helpers) |
+| `chat/model-selector.js` | ✨ `ModelSelector` |
+| `chat/thinking-selector.js` | ✨ `ThinkingSelector` |
+| `chat/slash-command.js` | ✨ `SlashPalette` |
+| `chat/mention-autocomplete.js` | ✨ `MentionAutocomplete` |
+| `live/live-reload-runner.js`, `live/live-events.js`, `live/live-entries.js` | ✨ `LiveReload` |
+| `live/live-renderer.js`, `live/live-scroll.js` | 🗑️ (reactive model + `scrollIntoView`) |
+| `live/live-stats.js`, `live/chat-preview.js`, `live/resume-button.js`, `live/new-session-button.js` | ✨ `LiveStats` / `ChatPreview` / `ResumeButton` / `NewSessionButton` |
+| `live/btw-popup.js` (621) | ✨ `BtwPopup` (see `docs/sequence-flows/btw.md`) |
+| `live/command-menu.js` | ✨ `CommandMenu` (expand shell) |
+| `live/fork-modal.js` | ✨ `ForkModal` |
+| `live/full-screen-sheet.js` | ✨ `FullScreenSheet` |
+| `live/model-usage-modal.js` | ✨ `ModelUsageModal` |
+| `live/shortcuts-modal.js` | ✨ `ShortcutsModal` |
+| `live/share-overlay.js` | ✨ `ShareOverlay` (expand `ShareDialog` shell) |
+| `ui/right-sidebar.js`, `ui/load-earlier.js`, `ui/label-modal.js` | ✨ `RightSidebar` / `LoadEarlier` / `LabelModal` |
+| `artifacts/artifact-registry.js`, `artifacts/artifact-filter.js` | 🔄 pure `.svelte.js` |
+| `artifacts/artifact-panel.js` | ✨ `ArtifactPanel` |
+| `annotations/annotation-range.js` | 🔄 pure `.svelte.js` |
+| `annotations/annotation-layer.js`, `annotations/annotation-api.js` | ✨ `AnnotationLayer` |
+| `cat-gatekeeper/cat-gatekeeper.js` | ✨ `CatGatekeeper` |
+| `session/session.js` (692) | 🗑️ → `SessionPage.svelte` |
+
+### Live-only — index & settings
+| Module(s) | Target |
+|---|---|
+| `index/index.js`, `index/sessions-page.js`, `index/session-card.js` | ✨ `SessionsPage` + `SessionsList` + `SessionCard` |
+| `shared/session-list-palette.js` | ✨ `CommandPalette` (expand shell) |
+| `settings/settings.js` | 🗑️ → per-section settings components |
+| `cat-gatekeeper/cat-settings.js` | ✨ folds into `CatGatekeeperSettings` |
+| `shared/version.js` | ✨ update-checker UI → component; keep any pure helpers |
+
+### Stays (framework-agnostic)
+`shared/{i18n,icons,theme,fonts,api,storage,escape,settings-store,status-events}.js`,
+`shared/locales/*`, `routes/session-page-data.js` (data fetch helper).
+
+---
+
+## 6. Export self-containment (the load-bearing constraint)
+
+`internal/ui/templates_embed_test.go :: TestExportBundleIsSelfContained` today
+greps the built `export.js` for `EventSource`, `runLiveReload`,
+`live-reload-runner`, `chatComposerRunner`. **Harden it in Phase 2** to also
+forbid:
+
+```
+EventSource   WebSocket   "fetch("   live-reload   ChatComposer
+ArtifactPanel AnnotationLayer  applyLiveUpdate   /api/
+```
+
+(Match symbols that uniquely identify tier-3 modules.) Also keep the existing
+empty-bundle check. If a forbidden symbol appears, a tier-2 component imported a
+tier-3 module — fix the import, don't loosen the test.
+
+Belt-and-suspenders: in `vite.config.export.js`, optionally mark live-only entry
+modules `external` so a stray import fails the build loudly instead of bloating
+the bundle.
+
+**Why export is safe to make reactive:** it mounts once and never updates, so
+`$state`/`$derived` simply compute once. The Svelte 5 runtime (~10 KB gz) is the
+only added weight and is acceptable for a Gist. Do **not** wire SSE/fetch into
+`ExportApp` — those DOM hosts aren't emitted server-side when `IsLive` is false.
+
+---
+
+## 7. Testing rewrite (full)
+
+- Pattern: `import { render, screen } from '@testing-library/svelte'` +
+  `import userEvent from '@testing-library/user-event'`.
+- Pure `.svelte.js`: plain vitest unit tests (no DOM) — do these first per
+  module, they're cheap and lock behaviour before the component wrap.
+- Components: `render(Component, { props })` →
+  `screen.getByRole/getByText` → `await user.click(...)` → assert.
+- Delete the `documentImpl`/`windowImpl` fakes as each module's last DI consumer
+  is removed (Phase 5 sweep).
+- Keep coverage at least at parity per module; the existing `.test.js` files are
+  the behavioural spec — port their cases, don't drop them.
+
+---
+
+## 8. Deletion checklist (verify with `knip` in Phase 5)
+
+```
+session/session.js
+session/render/session-entry-renderer.js
+session/render/session-header-renderer.js
+session/tree/tree-renderer.js
+session/navigation/session-navigation.js
+session/ui/{sidebar,search-filters,session-ui-runner,toggle-state,right-sidebar,load-earlier,label-modal,image-modal}.js
+session/chat/{chat-composer-runner,chat-selectors,chat-api,git-footer,git-api,done-notifier,model-selector,thinking-selector,slash-command,mention-autocomplete}.js
+session/live/{live-reload-runner,live-events,live-entries,live-renderer,live-scroll,live-stats,chat-preview,resume-button,new-session-button,btw-popup,command-menu,fork-modal,full-screen-sheet,model-usage-modal,shortcuts-modal,share-overlay}.js
+session/artifacts/artifact-panel.js
+session/annotations/{annotation-layer,annotation-api}.js
+session/cat-gatekeeper/{cat-gatekeeper,cat-settings}.js
+index/{index,sessions-page,session-card}.js
+settings/settings.js
+shared/session-list-palette.js
+```
+
+(`image-modal`/`keyboard-nav` stay if reused as shared utils; `version.js` keep
+any pure helpers.)
+
+---
+
+## 9. Risks & mitigations
+
+| Risk | Mitigation |
+|---|---|
+| Live-only code leaks into export | Hardened guard test (§6) + optional `external` in export config + tier layering rule |
+| Export build can't compile `.svelte` | Add `plugins: [svelte()]` to `vite.config.export.js` (Phase 2, first thing) |
+| Test rewrite stalls the migration | Port pure-module tests first (cheap); component tests phase-by-phase; never merge a phase with red tests |
+| Tree perf regression on huge sessions | Profile `SessionTree` at 10k+ entries; add a virtualized list if needed (keep `flattenTree`) |
+| Half-migrated `session.js` breaks live | session.js deleted only at end of Phase 3, after all its children exist |
+| Scope creep (btw/cat-gatekeeper/modals forgotten) | §5/§8 enumerate every module; knip is the backstop |
+
+---
+
+## 10. Working conventions for the executor
+
+- **Branches:** descriptive, e.g. `svelte/phase-2-shared-rendering` (no
+  `claude/…` prefix, no random suffixes).
+- **Commits:** authored as `Set Kyar Wa Lar (Universe) <setkyar16@gmail.com>`,
+  not `Claude`. Follow `AGENTS.md` coding standards (Lucide icons via
+  `icons.js`, i18n via `t()` for any new user-facing string, CSS stays in
+  `session.css`).
+- **PRs:** one per phase; do not open a PR unless asked, but keep each phase a
+  clean, separately-mergeable commit.
+- **Do not** re-litigate the §0 locked decisions.
+
+---
+
+## 11. Progress log
+
+Branch: `svelte/phase-1-reactive-foundation` (off `main`).
+
+| Status | Item |
+|---|---|
+| ✅ done | **Phase 1** — `SessionDataModel` (`session-data.svelte.js`, `$state`/`$derived`, reuses pure helpers; `load`/`applyLiveUpdate`); `session-context.js`; wired (provided, hydrated, **not yet consumed**) into `SessionPage.svelte`; `@testing-library/svelte` + jest-dom + `vitest.setup.js`. Unit + smoke tests. |
+| ✅ done | **Phase 2 prep** — `@sveltejs/vite-plugin-svelte` added to `vite.config.export.js` (`emitCss:false`); `TestExportBundleIsSelfContained` hardened (forbids `WebSocket`, `live-reload`, `ChatComposer`, `ArtifactPanel`, `AnnotationLayer`, `applyLiveUpdate`). |
+| ✅ done | **Phase 2 (tree, staged)** — `TreeNode.svelte` + `SessionTreeNodes.svelte`: reactive, live-safe, markup-parity replacements for `tree-renderer.js`, with component tests. **Staged, not wired** into the live shell / export entry. |
+| ⏸️ blocked | **Phase 2 cut-over + deletions** (and all later destructive steps). Wiring the components into both live + export and **deleting** the e2e-covered legacy renderers requires `make e2e` (Playwright) verification per §4. **e2e cannot run in the current environment** (no `e2e/node_modules`, no Playwright browser cache; `make e2e-setup` is a heavy network download). Working renderers were intentionally **left in place** rather than deleted blind. |
+
+**To resume / unblock:** run `make e2e-setup` once (installs e2e deps + Playwright
+browsers), then proceed with the Phase 2 cut-over: render `<SessionTreeNodes>`
+inside `SessionTree.svelte` and `ExportApp.svelte`, route the navigator/live
+updates through the model, delete `tree-renderer.js` (+ later
+`session-entry-renderer.js`, `session-header-renderer.js`,
+`session-navigation.js`), rebuild `export.js`, and confirm `make check` +
+`npm run test` + `make e2e` green.
+
+Verified green so far (no e2e): `npm run test` (web), `npm run build`
+(live + export), `go test ./internal/ui/...`. Pre-existing/unrelated:
+`internal/git TestDescribeDefaultBranch` fails due to the sandbox commit-signing
+server (not caused by this work).
