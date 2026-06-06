@@ -1,9 +1,13 @@
+<script>
+  import { t } from '../../shared/i18n.js';
+</script>
+
 <section class="settings-section">
-  <div class="settings-section-title">Notifications</div>
+  <div class="settings-section-title">{t('settings.notifications')}</div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Notify when a response is ready</span>
-      <span class="hint">Plays a sound and shows a notification when chat completes.</span>
+      <span class="name">{t('settings.notifyReady')}</span>
+      <span class="hint">{t('settings.notifyReadyHint')}</span>
     </div>
     <div class="settings-control">
       <label class="settings-toggle">
@@ -14,8 +18,8 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Done sound</span>
-      <span class="hint">Sound played when a response is ready.</span>
+      <span class="name">{t('settings.doneSound')}</span>
+      <span class="hint">{t('settings.doneSoundHint')}</span>
     </div>
     <div class="settings-control">
       <select data-setting="pi-share:v1:done-sound" data-setting-sound></select>

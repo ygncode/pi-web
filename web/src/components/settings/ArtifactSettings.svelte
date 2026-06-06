@@ -1,9 +1,13 @@
+<script>
+  import { t } from '../../shared/i18n.js';
+</script>
+
 <section class="settings-section">
-  <div class="settings-section-title">Artifacts</div>
+  <div class="settings-section-title">{t('settings.artifacts')}</div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Show Artifacts panel</span>
-      <span class="hint">Surface files the agent wrote and sizeable code blocks in a right-sidebar tab. When off, the tab is hidden.</span>
+      <span class="name">{t('settings.showArtifacts')}</span>
+      <span class="hint">{t('settings.showArtifactsHint')}</span>
     </div>
     <div class="settings-control">
       <label class="settings-toggle">
@@ -14,8 +18,8 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Include filter</span>
-      <span class="hint">Comma-separated globs (e.g. <code>*.md, *.html, artifacts/**</code>). Only matching files are shown. Leave empty to show everything; any filter also hides loose chat code snippets.</span>
+      <span class="name">{t('settings.includeFilter')}</span>
+      <span class="hint">{t('settings.includeFilterHint')}</span>
     </div>
     <div class="settings-control">
       <input type="text" data-setting="pi-web:v1:artifacts:include" placeholder="*.md, *.html" spellcheck="false" autocapitalize="off" autocomplete="off">

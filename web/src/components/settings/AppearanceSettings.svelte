@@ -1,45 +1,49 @@
+<script>
+  import { t } from '../../shared/i18n.js';
+</script>
+
 <section class="settings-section">
-  <div class="settings-section-title">Appearance</div>
+  <div class="settings-section-title">{t('settings.appearance')}</div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Theme</span>
-      <span class="hint">Applies to every browser pointed at this instance.</span>
+      <span class="name">{t('settings.theme')}</span>
+      <span class="hint">{t('settings.themeHint')}</span>
     </div>
     <div class="settings-control">
       <select data-setting="pi-web-theme" data-setting-theme>
-        <option value="dark">Dark</option>
-        <option value="light">Light</option>
+        <option value="dark">{t('settings.themeDark')}</option>
+        <option value="light">{t('settings.themeLight')}</option>
         <option value="nord">Nord</option>
         <option value="dracula">Dracula</option>
-        <option value="custom">Custom</option>
+        <option value="custom">{t('settings.themeCustom')}</option>
       </select>
     </div>
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Interface font</span>
-      <span class="hint">Font for the app UI — menus, lists, headers.</span>
+      <span class="name">{t('settings.interfaceFont')}</span>
+      <span class="hint">{t('settings.interfaceFontHint')}</span>
     </div>
     <div class="settings-control settings-font-control">
       <select data-font-select="ui">
-        <optgroup label="Built-in">
-          <option value="mono">Monospace</option>
-          <option value="system">System</option>
-          <option value="sans">Sans-serif</option>
-          <option value="serif">Serif</option>
+        <optgroup label={t('settings.fontBuiltIn')}>
+          <option value="mono">{t('settings.fontMono')}</option>
+          <option value="system">{t('settings.fontSystem')}</option>
+          <option value="sans">{t('settings.fontSans')}</option>
+          <option value="serif">{t('settings.fontSerif')}</option>
         </optgroup>
-        <optgroup label="Actions">
-          <option value="__detect__">Detect installed fonts…</option>
-          <option value="__custom__">Custom…</option>
+        <optgroup label={t('settings.fontActions')}>
+          <option value="__detect__">{t('settings.fontDetect')}</option>
+          <option value="__custom__">{t('settings.fontCustomOption')}</option>
         </optgroup>
       </select>
-      <input type="text" class="settings-font-custom" data-font-custom="ui" placeholder="Font family name" hidden>
+      <input type="text" class="settings-font-custom" data-font-custom="ui" placeholder={t('settings.fontFamilyPlaceholder')} hidden>
     </div>
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Interface font size</span>
-      <span class="hint">Size of the app UI text (px).</span>
+      <span class="name">{t('settings.interfaceFontSize')}</span>
+      <span class="hint">{t('settings.interfaceFontSizeHint')}</span>
     </div>
     <div class="settings-control">
       <input type="number" min="8" max="32" data-setting="pi-web:v1:font-ui-size" data-setting-size="ui">
@@ -47,29 +51,29 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Content font</span>
-      <span class="hint">Font for rendered message content. Code stays monospace.</span>
+      <span class="name">{t('settings.contentFont')}</span>
+      <span class="hint">{t('settings.contentFontHint')}</span>
     </div>
     <div class="settings-control settings-font-control">
       <select data-font-select="content">
-        <optgroup label="Built-in">
-          <option value="mono">Monospace</option>
-          <option value="system">System</option>
-          <option value="sans">Sans-serif</option>
-          <option value="serif">Serif</option>
+        <optgroup label={t('settings.fontBuiltIn')}>
+          <option value="mono">{t('settings.fontMono')}</option>
+          <option value="system">{t('settings.fontSystem')}</option>
+          <option value="sans">{t('settings.fontSans')}</option>
+          <option value="serif">{t('settings.fontSerif')}</option>
         </optgroup>
-        <optgroup label="Actions">
-          <option value="__detect__">Detect installed fonts…</option>
-          <option value="__custom__">Custom…</option>
+        <optgroup label={t('settings.fontActions')}>
+          <option value="__detect__">{t('settings.fontDetect')}</option>
+          <option value="__custom__">{t('settings.fontCustomOption')}</option>
         </optgroup>
       </select>
-      <input type="text" class="settings-font-custom" data-font-custom="content" placeholder="Font family name" hidden>
+      <input type="text" class="settings-font-custom" data-font-custom="content" placeholder={t('settings.fontFamilyPlaceholder')} hidden>
     </div>
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Content font size</span>
-      <span class="hint">Size of rendered message text (px).</span>
+      <span class="name">{t('settings.contentFontSize')}</span>
+      <span class="hint">{t('settings.contentFontSizeHint')}</span>
     </div>
     <div class="settings-control">
       <input type="number" min="8" max="32" data-setting="pi-web:v1:font-content-size" data-setting-size="content">

@@ -1,9 +1,13 @@
+<script>
+  import { t } from '../../shared/i18n.js';
+</script>
+
 <section class="settings-section">
-  <div class="settings-section-title">Cat Gatekeeper</div>
+  <div class="settings-section-title">{t('settings.catGatekeeper')}</div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Enable Cat Gatekeeper</span>
-      <span class="hint">A cat appears when it is time to rest.</span>
+      <span class="name">{t('settings.catEnable')}</span>
+      <span class="hint">{t('settings.catEnableHint')}</span>
     </div>
     <div class="settings-control">
       <label class="settings-toggle">
@@ -14,8 +18,8 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Focus time (minutes)</span>
-      <span class="hint">Uninterrupted work before the cat appears.</span>
+      <span class="name">{t('settings.catFocus')}</span>
+      <span class="hint">{t('settings.catFocusHint')}</span>
     </div>
     <div class="settings-control">
       <input type="number" min="1" max="240" data-setting="pi-web:v1:cat:focus-min">
@@ -23,8 +27,8 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Break time (minutes)</span>
-      <span class="hint">How long the cat keeps you away.</span>
+      <span class="name">{t('settings.catBreak')}</span>
+      <span class="hint">{t('settings.catBreakHint')}</span>
     </div>
     <div class="settings-control">
       <input type="number" min="1" max="120" data-setting="pi-web:v1:cat:break-min">
@@ -32,8 +36,8 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Bedtime</span>
-      <span class="hint">When the cat says goodnight.</span>
+      <span class="name">{t('settings.catBedtime')}</span>
+      <span class="hint">{t('settings.catBedtimeHint')}</span>
     </div>
     <div class="settings-control">
       <input type="time" data-setting="pi-web:v1:cat:bedtime">
@@ -41,8 +45,8 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Wakeup</span>
-      <span class="hint">When the cat lets you back in.</span>
+      <span class="name">{t('settings.catWakeup')}</span>
+      <span class="hint">{t('settings.catWakeupHint')}</span>
     </div>
     <div class="settings-control">
       <input type="time" data-setting="pi-web:v1:cat:wakeup">
@@ -50,8 +54,8 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Sleep reminder (minutes)</span>
-      <span class="hint">How long the sleepy cat stays before locking.</span>
+      <span class="name">{t('settings.catSleep')}</span>
+      <span class="hint">{t('settings.catSleepHint')}</span>
     </div>
     <div class="settings-control">
       <input type="number" min="1" max="60" data-setting="pi-web:v1:cat:sleep-min">

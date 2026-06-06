@@ -1,9 +1,13 @@
+<script>
+  import { t } from '../../shared/i18n.js';
+</script>
+
 <section class="settings-section">
-  <div class="settings-section-title">Session Titles</div>
+  <div class="settings-section-title">{t('settings.sessionTitles')}</div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Auto-generate titles</span>
-      <span class="hint">Let pi-web name sessions automatically from the first message.</span>
+      <span class="name">{t('settings.autoTitle')}</span>
+      <span class="hint">{t('settings.autoTitleHint')}</span>
     </div>
     <div class="settings-control">
       <label class="settings-toggle">
@@ -14,24 +18,24 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">When to title</span>
-      <span class="hint">Title a session once, or refresh it as the focus shifts.</span>
+      <span class="name">{t('settings.whenToTitle')}</span>
+      <span class="hint">{t('settings.whenToTitleHint')}</span>
     </div>
     <div class="settings-control">
       <select data-setting="pi-web:v1:auto-title:mode">
-        <option value="once">Once per session</option>
-        <option value="each-turn">Every new message</option>
+        <option value="once">{t('settings.titleOnce')}</option>
+        <option value="each-turn">{t('settings.titleEachTurn')}</option>
       </select>
     </div>
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Title model</span>
-      <span class="hint">Built-in is a free, instant word heuristic (no AI). Pick a model for smarter titles — a small, fast one is ideal.</span>
+      <span class="name">{t('settings.titleModel')}</span>
+      <span class="hint">{t('settings.titleModelHint')}</span>
     </div>
     <div class="settings-control">
       <select data-setting="pi-web:v1:auto-title:model" data-auto-title-model>
-        <option value="">Built-in heuristic (no AI)</option>
+        <option value="">{t('settings.titleBuiltin')}</option>
       </select>
     </div>
   </div>

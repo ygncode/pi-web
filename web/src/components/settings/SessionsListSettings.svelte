@@ -1,9 +1,13 @@
+<script>
+  import { t } from '../../shared/i18n.js';
+</script>
+
 <section class="settings-section">
-  <div class="settings-section-title">Sessions List</div>
+  <div class="settings-section-title">{t('settings.sessionsList')}</div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Spinner style</span>
-      <span class="hint">Animation shown next to running sessions.</span>
+      <span class="name">{t('settings.spinnerStyle')}</span>
+      <span class="hint">{t('settings.spinnerStyleHint')}</span>
     </div>
     <div class="settings-control">
       <select data-setting="pi-sessions:spinner-style">
@@ -14,20 +18,20 @@
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Default layout</span>
-      <span class="hint">How the sessions list is grouped on load.</span>
+      <span class="name">{t('settings.defaultLayout')}</span>
+      <span class="hint">{t('settings.defaultLayoutHint')}</span>
     </div>
     <div class="settings-control">
       <select data-setting="pi-sessions:view-layout">
-        <option value="timeline">Timeline</option>
-        <option value="projects">Projects</option>
+        <option value="timeline">{t('index.layoutTimeline')}</option>
+        <option value="projects">{t('index.layoutProjects')}</option>
       </select>
     </div>
   </div>
   <div class="settings-row">
     <div class="settings-row-label">
-      <span class="name">Show btw chats in list</span>
-      <span class="hint">Include the throwaway btw scratch-chats in the sessions list. Hidden by default.</span>
+      <span class="name">{t('settings.showBtw')}</span>
+      <span class="hint">{t('settings.showBtwHint')}</span>
     </div>
     <div class="settings-control">
       <label class="settings-toggle">
