@@ -9,6 +9,15 @@ import { themeIcon } from './icons.js';
 const BODY_BGS = { dark: '#111116', light: '#f6f5f2', nord: '#2e3440', dracula: '#282a36' };
 const CHROME_BGS = { dark: '#0f0f14', light: '#ddddda', nord: '#292f3a', dracula: '#242631' };
 
+function readThemeBg(windowImpl, documentImpl) {
+  try {
+    const cs = windowImpl.getComputedStyle(documentImpl.documentElement);
+    return cs.getPropertyValue('--body-bg').trim() || '';
+  } catch (e) {
+    return '';
+  }
+}
+
 export function applyTheme(windowImpl, documentImpl, next) {
   next = next || 'dark';
   documentImpl.documentElement.dataset.theme = next;
@@ -18,7 +27,12 @@ export function applyTheme(windowImpl, documentImpl, next) {
   const wco = !!(windowImpl.navigator
     && windowImpl.navigator.windowControlsOverlay
     && windowImpl.navigator.windowControlsOverlay.visible);
-  const color = (wco ? CHROME_BGS : BODY_BGS)[next] || BODY_BGS.dark;
+  // Built-in themes have a hardcoded background; the user-defined custom theme
+  // (loaded via /custom-themes.css) instead exposes its background through the
+  // --body-bg CSS variable, so read it back after the data-theme switch.
+  const color = (wco ? CHROME_BGS : BODY_BGS)[next]
+    || readThemeBg(windowImpl, documentImpl)
+    || BODY_BGS.dark;
   try { documentImpl.documentElement.style.backgroundColor = color; } catch (e) {}
   const meta = documentImpl.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = color;
