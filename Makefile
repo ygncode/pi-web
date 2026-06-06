@@ -1,4 +1,4 @@
-.PHONY: build setup frontend-setup go-setup root-setup frontend-build frontend-test extension-test memory-test go-test install-test vet test check clean dev release-patch release-minor release-major release-beta e2e e2e-setup
+.PHONY: build setup frontend-setup go-setup root-setup frontend-build frontend-test frontend-knip extension-test memory-test go-test install-test vet test check clean dev release-patch release-minor release-major release-beta e2e e2e-setup
 
 BINARY ?= pi-web
 WEB_DIR := web
@@ -38,6 +38,9 @@ frontend-build: frontend-setup
 frontend-test: frontend-setup
 	cd $(WEB_DIR) && npm run test
 
+frontend-knip: frontend-setup
+	cd $(WEB_DIR) && npm run knip
+
 extension-test: root-setup
 	npm run test:extensions
 
@@ -55,7 +58,7 @@ vet: go-setup
 
 test: frontend-test extension-test memory-test go-test install-test
 
-check: frontend-test extension-test memory-test frontend-build go-test install-test vet
+check: frontend-knip frontend-test extension-test memory-test frontend-build go-test install-test vet
 
 dev: frontend-setup go-setup
 	@echo "Starting dev mode (frontend watcher + Go hot-reloader)..."

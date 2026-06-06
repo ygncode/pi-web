@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "knip": "knip",
     "build": "vite build && npm run build:export",
     "build:export": "vite build --config vite.config.export.js && cp dist-export/export.js ../internal/ui/embedded/export/export.js",
     "dev": "npm run build:export && vite build --watch"
@@ -16,6 +17,7 @@
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "jsdom": "latest",
+    "knip": "^6.16.0",
     "svelte": "^5.56.2",
     "vite": "latest",
     "vitest": "latest"
