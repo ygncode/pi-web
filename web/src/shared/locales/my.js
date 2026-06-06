@@ -9,6 +9,7 @@ export default {
   'common.saved': 'သိမ်းပြီး',
   'common.search': 'ရှာဖွေ...',
   'common.settings': 'ဆက်တင်များ',
+  'common.userDocs': 'အသုံးပြုသူ စာရွက်စာတမ်းများ',
   'common.version': 'ဗားရှင်း',
 
   'index.title': 'ဆက်ရှင်များ',

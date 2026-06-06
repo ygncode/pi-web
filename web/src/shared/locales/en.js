@@ -11,6 +11,7 @@ export default {
   'common.saved': 'Saved',
   'common.search': 'Search...',
   'common.settings': 'Settings',
+  'common.userDocs': 'User Docs',
   'common.version': 'Version',
   'common.copied': 'Copied',
   'common.copyFailed': 'Copy failed',

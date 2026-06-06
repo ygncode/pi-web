@@ -10,7 +10,7 @@
       <span class="hint">{t('settings.docsHint')}</span>
     </div>
     <div class="settings-control">
-      <a class="settings-link" href="https://github.com/ygncode/pi-web/tree/main/docs" target="_blank" rel="noreferrer">{t('settings.openDocs')}</a>
+      <a class="settings-link" href="https://github.com/ygncode/pi-web/tree/main/user-docs" target="_blank" rel="noreferrer">{t('settings.openDocs')}</a>
     </div>
   </div>
   <div class="settings-row">

@@ -9,6 +9,7 @@ export default {
   'common.saved': 'Đã lưu',
   'common.search': 'Tìm kiếm...',
   'common.settings': 'Cài đặt',
+  'common.userDocs': 'Tài liệu người dùng',
   'common.version': 'Phiên bản',
 
   'index.title': 'Phiên',

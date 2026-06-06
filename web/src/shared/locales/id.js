@@ -9,6 +9,7 @@ export default {
   'common.saved': 'Tersimpan',
   'common.search': 'Cari...',
   'common.settings': 'Pengaturan',
+  'common.userDocs': 'Dokumentasi Pengguna',
   'common.version': 'Versi',
 
   'index.title': 'Sesi',

@@ -9,6 +9,7 @@ export default {
   'common.saved': 'Na-save',
   'common.search': 'Maghanap...',
   'common.settings': 'Mga Setting',
+  'common.userDocs': 'Dokumentasyon ng User',
   'common.version': 'Bersyon',
 
   'index.title': 'Mga Session',

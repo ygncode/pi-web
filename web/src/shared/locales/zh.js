@@ -9,6 +9,7 @@ export default {
   'common.saved': '已保存',
   'common.search': '搜索...',
   'common.settings': '设置',
+  'common.userDocs': '用户文档',
   'common.version': '版本',
 
   'index.title': '会话',

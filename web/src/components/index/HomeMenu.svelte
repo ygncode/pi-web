@@ -9,6 +9,7 @@
     <button class="web-menu-item" type="button" id="manage-projects-btn" data-manage-projects-btn role="menuitem">{t('index.manageProjects')}</button>
   </div>
   <div class="web-menu-section">
+    <a class="web-menu-item" href="https://github.com/ygncode/pi-web/tree/main/user-docs" target="_blank" rel="noreferrer" role="menuitem"><span>{t('common.userDocs')}</span></a>
     <a class="web-menu-item" href="/settings" role="menuitem"><span>{t('common.settings')}</span><kbd>⌘,</kbd></a>
     <button class="web-menu-item" type="button" id="index-version-row" data-version-row role="menuitem"><span>{t('common.version')}</span><span class="version-status" data-version-status>…</span></button>
   </div>

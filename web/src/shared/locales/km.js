@@ -9,6 +9,7 @@ export default {
   'common.saved': 'បានរក្សាទុក',
   'common.search': 'ស្វែងរក...',
   'common.settings': 'ការកំណត់',
+  'common.userDocs': 'ឯកសារអ្នកប្រើប្រាស់',
   'common.version': 'កំណែ',
 
   'index.title': 'វគ្គ',

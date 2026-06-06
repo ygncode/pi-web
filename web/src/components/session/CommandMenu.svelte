@@ -14,6 +14,7 @@
     <button class="command-menu-item" type="button" data-action="tree">{t('menu.tree')} <kbd>⌘B</kbd></button>
     <button class="command-menu-item" type="button" data-action="diff">{t('menu.diff')}</button>
     <button class="command-menu-item" type="button" data-action="model-usage">{t('menu.modelUsage')}</button>
+    <button class="command-menu-item" type="button" data-action="user-docs">{t('common.userDocs')}</button>
     <a class="command-menu-item" href="/settings" role="menuitem"><span>{t('common.settings')}</span><kbd>⌘,</kbd></a>
     <button class="command-menu-item" type="button" data-action="version" data-version-row role="menuitem"><span>{t('common.version')}</span><span class="version-status" id="command-menu-version-status" data-version-status>…</span></button>
   </div>
@@ -30,6 +31,7 @@
     <button class="mobile-command-item" type="button" data-action="tree">{t('menu.tree')}</button>
     <button class="mobile-command-item" type="button" data-action="diff">{t('menu.diff')}</button>
     <button class="mobile-command-item" type="button" data-action="model-usage">{t('menu.modelUsage')}</button>
+    <button class="mobile-command-item" type="button" data-action="user-docs">{t('common.userDocs')}</button>
     <a class="mobile-command-item" href="/settings" role="menuitem">{t('common.settings')}</a>
   </div>
 </div>

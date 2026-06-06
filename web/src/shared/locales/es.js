@@ -9,6 +9,7 @@ export default {
   'common.saved': 'Guardado',
   'common.search': 'Buscar...',
   'common.settings': 'Ajustes',
+  'common.userDocs': 'Documentación de usuario',
   'common.version': 'Versión',
 
   'index.title': 'Sesiones',

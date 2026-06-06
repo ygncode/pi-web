@@ -9,6 +9,7 @@ export default {
   'common.saved': '保存しました',
   'common.search': '検索...',
   'common.settings': '設定',
+  'common.userDocs': 'ユーザードキュメント',
   'common.version': 'バージョン',
 
   'index.title': 'セッション',

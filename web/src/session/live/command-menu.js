@@ -2,6 +2,8 @@ import { showModelUsageModal } from './model-usage-modal.js';
 import { showForkModal } from './fork-modal.js';
 import { openVersionModal } from '../../shared/version.js';
 
+const userDocsUrl = 'https://github.com/ygncode/pi-web/tree/main/user-docs';
+
 function chatUrl(path, sessionId) {
   return `${path}?id=${encodeURIComponent(sessionId)}`;
 }
@@ -277,6 +279,10 @@ export function setupCommandMenu({
       case 'version':
         closeMenu();
         openVersionModal();
+        break;
+      case 'user-docs':
+        closeMenu();
+        windowImpl.open(userDocsUrl, '_blank', 'noreferrer');
         break;
       case 'diff':
         showToast('Not yet implemented', documentImpl, windowImpl);

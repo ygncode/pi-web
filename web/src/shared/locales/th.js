@@ -9,6 +9,7 @@ export default {
   'common.saved': 'บันทึกแล้ว',
   'common.search': 'ค้นหา...',
   'common.settings': 'การตั้งค่า',
+  'common.userDocs': 'เอกสารผู้ใช้',
   'common.version': 'เวอร์ชัน',
 
   'index.title': 'เซสชัน',
