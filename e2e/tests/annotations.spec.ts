@@ -6,16 +6,30 @@ import {
   writeSession,
 } from "../lib/sessions";
 
+// The SPA renders the session view asynchronously. Wait until runSessionApp has
+// run — a populated tree means #messages is fully rendered and the sidebar
+// collapse state has settled — before reading body classes or walking the DOM.
+// Use `attached` (not `visible`): on mobile the tree sidebar is hidden.
+async function waitSessionReady(page: import("@playwright/test").Page) {
+  await page
+    .locator("#tree-container .tree-node")
+    .first()
+    .waitFor({ state: "attached" });
+}
+
 async function openRightSidebar(page: import("@playwright/test").Page) {
+  await waitSessionReady(page);
   const collapsed = await page.evaluate(() =>
     document.body.classList.contains("right-sidebar-collapsed"),
   );
   if (collapsed) {
     await page.locator("#toggle-right-sidebar-btn").click();
+    await expect(page.locator("body")).not.toHaveClass(/right-sidebar-collapsed/);
   }
 }
 
 async function collapseRightSidebar(page: import("@playwright/test").Page) {
+  await waitSessionReady(page);
   const collapsed = await page.evaluate(() =>
     document.body.classList.contains("right-sidebar-collapsed"),
   );
@@ -34,6 +48,13 @@ async function annotateFirstMessage(
   page: import("@playwright/test").Page,
   note: string,
 ) {
+  // The annotation source lives in #messages, which the SPA fills in
+  // asynchronously; wait for it to hold real text before walking it.
+  await waitSessionReady(page);
+  await page.waitForFunction(() => {
+    const m = document.getElementById("messages");
+    return !!m && /[A-Za-z]{4,}/.test(m.textContent || "");
+  });
   const selected = await page.evaluate(() => {
     const messages = document.getElementById("messages")!;
     const walker = document.createTreeWalker(messages, NodeFilter.SHOW_TEXT);

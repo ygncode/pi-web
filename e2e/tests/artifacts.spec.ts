@@ -138,6 +138,14 @@ async function seedArtifactSetting(
 }
 
 async function openArtifactsTab(page: import("@playwright/test").Page) {
+  // Wait until the session app has initialized (a populated tree) so the sidebar
+  // collapse state has settled — reading it too early made the tab click race
+  // the slide-in animation and miss ("element outside viewport"). `attached`
+  // because the tree sidebar is hidden on mobile.
+  await page
+    .locator("#tree-container .tree-node")
+    .first()
+    .waitFor({ state: "attached" });
   // The right sidebar is open by default on desktop but collapsed on mobile;
   // toggle it open only when collapsed so we don't accidentally close it.
   const collapsed = await page.evaluate(() =>
@@ -145,7 +153,10 @@ async function openArtifactsTab(page: import("@playwright/test").Page) {
   );
   if (collapsed) {
     await page.locator("#toggle-right-sidebar-btn").click();
+    await expect(page.locator("body")).not.toHaveClass(/right-sidebar-collapsed/);
   }
+  // click() auto-waits for actionability and scrolls the tab into view (the tab
+  // row can overflow horizontally on narrow mobile viewports).
   await page.locator("#right-tab-artifacts").click();
   await expect(page.locator("#right-pane-artifacts")).toBeVisible();
 }
