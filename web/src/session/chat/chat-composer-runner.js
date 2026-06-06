@@ -1,3 +1,5 @@
+import { icon, X } from '../../shared/icons.js';
+
 export function runChatComposer({
   documentImpl = document,
   windowImpl = window,
@@ -505,7 +507,7 @@ export function runChatComposer({
         remove.type = 'button';
         remove.className = 'pi-chat-remove';
         remove.setAttribute('aria-label', 'Remove ' + file.name);
-        remove.textContent = '×';
+        remove.innerHTML = icon(X, { size: 13 });
         remove.addEventListener('click', () => {
           const [removed] = selectedChatFiles.splice(index, 1);
           if (removed) revokeAttachmentObjectUrl(removed);

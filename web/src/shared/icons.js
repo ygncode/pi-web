@@ -1,0 +1,102 @@
+// Lucide icons (https://lucide.dev — ISC license). pi-web renders icon data to
+// an SVG *string* rather than using a framework component, because icons are
+// injected from three places: Svelte markup ({@html icon(...)}), vanilla-JS
+// runtime modules (el.innerHTML = icon(...)), and — via the shared session
+// modules — the server-less export bundle. A string helper works in all three
+// and keeps the export self-contained.
+//
+// Do not hand-draw custom SVG icons or use unicode glyphs for icons. Import the
+// Lucide icon here and render it with icon(). See AGENTS.md.
+import {
+  ArrowUp,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleHelp,
+  Copy,
+  Download,
+  Ellipsis,
+  GitFork,
+  Link2,
+  Maximize2,
+  Moon,
+  MoreHorizontal,
+  PanelLeft,
+  PanelLeftClose,
+  Paperclip,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  Snowflake,
+  SquarePen,
+  Sun,
+  X,
+} from 'lucide';
+
+// Lucide's default SVG presentation attributes (24x24 grid, 2px round strokes).
+const DEFAULT_ATTRS = {
+  xmlns: 'http://www.w3.org/2000/svg',
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  'stroke-width': '2',
+  'stroke-linecap': 'round',
+  'stroke-linejoin': 'round',
+};
+
+const attrString = (attrs) =>
+  Object.entries(attrs)
+    .filter(([, v]) => v !== undefined && v !== null && v !== false)
+    .map(([k, v]) => `${k}="${String(v)}"`)
+    .join(' ');
+
+/**
+ * Render a Lucide icon node to an SVG markup string.
+ * @param {Array<[string, Record<string, string|number>]>} node Lucide icon data.
+ * @param {{ size?: number, class?: string, strokeWidth?: number|string }} [opts]
+ * @returns {string}
+ */
+export function icon(node, { size = 16, class: className = '', strokeWidth } = {}) {
+  const attrs = {
+    ...DEFAULT_ATTRS,
+    width: size,
+    height: size,
+    'aria-hidden': 'true',
+  };
+  if (strokeWidth != null) attrs['stroke-width'] = String(strokeWidth);
+  if (className) attrs.class = className;
+  const children = node
+    .map(([tag, childAttrs]) => `<${tag} ${attrString(childAttrs)} />`)
+    .join('');
+  return `<svg ${attrString(attrs)}>${children}</svg>`;
+}
+
+export {
+  ArrowUp,
+  Check,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CircleHelp,
+  Copy,
+  Download,
+  Ellipsis,
+  GitFork,
+  Link2,
+  Maximize2,
+  Moon,
+  MoreHorizontal,
+  PanelLeft,
+  PanelLeftClose,
+  Paperclip,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  Snowflake,
+  SquarePen,
+  Sun,
+  X,
+};

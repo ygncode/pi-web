@@ -1,4 +1,5 @@
 <script>
+  import { icon, CircleHelp, Maximize2, X } from '../../shared/icons.js';
   let { scratchpad = '' } = $props();
 </script>
 
@@ -11,9 +12,9 @@
       <button type="button" id="right-tab-artifacts" class="right-sidebar-tab" role="tab" data-pane="artifacts" aria-selected="false">Artifacts<span id="artifact-tab-count" class="right-sidebar-tab-count" hidden>0</span></button>
     </div>
     <div class="right-sidebar-actions">
-      <button id="artifact-help-btn" class="right-sidebar-btn artifact-help-btn" title="How artifacts work" aria-label="How artifacts work">?</button>
-      <button id="expand-right-sidebar" class="right-sidebar-btn" title="Expand panel">⛶</button>
-      <button id="close-right-sidebar" class="right-sidebar-btn" title="Hide panel (⌘⇧N)">×</button>
+      <button id="artifact-help-btn" class="right-sidebar-btn artifact-help-btn" title="How artifacts work" aria-label="How artifacts work">{@html icon(CircleHelp, { size: 15 })}</button>
+      <button id="expand-right-sidebar" class="right-sidebar-btn" title="Expand panel">{@html icon(Maximize2, { size: 14 })}</button>
+      <button id="close-right-sidebar" class="right-sidebar-btn" title="Hide panel (⌘⇧N)">{@html icon(X, { size: 15 })}</button>
     </div>
   </div>
   <div class="right-sidebar-content">
@@ -33,7 +34,7 @@
 <div id="artifact-help-modal" class="artifact-help-modal" hidden>
   <div class="artifact-help-backdrop" data-action="close-artifact-help"></div>
   <div class="artifact-help-card" role="dialog" aria-modal="true" aria-labelledby="artifact-help-title">
-    <div class="artifact-help-header"><h3 id="artifact-help-title">How artifacts work</h3><button class="artifact-help-close" data-action="close-artifact-help" aria-label="Close">&times;</button></div>
+    <div class="artifact-help-header"><h3 id="artifact-help-title">How artifacts work</h3><button class="artifact-help-close" data-action="close-artifact-help" aria-label="Close">{@html icon(X, { size: 16 })}</button></div>
     <div class="artifact-help-body">
       <p><strong>Artifacts</strong> are the files the agent wrote and the larger code blocks it shared, pulled out of the conversation so you can find, read, copy, or download them in one place.</p>
       <p><strong>Viewing.</strong> Pick one from the list to see its source. HTML, SVG, and Markdown files also have a <em>Preview</em> toggle — HTML/SVG run in a secure sandbox, Markdown renders as formatted text.</p>

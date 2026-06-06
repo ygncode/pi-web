@@ -1,3 +1,5 @@
+import { icon, GitFork, Link2, Check } from '../../shared/icons.js';
+
 export function createSessionEntryRenderer({
   entries,
   header,
@@ -465,7 +467,7 @@ export function createSessionEntryRenderer({
 
     if (success && button) {
       const originalHtml = button.innerHTML;
-      button.innerHTML = '✓';
+      button.innerHTML = icon(Check, { size: 13 });
       button.classList.add('copied');
       setTimeout(() => {
         button.innerHTML = originalHtml;
@@ -480,27 +482,14 @@ export function createSessionEntryRenderer({
   function renderForkButton(entryId) {
     const isLive = documentImpl.getElementById('pi-chat-composer') !== null;
     if (!isLive) return '';
-    return `<button class="fork-btn" data-entry-id="${entryId}" title="Fork session from this message">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="18" cy="18" r="3" />
-        <circle cx="6" cy="6" r="3" />
-        <circle cx="6" cy="18" r="3" />
-        <path d="M18 15V9a4 4 0 0 0-4-4H9" />
-        <line x1="6" y1="9" x2="6" y2="15" />
-      </svg>
-    </button>`;
+    return `<button class="fork-btn" data-entry-id="${entryId}" title="Fork session from this message">${icon(GitFork, { size: 13 })}</button>`;
   }
 
   /**
    * Render the copy-link button HTML for a message.
    */
   function renderCopyLinkButton(entryId) {
-    return `<button class="copy-link-btn" data-entry-id="${entryId}" title="Copy link to this message">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-      </svg>
-    </button>`;
+    return `<button class="copy-link-btn" data-entry-id="${entryId}" title="Copy link to this message">${icon(Link2, { size: 14 })}</button>`;
   }
 
   function renderEntry(entry) {
