@@ -418,17 +418,19 @@ Branch: `svelte/phase-1-reactive-foundation` (off `main`).
 | ✅ done | **Phase 1** — `SessionDataModel` (`session-data.svelte.js`, `$state`/`$derived`, reuses pure helpers; `load`/`applyLiveUpdate`); `session-context.js`; wired (provided, hydrated, **not yet consumed**) into `SessionPage.svelte`; `@testing-library/svelte` + jest-dom + `vitest.setup.js`. Unit + smoke tests. |
 | ✅ done | **Phase 2 prep** — `@sveltejs/vite-plugin-svelte` added to `vite.config.export.js` (`emitCss:false`); `TestExportBundleIsSelfContained` hardened (forbids `WebSocket`, `live-reload`, `ChatComposer`, `ArtifactPanel`, `AnnotationLayer`, `applyLiveUpdate`). |
 | ✅ done | **Phase 2 (tree, staged)** — `TreeNode.svelte` + `SessionTreeNodes.svelte`: reactive, live-safe, markup-parity replacements for `tree-renderer.js`, with component tests. **Staged, not wired** into the live shell / export entry. |
-| ⏸️ blocked | **Phase 2 cut-over + deletions** (and all later destructive steps). Wiring the components into both live + export and **deleting** the e2e-covered legacy renderers requires `make e2e` (Playwright) verification per §4. **e2e cannot run in the current environment** (no `e2e/node_modules`, no Playwright browser cache; `make e2e-setup` is a heavy network download). Working renderers were intentionally **left in place** rather than deleted blind. |
+| ✅ available | **e2e now runs here.** `cd e2e && npm ci && npx playwright install chromium` works (chromium downloads, headless launches without `--with-deps`). **Baseline green: 54 passed / 2 skipped** on `--project="Desktop Chrome"` against the built binary. So cut-overs ARE verifiable (at least Desktop Chrome; other browsers untried). |
+| 🔶 next, do as one step | **Phase 2 tree cut-over is NOT isolatable from `session.js`.** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
-**To resume / unblock:** run `make e2e-setup` once (installs e2e deps + Playwright
-browsers), then proceed with the Phase 2 cut-over: render `<SessionTreeNodes>`
-inside `SessionTree.svelte` and `ExportApp.svelte`, route the navigator/live
-updates through the model, delete `tree-renderer.js` (+ later
-`session-entry-renderer.js`, `session-header-renderer.js`,
-`session-navigation.js`), rebuild `export.js`, and confirm `make check` +
-`npm run test` + `make e2e` green.
+**Recommended next step (combined Phase 2/3a):** move `currentLeafId`,
+`currentTargetId`, `filterMode`, `searchQuery` ownership into `SessionDataModel`;
+have `session.js` (live) and `export-entry.js` read/write the model instead of
+locals; render `<SessionTreeNodes>` from `SessionTree.svelte` (live) and the
+export app; keep the navigator as the **content** driver but feed it from the
+model; then delete `tree-renderer.js`. Verify with `npm run test`,
+`npm run build`, the hardened guard, and `cd e2e && npx playwright test
+--project="Desktop Chrome"`.
 
-Verified green so far (no e2e): `npm run test` (web), `npm run build`
-(live + export), `go test ./internal/ui/...`. Pre-existing/unrelated:
-`internal/git TestDescribeDefaultBranch` fails due to the sandbox commit-signing
-server (not caused by this work).
+Verified green so far: `npm run test` (web, 539), `npm run build`
+(live + export), `go test ./internal/ui/...`, and the Desktop-Chrome e2e
+baseline. Pre-existing/unrelated: `internal/git TestDescribeDefaultBranch` fails
+due to the sandbox commit-signing server (not caused by this work).
