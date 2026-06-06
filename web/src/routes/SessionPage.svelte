@@ -7,8 +7,18 @@
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
-  import { firstMessageStub, loadSessionPageState } from './session-page-data.js';
+  import { firstMessageStub, loadSessionPageState, newestLeaf } from './session-page-data.js';
+  import { SessionDataModel } from '../session/data/session-data.svelte.js';
+  import { createSessionDataModel } from '../session/data/session-data.js';
+  import { setSessionModel } from '../session/session-context.js';
   import { t } from '../shared/i18n.js';
+
+  // Phase 1 of the Svelte migration (docs/dev/svelte-migration-plan.md):
+  // create the reactive model once and provide it via context so descendant
+  // components can begin reading from it in later phases. It is hydrated when
+  // the session payload loads below. The legacy runSessionApp() render path is
+  // still in charge of the DOM for now — this model is not yet consumed.
+  const sessionModel = setSessionModel(new SessionDataModel());
 
   let loading = $state(true);
   let showLoading = $state(false);
@@ -54,6 +64,12 @@
         chatAvailable = state.chatAvailable;
         chatDisabledReason = state.chatDisabledReason;
         modelLabel = state.modelLabel;
+        // Hydrate the reactive model (provided via context above). Not yet the
+        // source of truth for rendering — that migrates in later phases.
+        sessionModel.load(createSessionDataModel(
+          { header: { cwd: state.cwd }, entries: state.entries, leafId: newestLeaf(state.entries) },
+          new URLSearchParams(window.location.search),
+        ));
         loading = false;
         clearTimeout(loadingTimer);
         await tick();

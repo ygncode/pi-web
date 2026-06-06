@@ -16,6 +16,9 @@
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/svelte": "^5.3.1",
+    "@testing-library/user-event": "^14.6.1",
     "jsdom": "latest",
     "knip": "^6.16.0",
     "svelte": "^5.56.2",
