@@ -1,4 +1,4 @@
-import { expect, test } from "../lib/test";
+import { expect, test, isMobileLayout } from "../lib/test";
 import { buildSession, uniqueSessionName, writeSession } from "../lib/sessions";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -20,6 +20,14 @@ test.describe("session labels", () => {
     await page.locator('.label-modal-save').click();
 
     await expect(page.locator("#tree-container .tree-label", { hasText: "[Review checkpoint]" })).toBeVisible();
+
+    // On mobile the tree is an off-screen drawer; open it so its filter controls
+    // are in the viewport and clickable.
+    if (await isMobileLayout(page)) {
+      await page.locator("#tree-toggle").dispatchEvent("click");
+      await expect(page.locator("#sidebar")).toHaveClass(/open/);
+    }
+
     await page.locator('.filter-btn[data-filter="labeled-only"]').click();
     await expect(page.locator("#tree-container .tree-node")).toHaveCount(1);
     await expect(page.locator("#tree-container .tree-node")).toContainText("Review checkpoint");
