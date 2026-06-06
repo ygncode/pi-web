@@ -403,6 +403,9 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 1s linear infinite; }
+
     @media (prefers-reduced-motion: reduce) {
       ::view-transition-old(root),
       ::view-transition-new(root) {

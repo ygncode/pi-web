@@ -4,6 +4,7 @@ import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
 import { createVersionController } from '../shared/version.js';
 import { configureSettingsSync, hydrateSettings, writeSetting } from '../shared/settings-store.js';
+import { icon, Sun, Moon } from '../shared/icons.js';
 
 export { createSessionsPage };
 
@@ -261,7 +262,7 @@ export function runIndexPage({
       const indexIcon = documentImpl.querySelector('[data-theme-icon]');
       if (indexIcon) {
         const isDark = (documentImpl.documentElement.dataset.theme || 'dark') === 'dark';
-        indexIcon.textContent = isDark ? '☀' : '◐';
+        indexIcon.innerHTML = icon(isDark ? Sun : Moon, { size: 14 });
       }
     }
   }, { capture: true });

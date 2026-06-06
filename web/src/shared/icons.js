@@ -17,8 +17,10 @@ import {
   Copy,
   Download,
   Ellipsis,
+  Ghost,
   GitFork,
   Link2,
+  Loader,
   Maximize2,
   Moon,
   MoreHorizontal,
@@ -73,6 +75,22 @@ export function icon(node, { size = 16, class: className = '', strokeWidth } = {
   return `<svg ${attrString(attrs)}>${children}</svg>`;
 }
 
+// Theme -> Lucide icon. Keep this in sync with the inlined theme-icon SVGs in
+// the boot script (internal/ui/live_page.go), which paints the icon before the
+// JS bundle loads — both must emit identical markup to avoid a swap on load.
+const THEME_ICONS = {
+  dark: Moon,
+  light: Sun,
+  nord: Snowflake,
+  dracula: Ghost,
+  custom: Settings,
+};
+
+/** SVG markup string for a theme's indicator icon. */
+export function themeIcon(theme, opts = {}) {
+  return icon(THEME_ICONS[theme] || THEME_ICONS.dark, { size: 14, ...opts });
+}
+
 export {
   ArrowUp,
   Check,
@@ -83,8 +101,10 @@ export {
   Copy,
   Download,
   Ellipsis,
+  Ghost,
   GitFork,
   Link2,
+  Loader,
   Maximize2,
   Moon,
   MoreHorizontal,

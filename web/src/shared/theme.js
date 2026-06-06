@@ -1,4 +1,5 @@
 import { writeSetting } from './settings-store.js';
+import { themeIcon } from './icons.js';
 
 // Body/chrome background colors per theme, kept in sync with the inline boot
 // scripts in internal/ui/live_page.go. The boot script sets an inline
@@ -34,16 +35,11 @@ export function toggleTheme(windowImpl, documentImpl) {
 
 export function syncThemeIcons(documentImpl) {
   const current = documentImpl.documentElement.dataset.theme || 'dark';
-  let icon = '◐';
-  if (current === 'light') icon = '☀';
-  else if (current === 'nord') icon = '❄';
-  else if (current === 'dracula') icon = '🧛';
-  else if (current === 'custom') icon = '⚙';
-
+  const svg = themeIcon(current);
   documentImpl.querySelectorAll('[data-command-theme-icon]').forEach((el) => {
-    el.textContent = icon;
+    el.innerHTML = svg;
   });
   documentImpl.querySelectorAll('[data-theme-icon]').forEach((el) => {
-    el.textContent = icon;
+    el.innerHTML = svg;
   });
 }

@@ -162,15 +162,20 @@ func themeBootScript(defaultTheme string) template.HTML {
   var themes = ['dark', 'light', 'nord', 'dracula', 'custom'];
   function applyTheme(t){ document.documentElement.dataset.theme = t || 'dark'; }
   function currentTheme(){ return document.documentElement.dataset.theme || 'dark'; }
+  // Lucide theme icons, inlined so the indicator is painted before the JS
+  // bundle loads. Must match themeIcon() in web/src/shared/icons.js exactly.
+  var themeIcons = {
+    dark: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" /></svg>',
+    light: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>',
+    nord: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><path d="m10 20-1.25-2.5L6 18" /><path d="M10 4 8.75 6.5 6 6" /><path d="m14 20 1.25-2.5L18 18" /><path d="m14 4 1.25 2.5L18 6" /><path d="m17 21-3-6h-4" /><path d="m17 3-3 6 1.5 3" /><path d="M2 12h6.5L10 9" /><path d="m20 10-1.5 2 1.5 2" /><path d="M22 12h-6.5L14 15" /><path d="m4 10 1.5 2L4 14" /><path d="m7 21 3-6-1.5-3" /><path d="m7 3 3 6h4" /></svg>',
+    dracula: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><path d="M9 10h.01" /><path d="M15 10h.01" /><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" /></svg>',
+    custom: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg>'
+  };
   function updateBtn(){
     var t = currentTheme();
-    var icon = '◐';
-    if(t === 'light') icon = '☀';
-    else if(t === 'nord') icon = '❄';
-    else if(t === 'dracula') icon = '🧛';
-    else if(t === 'custom') icon = '⚙';
-    document.querySelectorAll('[data-theme-icon]').forEach(function(el){ el.textContent = icon; });
-    document.querySelectorAll('[data-command-theme-icon]').forEach(function(el){ el.textContent = icon; });
+    var iconSvg = themeIcons[t] || themeIcons.dark;
+    document.querySelectorAll('[data-theme-icon]').forEach(function(el){ el.innerHTML = iconSvg; });
+    document.querySelectorAll('[data-command-theme-icon]').forEach(function(el){ el.innerHTML = iconSvg; });
     var isWCO = (window.matchMedia && window.matchMedia('(display-mode: window-controls-overlay)').matches) || (navigator.windowControlsOverlay && navigator.windowControlsOverlay.visible);
     var chromeBg = '#0f0f14', bodyBg = '#111116';
     if(t === 'light')   { chromeBg = '#ddddda'; bodyBg = '#f6f5f2'; }
