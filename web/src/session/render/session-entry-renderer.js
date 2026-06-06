@@ -182,7 +182,7 @@ export function createSessionEntryRenderer({
           const actionClass = isInteractive ? ' ask-question-option-action' : '';
           const dataAttrs = isInteractive ? ` type="button" data-question="${escapeHtml(questionText)}" data-answer="${escapeHtml(label)}"` : '';
           html += `<${tag} class="ask-question-option${selected ? ' selected' : ''}${actionClass}"${dataAttrs}>`;
-          html += `<div class="ask-question-option-label">${selected ? '✓ ' : ''}${escapeHtml(label)}</div>`;
+          html += `<div class="ask-question-option-label">${selected ? icon(Check, { size: 13 }) + ' ' : ''}${escapeHtml(label)}</div>`;
           if (description) html += `<div class="ask-question-option-desc">${escapeHtml(description)}</div>`;
           html += `</${tag}>`;
         });

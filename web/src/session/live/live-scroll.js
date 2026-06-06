@@ -1,3 +1,5 @@
+import { icon, ArrowDown } from '../../shared/icons.js';
+
 export function chatComposerHeight() {
   return 0;
 }
@@ -65,7 +67,7 @@ export function createFollowButton({ documentImpl = document, requestAnimationFr
   const button = documentImpl.createElement('button');
   button.className = 'follow-button';
   button.setAttribute('aria-label', 'Scroll to bottom');
-  button.innerHTML = '<span style="font-size: 16px; font-weight: bold; line-height: 1;">↓</span>';
+  button.innerHTML = icon(ArrowDown, { size: 18 });
   documentImpl.body.appendChild(button);
   requestAnimationFrameImpl(() => { button.classList.add('visible'); });
   if (onClick) button.addEventListener('click', onClick);
@@ -73,7 +75,7 @@ export function createFollowButton({ documentImpl = document, requestAnimationFr
 }
 
 export function setFollowButtonText(button, pendingCount) {
-  if (button) button.innerHTML = '<span style="font-size: 16px; font-weight: bold; line-height: 1;">↓</span>';
+  if (button) button.innerHTML = icon(ArrowDown, { size: 18 });
 }
 
 export function removeFollowButton(button, { windowImpl = window } = {}) {

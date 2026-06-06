@@ -1,3 +1,5 @@
+import { icon, Check } from '../../shared/icons.js';
+
 export function createLiveRenderer({ documentImpl = document, markedImpl = marked } = {}) {
   function escapeHtml(t) {
     var d = documentImpl.createElement('div');
@@ -173,7 +175,7 @@ export function createLiveRenderer({ documentImpl = document, markedImpl = marke
             var cls = 'ask-question-option'+(sel?' selected':'')+(qaInteractive?' ask-question-option-action':'');
             var dAttrs = qaInteractive ? ' type="button" data-question="'+escapeHtml(questionText)+'" data-answer="'+escapeHtml(label)+'"' : '';
             html += '<'+tag+' class="'+cls+'"'+dAttrs+'>';
-            html += '<div class="ask-question-option-label">'+(sel?'✓ ':'')+escapeHtml(label)+'</div>';
+            html += '<div class="ask-question-option-label">'+(sel?icon(Check, { size: 13 })+' ':'')+escapeHtml(label)+'</div>';
             if (desc) html += '<div class="ask-question-option-desc">'+escapeHtml(desc)+'</div>';
             html += '</'+tag+'>';
           });

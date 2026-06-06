@@ -8,6 +8,7 @@
 // Do not hand-draw custom SVG icons or use unicode glyphs for icons. Import the
 // Lucide icon here and render it with icon(). See AGENTS.md.
 import {
+  ArrowDown,
   ArrowUp,
   Check,
   ChevronDown,
@@ -17,6 +18,7 @@ import {
   Copy,
   Download,
   Ellipsis,
+  ExternalLink,
   Ghost,
   GitFork,
   Link2,
@@ -31,6 +33,7 @@ import {
   Plus,
   Search,
   Settings,
+  Share2,
   Snowflake,
   SquarePen,
   Sun,
@@ -92,6 +95,7 @@ export function themeIcon(theme, opts = {}) {
 }
 
 export {
+  ArrowDown,
   ArrowUp,
   Check,
   ChevronDown,
@@ -101,6 +105,7 @@ export {
   Copy,
   Download,
   Ellipsis,
+  ExternalLink,
   Ghost,
   GitFork,
   Link2,
@@ -115,6 +120,7 @@ export {
   Plus,
   Search,
   Settings,
+  Share2,
   Snowflake,
   SquarePen,
   Sun,

@@ -7,7 +7,8 @@ describe('live scroll helpers', () => {
     const dom = new JSDOM('<body><main id="content"></main></body>');
     const btn = createFollowButton({ documentImpl: dom.window.document, requestAnimationFrameImpl: (cb) => cb() });
     setFollowButtonText(btn, 2);
-    expect(btn.textContent).toBe('↓');
+    expect(btn.querySelector('svg')).not.toBeNull();
+    expect(btn.getAttribute('aria-label')).toBe('Scroll to bottom');
     expect(dom.window.document.body.contains(btn)).toBe(true);
     removeFollowButton(btn, { windowImpl: { setTimeout: (cb) => cb() } });
     expect(dom.window.document.body.contains(btn)).toBe(false);

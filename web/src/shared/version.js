@@ -1,4 +1,5 @@
 import { escapeHtml } from './escape.js';
+import { icon, ExternalLink } from './icons.js';
 
 // Module-level reference to the page's single controller so menu dispatchers
 // (which only know the action name) can open the modal without threading a
@@ -199,7 +200,7 @@ export function createVersionController({
 
     if (info.hasUpdate) {
       const link = info.changelogUrl
-        ? ` <a href="${escapeHtml(info.changelogUrl)}" target="_blank" rel="noreferrer">release notes ↗</a>`
+        ? ` <a href="${escapeHtml(info.changelogUrl)}" target="_blank" rel="noreferrer">release notes ${icon(ExternalLink, { size: 12 })}</a>`
         : '';
       body.innerHTML =
         `<p class="version-modal-lead">Update available: <strong>${escapeHtml(cleanVersion(info.current))} → ${escapeHtml(cleanVersion(info.latest))}</strong></p>` +

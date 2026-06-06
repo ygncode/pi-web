@@ -1,3 +1,5 @@
+import { icon, Download } from '../../shared/icons.js';
+
 export function computeSessionStats(entryList = []) {
   let userMessages = 0, assistantMessages = 0, toolResults = 0;
   let customMessages = 0, compactions = 0, branchSummaries = 0, toolCalls = 0;
@@ -68,7 +70,7 @@ export function renderSessionHeader({ header, entries = [], systemPrompt = '', t
           <button type="button" class="header-toggle-btn" data-action="toggle-thinking" title="Show/hide thinking (T)">Thinking</button>
           <button type="button" class="header-toggle-btn" data-action="toggle-tools" title="Show/hide tools (O)">Tools</button>
           <button type="button" class="header-toggle-btn" data-action="toggle-tool-output" title="Expand/collapse tool output (P)">Tool output</button>
-          <button type="button" class="download-json-btn" onclick="downloadSessionJson()" title="Download session as JSONL">↓ JSONL</button>
+          <button type="button" class="download-json-btn" onclick="downloadSessionJson()" title="Download session as JSONL">${icon(Download, { size: 13 })} JSONL</button>
         </div>
       </div>
       <div class="header-info">

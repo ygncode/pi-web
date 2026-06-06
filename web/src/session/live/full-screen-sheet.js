@@ -18,6 +18,8 @@
  *   // Later: sheet.close();
  */
 
+import { icon, X } from '../../shared/icons.js';
+
 const SHEET_BREAKPOINT = 900;
 const REMOVE_DELAY = 300; // must match CSS transition duration
 const openSheetCounts = new WeakMap();
@@ -148,7 +150,7 @@ export function showSheet({
             <span aria-hidden="true">←</span>
             <span>${escapedTitle}</span>
           </button>` : '<div></div>'}
-          ${showClose ? `<button class="pi-sheet-close-x" id="${id}-close-x" aria-label="Close">✕</button>` : ''}
+          ${showClose ? `<button class="pi-sheet-close-x" id="${id}-close-x" aria-label="Close">${icon(X, { size: 16 })}</button>` : ''}
         </div>
         <div class="pi-sheet-body" id="${bodyId}"></div>
       </div>
