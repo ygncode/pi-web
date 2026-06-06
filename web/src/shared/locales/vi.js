@@ -10,6 +10,7 @@ export default {
   'common.search': 'Tìm kiếm...',
   'common.settings': 'Cài đặt',
   'common.userDocs': 'Tài liệu người dùng',
+  'common.telegram': 'Telegram cộng đồng',
   'common.version': 'Phiên bản',
 
   'index.title': 'Phiên',

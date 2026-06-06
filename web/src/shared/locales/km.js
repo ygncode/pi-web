@@ -10,6 +10,7 @@ export default {
   'common.search': 'ស្វែងរក...',
   'common.settings': 'ការកំណត់',
   'common.userDocs': 'ឯកសារអ្នកប្រើប្រាស់',
+  'common.telegram': 'Telegram សហគមន៍',
   'common.version': 'កំណែ',
 
   'index.title': 'វគ្គ',

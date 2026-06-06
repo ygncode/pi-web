@@ -10,6 +10,7 @@ export default {
   'common.search': 'Suchen...',
   'common.settings': 'Einstellungen',
   'common.userDocs': 'Benutzerdokumentation',
+  'common.telegram': 'Community-Telegram',
   'common.version': 'Version',
 
   'index.title': 'Sitzungen',

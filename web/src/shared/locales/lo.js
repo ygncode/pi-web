@@ -10,6 +10,7 @@ export default {
   'common.search': 'ຄົ້ນຫາ...',
   'common.settings': 'ການຕັ້ງຄ່າ',
   'common.userDocs': 'ເອກະສານຜູ້ໃຊ້',
+  'common.telegram': 'Telegram ຊຸມຊົນ',
   'common.version': 'ເວີຊັນ',
 
   'index.title': 'ເຊດຊັນ',

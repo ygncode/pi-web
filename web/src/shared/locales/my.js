@@ -10,6 +10,7 @@ export default {
   'common.search': 'ရှာဖွေ...',
   'common.settings': 'ဆက်တင်များ',
   'common.userDocs': 'အသုံးပြုသူ စာရွက်စာတမ်းများ',
+  'common.telegram': 'အသိုင်းအဝိုင်း Telegram',
   'common.version': 'ဗားရှင်း',
 
   'index.title': 'ဆက်ရှင်များ',

@@ -89,6 +89,20 @@
 
 .web-menu-item.muted { color: var(--pi-menu-muted-color); }
 
+/* Leading icon + label group inside a menu item. Keeps the icon and text
+   together on the left so any trailing kbd/status still sits on the right via
+   the item's space-between layout. */
+.menu-item-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+}
+.menu-item-label svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
 .web-menu-section + .web-menu-section,
 .command-menu-section + .command-menu-section,
 .mobile-command-section + .mobile-command-section {

@@ -12,6 +12,7 @@ export default {
   'common.search': 'Search...',
   'common.settings': 'Settings',
   'common.userDocs': 'User Docs',
+  'common.telegram': 'Community Telegram',
   'common.version': 'Version',
   'common.copied': 'Copied',
   'common.copyFailed': 'Copy failed',

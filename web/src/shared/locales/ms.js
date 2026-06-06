@@ -10,6 +10,7 @@ export default {
   'common.search': 'Cari...',
   'common.settings': 'Tetapan',
   'common.userDocs': 'Dokumentasi Pengguna',
+  'common.telegram': 'Telegram Komuniti',
   'common.version': 'Versi',
 
   'index.title': 'Sesi',

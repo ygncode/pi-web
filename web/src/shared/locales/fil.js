@@ -10,6 +10,7 @@ export default {
   'common.search': 'Maghanap...',
   'common.settings': 'Mga Setting',
   'common.userDocs': 'Dokumentasyon ng User',
+  'common.telegram': 'Telegram ng Komunidad',
   'common.version': 'Bersyon',
 
   'index.title': 'Mga Session',

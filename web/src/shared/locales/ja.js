@@ -10,6 +10,7 @@ export default {
   'common.search': '検索...',
   'common.settings': '設定',
   'common.userDocs': 'ユーザードキュメント',
+  'common.telegram': 'コミュニティ Telegram',
   'common.version': 'バージョン',
 
   'index.title': 'セッション',

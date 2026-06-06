@@ -10,6 +10,7 @@ export default {
   'common.search': '搜索...',
   'common.settings': '设置',
   'common.userDocs': '用户文档',
+  'common.telegram': '社区 Telegram',
   'common.version': '版本',
 
   'index.title': '会话',

@@ -10,6 +10,7 @@ export default {
   'common.search': 'Buscar...',
   'common.settings': 'Ajustes',
   'common.userDocs': 'Documentación de usuario',
+  'common.telegram': 'Telegram de la comunidad',
   'common.version': 'Versión',
 
   'index.title': 'Sesiones',
