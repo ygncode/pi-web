@@ -1,6 +1,9 @@
 import { getJSON, postJSON } from '../shared/api.js';
 import { createStatusEvents as defaultCreateStatusEvents } from '../shared/status-events.js';
 import { renderSessionCard } from './session-card.js';
+import { t } from '../shared/i18n.js';
+
+const sessionsCountLabel = (n) => (n === 1 ? t('index.sessionCountOne') : t('index.sessionsCount', { count: n }));
 
 function defaultNavigate(url) {
   window.location = url;
@@ -89,7 +92,7 @@ function renderProjectGroups(sessions = []) {
       <button class="project-toggle" type="button" aria-expanded="true">
         <svg class="project-chevron" viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M3 4 L9 4 L6 8 Z"/></svg>
         <span class="project-name">${escapeHtml(group.project)}</span>
-        <span class="project-count" data-project-count data-running="0" data-total="${group.sessions.length}">${group.sessions.length} sessions</span>
+        <span class="project-count" data-project-count data-running="0" data-total="${group.sessions.length}">${sessionsCountLabel(group.sessions.length)}</span>
       </button>
       <div class="session-grid">${group.sessions.map(renderSessionCard).join('')}</div>
     </div>`).join('');
@@ -112,7 +115,7 @@ function renderTimeline(sessions = []) {
       <button class="project-toggle" type="button" aria-expanded="true">
         <svg class="project-chevron" viewBox="0 0 12 12" aria-hidden="true"><path fill="currentColor" d="M3 4 L9 4 L6 8 Z"/></svg>
         <span class="project-name">${escapeHtml(group.project)}</span>
-        <span class="project-count" data-project-count data-running="0" data-total="${group.sessions.length}">${group.sessions.length} sessions</span>
+        <span class="project-count" data-project-count data-running="0" data-total="${group.sessions.length}">${sessionsCountLabel(group.sessions.length)}</span>
       </button>
       <div class="session-grid session-grid--timeline">${group.sessions.map(renderSessionCard).join('')}</div>
     </div>`).join('');
@@ -123,7 +126,7 @@ function renderSessionsList(sessions = [], root = document, layout = 'projects')
   if (!container) return false;
   container.classList.toggle('content--timeline', layout === 'timeline');
   if (sessions.length === 0) {
-    container.innerHTML = '<div class="empty-state"><h3>No sessions yet</h3><p>Start a new session to begin.</p></div>';
+    container.innerHTML = `<div class="empty-state"><h3>${t('index.noSessionsYet')}</h3><p>${t('index.noSessionsYetHint')}</p></div>`;
     return true;
   }
   container.innerHTML = layout === 'timeline' ? renderTimeline(sessions) : renderProjectGroups(sessions);

@@ -6,6 +6,7 @@
   import NewSessionModal from '../components/index/NewSessionModal.svelte';
   import ProjectsModal from '../components/index/ProjectsModal.svelte';
   import { runIndexPage } from '../index/index.js';
+  import { t } from '../shared/i18n.js';
 
   onMount(() => {
     const previousTitle = document.title;
@@ -21,14 +22,14 @@
 
 <HomeMenu />
 
-<button class="new-session-btn new-session-btn-mobile" id="newSessionBtn" type="button" data-new-session-btn aria-label="Start a new session" title="Start new session">+</button>
+<button class="new-session-btn new-session-btn-mobile" id="newSessionBtn" type="button" data-new-session-btn aria-label={t('index.startNewSession')} title={t('index.newSession')}>+</button>
 
 <CommandPalette />
 
 <div class="content" data-sessions-content>
   <div class="empty-state">
-    <h3>Loading sessions…</h3>
-    <p>Fetching the latest session list.</p>
+    <h3>{t('index.loadingSessions')}</h3>
+    <p>{t('index.loadingSessionsHint')}</p>
   </div>
 </div>
 

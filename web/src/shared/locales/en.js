@@ -17,6 +17,8 @@ export default {
   'index.title': 'Sessions',
   'index.searchSessions': 'Search sessions...',
   'index.sessionsCount': '{count} sessions',
+  'index.sessionCountOne': '1 session',
+  'index.activeCount': '({count} active)',
   'index.active': 'active',
   'index.layoutTimeline': 'Timeline',
   'index.layoutProjects': 'Projects',
@@ -35,7 +37,18 @@ export default {
   'index.loadingSessionsHint': 'Fetching the latest session list.',
   'index.noSessions': 'No sessions to show',
   'index.noSessionsHint': 'Enable projects from the menu (⋯ → Manage Projects) to see their sessions.',
+  'index.noSessionsYet': 'No sessions yet',
+  'index.noSessionsYetHint': 'Start a new session to begin.',
   'index.importSession': 'Import session',
+  'index.sessionLayout': 'Session layout',
+  'index.closeNewSession': 'Close Start a new session',
+  'index.closeManageProjects': 'Close Manage projects',
+
+  // ── Command palette ──
+  'palette.listSessions': 'List sessions',
+  'palette.closeSearch': 'Close search',
+  'palette.actions': 'Actions',
+  'palette.newSession': 'New session',
 
   // ── Session viewer ──
   'session.back': 'Sessions',
@@ -48,6 +61,7 @@ export default {
   'session.loading': 'Loading session…',
   'session.notFound': 'Session not found',
   'session.loadFailed': 'Failed to load session',
+  'session.missingId': 'Missing session id',
   'session.backToSessions': 'Back to sessions',
   'session.hideSidebar': 'Hide sidebar',
   'session.closeTree': 'Close session tree',
@@ -56,6 +70,12 @@ export default {
   'session.filterUser': 'User',
   'session.filterLabeled': 'Labeled',
   'session.filterAll': 'All',
+  'session.filterDefaultTitle': 'Hide settings entries',
+  'session.filterNoToolsTitle': 'Default minus tool results',
+  'session.filterUserTitle': 'Only user messages',
+  'session.filterLabeledTitle': 'Only labeled entries',
+  'session.filterAllTitle': 'Show everything',
+  'session.resizeTree': 'Resize session tree sidebar',
 
   // ── Session command menu ──
   'menu.searchSessions': 'Search Sessions',
@@ -76,6 +96,7 @@ export default {
   'sidebar.expandPanel': 'Expand panel',
   'sidebar.hidePanel': 'Hide panel',
   'sidebar.scratchpadPlaceholder': 'Write project-level notes, scratchpad, tasks...',
+  'sidebar.resizeScratchpad': 'Resize scratchpad sidebar',
 
   // ── Chat composer ──
   'composer.placeholder': 'Continue this pi session…',
@@ -89,6 +110,10 @@ export default {
   'composer.switchModel': 'Switch model',
   'composer.switchEffort': 'Switch effort',
   'composer.disabledNotice': 'This session can be viewed, but chat is disabled because its working directory no longer exists.',
+  'composer.copyPath': 'Click to copy path',
+  'composer.focusShortcut': 'Shift + i to focus',
+  'composer.cancelRunning': 'Cancel running response',
+  'composer.contextDetails': 'Click for details',
 
   // ── Settings ──
   'settings.title': 'Settings',

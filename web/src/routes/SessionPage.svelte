@@ -8,6 +8,7 @@
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
   import { firstMessageStub, loadSessionPageState } from './session-page-data.js';
+  import { t } from '../shared/i18n.js';
 
   let loading = $state(true);
   let showLoading = $state(false);
@@ -81,9 +82,9 @@
 </script>
 
 {#if loading}
-  {#if showLoading}<div class="session-loading">Loading session…</div>{/if}
+  {#if showLoading}<div class="session-loading">{t('session.loading')}</div>{/if}
 {:else if error}
-  <div class="session-loading"><h1>{error}</h1><p><a href="/">Back to sessions</a></p></div>
+  <div class="session-loading"><h1>{error}</h1><p><a href="/">{t('session.backToSessions')}</a></p></div>
 {:else}
   <script>try{const c=localStorage.getItem('pi-share:v1:sidebar-collapsed');if(c==='true')document.body.classList.add('sidebar-collapsed');}catch(e){}try{const lw=Number(localStorage.getItem('pi-share:v1:sidebar-width'));if(isFinite(lw)&&lw>0)document.documentElement.style.setProperty('--sidebar-width',Math.round(lw)+'px');}catch(e){}try{const rc=localStorage.getItem('pi-web:v1:right-sidebar-collapsed');const mobile=window.matchMedia&&window.matchMedia('(max-width: 900px)').matches;if(rc==='true'||mobile)document.body.classList.add('right-sidebar-collapsed');}catch(e){}try{const w=Number(localStorage.getItem('pi-web:v1:right-sidebar-width'));if(isFinite(w)&&w>0)document.documentElement.style.setProperty('--right-sidebar-width',Math.round(w)+'px');}catch(e){}</script>
 

@@ -9,10 +9,11 @@
   import SessionsListSettings from '../components/settings/SessionsListSettings.svelte';
   import SessionTitleSettings from '../components/settings/SessionTitleSettings.svelte';
   import { runSettingsPage } from '../settings/settings.js';
+  import { t } from '../shared/i18n.js';
 
   onMount(() => {
     const previousTitle = document.title;
-    document.title = 'Settings — Pi Sessions';
+    document.title = `${t('settings.title')} — Pi Sessions`;
     runSettingsPage({ documentImpl: document, windowImpl: window });
     return () => {
       document.title = previousTitle;
@@ -22,8 +23,8 @@
 
 <div class="settings-page">
   <div class="settings-header">
-    <a class="settings-back" href="/" data-settings-back><span aria-hidden="true">←</span><span data-settings-back-label>Sessions</span></a>
-    <h1>Settings</h1>
+    <a class="settings-back" href="/" data-settings-back><span aria-hidden="true">←</span><span data-settings-back-label>{t('session.back')}</span></a>
+    <h1>{t('settings.title')}</h1>
   </div>
 
   <AppearanceSettings />

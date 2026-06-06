@@ -5,6 +5,9 @@ import { setupSessionListPalette } from '../shared/session-list-palette.js';
 import { createVersionController } from '../shared/version.js';
 import { configureSettingsSync, hydrateSettings, writeSetting } from '../shared/settings-store.js';
 import { icon, Sun, Moon } from '../shared/icons.js';
+import { t } from '../shared/i18n.js';
+
+const sessionsCountLabel = (n) => (n === 1 ? t('index.sessionCountOne') : t('index.sessionsCount', { count: n }));
 
 export { createSessionsPage };
 
@@ -429,7 +432,7 @@ export function runIndexPage({
       const meta = documentImpl.createElement('span');
       meta.className = 'project-row-count';
       const count = project.sessionCount || 0;
-      meta.textContent = count === 1 ? '1 session' : `${count} sessions`;
+      meta.textContent = sessionsCountLabel(count);
 
       row.appendChild(checkbox);
       row.appendChild(name);
@@ -650,7 +653,7 @@ export function runIndexPage({
       const total = group.querySelectorAll('.session-card').length;
       if (countEl) {
         countEl.dataset.total = String(total);
-        countEl.textContent = `${total} sessions`;
+        countEl.textContent = sessionsCountLabel(total);
       }
       if (collapsed[project]) {
         group.classList.add('collapsed');
@@ -681,7 +684,7 @@ export function runIndexPage({
       if (countEl) {
         countEl.setAttribute('data-running', String(running));
         const totalVal = countEl.dataset.total || String(group.querySelectorAll('.session-card').length);
-        countEl.textContent = running > 0 ? `(${running} active)` : `${totalVal} sessions`;
+        countEl.textContent = running > 0 ? t('index.activeCount', { count: running }) : sessionsCountLabel(Number(totalVal));
       }
     });
     documentImpl.querySelectorAll('[data-running-count]').forEach((countEl) => {
@@ -692,7 +695,7 @@ export function runIndexPage({
     });
     const totalSessions = documentImpl.querySelectorAll('.session-card').length;
     documentImpl.querySelectorAll('[data-total-count]').forEach((el) => {
-      el.textContent = `${totalSessions} sessions`;
+      el.textContent = sessionsCountLabel(totalSessions);
     });
   }
 

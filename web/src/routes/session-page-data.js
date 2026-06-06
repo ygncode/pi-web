@@ -1,4 +1,5 @@
 import { decodeBase64JSON } from '../session/data/session-data.js';
+import { t } from '../shared/i18n.js';
 
 // The session route's HTML shell embeds the session payload (and scratchpad) in
 // a <script id="pi-session-bootstrap"> so the first paint needs no round-trip to
@@ -98,7 +99,7 @@ export function buildSessionPageState({ sessionId, data, scratchpad = '', btoaIm
 export async function loadSessionPageState({ locationSearch = '', fetchImpl = fetch, btoaImpl, TextEncoderImpl, documentImpl, atobImpl, TextDecoderImpl } = {}) {
   const params = new URLSearchParams(locationSearch);
   const sessionId = params.get('id') || '';
-  if (!sessionId) throw new Error('Missing session id');
+  if (!sessionId) throw new Error(t('session.missingId'));
 
   // Prefer the payload embedded in the page shell — no fetch on first paint.
   const boot = readSessionBootstrap({ documentImpl, atobImpl, TextDecoderImpl });
@@ -107,7 +108,7 @@ export async function loadSessionPageState({ locationSearch = '', fetchImpl = fe
   }
 
   const resp = await fetchImpl(`/api/session?id=${encodeURIComponent(sessionId)}&paginate=1`, { headers: { Accept: 'application/json' } });
-  if (!resp.ok) throw new Error(resp.status === 404 ? 'Session not found' : 'Failed to load session');
+  if (!resp.ok) throw new Error(resp.status === 404 ? t('session.notFound') : t('session.loadFailed'));
   const data = await resp.json();
   const scratchpad = await loadScratchpad(data?.header?.cwd || '', { fetchImpl });
   return buildSessionPageState({ sessionId, data, scratchpad, btoaImpl, TextEncoderImpl });
