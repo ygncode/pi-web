@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { runChatComposer } from './chat-composer-runner.js';
+// runChatComposer now lives in <ChatComposer>'s module script (absorbed from the
+// former chat-composer-runner.js); it keeps its DI signature so these behavioural
+// tests drive it directly.
+import { runChatComposer } from './ChatComposer.svelte';
 
 describe('chat composer runner', () => {
   it('returns without composer form', () => {
