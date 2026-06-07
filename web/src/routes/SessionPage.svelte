@@ -12,6 +12,7 @@
   import ModelUsageModal from '../components/session/ModelUsageModal.svelte';
   import ForkModal, { buildUserMessageList } from '../components/session/ForkModal.svelte';
   import CatGatekeeperSettings from '../components/session/CatGatekeeperSettings.svelte';
+  import CatGatekeeper from '../components/session/CatGatekeeper.svelte';
   import LabelModal from '../components/session/LabelModal.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
@@ -205,5 +206,6 @@
   <LabelModal bind:open={labelOpen} entryId={labelEntryId} currentLabel={labelCurrent} onSave={labelOnSave} />
 
   <ShareDialog {sessionId} />
+  <CatGatekeeper />
   <script id="session-data" type="application/json" bind:this={dataEl}></script>
 {/if}

@@ -1,14 +1,16 @@
 /**
- * Cat Gatekeeper — a focus/break companion for pi-web.
+ * Cat Gatekeeper — a focus/break companion for pi-web (timer/phase logic only).
  *
  * A background pomodoro timer counts down "focus" time only while the user is
- * actively in the pi-web tab (the timer pauses on blur / hidden / idle). When
- * focus runs out a full-screen cat overlay enforces a break with a countdown.
- * A separate bedtime triggers a sleepy cat that, after a short reminder, locks
+ * actively in the pi-web tab. When focus runs out the controller asks the view
+ * to show a full-screen cat overlay enforcing a break with a countdown. A
+ * separate bedtime triggers a sleepy cat that, after a short reminder, locks
  * pi-web for the rest of the session.
  *
- * State is intentionally per-session for the sleep lock (a reload clears it),
- * while the remaining focus time survives short reloads via localStorage.
+ * This module holds NO DOM/overlay rendering — that lives in
+ * <CatGatekeeper.svelte>, injected as `view`. State is per-session for the sleep
+ * lock (a reload clears it); the remaining focus time survives short reloads via
+ * localStorage.
  */
 
 import { loadCatSettings } from './cat-settings.js';
@@ -25,12 +27,11 @@ const SNOOZE_MS = 5 * 60 * 1000;
 const FOCUS_REMAINING_KEY = 'pi-web:v1:cat:focus-remaining-ms';
 const FOCUS_SAVED_AT_KEY = 'pi-web:v1:cat:focus-saved-at';
 
-// The cat ships as a looping, muted WebM (served at /cat.webm). Both the break
-// and the sleepy bedtime overlay reuse it; the sleepy look is a CSS filter.
-const CAT_VIDEO_SRC = '/cat.webm';
-function catVideoHTML() {
-  return `<video class="cat-video" src="${CAT_VIDEO_SRC}" autoplay loop muted playsinline aria-label="cat"></video>`;
-}
+const SLEEP_MESSAGE = 'Time to sleep!';
+const LOCKED_MESSAGE = 'Locked for the night — get some rest.';
+
+// No-op view so the controller is safe to construct/test without an overlay.
+const noopView = { showBreak() {}, setBreakTimer() {}, showSleep() {}, hide() {} };
 
 function formatMMSS(ms) {
   const total = Math.max(0, Math.ceil(ms / 1000));
@@ -55,17 +56,20 @@ function sleepWindowMinutes(bedtime, wakeup) {
   return span;
 }
 
+export { formatMMSS, timeToMinutes, sleepWindowMinutes };
+
 export function setupCatGatekeeper({
-  documentImpl = document,
-  windowImpl = window,
-  storage = windowImpl.localStorage,
+  windowImpl = (typeof window !== 'undefined' ? window : undefined),
+  storage = windowImpl?.localStorage,
   nowFn = () => Date.now(),
-  setIntervalImpl = (typeof windowImpl.setInterval === 'function' ? windowImpl.setInterval.bind(windowImpl) : () => 0),
-  clearIntervalImpl = (typeof windowImpl.clearInterval === 'function' ? windowImpl.clearInterval.bind(windowImpl) : () => {}),
-  requestAnimationFrameImpl = (cb) => (typeof windowImpl.requestAnimationFrame === 'function' ? windowImpl.requestAnimationFrame(cb) : cb()),
+  // Whether the pi-web tab is currently active (visible + focused). Injected so
+  // the view (which owns the document) decides; defaults to always-active.
+  isActive = () => true,
+  // Overlay renderer. See <CatGatekeeper.svelte>.
+  view = noopView,
+  setIntervalImpl = (typeof windowImpl?.setInterval === 'function' ? windowImpl.setInterval.bind(windowImpl) : () => 0),
+  clearIntervalImpl = (typeof windowImpl?.clearInterval === 'function' ? windowImpl.clearInterval.bind(windowImpl) : () => {}),
 } = {}) {
-  let overlay = null;
-  let inputBlockers = null;
   let intervalId = null;
 
   const state = {
@@ -81,15 +85,6 @@ export function setupCatGatekeeper({
 
   function settings() {
     return loadCatSettings({ storage });
-  }
-
-  function isActive() {
-    const hidden = documentImpl.hidden === true || documentImpl.visibilityState === 'hidden';
-    let focused = true;
-    try {
-      if (typeof documentImpl.hasFocus === 'function') focused = documentImpl.hasFocus();
-    } catch { /* assume focused */ }
-    return !hidden && focused;
   }
 
   function persistFocus() {
@@ -122,95 +117,15 @@ export function setupCatGatekeeper({
     return diff < window;
   }
 
-  // --- overlay -------------------------------------------------------------
-
-  function ensureOverlay() {
-    if (overlay && documentImpl.body.contains(overlay)) return overlay;
-    overlay = documentImpl.createElement('div');
-    overlay.id = 'cat-gatekeeper-overlay';
-    overlay.className = 'cat-overlay';
-    overlay.setAttribute('aria-hidden', 'true');
-    overlay.innerHTML = `
-      <div class="cat-overlay-inner">
-        <div class="cat-art" data-cat-art></div>
-        <div class="cat-timer" data-cat-timer></div>
-        <div class="cat-message" data-cat-message></div>
-        <button type="button" class="cat-snooze" data-cat-snooze style="display:none">Snooze 5 min</button>
-      </div>`;
-    documentImpl.body.appendChild(overlay);
-    const snoozeBtn = overlay.querySelector('[data-cat-snooze]');
-    snoozeBtn?.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); snooze(); });
-    return overlay;
-  }
-
-  function blockInput() {
-    if (inputBlockers) return;
-    const swallow = (e) => { e.preventDefault(); e.stopPropagation(); };
-    const swallowWheel = (e) => { e.preventDefault(); };
-    documentImpl.addEventListener('keydown', swallow, true);
-    documentImpl.addEventListener('wheel', swallowWheel, { capture: true, passive: false });
-    documentImpl.addEventListener('touchmove', swallowWheel, { capture: true, passive: false });
-    inputBlockers = { swallow, swallowWheel };
-    try { documentImpl.activeElement?.blur?.(); } catch { /* ignore */ }
-  }
-
-  function unblockInput() {
-    if (!inputBlockers) return;
-    documentImpl.removeEventListener('keydown', inputBlockers.swallow, true);
-    documentImpl.removeEventListener('wheel', inputBlockers.swallowWheel, { capture: true });
-    documentImpl.removeEventListener('touchmove', inputBlockers.swallowWheel, { capture: true });
-    inputBlockers = null;
-  }
-
-  function showOverlay(variant) {
-    const el = ensureOverlay();
-    el.classList.remove('cat-overlay--break', 'cat-overlay--sleep', 'cat-overlay--locked', 'cat-overlay-hidden');
-    el.classList.add(`cat-overlay--${variant}`);
-    el.setAttribute('aria-hidden', 'false');
-    const art = el.querySelector('[data-cat-art]');
-    if (art && !art.querySelector('video')) art.innerHTML = catVideoHTML();
-    const video = art?.querySelector('video');
-    if (video) {
-      try {
-        video.currentTime = 0;
-        video.playbackRate = 0.6; // calmer, slower cat
-        const p = video.play();
-        if (p && p.catch) p.catch(() => {});
-      } catch { /* ignore */ }
-    }
-    blockInput();
-    requestAnimationFrameImpl(() => el.classList.add('visible'));
-  }
-
-  function hideOverlay() {
-    unblockInput();
-    if (!overlay) return;
-    overlay.classList.remove('visible');
-    overlay.setAttribute('aria-hidden', 'true');
-    overlay.classList.add('cat-overlay-hidden');
-  }
-
-  function renderBreak() {
-    const el = ensureOverlay();
-    const timer = el.querySelector('[data-cat-timer]');
-    const msg = el.querySelector('[data-cat-message]');
-    const snoozeBtn = el.querySelector('[data-cat-snooze]');
-    if (timer) { timer.style.display = ''; timer.textContent = formatMMSS(state.breakRemainingMs); }
-    // Break shows only the countdown box (no message overlapping the cat).
-    if (msg) { msg.textContent = ''; msg.style.display = 'none'; }
-    if (snoozeBtn) snoozeBtn.style.display = 'none';
-  }
+  // --- overlay (delegated to the injected view) ----------------------------
 
   function renderSleep(locked) {
-    const el = ensureOverlay();
-    const timer = el.querySelector('[data-cat-timer]');
-    const msg = el.querySelector('[data-cat-message]');
-    const snoozeBtn = el.querySelector('[data-cat-snooze]');
-    if (timer) timer.style.display = 'none';
-    if (msg) { msg.style.display = ''; msg.textContent = locked ? 'Locked for the night — get some rest.' : 'Time to sleep!'; }
-    // Snooze is offered only during the soft warning, and only until used once.
-    if (snoozeBtn) snoozeBtn.style.display = (!locked && !state.snoozeUsed) ? '' : 'none';
-    if (locked) el.classList.add('cat-overlay--locked');
+    view.showSleep({
+      locked,
+      // Snooze is offered only during the soft warning, and only until used once.
+      showSnooze: !locked && !state.snoozeUsed,
+      message: locked ? LOCKED_MESSAGE : SLEEP_MESSAGE,
+    });
   }
 
   // --- phase transitions ---------------------------------------------------
@@ -218,22 +133,20 @@ export function setupCatGatekeeper({
   function enterBreak() {
     state.phase = 'break';
     state.breakRemainingMs = settings().breakMin * 60000;
-    showOverlay('break');
-    renderBreak();
+    view.showBreak(formatMMSS(state.breakRemainingMs));
   }
 
   function endBreak() {
     state.phase = 'focus';
     state.focusRemainingMs = settings().focusMin * 60000;
     persistFocus();
-    hideOverlay();
+    view.hide();
   }
 
   function enterSleep() {
     state.sleepTriggered = true;
     state.phase = 'sleep';
     state.sleepElapsedMs = 0;
-    showOverlay('sleep');
     renderSleep(false);
   }
 
@@ -244,7 +157,7 @@ export function setupCatGatekeeper({
     state.snoozeUsed = true;
     state.phase = 'snooze';
     state.snoozeRemainingMs = SNOOZE_MS;
-    hideOverlay();
+    view.hide();
   }
 
   function tick() {
@@ -254,7 +167,7 @@ export function setupCatGatekeeper({
 
     const cfg = settings();
     if (!cfg.enabled) {
-      if (state.phase !== 'focus') { state.phase = 'focus'; hideOverlay(); }
+      if (state.phase !== 'focus') { state.phase = 'focus'; view.hide(); }
       return;
     }
 
@@ -277,7 +190,7 @@ export function setupCatGatekeeper({
       case 'break': {
         state.breakRemainingMs -= realDelta;
         if (state.breakRemainingMs <= 0) endBreak();
-        else renderBreak();
+        else view.setBreakTimer(formatMMSS(state.breakRemainingMs));
         break;
       }
       case 'sleep': {
@@ -324,7 +237,7 @@ export function setupCatGatekeeper({
   function openSettings() {
     // The settings sheet is the <CatGatekeeperSettings> Svelte component;
     // SessionPage exposes the opener and reads cat-settings storage directly.
-    return windowImpl.__piOpenCatSettings?.({
+    return windowImpl?.__piOpenCatSettings?.({
       controller: { getStatusText, skipToBreak },
       onChange: (next) => {
         // Apply focus duration changes immediately when idle in focus phase so
@@ -338,7 +251,7 @@ export function setupCatGatekeeper({
           // Disabling mid-break releases the user.
           state.phase = 'focus';
           state.focusRemainingMs = next.focusMin * 60000;
-          hideOverlay();
+          view.hide();
         }
       },
     });
@@ -358,9 +271,7 @@ export function setupCatGatekeeper({
   function destroy() {
     if (intervalId != null) clearIntervalImpl(intervalId);
     intervalId = null;
-    unblockInput();
-    if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay);
-    overlay = null;
+    view.hide();
   }
 
   const controller = { start, destroy, tick, getStatusText, skipToBreak, snooze, openSettings, getState: () => ({ ...state }) };

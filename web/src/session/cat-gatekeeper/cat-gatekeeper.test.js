@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { JSDOM } from 'jsdom';
 import { setupCatGatekeeper } from './cat-gatekeeper.js';
 import { saveCatSettings } from './cat-settings.js';
 
@@ -12,10 +11,25 @@ function makeStorage(initial = {}) {
   };
 }
 
-// Build a harness with a controllable clock and active/visibility state.
+// Records the overlay calls the controller makes (the real overlay lives in
+// <CatGatekeeper.svelte>; the controller is pure timer/phase logic).
+function makeView() {
+  const v = {
+    visible: false,
+    variant: null,
+    timerText: null,
+    message: null,
+    snooze: null,
+    showBreak(text) { v.visible = true; v.variant = 'break'; v.timerText = text; v.message = null; v.snooze = false; },
+    setBreakTimer(text) { v.timerText = text; },
+    showSleep({ locked, showSnooze, message }) { v.visible = true; v.variant = locked ? 'locked' : 'sleep'; v.message = message; v.snooze = showSnooze; },
+    hide() { v.visible = false; },
+  };
+  return v;
+}
+
+// Build a harness with a controllable clock and active state.
 function harness({ hour = 10, minute = 0, settings } = {}) {
-  const dom = new JSDOM('<body></body>');
-  const doc = dom.window.document;
   const storage = makeStorage();
   if (settings) saveCatSettings(settings, { storage });
 
@@ -24,24 +38,22 @@ function harness({ hour = 10, minute = 0, settings } = {}) {
   const nowFn = () => base + clock.ms;
 
   const focusState = { active: true };
-  Object.defineProperty(doc, 'hidden', { value: false, configurable: true });
-  doc.hasFocus = () => focusState.active;
+  const view = makeView();
 
   const controller = setupCatGatekeeper({
-    documentImpl: doc,
-    windowImpl: dom.window,
+    windowImpl: {},
     storage,
     nowFn,
+    isActive: () => focusState.active,
+    view,
     setIntervalImpl: () => 0,
     clearIntervalImpl: () => {},
-    requestAnimationFrameImpl: (cb) => cb(),
   });
 
   const advance = (ms) => { clock.ms += ms; };
   const tick = (ms = 1000) => { advance(ms); controller.tick(); };
-  const overlay = () => doc.getElementById('cat-gatekeeper-overlay');
 
-  return { dom, doc, storage, controller, focusState, advance, tick, overlay };
+  return { storage, controller, focusState, advance, tick, view };
 }
 
 describe('cat gatekeeper timer', () => {
@@ -67,9 +79,8 @@ describe('cat gatekeeper timer', () => {
     for (let i = 0; i < 35; i++) h.tick(2000);
 
     expect(h.controller.getState().phase).toBe('break');
-    const el = h.overlay();
-    expect(el.classList.contains('cat-overlay--break')).toBe(true);
-    expect(el.querySelector('[data-cat-timer]').textContent).toMatch(/^0[45]:/);
+    expect(h.view.variant).toBe('break');
+    expect(h.view.timerText).toMatch(/^0[45]:/);
   });
 
   it('ends the break and resets focus after the break elapses', () => {
@@ -81,7 +92,7 @@ describe('cat gatekeeper timer', () => {
     h.tick(61_000); // longer than the 1-minute break
     expect(h.controller.getState().phase).toBe('focus');
     expect(h.controller.getState().focusRemainingMs).toBe(60_000);
-    expect(h.overlay().classList.contains('visible')).toBe(false);
+    expect(h.view.visible).toBe(false);
   });
 
   it('skipToBreak jumps straight to a break', () => {
@@ -96,7 +107,7 @@ describe('cat gatekeeper timer', () => {
     h.controller.start();
     for (let i = 0; i < 35; i++) h.tick(2000);
     expect(h.controller.getState().phase).toBe('focus');
-    expect(h.overlay()).toBeNull();
+    expect(h.view.visible).toBe(false);
   });
 
   it('persists remaining focus to storage', () => {
@@ -115,13 +126,12 @@ describe('cat gatekeeper bedtime', () => {
     h.controller.start(); // immediate tick greets at/after bedtime
 
     expect(h.controller.getState().phase).toBe('sleep');
-    const el = h.overlay();
-    expect(el.classList.contains('cat-overlay--sleep')).toBe(true);
-    expect(el.querySelector('[data-cat-message]').textContent).toBe('Time to sleep!');
+    expect(h.view.variant).toBe('sleep');
+    expect(h.view.message).toBe('Time to sleep!');
 
     h.tick(2 * 60000 + 1000);
     expect(h.controller.getState().phase).toBe('sleep-locked');
-    expect(el.querySelector('[data-cat-message]').textContent).toMatch(/Locked for the night/);
+    expect(h.view.message).toMatch(/Locked for the night/);
   });
 
   it('does not trigger bedtime outside the sleep window', () => {
@@ -134,19 +144,19 @@ describe('cat gatekeeper bedtime', () => {
     const h = harness({ hour: 23, minute: 0, settings: { bedtime: '23:00', wakeup: '07:00', sleepMin: 2 } });
     h.controller.start();
     expect(h.controller.getState().phase).toBe('sleep');
-    expect(h.overlay().querySelector('[data-cat-snooze]').style.display).not.toBe('none');
+    expect(h.view.snooze).toBe(true);
 
-    // Click snooze: overlay dismisses and we wait out the 5-minute snooze.
-    h.overlay().querySelector('[data-cat-snooze]').click();
+    // Snooze: overlay dismisses and we wait out the 5-minute snooze.
+    h.controller.snooze();
     expect(h.controller.getState().phase).toBe('snooze');
     expect(h.controller.getState().snoozeUsed).toBe(true);
-    expect(h.overlay().classList.contains('visible')).toBe(false);
+    expect(h.view.visible).toBe(false);
 
     // After the snooze window, the sleepy cat returns (still bedtime).
     h.tick(5 * 60000 + 1000);
     expect(h.controller.getState().phase).toBe('sleep');
     // Snooze already used: the button is now hidden.
-    expect(h.overlay().querySelector('[data-cat-snooze]').style.display).toBe('none');
+    expect(h.view.snooze).toBe(false);
 
     // A second snooze attempt is ignored.
     h.controller.snooze();

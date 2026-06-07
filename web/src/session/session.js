@@ -23,7 +23,6 @@ import { createVersionController } from '../shared/version.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
-import { setupCatGatekeeper } from './cat-gatekeeper/cat-gatekeeper.js';
 import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
 import { t } from '../shared/i18n.js';
 export { buildSessionLookups, createSessionDataModel, decodeBase64JSON, getSessionSearchParams, loadSessionData, readSessionPayload } from './data/session-data.js';
@@ -394,9 +393,9 @@ export function runSessionApp({ target = window } = {}) {
 
   createVersionController({ documentImpl, windowImpl: target });
 
-  // Cat Gatekeeper — focus/break + bedtime companion. Self-paced background
-  // timer; settings open from the command menu (data-action="cat-gatekeeper").
-  target.__piCatGatekeeper = setupCatGatekeeper({ documentImpl, windowImpl: target }).start();
+  // Cat Gatekeeper (focus/break + bedtime companion) is the <CatGatekeeper>
+  // Svelte component (rendered by SessionPage); it wires its controller +
+  // overlay in onMount and exposes it on window.__piCatGatekeeper.
 
   // The session actions menu is the <CommandMenu> Svelte component (rendered by
   // SessionPage); it wires its own behavior in onMount.
