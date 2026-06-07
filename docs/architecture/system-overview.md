@@ -28,12 +28,12 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   │        Svelte 5 SPA (#spa-root)       │  │   EventSource Client    │  │
 │   │  main.js → App.svelte (path router)   │  │      /events?id=…       │  │
 │   │                                       │  │                         │  │
-│   │  / → SessionsPage    (index runtime)  │  │  • reload (session)     │  │
+│   │  / → SessionsPage (Svelte index)      │  │  • reload (session)     │  │
 │   │  /session → SessionPage (Svelte       │  │  • new-session (index)  │  │
 │   │     components + reactive model)      │  │  • status-delta         │  │
-│   │  /settings → SettingsPage             │  │  • status-snapshot      │  │
+│   │  /settings → SettingsPage (Svelte)    │  │  • status-snapshot      │  │
 │   │  /login → LoginPage                   │  │  • annotations, btw…    │  │
-│   │  index still uses web/src/index       │  │                         │  │
+│   │  shared: CommandPalette, Version UI   │  │                         │  │
 │   └──────────────────────────────────────┘  └─────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────────┘
                                     │

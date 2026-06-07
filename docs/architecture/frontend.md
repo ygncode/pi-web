@@ -12,7 +12,7 @@ Built with **Vite + Svelte + JavaScript modules**, embedded into the Go binary.
 web/src/main.js
 web/src/App.svelte
 web/src/routes/*.svelte
-web/src/{index,session,settings,shared}/**/*.js
+web/src/{components,routes,index,session,settings,shared}/**/*.{svelte,js}
         │
         └──▶ vite build ──▶ web/dist/ ──▶ //go:embed
                               │
@@ -37,15 +37,9 @@ API, SSE, PWA, sound, and static asset routes remain server-handled and are not 
 
 ## Sessions Index (`/`)
 
-`SessionsPage.svelte` owns the page shell and reuses the existing index runtime modules in `web/src/index/` for behavior:
+`SessionsPage.svelte` owns the page shell and orchestrates Svelte components for the sessions list, session cards, command palette, home menu, new-session modal, and project management modal. `web/src/index/` now contains pure data/API helpers (`sessions.js`) for normalization, grouping, filtering, and API calls.
 
-- search/filter session cards
-- new-session modal
-- recent locations
-- project management modal
-- running-session live status via shared SSE helpers
-
-Data comes from existing APIs such as `/api/sessions`, `/api/new-session`, `/api/projects`, `/api/recent-locations`, and `/events?id=__all__`.
+Data comes from existing APIs such as `/api/sessions`, `/api/new-session`, `/api/projects`, `/api/recent-locations`, and `/events?id=__all__`. Running-session status is pushed through the shared SSE helpers and reflected reactively in the cards/counts.
 
 ## Session Viewer (`/session?id=…`)
 
@@ -62,7 +56,7 @@ The message pane is rendered by Svelte components (no string-building renderer):
 - `artifacts/`, `annotations/` — pure registries/filters/ranges + the fetch API wrappers; the panels themselves are `ArtifactPanel.svelte`/`AnnotationLayer.svelte`
 - `cat-gatekeeper/` — pure timer/storage logic behind `CatGatekeeper.svelte`
 
-Remaining non-session migration work is **Phase 4** (the index + settings routes still delegate to `web/src/index/` and `web/src/settings/settings.js`).
+The index + settings Phase 4 migration is complete: those routes are Svelte-orchestrated too, with only pure/API helpers left outside components.
 
 ## Static / Share Export
 
@@ -92,9 +86,9 @@ The index route listens to `/events?id=__all__` for `new-session`, `status-snaps
 - `web/src/shared/storage.js` — localStorage helpers
 - `web/src/shared/escape.js` — HTML escaping
 - `web/src/shared/theme.js` — theme toggle (dark/light/nord/dracula/custom)
-- `web/src/shared/version.js` — version check + update indicator helpers
+- `web/src/shared/version.js` — pure version formatting/changelog/fetch helpers; `VersionController.svelte` owns the update modal/status UI
 - `web/src/shared/keyboard-nav.js` — vim-style j/k/gg/G navigation
-- `web/src/shared/session-list-palette.js` — shared ⌘K session search palette
+- `web/src/components/shared/CommandPalette.svelte` — shared ⌘K session search palette
 
 ## Static Assets
 
