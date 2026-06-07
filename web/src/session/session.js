@@ -37,7 +37,6 @@ import * as chatPreview from './live/chat-preview.js';
 import * as liveEvents from './live/live-events.js';
 import * as liveRenderer from './live/live-renderer.js';
 // share-overlay absorbed into <ShareDialog> (rendered by SessionPage).
-import { setupCommandMenu } from './live/command-menu.js';
 import { createVersionController } from '../shared/version.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
@@ -492,19 +491,13 @@ export function runSessionApp({ target = window } = {}) {
   // timer; settings open from the command menu (data-action="cat-gatekeeper").
   target.__piCatGatekeeper = setupCatGatekeeper({ documentImpl, windowImpl: target }).start();
 
-  setupCommandMenu({
-    documentImpl,
-    windowImpl: target,
-    setSidebarOpen: (open) => sidebarApi.setSidebarOpen(open, { documentImpl }),
-    setSidebarCollapsed: (collapsed) => sidebarApi.setSidebarCollapsed(collapsed, { documentImpl }),
-    getEntries: () => dataModel.entries,
-    getLeafId: () => currentLeafId,
-    escapeHtml: sessionFormat.escapeHtml,
-    formatTokens: entryRenderer.formatTokens,
-  });
+  // The session actions menu is the <CommandMenu> Svelte component (rendered by
+  // SessionPage); it wires its own behavior in onMount.
 
-  // Set up session list palette (Cmd+K / "List Sessions" menu item)
-  setupCommandMenu._palette = setupSessionListPalette({
+  // Set up session list palette (Cmd+K / "List Sessions" menu item). Exposed on
+  // window so <CommandMenu>'s list-sessions action and the Cmd+K shortcut below
+  // can open it without a direct reference.
+  const sessionPalette = setupSessionListPalette({
     documentImpl,
     windowImpl: target,
     overlayId: 'sessionPalette',
@@ -515,12 +508,13 @@ export function runSessionApp({ target = window } = {}) {
       if (newBtn) newBtn.click();
     },
   });
+  target.__piOpenSessionPalette = () => sessionPalette.open();
 
   // Cmd+K keyboard shortcut for session list palette
   target.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
-      if (setupCommandMenu._palette) setupCommandMenu._palette.open();
+      target.__piOpenSessionPalette?.();
     }
   });
 

@@ -157,7 +157,7 @@
 
   <SessionHeader {title} {cwd} {sessionId} />
 
-  <CommandMenu />
+  <CommandMenu {sessionId} />
 
   <div id="sidebar-overlay"></div>
   <div id="app">
