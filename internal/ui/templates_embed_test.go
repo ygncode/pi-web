@@ -74,8 +74,11 @@ func TestExportBundleIsSelfContained(t *testing.T) {
 		"runLiveReload", "live-reload-runner", "live-reload",
 		"chatComposerRunner", "ChatComposer",
 		"ArtifactPanel", "AnnotationLayer",
-		"applyLiveUpdate",
 	}
+	// NOTE: applyLiveUpdate is intentionally NOT forbidden — it is a pure
+	// state-replacement method on the SHARED SessionDataModel, which the export
+	// now bundles to render the Svelte tree. It touches no SSE/fetch/DOM, so it
+	// is not a live-only leak indicator.
 	for _, sym := range forbidden {
 		if strings.Contains(exportJs, sym) {
 			t.Fatalf("export bundle contains live-only symbol %q — a live module leaked into the static export graph", sym)

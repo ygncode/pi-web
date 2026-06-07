@@ -26,7 +26,6 @@ import {
 } from '../session/tree/session-tree.js';
 import {
   extractContent,
-  filterNodes as filterNodesForState,
 } from '../session/tree/session-filter.js';
 import {
   escapeHtml,
@@ -38,7 +37,9 @@ import {
 import { configureSessionMarkdown, safeMarkedParse } from '../session/render/markdown.js';
 import * as sessionHeaderRenderer from '../session/render/session-header-renderer.js';
 import * as sessionEntryRenderer from '../session/render/session-entry-renderer.js';
-import { createTreeRenderer } from '../session/tree/tree-renderer.js';
+import { mount } from 'svelte';
+import SessionTreeNodes from '../components/session/SessionTreeNodes.svelte';
+import { SessionDataModel } from '../session/data/session-data.svelte.js';
 import { createSessionNavigator } from '../session/navigation/session-navigation.js';
 import * as toggleStateApi from '../session/ui/toggle-state.js';
 import * as sidebarApi from '../session/ui/sidebar.js';
@@ -80,6 +81,10 @@ export function runExportApp({ target = window } = {}) {
     windowImpl: target,
     atobImpl: target.atob?.bind(target),
   });
+  // Reactive model that drives the Svelte <SessionTreeNodes> sidebar (same
+  // component the live app uses). The snapshot renders once — no live updates —
+  // so this just computes the tree/active-path derivations a single time.
+  const treeModel = new SessionDataModel(dataModel);
   const sessionId = getSessionSearchParams(target.location).get('id') || '';
 
   let filterMode = 'default';
@@ -112,17 +117,19 @@ export function runExportApp({ target = window } = {}) {
 
   let currentLeafId = dataModel.leafId;
   let currentTargetId = dataModel.urlTargetId || dataModel.leafId;
-  let treeRenderer;
   let navigatorInstance;
 
+  // Push view state into the reactive model; <SessionTreeNodes> recomputes.
   const syncTreeRendererState = () => {
     target.__piFilterState.filterMode = filterMode;
     target.__piFilterState.searchQuery = searchQuery;
-    treeRenderer.currentLeafId = currentLeafId;
-    treeRenderer.currentTargetId = currentTargetId;
+    treeModel.filterMode = filterMode;
+    treeModel.searchQuery = searchQuery;
+    treeModel.currentLeafId = currentLeafId;
+    treeModel.currentTargetId = currentTargetId;
   };
-  const renderTree = () => { syncTreeRendererState(); return treeRenderer.renderTree(); };
-  const forceTreeRerender = () => { syncTreeRendererState(); return treeRenderer.forceTreeRerender(); };
+  const renderTree = () => { syncTreeRendererState(); };
+  const forceTreeRerender = () => { syncTreeRendererState(); };
 
   // hljs is available synchronously (inlined vendor script), so code blocks are
   // highlighted at parse time — no lazy pass like the live app needs.
@@ -176,23 +183,6 @@ export function runExportApp({ target = window } = {}) {
   const navigateTo = (targetId, scrollMode = 'target', scrollToEntryId = null) =>
     navigatorInstance.navigateTo(targetId, scrollMode, scrollToEntryId);
 
-  treeRenderer = createTreeRenderer({
-    documentImpl,
-    windowImpl: target,
-    initialLeafId: currentLeafId,
-    initialTargetId: currentTargetId,
-    buildTree: sessionTree.buildTree,
-    buildActivePathIds: sessionTree.buildActivePathIds,
-    flattenTree,
-    filterNodes: (flatNodes, leaf) => filterNodesForState(flatNodes, leaf, { filterMode, searchQuery }),
-    buildTreePrefix,
-    getTreeNodeDisplayHtml: sessionFormat.getTreeNodeDisplayHtml,
-    findNewestLeaf: sessionTree.findNewestLeaf,
-    navigateTo,
-    isMobileLayout: ui.isMobileLayout,
-    closeSidebar: ui.closeSidebar,
-  });
-
   navigatorInstance = createSessionNavigator({
     documentImpl,
     windowImpl: target,
@@ -206,15 +196,31 @@ export function runExportApp({ target = window } = {}) {
     onNavigate: (leaf, targetId) => {
       currentLeafId = leaf;
       currentTargetId = targetId;
-      treeRenderer.currentLeafId = leaf;
-      treeRenderer.currentTargetId = targetId;
+      treeModel.currentLeafId = leaf;
+      treeModel.currentTargetId = targetId;
     },
     // No forking in a static snapshot — fork buttons are not rendered.
     onFork: () => {},
   });
 
+  // Mount the Svelte tree sidebar into #sidebar (the static #tree-container /
+  // #tree-status were removed from session.html; the component renders them).
+  const sidebarEl = documentImpl.getElementById('sidebar');
+  if (sidebarEl) {
+    mount(SessionTreeNodes, {
+      target: sidebarEl,
+      props: {
+        model: treeModel,
+        onNavigate: (id) => {
+          const leaf = treeModel.newestLeaf(id) || id;
+          navigateTo(leaf, 'target', id);
+          if (ui.isMobileLayout()) ui.closeSidebar();
+        },
+      },
+    });
+  }
+
   target.navigateTo = navigateTo;
-  target.__piTreeRenderer = treeRenderer;
   target.__piSessionNavigator = navigatorInstance;
 
   setupKeyboardNav({ windowImpl: target, documentImpl });

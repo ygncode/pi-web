@@ -6,17 +6,22 @@ import (
 	"testing"
 )
 
-// Mobile sidebar close-on-navigate is implemented in the shared sidebar and
-// tree-renderer modules (used by both live and static export). Assert against
-// the source rather than the minified export bundle.
+// Mobile sidebar close-on-navigate is implemented in the shared sidebar module
+// plus the tree node-click handler. After the tree-renderer.js -> Svelte
+// <SessionTreeNodes> migration, that handler lives in SessionTree.svelte (live)
+// and export-entry.js (static export). Assert against the source.
 func TestMobileSidebarClosesWhenNavigatingTree(t *testing.T) {
 	sidebarSrc, err := os.ReadFile(repoPath("web/src/session/ui/sidebar.js"))
 	if err != nil {
 		t.Fatalf("read sidebar.js: %v", err)
 	}
-	treeSrc, err := os.ReadFile(repoPath("web/src/session/tree/tree-renderer.js"))
+	liveTreeSrc, err := os.ReadFile(repoPath("web/src/components/session/SessionTree.svelte"))
 	if err != nil {
-		t.Fatalf("read tree-renderer.js: %v", err)
+		t.Fatalf("read SessionTree.svelte: %v", err)
+	}
+	exportSrc, err := os.ReadFile(repoPath("web/src/export/export-entry.js"))
+	if err != nil {
+		t.Fatalf("read export-entry.js: %v", err)
 	}
 	sidebarChecks := []string{
 		"export function setSidebarOpen(open, { documentImpl = document } = {}) {",
@@ -27,8 +32,11 @@ func TestMobileSidebarClosesWhenNavigatingTree(t *testing.T) {
 			t.Fatalf("sidebar.js missing %q; mobile sidebar can remain stuck over chat", check)
 		}
 	}
-	if !strings.Contains(string(treeSrc), "if (isMobileLayout()) closeSidebar();") {
-		t.Fatal("tree-renderer.js missing mobile close-on-navigate; sidebar can remain stuck over chat")
+	if !strings.Contains(string(liveTreeSrc), "__piCloseSidebar") {
+		t.Fatal("SessionTree.svelte missing mobile close-on-navigate; sidebar can remain stuck over chat")
+	}
+	if !strings.Contains(string(exportSrc), "ui.closeSidebar()") {
+		t.Fatal("export-entry.js missing mobile close-on-navigate; sidebar can remain stuck over chat")
 	}
 }
 
