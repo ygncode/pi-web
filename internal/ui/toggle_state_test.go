@@ -115,23 +115,20 @@ func TestLiveReloadEntriesInheritCurrentToggleState(t *testing.T) {
 }
 
 func TestLiveReloadRendererUsesToggleableThinkingAndToolMarkup(t *testing.T) {
-	// The canonical entry renderer (used by <SessionContent> for both live reload
-	// and export) emits the toggle-compatible thinking/tool markup; live reload no
-	// longer has a separate renderer.
-	source, err := os.ReadFile(repoPath("web/src/session/render/session-entry-renderer.js"))
-	if err != nil {
-		t.Fatalf("read web/src/session/render/session-entry-renderer.js: %v", err)
+	// The message pane is rendered by <SessionEntry> (thinking blocks) + its
+	// <ToolOutput> child (expandable tool output) for both live reload and export;
+	// assert the toggle-compatible markup classes survive the decomposition.
+	entrySrc := readSrc(t, "web/src/components/session/SessionEntry.svelte")
+	outputSrc := readSrc(t, "web/src/components/session/ToolOutput.svelte")
+	srcChecks := map[string][]string{
+		entrySrc: {`thinking-block`, `Thinking ...`},
+		outputSrc: {`tool-output expandable`, `output-preview`, `output-full`},
 	}
-	checks := []string{
-		`thinking-block`,
-		`Thinking ...`,
-		`tool-output expandable`,
-		`output-preview`,
-		`output-full`,
-	}
-	for _, check := range checks {
-		if !strings.Contains(string(source), check) {
-			t.Fatalf("entry renderer missing toggle-compatible markup %q", check)
+	for src, checks := range srcChecks {
+		for _, check := range checks {
+			if !strings.Contains(src, check) {
+				t.Fatalf("entry markup missing toggle-compatible class %q", check)
+			}
 		}
 	}
 }

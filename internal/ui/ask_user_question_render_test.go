@@ -1,31 +1,26 @@
 package ui
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
 
-// These tests assert that the shared session entry renderer
-// (web/src/session/render/session-entry-renderer.js) implements the
-// ask_user_question behavior. Live and static export both bundle this module,
-// so the source is the single source of truth — the export bundle is minified,
-// so we check the source rather than grepping the built artifact.
-func readEntryRendererSrc(t *testing.T) string {
+// These tests assert that the ask_user_question tool renders via the dedicated
+// <AskQuestion> component (dispatched from <ToolCall>), shared by the live app
+// and the static export. The source is the single source of truth (the export
+// bundle is minified), so we check the component source.
+func readAskQuestionSrc(t *testing.T) string {
 	t.Helper()
-	data, err := os.ReadFile(repoPath("web/src/session/render/session-entry-renderer.js"))
-	if err != nil {
-		t.Fatalf("read session-entry-renderer.js: %v", err)
-	}
-	return string(data)
+	return readSrc(t, "web/src/components/session/ToolCall.svelte") +
+		readSrc(t, "web/src/components/session/AskQuestion.svelte")
 }
 
 func TestAskUserQuestionToolHasDedicatedRenderer(t *testing.T) {
-	src := readEntryRendererSrc(t)
+	src := readAskQuestionSrc(t)
 	jsChecks := []string{
-		"case 'ask_user_question':",
-		"case 'pi_web_ask_user_question':",
-		"renderAskUserQuestionTool(args, result)",
+		"'ask_user_question'",
+		"'pi_web_ask_user_question'",
+		"<AskQuestion",
 	}
 	for _, check := range jsChecks {
 		if !strings.Contains(src, check) {
@@ -41,10 +36,10 @@ func TestAskUserQuestionToolHasDedicatedRenderer(t *testing.T) {
 }
 
 func TestAskUserQuestionHonorsMultiSelect(t *testing.T) {
-	src := readEntryRendererSrc(t)
+	src := readAskQuestionSrc(t)
 	checks := []string{
-		"const anyMultiSelect = questions.some(q => q && q.multiSelect === true);",
-		"const needsSubmit = isMulti || anyMultiSelect;",
+		"questions.some((q) => q && q.multiSelect === true)",
+		"isMulti || anyMultiSelect",
 		"data-needs-submit=",
 		"data-multi-select=",
 	}
@@ -56,9 +51,9 @@ func TestAskUserQuestionHonorsMultiSelect(t *testing.T) {
 }
 
 func TestAskUserQuestionAwaitingChatReplyStaysClickable(t *testing.T) {
-	src := readEntryRendererSrc(t)
+	src := readAskQuestionSrc(t)
 	checks := []string{
-		"const awaitingChatReply = result?.details?.awaitingChatReply === true;",
+		"result?.details?.awaitingChatReply === true",
 		"|| awaitingChatReply",
 	}
 	for _, check := range checks {
@@ -69,11 +64,11 @@ func TestAskUserQuestionAwaitingChatReplyStaysClickable(t *testing.T) {
 }
 
 func TestErroredAskUserQuestionKeepsFallbackOptionsClickable(t *testing.T) {
-	src := readEntryRendererSrc(t)
+	src := readAskQuestionSrc(t)
 	checks := []string{
-		"const questionToolFailed = result?.isError === true;",
+		"result?.isError === true",
 		"question UI failed",
-		"const canClick = !result || questionToolFailed || awaitingChatReply;",
+		"!result || questionToolFailed || awaitingChatReply",
 		"Use these options as a fallback",
 	}
 	for _, check := range checks {

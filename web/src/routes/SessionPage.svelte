@@ -41,11 +41,11 @@
   // onMount) mutates it on reload.
   const sessionModel = setSessionModel(new SessionDataModel());
 
-  // Reactive bridge to the message-pane renderer: <SessionContent> renders
-  // model.activePath via renderEntry and runs afterRender after each render.
-  // wireSessionContentRuntime() (in onMount) assigns both here once the entry
-  // renderer is built; the $state proxy makes the pane paint reactively.
-  const contentRuntime = $state({ renderEntry: null, afterRender: null });
+  // Post-render hook for the message pane: <SessionContent> renders
+  // model.activePath as <SessionEntry> components and runs afterRender after each
+  // render. wireSessionContentRuntime() (in onMount) assigns it (toggle state +
+  // lazy highlight); the $state proxy makes the hook apply reactively.
+  const contentRuntime = $state({ afterRender: null });
 
   // Keyboard-shortcuts modal: opened imperatively (Cmd+/ and #shortcuts-help-btn,
   // wired in setupSessionGlobals) via a window bridge set in onMount.
@@ -304,7 +304,7 @@
   <div id="app">
     <SessionTree />
     <div id="content-container" class="content-container">
-      <main id="content"><div id="header-container">{#if sessionModel}<SessionInfoHeader model={sessionModel} />{/if}</div><div id="messages">{#if sessionModel}<SessionContent model={sessionModel} renderEntry={contentRuntime.renderEntry} afterRender={contentRuntime.afterRender} />{/if}</div></main>
+      <main id="content"><div id="header-container">{#if sessionModel}<SessionInfoHeader model={sessionModel} />{/if}</div><div id="messages">{#if sessionModel}<SessionContent model={sessionModel} afterRender={contentRuntime.afterRender} live />{/if}</div></main>
       <ChatComposer {sessionId} {chatAvailable} {chatDisabledReason} {cwd} {modelLabel} />
     </div>
     <RightSidebar {scratchpad} projectPath={cwd} />

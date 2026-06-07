@@ -25,7 +25,7 @@ import {
   truncate,
 } from '../session/render/session-format.js';
 import { configureSessionMarkdown, safeMarkedParse } from '../session/render/markdown.js';
-import * as sessionEntryRenderer from '../session/render/session-entry-renderer.js';
+import { downloadSessionJson } from '../session/render/session-entry-actions.js';
 import { mount } from 'svelte';
 import SessionTreeNodes from '../components/session/SessionTreeNodes.svelte';
 import SessionInfoHeader from '../components/session/SessionInfoHeader.svelte';
@@ -110,26 +110,31 @@ export function runExportApp({ target = window } = {}) {
   const renderTree = () => { syncTreeRendererState(); };
   const forceTreeRerender = () => { syncTreeRendererState(); };
 
-  // hljs is available synchronously (inlined vendor script), so code blocks are
-  // highlighted at parse time — no lazy pass like the live app needs.
-  const entryRenderer = sessionEntryRenderer.createSessionEntryRenderer({
+  target.downloadSessionJson = () => downloadSessionJson({
     entries: dataModel.entries,
     header: dataModel.header,
-    toolCallMap: dataModel.toolCallMap,
-    renderedTools: dataModel.renderedTools,
-    currentLeafIdRef: () => currentLeafId,
-    escapeHtml: sessionFormat.escapeHtml,
-    shortenPath,
-    formatToolCall,
-    safeMarkedParse: (text) => safeMarkedParse(text, { marked }),
-    hljs,
     documentImpl,
-    windowImpl: target,
-    navigatorImpl: target.navigator,
     URLImpl: target.URL,
     BlobImpl: target.Blob,
   });
-  target.downloadSessionJson = entryRenderer.downloadSessionJson;
+
+  // hljs is available synchronously (inlined vendor script). <SessionEntry>/
+  // <ToolOutput> emit code with `data-highlight-pending`; this colours them in
+  // place after each render (the live app uses applyLazyHighlighting instead).
+  const highlightPending = (container) => {
+    if (!hljs || !container) return;
+    container.querySelectorAll('code[data-highlight-pending]').forEach((el) => {
+      const lang = el.dataset.lang;
+      const text = el.textContent;
+      try {
+        el.innerHTML = lang && hljs.getLanguage(lang)
+          ? hljs.highlight(text, { language: lang }).value
+          : hljs.highlightAuto(text).value;
+      } catch { /* keep plain text */ }
+      el.removeAttribute('data-highlight-pending');
+      el.removeAttribute('data-lang');
+    });
+  };
 
   const ui = setupSessionUi({
     documentImpl,
@@ -175,8 +180,10 @@ export function runExportApp({ target = window } = {}) {
       target: messagesEl,
       props: {
         model: treeModel,
-        renderEntry: entryRenderer.renderEntry,
-        afterRender: (container) => target.applyToggleStateToNode?.(container),
+        afterRender: (container) => {
+          target.applyToggleStateToNode?.(container);
+          highlightPending(container);
+        },
       },
     });
   }

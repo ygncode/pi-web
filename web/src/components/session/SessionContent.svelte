@@ -1,27 +1,21 @@
 <script>
-  // The message pane: renders the active root→leaf path from the reactive model,
-  // replacing the navigator's imperative #messages build. Keyed by entry id so
-  // navigation and live reload add/update/remove entries reactively.
-  //
-  // `renderEntry` is injected (created later by the imperative runtime with its
-  // marked/hljs/etc. deps); passing it reactively means entries paint as soon as
-  // it is available. `afterRender(container)` runs after each (re)render to apply
-  // toggle state, wire delegated buttons, lazy-highlight code, and scroll —
-  // concerns that still live in the imperative layer for now.
+  // The message pane: renders the active root→leaf path from the reactive model
+  // as <SessionEntry> components, replacing the navigator's imperative #messages
+  // build. Keyed by entry id so navigation and live reload add/update/remove
+  // entries reactively. `afterRender(container)` runs after each (re)render to
+  // re-apply toggle state, lazy-highlight pending code, and scroll — concerns the
+  // imperative layer still owns. Shared by the live app + the static export.
   import { getSessionModel } from '../../session/session-context.js';
   import SessionEntry from './SessionEntry.svelte';
 
-  let { model = getSessionModel(), renderEntry = null, afterRender = null } = $props();
+  let { model = getSessionModel(), afterRender = null, live = false } = $props();
 
   let containerEl = $state(null);
 
-  // Re-run post-render side effects whenever the rendered path or renderer
-  // changes. Reading activePath + renderEntry registers the dependencies.
+  // Re-run post-render side effects whenever the rendered path changes.
   $effect(() => {
     // eslint-disable-next-line no-unused-expressions
     model.activePath;
-    // eslint-disable-next-line no-unused-expressions
-    renderEntry;
     if (containerEl && typeof afterRender === 'function') {
       afterRender(containerEl);
     }
@@ -30,6 +24,6 @@
 
 <div id="messages-list" class="messages-list" bind:this={containerEl}>
   {#each model.activePath as entry (entry.id)}
-    <SessionEntry {entry} {renderEntry} />
+    <SessionEntry {entry} {model} {live} />
   {/each}
 </div>

@@ -1,19 +1,18 @@
-// Live wiring for the message pane (#messages). <SessionContent> (mounted by
-// SessionPage) renders model.activePath via the injected renderEntry and runs
-// afterRender(container) after each (re)render; this builds that renderEntry from
-// the shared model and wires the single delegated copy/fork/label click handler.
-// Live-only — the static export builds its own renderer in export-entry.js.
+// Live wiring for the message pane (#messages). <SessionContent> renders
+// model.activePath as <SessionEntry> components and runs afterRender(container)
+// after each (re)render; this supplies that afterRender hook (toggle state +
+// lazy highlight), the per-message copy/fork/label delegated handler, and the
+// download-JSONL action. Also builds the sessionFormat object setupSessionUi
+// needs. Live-only — the static export wires its own afterRender in export-entry.
 //
 // Relocated out of session.js during the Svelte migration teardown
 // (docs/dev/svelte-migration-plan.md §11).
 
-import { marked } from 'marked';
 import { icon, Loader } from '../shared/icons.js';
 import { t } from '../shared/i18n.js';
 import { extractContent } from './tree/session-filter.js';
 import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml, shortenPath, truncate } from './render/session-format.js';
-import { safeMarkedParse } from './render/markdown.js';
-import * as sessionEntryRenderer from './render/session-entry-renderer.js';
+import { buildShareUrl, copyToClipboard, downloadSessionJson } from './render/session-entry-actions.js';
 
 export function wireSessionContentRuntime({
   windowImpl,
@@ -38,24 +37,13 @@ export function wireSessionContentRuntime({
     }),
   };
 
-  const entryRenderer = sessionEntryRenderer.createSessionEntryRenderer({
+  target.downloadSessionJson = () => downloadSessionJson({
     entries: model.entries,
     header: model.header,
-    toolCallMap: model.toolCallMap,
-    renderedTools: model.renderedTools,
-    currentLeafIdRef: () => model.currentLeafId,
-    escapeHtml: sessionFormat.escapeHtml,
-    shortenPath,
-    formatToolCall,
-    safeMarkedParse: (text) => safeMarkedParse(text, { marked }),
-    hljs: null,
     documentImpl,
-    windowImpl: target,
-    navigatorImpl: target.navigator,
     URLImpl: target.URL,
     BlobImpl: target.Blob,
   });
-  target.downloadSessionJson = entryRenderer.downloadSessionJson;
 
   // Fork a new session starting at an entry.
   const forkEntry = (entryId, btn) => {
@@ -118,10 +106,9 @@ export function wireSessionContentRuntime({
     });
   };
 
-  // Inject the renderer + afterRender hook into the shared $state runtime so the
-  // message pane paints as soon as they're available.
+  // After each (re)render of <SessionContent>, re-apply persisted collapse/toggle
+  // state and lazy-highlight any pending code blocks.
   if (contentRuntime) {
-    contentRuntime.renderEntry = entryRenderer.renderEntry;
     contentRuntime.afterRender = (container) => {
       target.applyToggleStateToNode?.(container);
       applyLazyHighlighting(documentImpl);
@@ -135,7 +122,13 @@ export function wireSessionContentRuntime({
     const copyBtn = e.target.closest?.('.copy-link-btn');
     if (copyBtn) {
       e.stopPropagation();
-      entryRenderer.copyToClipboard(entryRenderer.buildShareUrl(copyBtn.dataset.entryId), copyBtn);
+      const url = buildShareUrl(copyBtn.dataset.entryId, {
+        documentImpl,
+        windowImpl: target,
+        getCurrentLeafId: () => model.currentLeafId,
+        URLImpl: target.URL,
+      });
+      copyToClipboard(url, copyBtn, { documentImpl, navigatorImpl: target.navigator });
       return;
     }
     const forkBtn = e.target.closest?.('.fork-btn');
@@ -151,5 +144,5 @@ export function wireSessionContentRuntime({
     }
   });
 
-  return { entryRenderer, sessionFormat };
+  return { sessionFormat };
 }
