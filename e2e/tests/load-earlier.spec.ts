@@ -72,19 +72,30 @@ test.describe("load-earlier banner (large session pagination)", () => {
     await expect(page.locator("#messages")).not.toContainText(EARLY_MARKER);
 
     // Click through preceding windows until everything is loaded. The banner
-    // removes itself once `from` reaches 0 (load-earlier.js).
-    const button = banner.getByRole("button");
+    // re-enables its button between windows and removes itself once `from`
+    // reaches 0 (LoadEarlier.svelte). Playwright's click() auto-waits for the
+    // enabled state, so we don't assert it separately. We deliberately avoid a
+    // hard intermediate poll: under the full parallel matrix the synchronous
+    // re-render of the merged conversation can briefly jam the main thread and
+    // blow a fixed poll budget even though the load itself succeeded. The settle
+    // below is best-effort; only the final state (banner gone + earliest message
+    // rendered) is asserted, via auto-retrying locator assertions that absorb
+    // that jam.
     for (let i = 0; i < 6 && (await banner.count()) > 0; i += 1) {
-      await expect(button).toBeEnabled({ timeout: WINDOW_TIMEOUT });
-      await button.click();
-      // Either the banner is gone, or it re-enabled for the next window.
-      await expect
-        .poll(
-          async () =>
-            (await banner.count()) === 0 || (await button.isEnabled()),
+      await banner.getByRole("button").click();
+      // Wait for this window to settle (button re-enabled or banner detached)
+      // so the next iteration targets a ready control. Non-fatal — the final
+      // assertions are authoritative.
+      await page
+        .waitForFunction(
+          () => {
+            const b = document.querySelector("#load-earlier-banner");
+            const btn = b?.querySelector("button");
+            return !b || (btn != null && !(btn as HTMLButtonElement).disabled);
+          },
           { timeout: WINDOW_TIMEOUT },
         )
-        .toBe(true);
+        .catch(() => {});
     }
 
     await expect(page.locator("#load-earlier-banner")).toHaveCount(0, {
