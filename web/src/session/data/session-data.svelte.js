@@ -162,4 +162,37 @@ export class SessionDataModel {
   newestLeaf(nodeId) {
     return findNewestLeaf(nodeId, this.nodeMap);
   }
+
+  // Live-reload / load-earlier reconciliation: replace entries in place and
+  // refill the stable lookup maps (all reactive, so the Svelte tree, content
+  // pane, and artifact panel update automatically), then advance the active
+  // leaf to the newest descendant of the current one (or the last real entry).
+  // Unlike load(), this preserves view state and never resets the target unless
+  // it was unset.
+  reconcile(entries) {
+    if (!Array.isArray(entries)) return;
+    this.entries.splice(0, this.entries.length, ...entries);
+    const lk = buildSessionLookups(this.entries);
+    refillMap(this.byId, lk.byId);
+    refillMap(this.toolCallMap, lk.toolCallMap);
+    refillMap(this.labelMap, lk.labelMap);
+
+    const nodeMap = buildTreeNodeMap(buildTree(this.entries, this.labelMap));
+    let nextLeafId = this.currentLeafId && nodeMap.has(this.currentLeafId)
+      ? findNewestLeaf(this.currentLeafId, nodeMap)
+      : '';
+    if (!nextLeafId) {
+      for (let i = this.entries.length - 1; i >= 0; i -= 1) {
+        if (this.entries[i]?.id && this.entries[i]?.type !== 'label') {
+          nextLeafId = this.entries[i].id;
+          break;
+        }
+      }
+    }
+    if (nextLeafId) {
+      this.leafId = nextLeafId;
+      this.currentLeafId = nextLeafId;
+      if (!this.currentTargetId) this.currentTargetId = nextLeafId;
+    }
+  }
 }

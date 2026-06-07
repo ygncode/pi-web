@@ -68,6 +68,33 @@ describe('SessionDataModel', () => {
     expect(m.currentLeafId).toBe('leaf');
   });
 
+  it('reconcile() merges new entries in place and advances the active leaf', () => {
+    const m = model();
+    m.navigateTo('leaf');
+    m.reconcile([
+      ...entries,
+      { id: 'leaf2', parentId: 'leaf', timestamp: '2026-01-01T00:04:00Z', type: 'message', message: { role: 'assistant', content: 'more' } },
+    ]);
+    expect(m.byId.has('leaf2')).toBe(true);
+    // active leaf follows to the newest descendant of where we were.
+    expect(m.currentLeafId).toBe('leaf2');
+    expect(m.leafId).toBe('leaf2');
+  });
+
+  it('reconcile() ignores non-array input', () => {
+    const m = model();
+    m.reconcile(undefined);
+    expect(m.entries).toHaveLength(4);
+  });
+
+  it('reconcile() prepends earlier entries without moving the active leaf off-branch', () => {
+    const m = model();
+    m.navigateTo('old');
+    m.reconcile(entries);
+    // staying on 'old' (a leaf), the newest descendant is itself.
+    expect(m.currentLeafId).toBe('old');
+  });
+
   it('derives the ordered active path (root→leaf)', () => {
     const m = model();
     expect(m.activePath.map((e) => e.id)).toEqual(['root', 'mid', 'leaf']);

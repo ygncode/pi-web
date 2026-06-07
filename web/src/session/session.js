@@ -1,8 +1,7 @@
 import { marked } from 'marked';
 import { icon, Loader } from '../shared/icons.js';
 
-import { buildSessionLookups, loadSessionData, getSessionSearchParams } from './data/session-data.js';
-import { buildTree as buildTreeForModel, buildTreeNodeMap, findNewestLeaf as findNewestLeafInTree } from './tree/session-tree.js';
+import { loadSessionData, getSessionSearchParams } from './data/session-data.js';
 import { extractContent, filterNodes as filterNodesForState, getSearchableText, hasTextContent, recalculateVisualStructure } from './tree/session-filter.js';
 import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml as getTreeNodeDisplayHtmlForState, shortenPath, truncate } from './render/session-format.js';
 import { configureSessionMarkdown, safeMarkedParse } from './render/markdown.js';
@@ -86,44 +85,12 @@ export function runSessionApp({ target = window } = {}) {
   // model and exposes selectArtifact/getArtifact on window.__piArtifactPanel for
   // the annotation layer.
 
-  function replaceMapContents(targetMap, nextMap) {
-    targetMap.clear();
-    nextMap.forEach((value, key) => targetMap.set(key, value));
-  }
-
-  function syncDataModelEntries(entries = []) {
-    if (!Array.isArray(entries)) return;
-    dataModel.entries.splice(0, dataModel.entries.length, ...entries);
-    const lookups = buildSessionLookups(dataModel.entries);
-    replaceMapContents(dataModel.byId, lookups.byId);
-    replaceMapContents(dataModel.toolCallMap, lookups.toolCallMap);
-    replaceMapContents(dataModel.labelMap, lookups.labelMap);
-
-    const roots = buildTreeForModel(dataModel.entries, dataModel.labelMap);
-    const nodeMap = buildTreeNodeMap(roots);
-    const currentLeafId = dataModel.currentLeafId;
-    let nextLeafId = currentLeafId && nodeMap.has(currentLeafId)
-      ? findNewestLeafInTree(currentLeafId, nodeMap)
-      : '';
-    if (!nextLeafId) {
-      for (let i = dataModel.entries.length - 1; i >= 0; i -= 1) {
-        if (dataModel.entries[i]?.id && dataModel.entries[i]?.type !== 'label') {
-          nextLeafId = dataModel.entries[i].id;
-          break;
-        }
-      }
-    }
-    if (nextLeafId) {
-      dataModel.leafId = nextLeafId;
-      dataModel.currentLeafId = nextLeafId;
-      if (!dataModel.currentTargetId) dataModel.currentTargetId = nextLeafId;
-    }
-
-    // Live reload reconciles the data model when the session JSONL changes.
-    // The in-place entries splice + map refills above are reactive, so the
-    // Svelte <SessionTreeNodes> sidebar, <SessionContent>, and <ArtifactPanel>
-    // (which collects from model.entries) all update automatically.
-  }
+  // Live reload + load-earlier reconcile the data model when the JSONL changes.
+  // SessionDataModel.reconcile() replaces entries + refills the lookup maps in
+  // place (all reactive), so the Svelte <SessionTreeNodes> sidebar,
+  // <SessionContent>, and <ArtifactPanel> (which collects from model.entries)
+  // all update automatically. Plain fallback models (no reconcile) are tolerated.
+  const syncDataModelEntries = (entries) => dataModel.reconcile?.(entries);
 
   const entryRenderer = sessionEntryRenderer.createSessionEntryRenderer({
     entries: dataModel.entries,

@@ -588,6 +588,18 @@ component-owned chat/live runner modules per §8 (`chat-composer-runner`,
 glue (keyboard shortcuts, done-notifier, version, session-list palette,
 load-earlier, visual-viewport) — ultimately delete it once empty — then the
 docs pass (AGENTS.md, templates-vs-web, system-overview/frontend).
+
+### Phase 3/5 — `session.js` teardown (IN PROGRESS)
+
+Branch `refactor/svelte-session-teardown` (off `main`, which already has the
+merged coupled-core work). Shrinking `runSessionApp` block by block, moving each
+responsibility into the owning component / the model / `SessionPage`, e2e-green
+per increment.
+
+| Status | Item |
+|---|---|
+| ✅ DONE + verified | **Artifacts collection → `<ArtifactPanel>` (reactive).** The panel reads the shared `SessionDataModel` via context and recomputes the visible artifact set (+ tab count + enabled-state fallback) through a `$derived` feeding an `untrack`'d sync `$effect`, replacing session.js's imperative `refreshArtifacts` + the `window.__piArtifactPanel.setArtifacts` push. The help (?) modal wiring moved into `<RightSidebar>`. `session.js` lost `refreshArtifacts`/`applyArtifactsEnabled`/the artifact-host block + the `collectArtifacts`/`filterArtifacts`/`readArtifactSettings` imports. **Bug caught by e2e:** the first cut put collection in an `$effect` calling `setArtifacts` (which reads/writes `artifacts`/`selectedId` `$state`) → `effect_update_depth_exceeded`; fixed by the `$derived` + `untrack` split. Verified: web 528 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 56/2 (+1 documented load-earlier retry). |
+| ✅ DONE + verified | **Model reconciliation → `SessionDataModel.reconcile()`.** Moved session.js's `syncDataModelEntries`/`replaceMapContents` (live-reload + load-earlier path) onto the model as `reconcile(entries)`: in-place entries splice + lookup-map refills + advance the active leaf to the newest descendant. `session.js` now just delegates (`dataModel.reconcile?.(entries)`), exposed on `window.__piReconcileEntries` for `<LiveReload>` + load-earlier; dropped the `buildSessionLookups`/`buildTree`/`buildTreeNodeMap`/`findNewestLeaf` body imports. `session.test.js` updated to provide the reactive model (mirroring SessionPage); 3 reconcile unit tests added. Verified: web 531 + knip clean + build + `go test ./internal/ui` + go vet + Desktop-Chrome e2e (live-reload/load-earlier/chat green). |
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,

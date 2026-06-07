@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sessionEntrypointLoaded, runSessionApp } from './session.js';
 import { createSessionNavigator } from './navigation/session-navigation.js';
+import { SessionDataModel } from './data/session-data.svelte.js';
 
 // SessionPage owns navigateTo (built from the model) and exposes it on window
 // before runSessionApp; mirror that here so the direct runSessionApp() calls have
@@ -78,6 +79,9 @@ describe('session entrypoint', () => {
     Object.defineProperty(window, 'navigator', { value: {}, configurable: true });
     window.fetch = vi.fn(async () => new Response('{}', { status: 200 }));
 
+    // SessionPage provides the shared reactive model on window before
+    // runSessionApp; mirror that so reconciliation flows through the model.
+    window.__piSessionDataModel = new SessionDataModel(payload);
     installNavigator(window);
     runSessionApp({ target: window });
 
