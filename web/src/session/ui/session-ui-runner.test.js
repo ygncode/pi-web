@@ -1,9 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
 import { setupSessionUi } from './session-ui-runner.js';
 import * as searchFiltersApi from './search-filters.js';
 import * as sidebarApi from './sidebar.js';
 import * as toggleStateApi from './toggle-state.js';
+import { sessionRuntime, resetSessionRuntime } from '../session-runtime.js';
+
+afterEach(() => resetSessionRuntime());
 
 describe('session UI runner', () => {
   it('sets up markdown, sidebar, and toggles', () => {
@@ -29,7 +32,7 @@ describe('session UI runner', () => {
     });
     expect(markdownApi.configureSessionMarkdown).toHaveBeenCalled();
     expect(result.safeMarkedParse('x')).toBe('<p>x</p>');
-    expect(dom.window.sessionToggleState).toBeTruthy();
+    expect(sessionRuntime.toggleState).toBeTruthy();
     expect(typeof result.attachHeaderHandlers).toBe('function');
   });
 

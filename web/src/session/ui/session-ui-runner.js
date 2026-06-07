@@ -43,8 +43,9 @@ export function setupSessionUi({
   }
 
   const toggleController = toggleStateApi.createToggleController({ documentImpl, storage });
-  windowImpl.sessionToggleState = toggleController;
-  windowImpl.applyToggleStateToNode = (node) => toggleController.applyToNode(node);
+  // Registered so the message-pane afterRender hook (live content-runtime +
+  // export-entry) can re-apply persisted collapse/toggle state to new nodes.
+  sessionRuntime.toggleState = toggleController;
 
   const attachHeaderHandlers = () => toggleController.attachHeaderHandlers();
   const toggleThinking = () => toggleController.toggleThinking();

@@ -37,6 +37,7 @@ import * as toggleStateApi from '../session/ui/toggle-state.js';
 import * as sidebarApi from '../session/ui/sidebar.js';
 import * as searchFiltersApi from '../session/ui/search-filters.js';
 import { setupSessionUi } from '../session/ui/session-ui-runner.js';
+import { sessionRuntime } from '../session/session-runtime.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 
 // In a sandboxed iframe (e.g. a srcdoc preview without `allow-same-origin`),
@@ -80,7 +81,6 @@ export function runExportApp({ target = window } = {}) {
 
   let filterMode = 'default';
   let searchQuery = '';
-  target.__piFilterState = { filterMode, searchQuery };
 
   const sessionFormat = {
     shortenPath,
@@ -100,8 +100,6 @@ export function runExportApp({ target = window } = {}) {
 
   // Push view state into the reactive model; <SessionTreeNodes> recomputes.
   const syncTreeRendererState = () => {
-    target.__piFilterState.filterMode = filterMode;
-    target.__piFilterState.searchQuery = searchQuery;
     treeModel.filterMode = filterMode;
     treeModel.searchQuery = searchQuery;
     treeModel.currentLeafId = currentLeafId;
@@ -181,7 +179,7 @@ export function runExportApp({ target = window } = {}) {
       props: {
         model: treeModel,
         afterRender: (container) => {
-          target.applyToggleStateToNode?.(container);
+          sessionRuntime.toggleState?.applyToNode(container);
           highlightPending(container);
         },
       },
