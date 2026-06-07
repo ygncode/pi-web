@@ -20,7 +20,8 @@ export async function handleSessionReload({
   scrollAfterLayout = () => {},
   incrementPending = () => {},
   showFollowButton = () => {},
-  onReloaded = () => {}
+  onReloaded = () => {},
+  onNewEntries = null
 } = {}) {
   const response = await fetchImpl('/api/session?id=' + encodeURIComponent(sessionId));
   const data = await response.json();
@@ -31,8 +32,25 @@ export async function handleSessionReload({
   }
   let newCount = 0;
 
+  // Two modes:
+  //  • Imperative (appendEntry provided): patch #messages DOM directly — the
+  //    legacy path, still covered by tests.
+  //  • Reactive (no appendEntry): the Svelte <SessionContent> owns #messages and
+  //    re-renders from the model that onReloaded just updated, so here we only
+  //    track which ids are brand-new (for follow/scroll/highlight decisions).
+  const reactive = typeof appendEntry !== 'function';
+  const newIds = [];
+
   entries.forEach((entry) => {
     if (!entry.id) return;
+    if (reactive) {
+      if (!entryState.seen.has(entry.id)) {
+        entryState.seen.add(entry.id);
+        newCount++;
+        newIds.push(entry.id);
+      }
+      return;
+    }
     if (!entryState.seen.has(entry.id)) {
       if (appendEntry(entry, entries)) newCount++;
       if (entry.message && entry.message.role === 'toolResult') {
@@ -49,8 +67,9 @@ export async function handleSessionReload({
   });
 
   // Clear optimistic pending user/assistant preview only after canonical
-  // entries have been appended/upserted. Clearing before append creates a
-  // visible blank/flicker when a cold worker finally writes the real message.
+  // entries have been appended/upserted (imperative) or merged into the model
+  // (reactive). Clearing earlier creates a visible blank/flicker when a cold
+  // worker finally writes the real message.
   clearChatPreview();
 
   if (newCount > 0) {
@@ -61,6 +80,13 @@ export async function handleSessionReload({
       incrementPending(newCount);
       showFollowButton();
     }
+  }
+
+  // Reactive mode: once Svelte has rendered the new entries, flag them so the
+  // caller can apply the new-entry highlight (the imperative path does this
+  // inline via appendEntry → highlightNewEntry).
+  if (newIds.length && typeof onNewEntries === 'function') {
+    onNewEntries(newIds);
   }
 
   return { entries, newCount };

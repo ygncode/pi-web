@@ -10,16 +10,20 @@
 //
 // Key reactivity rules that keep it compatible with the imperative code:
 //   • `entries` is a $state array → session.js's in-place splice() is tracked.
-//   • byId / toolCallMap / labelMap are STABLE $state Maps, refilled IN PLACE
-//     (clear+set). Stable identity matters because the entry renderer captures
-//     these Map references once; mutating-in-place keeps that capture live, and
-//     $state Maps make .set/.clear reactive so $derived recomputes.
+//   • byId / toolCallMap / labelMap are STABLE SvelteMaps, refilled IN PLACE
+//     (clear+set). Stable identity matters because the entry renderer / chat
+//     composer capture these Map references once; mutating-in-place keeps that
+//     capture live. SvelteMap (not a plain `$state(new Map())`) is required so
+//     that .set/.clear are themselves reactive — a derived that reads byId must
+//     recompute when entries are prepended without the active leaf changing
+//     (e.g. the load-earlier path), where no other reactive field changes.
 //   • view state (currentLeafId/currentTargetId/filterMode/searchQuery) is
 //     $state, so the tree highlight/filter follow navigation reactively.
 //
 // It deliberately holds no rendering/DOM/SSE/fetch logic, so it is safe to
 // import from both the live app and the static export bundle.
 
+import { SvelteMap } from 'svelte/reactivity';
 import { buildSessionLookups } from './session-data.js';
 import {
   buildTree,
@@ -51,9 +55,10 @@ export class SessionDataModel {
   truncated = $state(false);
 
   // Stable, in-place-mutated reactive lookup Maps (see header comment).
-  byId = $state(new Map());
-  toolCallMap = $state(new Map());
-  labelMap = $state(new Map());
+  // SvelteMap makes .set/.clear reactive while keeping a stable object identity.
+  byId = new SvelteMap();
+  toolCallMap = new SvelteMap();
+  labelMap = new SvelteMap();
 
   // ── view state ──────────────────────────────────────────────────────────
   currentLeafId = $state('');

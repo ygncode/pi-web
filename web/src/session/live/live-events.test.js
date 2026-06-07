@@ -44,6 +44,36 @@ describe('live events', () => {
     expect(scrollAfterLayout).toHaveBeenCalledWith(true);
   });
 
+  it('reconciles via the model in reactive mode (no DOM patching)', async () => {
+    // No appendEntry/upsertEntry → the Svelte <SessionContent> owns #messages.
+    // handleSessionReload only tracks new ids and flags them via onNewEntries.
+    const entries = [{ id: 'a' }, { id: 'b' }];
+    const fetchImpl = vi.fn(() => Promise.resolve(new Response(JSON.stringify({ entries }), { status: 200 })));
+    const entryState = { seen: new Set(['a']), liveRendered: new Set() };
+    const onReloaded = vi.fn();
+    const onNewEntries = vi.fn();
+    const scrollAfterLayout = vi.fn();
+    const clearChatPreview = vi.fn();
+
+    const result = await handleSessionReload({
+      sessionId: 's',
+      fetchImpl,
+      entryState,
+      clearChatPreview,
+      isFollowing: () => true,
+      scrollAfterLayout,
+      onReloaded,
+      onNewEntries,
+    });
+
+    expect(onReloaded).toHaveBeenCalledWith({ entries });
+    expect(result.newCount).toBe(1);
+    expect(entryState.seen.has('b')).toBe(true);
+    expect(onNewEntries).toHaveBeenCalledWith(['b']);
+    expect(clearChatPreview).toHaveBeenCalled();
+    expect(scrollAfterLayout).toHaveBeenCalledWith(true);
+  });
+
   it('wires event source messages', () => {
     const eventSource = { addEventListener: vi.fn() };
     const onReload = vi.fn();

@@ -1,41 +1,57 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createSessionNavigator } from './session-navigation.js';
 
-describe('session navigator', () => {
-  it('renders path messages and wires copy and label buttons', () => {
-    // The header card is now a Svelte component (<SessionInfoHeader>), not
-    // rendered by the navigator — so this only covers tree refresh + messages.
-    document.body.innerHTML = '<div id="header-container"></div><div id="messages"></div><div id="content"></div>';
-    const copyToClipboard = vi.fn();
+// The navigator is now nav-state + scroll only: <SessionContent> renders the
+// message DOM reactively from the model, so these tests cover state updates and
+// scrolling, not DOM building. setTimeoutImpl runs the immediate (delay 0)
+// callback synchronously but defers the 2s highlight-removal timer.
+const runImmediate = (fn, delay) => { if (!delay) fn(); };
+
+describe('session navigator (nav + scroll)', () => {
+  it('updates the active leaf/target and refreshes the tree', () => {
+    document.body.innerHTML = '<div id="content"></div>';
+    const onNavigate = vi.fn();
     const renderTree = vi.fn();
-    const onLabel = vi.fn();
-    const nav = createSessionNavigator({
-      getPath: () => [{ id: 'a' }, { id: 'b' }],
-      renderTree,
-      renderEntry: (entry) => `<div id="entry-${entry.id}"><button class="copy-link-btn" data-entry-id="${entry.id}">copy</button><button class="label-btn" data-entry-id="${entry.id}">label</button></div>`,
-      buildShareUrl: (id) => `share:${id}`,
-      copyToClipboard,
-      applyToggleStateToNode: vi.fn(),
-      onLabel
-    });
-    nav.navigateTo('b', 'none');
+    const nav = createSessionNavigator({ onNavigate, renderTree, setTimeoutImpl: runImmediate });
+    nav.navigateTo('leaf', 'none', 'target-1');
+    expect(onNavigate).toHaveBeenCalledWith('leaf', 'target-1');
     expect(renderTree).toHaveBeenCalled();
-    expect(document.querySelectorAll('#messages > div')).toHaveLength(2);
-    document.querySelector('.copy-link-btn[data-entry-id="a"]').click();
-    expect(copyToClipboard).toHaveBeenCalledWith('share:a', expect.any(HTMLButtonElement));
-    document.querySelector('.label-btn[data-entry-id="b"]').click();
-    expect(onLabel).toHaveBeenCalledWith('b', expect.any(HTMLButtonElement));
   });
 
-  it('caches rendered entries as cloned nodes', () => {
-    document.body.innerHTML = '<div id="header-container"></div><div id="messages"></div><div id="content"></div>';
-    const renderEntry = vi.fn((entry) => `<div id="entry-${entry.id}">${entry.id}</div>`);
-    const nav = createSessionNavigator({
-      getPath: () => [{ id: 'a' }], renderTree: vi.fn(), renderHeader: () => '', renderEntry,
-      buildShareUrl: vi.fn(), copyToClipboard: vi.fn(), applyToggleStateToNode: vi.fn()
-    });
-    nav.navigateTo('a', 'none');
-    nav.navigateTo('a', 'none');
-    expect(renderEntry).toHaveBeenCalledTimes(1);
+  it('defaults the scroll target to the leaf when none is given', () => {
+    document.body.innerHTML = '<div id="content"></div>';
+    const onNavigate = vi.fn();
+    const nav = createSessionNavigator({ onNavigate, setTimeoutImpl: runImmediate });
+    nav.navigateTo('leaf', 'none');
+    expect(onNavigate).toHaveBeenCalledWith('leaf', 'leaf');
+  });
+
+  it('scrolls to the bottom in bottom mode', () => {
+    document.body.innerHTML = '<div id="content"></div>';
+    const content = document.getElementById('content');
+    Object.defineProperty(content, 'scrollHeight', { value: 500, configurable: true });
+    const nav = createSessionNavigator({ setTimeoutImpl: runImmediate });
+    nav.navigateTo('leaf', 'bottom');
+    expect(content.scrollTop).toBe(500);
+  });
+
+  it('scrolls a target entry into view and highlights it when requested', () => {
+    document.body.innerHTML = '<div id="content"></div><div id="entry-b"></div>';
+    const target = document.getElementById('entry-b');
+    target.scrollIntoView = vi.fn();
+    const nav = createSessionNavigator({ setTimeoutImpl: runImmediate });
+    nav.navigateTo('a', 'target', 'b');
+    expect(target.scrollIntoView).toHaveBeenCalledWith({ block: 'center' });
+    // Highlight is added immediately; the 2s removal timer is deferred by the fake.
+    expect(target.classList.contains('highlight')).toBe(true);
+  });
+
+  it('does not scroll in none mode', () => {
+    document.body.innerHTML = '<div id="content"></div><div id="entry-b"></div>';
+    const target = document.getElementById('entry-b');
+    target.scrollIntoView = vi.fn();
+    const nav = createSessionNavigator({ setTimeoutImpl: runImmediate });
+    nav.navigateTo('b', 'none');
+    expect(target.scrollIntoView).not.toHaveBeenCalled();
   });
 });

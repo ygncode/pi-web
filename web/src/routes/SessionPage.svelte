@@ -5,10 +5,11 @@
   import RightSidebar from '../components/session/RightSidebar.svelte';
   import SessionHeader from '../components/session/SessionHeader.svelte';
   import SessionInfoHeader from '../components/session/SessionInfoHeader.svelte';
+  import SessionContent from '../components/session/SessionContent.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
-  import { firstMessageStub, loadSessionPageState } from './session-page-data.js';
+  import { loadSessionPageState } from './session-page-data.js';
   import { SessionDataModel } from '../session/data/session-data.svelte.js';
   import { createSessionDataModel, decodeBase64JSON } from '../session/data/session-data.js';
   import { setSessionModel } from '../session/session-context.js';
@@ -21,13 +22,19 @@
   // still in charge of the DOM for now — this model is not yet consumed.
   const sessionModel = setSessionModel(new SessionDataModel());
 
+  // Reactive bridge to the imperative runtime: <SessionContent> renders
+  // model.activePath via renderEntry, and runs afterRender after each render.
+  // runSessionApp() (session.js) assigns both onto window.__piContentRuntime
+  // once its entry renderer is built; the $state proxy makes the message pane
+  // paint reactively as soon as they're set. See svelte-migration-plan §sub-step B.
+  const contentRuntime = $state({ renderEntry: null, afterRender: null });
+
   let loading = $state(true);
   let showLoading = $state(false);
   let error = $state('');
   let sessionId = $state('');
   let title = $state('Session');
   let payloadBase64 = $state('');
-  let entries = $state([]);
   let scratchpad = $state('');
   let cwd = $state('');
   let chatAvailable = $state(true);
@@ -58,7 +65,6 @@
         sessionId = state.sessionId;
         title = state.title;
         document.title = title;
-        entries = state.entries;
         cwd = state.cwd;
         scratchpad = state.scratchpad;
         payloadBase64 = state.payloadBase64;
@@ -74,6 +80,9 @@
           new URLSearchParams(window.location.search),
         ));
         window.__piSessionDataModel = sessionModel;
+        // Expose the content runtime BEFORE runSessionApp so session.js can hand
+        // it the entry renderer + afterRender hook that drive <SessionContent>.
+        window.__piContentRuntime = contentRuntime;
         loading = false;
         clearTimeout(loadingTimer);
         await tick();
@@ -116,7 +125,7 @@
   <div id="app">
     <SessionTree />
     <div id="content-container" class="content-container">
-      <main id="content"><div id="header-container">{#if sessionModel}<SessionInfoHeader model={sessionModel} />{/if}</div><div id="messages">{@html firstMessageStub(entries)}</div></main>
+      <main id="content"><div id="header-container">{#if sessionModel}<SessionInfoHeader model={sessionModel} />{/if}</div><div id="messages">{#if sessionModel}<SessionContent model={sessionModel} renderEntry={contentRuntime.renderEntry} afterRender={contentRuntime.afterRender} />{/if}</div></main>
       <ChatComposer {sessionId} {chatAvailable} {chatDisabledReason} {cwd} {modelLabel} />
     </div>
     <RightSidebar {scratchpad} />

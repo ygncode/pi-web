@@ -12,18 +12,8 @@
 
 import {
   loadSessionData,
-  buildSessionLookups,
   getSessionSearchParams,
 } from '../session/data/session-data.js';
-import {
-  buildActivePathIds as buildActivePathIdsForModel,
-  buildTree as buildTreeForModel,
-  buildTreeNodeMap,
-  buildTreePrefix,
-  findNewestLeaf as findNewestLeafInTree,
-  flattenTree,
-  getPath as getPathForModel,
-} from '../session/tree/session-tree.js';
 import {
   extractContent,
 } from '../session/tree/session-filter.js';
@@ -39,6 +29,7 @@ import * as sessionEntryRenderer from '../session/render/session-entry-renderer.
 import { mount } from 'svelte';
 import SessionTreeNodes from '../components/session/SessionTreeNodes.svelte';
 import SessionInfoHeader from '../components/session/SessionInfoHeader.svelte';
+import SessionContent from '../components/session/SessionContent.svelte';
 import { SessionDataModel } from '../session/data/session-data.svelte.js';
 import { createSessionNavigator } from '../session/navigation/session-navigation.js';
 import * as toggleStateApi from '../session/ui/toggle-state.js';
@@ -103,18 +94,6 @@ export function runExportApp({ target = window } = {}) {
     }),
   };
 
-  const sessionTree = {
-    buildTree: () => buildTreeForModel(dataModel.entries, dataModel.labelMap),
-    buildActivePathIds: (targetId) => buildActivePathIdsForModel(targetId, dataModel.byId),
-    getPath: (targetId) => getPathForModel(targetId, dataModel.byId),
-    findNewestLeaf: (nodeId) => {
-      const roots = buildTreeForModel(dataModel.entries, dataModel.labelMap);
-      return findNewestLeafInTree(nodeId, buildTreeNodeMap(roots));
-    },
-    flattenTree,
-    buildTreePrefix,
-  };
-
   let currentLeafId = dataModel.leafId;
   let currentTargetId = dataModel.urlTargetId || dataModel.leafId;
   let navigatorInstance;
@@ -174,23 +153,33 @@ export function runExportApp({ target = window } = {}) {
   const navigateTo = (targetId, scrollMode = 'target', scrollToEntryId = null) =>
     navigatorInstance.navigateTo(targetId, scrollMode, scrollToEntryId);
 
+  // Nav + scroll only; <SessionContent> (mounted below) renders the message pane
+  // reactively from treeModel.activePath, which onNavigate updates.
   navigatorInstance = createSessionNavigator({
     documentImpl,
-    windowImpl: target,
-    getPath: sessionTree.getPath,
     renderTree,
-    renderEntry: entryRenderer.renderEntry,
-    buildShareUrl: entryRenderer.buildShareUrl,
-    copyToClipboard: entryRenderer.copyToClipboard,
     onNavigate: (leaf, targetId) => {
       currentLeafId = leaf;
       currentTargetId = targetId;
       treeModel.currentLeafId = leaf;
       treeModel.currentTargetId = targetId;
     },
-    // No forking in a static snapshot — fork buttons are not rendered.
-    onFork: () => {},
   });
+
+  // Mount the reactive message pane into #messages (same component the live app
+  // uses). The snapshot renders once; renderEntry/hljs are synchronous here, so
+  // entries paint immediately. afterRender re-applies collapse/toggle state.
+  const messagesEl = documentImpl.getElementById('messages');
+  if (messagesEl) {
+    mount(SessionContent, {
+      target: messagesEl,
+      props: {
+        model: treeModel,
+        renderEntry: entryRenderer.renderEntry,
+        afterRender: (container) => target.applyToggleStateToNode?.(container),
+      },
+    });
+  }
 
   // Mount the Svelte tree sidebar into #sidebar (the static #tree-container /
   // #tree-status were removed from session.html; the component renders them).

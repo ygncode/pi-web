@@ -1913,6 +1913,15 @@
       min-width: 0;
     }
 
+    /* The reactive <SessionContent> wraps the conversation entries in
+       #messages-list. `display: contents` removes that wrapper's own box so its
+       entry children participate directly in #messages' flex column (same gap),
+       and the optimistic chat-preview nodes appended after it stay correctly
+       spaced as the last flex items. */
+    #messages-list {
+      display: contents;
+    }
+
     .message-timestamp {
       font-size: 10px;
       color: var(--muted);

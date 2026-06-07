@@ -480,6 +480,52 @@ append/upsert/seen (live reload now flows through the reactive model); keep the
 new-entry highlight + auto-scroll as effects. Mirror in `export-entry.js` (mount
 `<SessionContent>` into `#messages`). Then delete `session-entry-renderer.js`.
 Verify full e2e (esp. live-reload, chat streaming, annotations anchoring).
+
+#### Sub-step B — DONE + verified
+
+The message pane is now rendered by the reactive `<SessionContent>` in **both** the
+live app and the static export; the imperative `#messages` build is gone.
+
+- **Live (`session.js` / `SessionPage.svelte`):** `SessionPage` owns a `$state`
+  content runtime exposed on `window.__piContentRuntime`; `runSessionApp` assigns
+  `renderEntry` (= the entry renderer) and `afterRender` (re-applies toggle state +
+  lazy highlight). `<SessionContent model={sessionModel} …>` renders inside
+  `#messages` (the `firstMessageStub` LCP placeholder was dropped). Copy/fork/label
+  are now ONE delegated `click` listener on `#messages`.
+- **Navigator gutted to nav-state + scroll only.** `session-navigation.js` no longer
+  builds DOM, caches nodes (`entryCache`/`renderEntryToNode` removed), or wires
+  per-entry buttons — it sets the model's active leaf/target (→ reactive
+  `activePath`) and scrolls after the Svelte flush.
+- **Live reload no longer patches the DOM.** `handleSessionReload` gained a reactive
+  mode (no `appendEntry`/`upsertEntry`): it reconciles purely via the model
+  (`onSessionDataReload` → `syncDataModelEntries`), tracks new ids for
+  follow/scroll, and flags them via `onNewEntries` so `live-reload-runner` applies
+  the new-entry highlight. `live-entries.js` is retained (still unit-tested + the
+  imperative path is kept for the legacy `handleSessionReload` branch) but is no
+  longer wired into the live content path — slated for the Phase-5 knip sweep.
+- **Export (`export-entry.js`):** mounts `<SessionContent>` into `#messages` bound to
+  the reactive `treeModel`; navigator simplified the same way. Guard test still
+  green (SessionContent/SessionEntry import no live-only modules).
+- **`session-entry-renderer.js` is KEPT** (not deleted): `<SessionEntry>` still wraps
+  its `renderEntry()` output via `{@html}` for this pass. Its decomposition into real
+  sub-components (and the renderer's deletion) is a later step.
+- **Critical fix uncovered by load-earlier e2e:** `byId`/`toolCallMap`/`labelMap`
+  switched from `$state(new Map())` to **`SvelteMap`**. A plain `$state` Map's
+  `.set`/`.clear` are NOT reactive (only reassignment is), so a derived reading
+  `byId` (e.g. `activePath`) failed to recompute when entries were prepended without
+  the active leaf changing (load-earlier). `SvelteMap` makes in-place mutation
+  reactive while keeping the stable identity that captured references need.
+- **CSS:** `#messages-list` is `display: contents` so entries keep `#messages`'
+  flex/gap layout and the optimistic chat-preview siblings stay correctly spaced.
+- **Go source-guard `TestNavigationReappliesCurrentToggleStateAfterRenderingMessages`**
+  repointed from the old navigator to `<SessionContent>`'s `afterRender` hook +
+  `session.js`.
+- **Verified:** web 554 green · `npm run build` (live + export) · `npm run knip`
+  clean · `go test ./...` green except the pre-existing sandbox-only
+  `internal/git TestDescribeDefaultBranch` (commit-signing) · `go vet` + binary build
+  · full **Desktop Chrome** e2e **53 passed / 2 skipped** (load-earlier's documented
+  contention flake passes on its configured retry). Other browsers untried (matching
+  the existing baseline).
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,
