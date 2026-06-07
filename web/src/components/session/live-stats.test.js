@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { computeLiveStats, formatTokens, updateStatsDom } from './live-stats.js';
+import { computeLiveStats, formatTokens, updateStatsDom } from './LiveReload.svelte';
 
 describe('live stats', () => {
   it('formats tokens', () => {
