@@ -1,5 +1,22 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sessionEntrypointLoaded, runSessionApp } from './session.js';
+import { createSessionNavigator } from './navigation/session-navigation.js';
+
+// SessionPage owns navigateTo (built from the model) and exposes it on window
+// before runSessionApp; mirror that here so the direct runSessionApp() calls have
+// the shared navigator available.
+function installNavigator(target) {
+  const nav = createSessionNavigator({
+    documentImpl: target.document,
+    setTimeoutImpl: (fn) => { fn(); return 0; },
+    onNavigate: (leaf, t) => {
+      const m = target.__piSessionDataModel;
+      if (m) { m.currentLeafId = leaf; m.currentTargetId = t; }
+    },
+  });
+  target.navigateTo = nav.navigateTo;
+  target.__piSessionNavigator = nav;
+}
 
 describe('session entrypoint', () => {
   afterEach(() => {
@@ -9,6 +26,7 @@ describe('session entrypoint', () => {
     delete window.__piSessionDataModel;
     delete window.__piTreeRenderer;
     delete window.__piSessionNavigator;
+    delete window.navigateTo;
     delete window.applyToggleStateToNode;
     delete window.sessionToggleState;
   });
@@ -78,6 +96,7 @@ describe('session entrypoint', () => {
     }
     window.EventSource = FakeEventSource;
 
+    installNavigator(window);
     runSessionApp({ target: window });
 
     // The sidebar tree DOM is now rendered by <SessionTreeNodes> from the
@@ -144,6 +163,7 @@ describe('session entrypoint', () => {
     };
     globalThis.__PI_TEST_LIVE_RELOAD_HOOK__ = () => calls.push('live');
     globalThis.__PI_TEST_CHAT_COMPOSER_HOOK__ = () => calls.push('chat');
+    installNavigator(target);
     try {
       runSessionApp({ target });
     } finally {

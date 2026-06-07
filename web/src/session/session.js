@@ -7,7 +7,6 @@ import { extractContent, filterNodes as filterNodesForState, getSearchableText, 
 import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml as getTreeNodeDisplayHtmlForState, shortenPath, truncate } from './render/session-format.js';
 import { configureSessionMarkdown, safeMarkedParse } from './render/markdown.js';
 import * as sessionEntryRenderer from './render/session-entry-renderer.js';
-import { createSessionNavigator } from './navigation/session-navigation.js';
 import * as toggleStateApi from './ui/toggle-state.js';
 import * as sidebarApi from './ui/sidebar.js';
 import * as searchFiltersApi from './ui/search-filters.js';
@@ -77,12 +76,16 @@ export function runSessionApp({ target = window } = {}) {
     atobImpl: target.atob?.bind(target)
   });
   target.__piSessionDataModel = dataModel;
+  // The reactive SessionDataModel initializes these; the plain fallback model
+  // (loadSessionData) doesn't, so seed them from leafId/urlTargetId.
+  if (dataModel.currentLeafId == null) dataModel.currentLeafId = dataModel.leafId;
+  if (dataModel.currentTargetId == null) dataModel.currentTargetId = dataModel.urlTargetId || dataModel.leafId;
   const sessionId = getSessionSearchParams(target.location).get('id') || '';
   const hljs = null; // loaded lazily after initial render via applyLazyHighlighting
 
-  let filterMode = 'default';
-  let searchQuery = '';
-  target.__piFilterState = { filterMode, searchQuery };
+  // View state (active leaf/target, filter, search) lives on the reactive
+  // SessionDataModel — the single source of truth. navigateTo (owned by
+  // SessionPage) writes the model; the Svelte tree/content recompute reactively.
 
   const sessionFormat = {
     shortenPath,
@@ -140,6 +143,7 @@ export function runSessionApp({ target = window } = {}) {
 
     const roots = buildTreeForModel(dataModel.entries, dataModel.labelMap);
     const nodeMap = buildTreeNodeMap(roots);
+    const currentLeafId = dataModel.currentLeafId;
     let nextLeafId = currentLeafId && nodeMap.has(currentLeafId)
       ? findNewestLeafInTree(currentLeafId, nodeMap)
       : '';
@@ -153,46 +157,22 @@ export function runSessionApp({ target = window } = {}) {
     }
     if (nextLeafId) {
       dataModel.leafId = nextLeafId;
-      currentLeafId = nextLeafId;
-      if (!currentTargetId) currentTargetId = nextLeafId;
-      dataModel.currentLeafId = currentLeafId;
-      dataModel.currentTargetId = currentTargetId;
+      dataModel.currentLeafId = nextLeafId;
+      if (!dataModel.currentTargetId) dataModel.currentTargetId = nextLeafId;
     }
 
     // Live reload reconciles the data model when the session JSONL changes.
     // The in-place entries splice + map refills above are reactive, so the
-    // Svelte <SessionTreeNodes> sidebar updates automatically; just keep the
-    // model's filter/active view state in sync.
-    syncTreeRendererState();
-
+    // Svelte <SessionTreeNodes> sidebar + <SessionContent> update automatically.
     refreshArtifacts();
   }
-
-  let currentLeafId = dataModel.leafId;
-  let currentTargetId = dataModel.urlTargetId || dataModel.leafId;
-  let navigatorInstance;
-
-  // The tree sidebar is now rendered by <SessionTreeNodes> from the reactive
-  // dataModel (Svelte migration). renderTree/forceTreeRerender just push the
-  // current view state (filter/search/active path) into the model; the Svelte
-  // tree recomputes reactively — no manual DOM build/diff.
-  const syncTreeRendererState = () => {
-    target.__piFilterState.filterMode = filterMode;
-    target.__piFilterState.searchQuery = searchQuery;
-    dataModel.filterMode = filterMode;
-    dataModel.searchQuery = searchQuery;
-    dataModel.currentLeafId = currentLeafId;
-    dataModel.currentTargetId = currentTargetId;
-  };
-  const renderTree = () => { syncTreeRendererState(); };
-  const forceTreeRerender = () => { syncTreeRendererState(); };
 
   const entryRenderer = sessionEntryRenderer.createSessionEntryRenderer({
     entries: dataModel.entries,
     header: dataModel.header,
     toolCallMap: dataModel.toolCallMap,
     renderedTools: dataModel.renderedTools,
-    currentLeafIdRef: () => currentLeafId,
+    currentLeafIdRef: () => dataModel.currentLeafId,
     escapeHtml: sessionFormat.escapeHtml,
     shortenPath,
     formatToolCall,
@@ -218,9 +198,10 @@ export function runSessionApp({ target = window } = {}) {
     sidebarApi,
     toggleStateApi,
     getLeafId: () => dataModel.leafId,
-    setSearchQuery: (value) => { searchQuery = value; },
-    setFilterMode: (value) => { filterMode = value; },
-    forceTreeRerender,
+    setSearchQuery: (value) => { dataModel.searchQuery = value; },
+    setFilterMode: (value) => { dataModel.filterMode = value; },
+    // The reactive model recomputes filteredNodes; no manual rerender needed.
+    forceTreeRerender: () => {},
     navigateTo: (...args) => navigateTo(...args),
   });
 
@@ -254,7 +235,9 @@ export function runSessionApp({ target = window } = {}) {
     }
   }
 
-  const navigateTo = (targetId, scrollMode = 'target', scrollToEntryId = null) => navigatorInstance.navigateTo(targetId, scrollMode, scrollToEntryId);
+  // navigateTo is owned by SessionPage (created from the reactive model) and
+  // exposed on window; the tree/chat/live components share this one instance.
+  const navigateTo = target.navigateTo;
 
   // Copy/fork/label are handled by ONE delegated click listener on #messages
   // (wired below) rather than per-entry bindings, because <SessionContent>
@@ -314,23 +297,11 @@ export function runSessionApp({ target = window } = {}) {
             if (!res.ok || data.error) throw new Error(data.error || t('session.labelSaveFailed'));
             if (label) dataModel.labelMap.set(id, label);
             else dataModel.labelMap.delete(id);
-            forceTreeRerender();
           })
           .catch((err) => target.alert(err?.message || t('session.labelSaveFailed')));
       }
     });
   };
-
-  navigatorInstance = createSessionNavigator({
-    documentImpl,
-    renderTree,
-    onNavigate: (leaf, targetId) => {
-      currentLeafId = leaf;
-      currentTargetId = targetId;
-      dataModel.currentLeafId = leaf;
-      dataModel.currentTargetId = targetId;
-    },
-  });
 
   // Wire the reactive message pane: <SessionContent> (mounted by SessionPage in
   // #messages) renders model.activePath via the injected renderEntry, and runs
@@ -369,8 +340,6 @@ export function runSessionApp({ target = window } = {}) {
     }
   });
 
-  target.navigateTo = navigateTo;
-  target.__piSessionNavigator = navigatorInstance;
   // Exposed for <SessionTree>'s node-click handler so it can auto-close the
   // mobile drawer (parity with the old tree renderer).
   target.__piIsMobileLayout = ui.isMobileLayout;
@@ -383,7 +352,7 @@ export function runSessionApp({ target = window } = {}) {
   // Replace the server-rendered first-message LCP stub with the canonical
   // active path before live reload starts. Otherwise reload appends canonical
   // entries below the stub and the conversation appears duplicated.
-  navigateTo(currentLeafId, dataModel.urlTargetId ? 'target' : 'bottom', dataModel.urlTargetId || null);
+  navigateTo(dataModel.currentLeafId, dataModel.urlTargetId ? 'target' : 'bottom', dataModel.urlTargetId || null);
 
   // Annotation layer (right-sidebar "Notes" tab) is the <AnnotationLayer> Svelte
   // component (rendered inside <RightSidebar>), exposing init/setAnnotations/

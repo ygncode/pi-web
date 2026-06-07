@@ -18,6 +18,7 @@
   import { loadSessionPageState } from './session-page-data.js';
   import { SessionDataModel } from '../session/data/session-data.svelte.js';
   import { createSessionDataModel, decodeBase64JSON } from '../session/data/session-data.js';
+  import { createSessionNavigator } from '../session/navigation/session-navigation.js';
   import { setSessionModel } from '../session/session-context.js';
   import { t } from '../shared/i18n.js';
 
@@ -130,6 +131,16 @@
           new URLSearchParams(window.location.search),
         ));
         window.__piSessionDataModel = sessionModel;
+        // navigateTo ownership lives here (not session.js): the navigator writes
+        // the reactive model's active leaf/target (→ <SessionContent>/<SessionTree>
+        // recompute) and scrolls. Exposed on window BEFORE the child components
+        // mount so the tree, chat composer, and live reload share this one
+        // instance. session.js reads target.navigateTo.
+        const navigator = createSessionNavigator({
+          onNavigate: (leaf, target) => { sessionModel.currentLeafId = leaf; sessionModel.currentTargetId = target; },
+        });
+        window.navigateTo = navigator.navigateTo;
+        window.__piSessionNavigator = navigator;
         // Expose the content runtime BEFORE runSessionApp so session.js can hand
         // it the entry renderer + afterRender hook that drive <SessionContent>.
         window.__piContentRuntime = contentRuntime;
