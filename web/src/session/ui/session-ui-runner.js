@@ -1,5 +1,3 @@
-import { setupRightSidebar, setupRightSidebarTabs } from './right-sidebar.js';
-
 export function setupSessionUi({
   documentImpl = document,
   windowImpl = window,
@@ -16,7 +14,6 @@ export function setupSessionUi({
   setFilterMode,
   forceTreeRerender,
   navigateTo,
-  projectPath = '',
 } = {}) {
   markdownApi.configureSessionMarkdown({ marked, hljs, escapeHtml });
   const safeMarkedParse = (text) => markdownApi.safeMarkedParse(text, { marked });
@@ -43,9 +40,6 @@ export function setupSessionUi({
     }, { passive: false });
   }
 
-  const rightSidebar = setupRightSidebar({ documentImpl, windowImpl, storage, projectPath });
-  const rightSidebarTabs = setupRightSidebarTabs({ documentImpl, storage });
-
   const toggleController = toggleStateApi.createToggleController({ documentImpl, storage });
   windowImpl.sessionToggleState = toggleController;
   windowImpl.applyToggleStateToNode = (node) => toggleController.applyToNode(node);
@@ -69,9 +63,12 @@ export function setupSessionUi({
     closeSidebar,
     attachHeaderHandlers,
     toggleController,
-    toggleRightSidebar: rightSidebar?.toggleSidebar ?? (() => {}),
-    openRightSidebar: rightSidebar?.openSidebar ?? (() => {}),
-    collapseRightSidebar: rightSidebar?.collapseSidebar ?? (() => {}),
-    activateRightTab: rightSidebarTabs?.activate ?? (() => {}),
+    // The right-sidebar chrome (scratchpad/resize/tabs) lives in <RightSidebar>,
+    // which exposes its controls on window.__piRightSidebar. Read lazily so the
+    // calls resolve against the mounted component.
+    toggleRightSidebar: () => windowImpl.__piRightSidebar?.toggle(),
+    openRightSidebar: () => windowImpl.__piRightSidebar?.open(),
+    collapseRightSidebar: () => windowImpl.__piRightSidebar?.collapse(),
+    activateRightTab: (pane) => windowImpl.__piRightSidebar?.activateTab(pane),
   };
 }

@@ -178,7 +178,7 @@
       <main id="content"><div id="header-container">{#if sessionModel}<SessionInfoHeader model={sessionModel} />{/if}</div><div id="messages">{#if sessionModel}<SessionContent model={sessionModel} renderEntry={contentRuntime.renderEntry} afterRender={contentRuntime.afterRender} />{/if}</div></main>
       <ChatComposer {sessionId} {chatAvailable} {chatDisabledReason} {cwd} {modelLabel} />
     </div>
-    <RightSidebar {scratchpad} />
+    <RightSidebar {scratchpad} projectPath={cwd} />
     <ImageModal />
   </div>
 

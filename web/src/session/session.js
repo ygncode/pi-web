@@ -221,7 +221,6 @@ export function runSessionApp({ target = window } = {}) {
     setFilterMode: (value) => { filterMode = value; },
     forceTreeRerender,
     navigateTo: (...args) => navigateTo(...args),
-    projectPath: dataModel.header?.cwd || ''
   });
 
   // Artifacts panel (right-sidebar "Artifacts" tab). Live-only: the host element
