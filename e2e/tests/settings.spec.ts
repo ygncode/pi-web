@@ -144,4 +144,39 @@ test.describe("settings page", () => {
 
     expect(flexDirection).toBe("column");
   });
+
+  // Regression: AppearanceSettings used to write $state while computing the font
+  // <select> value during render. With a custom font configured, that throws
+  // svelte state_unsafe_mutation when the component mounts during a client-side
+  // route swap (not a fresh page load), blanking the settings page. Direct loads
+  // happened to be safe, so this only reproduces via in-app navigation.
+  test("client-side nav to settings is safe with a custom font set", async ({ page }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+
+    // A custom font (not a builtin) must be the active value when AppearanceSettings
+    // mounts during the route swap — that's when its font-select renders inside an
+    // {#each} block effect, where the old code wrote $state. Serve it from settings
+    // hydration so the value survives (a localStorage-only seed gets overwritten by
+    // hydration before we navigate).
+    await page.route("**/api/settings", async (route) => {
+      if (route.request().method() === "GET") {
+        await route.fulfill({ json: { settings: { "pi-web:v1:font-ui": "Comic Sans MS" } } });
+      } else {
+        await route.fulfill({ json: { ok: true } });
+      }
+    });
+
+    await page.goto("/");
+    await expect(page.locator("[data-sessions-content]")).toBeVisible();
+
+    // Navigate to settings client-side (Cmd+,), not a full page load.
+    await page.keyboard.press("Meta+Comma");
+
+    // The swap must complete: the settings page renders instead of blanking, and
+    // no state_unsafe_mutation is thrown computing the font <select> value.
+    await expect(page).toHaveURL(/\/settings$/);
+    await expect(page.locator(".settings-page h1")).toHaveText("Settings");
+    expect(errors.filter((m) => /state_unsafe_mutation/.test(m))).toEqual([]);
+  });
 });
