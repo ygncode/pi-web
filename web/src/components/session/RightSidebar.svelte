@@ -3,6 +3,7 @@
   import { icon, CircleHelp, Maximize2, X } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
   import ArtifactPanel from './ArtifactPanel.svelte';
+  import AnnotationLayer from './AnnotationLayer.svelte';
 
   let { scratchpad = '', projectPath = '' } = $props();
 
@@ -300,7 +301,7 @@
       <ArtifactPanel />
     </div>
     <div id="right-pane-notes" class="right-sidebar-pane" role="tabpanel" aria-labelledby="right-tab-notes" hidden>
-      <div id="annotation-list-host" class="annotation-list-host"></div>
+      <AnnotationLayer />
     </div>
   </div>
   <div class="right-sidebar-footer"><span id="scratchpad-status" class="scratchpad-status">{t('common.saved')}</span></div>

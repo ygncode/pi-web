@@ -15,7 +15,6 @@ import { setupSessionUi } from './ui/session-ui-runner.js';
 import { collectArtifacts } from './artifacts/artifact-registry.js';
 import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './artifacts/artifact-filter.js';
 import { createAnnotationApi } from './annotations/annotation-api.js';
-import { createAnnotationLayer } from './annotations/annotation-layer.js';
 import { setupLoadEarlierBanner } from './ui/load-earlier.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
@@ -386,20 +385,20 @@ export function runSessionApp({ target = window } = {}) {
   // entries below the stub and the conversation appears duplicated.
   navigateTo(currentLeafId, dataModel.urlTargetId ? 'target' : 'bottom', dataModel.urlTargetId || null);
 
-  // Annotation layer (right-sidebar "Notes" tab). Live-only: the host element is
-  // rendered only when IsLive. Anchors to entries by `entry-<id>` + offsets.
-  const annotationListHost = documentImpl.getElementById('annotation-list-host');
+  // Annotation layer (right-sidebar "Notes" tab) is the <AnnotationLayer> Svelte
+  // component (rendered inside <RightSidebar>), exposing init/setAnnotations/
+  // reapply on window.__piAnnotationLayer. Live-only: the component (and bridge)
+  // exist only when IsLive. session.js supplies the runtime deps here. Anchors to
+  // entries by `entry-<id>` + offsets.
+  annotationLayer = target.__piAnnotationLayer || null;
   const messagesEl = documentImpl.getElementById('messages');
-  if (annotationListHost && messagesEl && sessionId) {
+  if (annotationLayer && messagesEl && sessionId) {
     const annotationArtifactHost = documentImpl.getElementById('artifact-panel-host');
-    annotationLayer = createAnnotationLayer({
-      sessionId,
+    annotationLayer.init({
       api: createAnnotationApi({ sessionId, fetchImpl: target.fetch.bind(target) }),
       scopes: [messagesEl, annotationArtifactHost].filter(Boolean),
-      listHost: annotationListHost,
       composerEl: documentImpl.getElementById('pi-chat-message'),
       countEl: documentImpl.getElementById('annotation-tab-count'),
-      escapeHtml: sessionFormat.escapeHtml,
       onSelectArtifact: (artifactId) => {
         ui.activateRightTab('artifacts');
         target.__piArtifactPanel?.selectArtifact(artifactId);
@@ -418,10 +417,7 @@ export function runSessionApp({ target = window } = {}) {
         if (ui.isMobileLayout()) ui.collapseRightSidebar();
       },
       resolveArtifact: (artifactId) => target.__piArtifactPanel?.getArtifact(artifactId) || null,
-      documentImpl,
-      windowImpl: target
     });
-    annotationLayer.init();
     target.addEventListener('pi-session-reload', () => annotationLayer.reapply());
   }
 
