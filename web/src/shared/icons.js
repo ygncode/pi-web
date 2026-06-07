@@ -1,9 +1,8 @@
 // Lucide icons (https://lucide.dev — ISC license). pi-web renders icon data to
-// an SVG *string* rather than using a framework component, because icons are
-// injected from three places: Svelte markup ({@html icon(...)}), vanilla-JS
-// runtime modules (el.innerHTML = icon(...)), and — via the shared session
-// modules — the server-less export bundle. A string helper works in all three
-// and keeps the export self-contained.
+// an SVG *string* for Svelte markup ({@html icon(...)}) and export snapshots.
+// Live utility modules that need to swap an icon imperatively can use
+// setIconElement(), which builds an SVG node and replaces children without
+// string-based view rendering.
 //
 // Do not hand-draw custom SVG icons or use unicode glyphs for icons. Import the
 // Lucide icon here and render it with icon(). See AGENTS.md.
@@ -87,6 +86,30 @@ export function icon(node, { size = 16, class: className = '', strokeWidth } = {
   return `<svg ${attrString(attrs)}>${children}</svg>`;
 }
 
+export function iconNode(node, { size = 16, class: className = '', strokeWidth, documentImpl = document } = {}) {
+  const svg = documentImpl.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  const attrs = {
+    ...DEFAULT_ATTRS,
+    width: size,
+    height: size,
+    'aria-hidden': 'true',
+  };
+  if (strokeWidth != null) attrs['stroke-width'] = String(strokeWidth);
+  if (className) attrs.class = className;
+  for (const [k, v] of Object.entries(attrs)) svg.setAttribute(k, String(v));
+  for (const [tag, childAttrs] of node) {
+    const child = documentImpl.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const [k, v] of Object.entries(childAttrs || {})) child.setAttribute(k, String(v));
+    svg.appendChild(child);
+  }
+  return svg;
+}
+
+export function setIconElement(el, node, opts = {}) {
+  if (!el) return;
+  el.replaceChildren(iconNode(node, { ...opts, documentImpl: opts.documentImpl || el.ownerDocument || document }));
+}
+
 // Theme -> Lucide icon. Keep this in sync with the inlined theme-icon SVGs in
 // the boot script (internal/ui/live_page.go), which paints the icon before the
 // JS bundle loads — both must emit identical markup to avoid a swap on load.
@@ -101,6 +124,10 @@ const THEME_ICONS = {
 /** SVG markup string for a theme's indicator icon. */
 export function themeIcon(theme, opts = {}) {
   return icon(THEME_ICONS[theme] || THEME_ICONS.dark, { size: 14, ...opts });
+}
+
+export function setThemeIconElement(el, theme, opts = {}) {
+  setIconElement(el, THEME_ICONS[theme] || THEME_ICONS.dark, { size: 14, ...opts });
 }
 
 export {

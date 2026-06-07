@@ -8,7 +8,7 @@
 // Relocated out of session.js during the Svelte migration teardown
 // (docs/dev/svelte-migration-plan.md §11).
 
-import { icon, Loader } from '../shared/icons.js';
+import { setIconElement, Loader } from '../shared/icons.js';
 import { t } from '../shared/i18n.js';
 import { extractContent } from './tree/session-filter.js';
 import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml, shortenPath, truncate } from './render/session-format.js';
@@ -50,8 +50,9 @@ export function wireSessionContentRuntime({
     if (!target.confirm('Are you sure you want to fork a new session starting from this message?')) {
       return;
     }
-    const originalHtml = btn.innerHTML;
-    btn.innerHTML = icon(Loader, { size: 13, class: 'spinner' });
+    const originalChildren = Array.from(btn.childNodes).map((node) => node.cloneNode(true));
+    const restoreButton = () => btn.replaceChildren(...originalChildren.map((node) => node.cloneNode(true)));
+    setIconElement(btn, Loader, { size: 13, class: 'spinner', documentImpl });
     btn.disabled = true;
 
     target.fetch(`/api/fork-session?id=${encodeURIComponent(sessionId)}`, {
@@ -64,7 +65,7 @@ export function wireSessionContentRuntime({
         if (data.id) {
           target.location.href = '/session?id=' + encodeURIComponent(data.id);
         } else {
-          btn.innerHTML = originalHtml;
+          restoreButton();
           btn.disabled = false;
           const notice = documentImpl.getElementById('command-menu-toast');
           if (notice) {
@@ -77,7 +78,7 @@ export function wireSessionContentRuntime({
         }
       })
       .catch(() => {
-        btn.innerHTML = originalHtml;
+        restoreButton();
         btn.disabled = false;
         target.alert('Fork failed');
       });

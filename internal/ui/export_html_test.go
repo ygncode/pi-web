@@ -61,12 +61,17 @@ func TestSessionViteSourceShowsAnimatedWorkingPreviewLabel(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read web/src/session/live/chat-preview.js: %v", err)
 	}
+	runner, err := os.ReadFile(repoPath("web/src/components/session/LiveReload.svelte"))
+	if err != nil {
+		t.Fatalf("read web/src/components/session/LiveReload.svelte: %v", err)
+	}
+	combined := string(preview) + string(runner)
 	for _, want := range []string{
 		"working<span class=\"working-dots\"",
 		"chat-preview-working-dots",
 		"animation: chat-preview-working-dots",
 	} {
-		if !strings.Contains(string(preview), want) && !strings.Contains(liveSessionCss, want) {
+		if !strings.Contains(combined, want) && !strings.Contains(liveSessionCss, want) {
 			t.Fatalf("session frontend source missing %q", want)
 		}
 	}

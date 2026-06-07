@@ -4,7 +4,7 @@
 // rendering — the live content runtime + export wire them to the delegated
 // copy/download controls.
 
-import { icon, Check } from '../../shared/icons.js';
+import { setIconElement, Check } from '../../shared/icons.js';
 
 // Download the session as JSONL: header line + entry lines.
 export function downloadSessionJson({
@@ -84,11 +84,11 @@ export async function copyToClipboard(text, button, {
   }
 
   if (success && button) {
-    const originalHtml = button.innerHTML;
-    button.innerHTML = icon(Check, { size: 13 });
+    const originalChildren = Array.from(button.childNodes).map((node) => node.cloneNode(true));
+    setIconElement(button, Check, { size: 13, documentImpl });
     button.classList.add('copied');
     setTimeout(() => {
-      button.innerHTML = originalHtml;
+      button.replaceChildren(...originalChildren.map((node) => node.cloneNode(true)));
       button.classList.remove('copied');
     }, 1500);
   }

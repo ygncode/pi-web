@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { clearChatPreview, finishChatPreview, renderChatPreview, renderPendingChat } from './chat-preview.js';
+import { clearChatPreviewState as clearChatPreview, finishChatPreviewState as finishChatPreview, renderChatPreviewState as renderChatPreview, renderPendingChatState as renderPendingChat } from '../../components/session/LiveReload.svelte';
 
 describe('chat preview', () => {
   it('renders, updates, follows, and clears preview', () => {
