@@ -76,10 +76,14 @@ Do not import live-only modules (SSE, chat, worker status, service-worker live g
 
 ## Current Migration State
 
-The SPA owns all live browser routes, but some Svelte route shells still reuse existing DOM-oriented JavaScript modules:
+The SPA owns all live browser routes. The **session viewer is fully Svelte-orchestrated**: `SessionPage.svelte` creates the reactive `SessionDataModel` (`session/data/session-data.svelte.js`), provides it via context, and renders the session UI as Svelte components (`SessionTree`, `SessionContent`, `SessionInfoHeader`, `RightSidebar` + `ArtifactPanel`/`AnnotationLayer`, `ChatComposer`, `LiveReload`, `CommandMenu`, the modals, `BtwPopup`, `CatGatekeeper`, …). There is **no `session.js` orchestrator anymore** — its glue was distributed into:
 
-- `web/src/index/` powers behavior for `SessionsPage.svelte`
-- `web/src/settings/settings.js` powers behavior for `SettingsPage.svelte`
-- `web/src/session/` powers rendering/chat/live behavior for `SessionPage.svelte`
+- `SessionPage.svelte`'s `onMount` (`startSessionRuntime()`): per-page bootstrap, `setupSessionUi`, content-runtime wiring, header handlers, initial `navigateTo`, annotation-layer init
+- `session/session-globals.js`: page-global glue (keyboard shortcuts, version checker, session-list palette, load-earlier, done-notifier, visual-viewport/scroll) — returns a disposer
+- `session/session-content-runtime.js`: builds the message-pane entry renderer and the delegated copy/fork/label handler
+- `session/lazy-highlight.js`: deferred `highlight.js` pass
+- `SessionDataModel.reconcile()`: live-reload / load-earlier model reconciliation
 
-Future cleanup should continue extracting these modules into focused Svelte components while keeping export-safe rendering helpers side-effect-free.
+A few **component-owned implementation modules** still remain as plain JS (imported and invoked from their owning component's `onMount`, never re-rendering DOM imperatively from outside): the chat composer runtime + selectors (`session/chat/*`, owned by `ChatComposer.svelte`) and the live-reload SSE runtime (`session/live/*`, owned by `LiveReload.svelte`). The static export reuses the same shared rendering modules via `web/src/export/export-entry.js`. `web/src/index/` and `web/src/settings/settings.js` still back `SessionsPage`/`SettingsPage` (Phase 4).
+
+Future cleanup: inline the remaining `chat/*` + `live/*` runner modules into their components (or keep only pure helpers) and decompose `render/session-entry-renderer.js` into Svelte sub-components, keeping export-safe rendering helpers side-effect-free.

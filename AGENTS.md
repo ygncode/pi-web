@@ -24,7 +24,7 @@ The most important doc for frontend work is **`docs/dev/templates-vs-web.md`**. 
 ## Tech Stack
 
 - **Backend:** Go 1.25+ (`fsnotify`, `x/sys`)
-- **Frontend:** Svelte 5 SPA over vanilla-JS runtime modules, Vite, Vitest + jsdom
+- **Frontend:** Svelte 5 SPA (reactive `SessionDataModel`; some component-owned chat/live runtime modules), Vite, Vitest + `@testing-library/svelte` + jsdom
 - **Session data:** JSONL from `~/.pi/agent/sessions/`; pi-web normally treats existing files as read-only, except it appends a `session_info` metadata line for browser rename and for auto-titling (the latter marked `autoTitle:true`). New-session creation writes a fresh JSONL file with a header and optional implicit model/thinking entries.
 - **Live updates:** SSE driven by `fsnotify` file watchers
 - **Auth:** `PI_WEB_TOKEN` required for non-loopback binds (e.g. Tailscale)
@@ -50,7 +50,7 @@ The most important doc for frontend work is **`docs/dev/templates-vs-web.md`**. 
 
 ### Frontend
 
-The live UI is a Svelte 5 SPA. `web/src/main.js` mounts `App.svelte` into `#spa-root`; `App.svelte` routes by `window.location.pathname` (`/`, `/session`, `/settings`, `/login`). The route/component `.svelte` files are mostly thin shells that render markup and delegate behavior to the existing vanilla-JS runtime modules under `web/src/session/`, `web/src/index/`, etc. (wired by element id).
+The live UI is a Svelte 5 SPA. `web/src/main.js` mounts `App.svelte` into `#spa-root`; `App.svelte` routes by `window.location.pathname` (`/`, `/session`, `/settings`, `/login`). The **session viewer is fully Svelte-orchestrated**: `SessionPage.svelte` creates the reactive `SessionDataModel` (`session/data/session-data.svelte.js`), provides it via context, and renders the viewer as self-contained Svelte components (tree, content, header, right sidebar + artifacts/annotations, chat composer, live reload, modals, btw, cat). There is no `session.js` orchestrator — its glue lives in `SessionPage`'s `onMount` plus `session/{session-globals,session-content-runtime,lazy-highlight}.js`. A few component-owned plain-JS runtimes remain (the `session/chat/*` composer runtime behind `ChatComposer.svelte` and the `session/live/*` SSE runtime behind `LiveReload.svelte`), invoked from their component's `onMount`. The index (`web/src/index/`) and settings (`web/src/settings/settings.js`) routes still delegate to existing runtime modules (Phase 4).
 
 | Directory | Purpose |
 |-----------|---------|
@@ -58,8 +58,8 @@ The live UI is a Svelte 5 SPA. `web/src/main.js` mounts `App.svelte` into `#spa-
 | `web/src/routes/` | Page components: `SessionsPage`, `SessionPage`, `SettingsPage`, `LoginPage` |
 | `web/src/components/` | Extracted Svelte UI: `session/`, `index/`, `settings/`, `shared/` |
 | `web/src/index/` | Sessions-list runtime (drives `SessionsPage.svelte`) |
-| `web/src/session/` | Session-viewer runtime — tree rendering, chat composer, live reload |
-| `web/src/session/chat/` | Chat composer: send/cancel, model & thinking selectors, slash-command palette, `@mention` path autocomplete (`mention-autocomplete.js`, backed by `GET /api/files`) |
+| `web/src/session/` | Session-viewer support: reactive `data/session-data.svelte.js` model, pure `tree/`/`render/`/`navigation/` helpers, the relocated live glue (`session-globals.js`, `session-content-runtime.js`, `lazy-highlight.js`), and the component-owned `chat/` + `live/` runtimes. Orchestrated by `SessionPage.svelte` (no `session.js`) |
+| `web/src/session/chat/` | Chat composer runtime owned by `ChatComposer.svelte`: send/cancel, model & thinking selectors, slash-command palette, `@mention` path autocomplete (`mention-autocomplete.js`, backed by `GET /api/files`) |
 | `web/src/session/artifacts/` | Artifact registry (path-keyed files + fenced snippets) + right-sidebar Artifacts panel (preview/source, help modal) |
 | `web/src/session/annotations/` | Inline review annotations (offset-anchored highlights, Annotations tab, send-to-pi); synced via the `annotations` SSE event |
 | `web/src/shared/` | API helpers, escape, storage, status events |

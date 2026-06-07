@@ -49,22 +49,22 @@ Data comes from existing APIs such as `/api/sessions`, `/api/new-session`, `/api
 
 ## Session Viewer (`/session?id=…`)
 
-`SessionPage.svelte` owns the route shell and fetches session JSON from `/api/session?id=…`. It currently reuses the legacy session runtime modules in `web/src/session/` for rendering, chat, live reload, sidebars, artifacts, and annotations.
+`SessionPage.svelte` owns the route, fetches session JSON from `/api/session?id=…`, and **orchestrates the whole viewer as Svelte components**. It creates the reactive `SessionDataModel` once, provides it via context, and exposes `navigateTo` + `__piReconcileEntries` + the content runtime on `window` before the child components mount. Its `onMount` runs `startSessionRuntime()` (bootstrap, `setupSessionUi`, content-runtime wiring, header handlers, initial nav, annotation init) and `setupSessionGlobals()` (page-global glue). There is **no `session.js` orchestrator** — see `docs/dev/templates-vs-web.md` § Current Migration State.
 
-Session frontend modules are split by ownership:
+The session UI components: `SessionTree`/`SessionTreeNodes`/`TreeNode`, `SessionContent`/`SessionEntry`, `SessionInfoHeader`, `SessionHeader`, `RightSidebar` (+ `ArtifactPanel`, `AnnotationLayer`), `ChatComposer`, `LiveReload`, `CommandMenu`, `ImageModal`, the modals (`ShortcutsModal`/`ModelUsageModal`/`ForkModal`/`LabelModal`/`ShareDialog`), `BtwPopup`, `CatGatekeeper`.
 
-- `web/src/session/data/` — payload decoding, URL params, lookup maps
-- `web/src/session/tree/` — tree building, filtering, flattening, tree DOM rendering
-- `web/src/session/render/` — formatting helpers plus message/header renderers
-- `web/src/session/navigation/` — session path rendering, header/message navigation, copy-link wiring
-- `web/src/session/chat/` — chat composer, attachments, model and thinking controls
-- `web/src/session/live/` — session SSE/live reload, fork modal, share overlay, command/session palettes, update indicator
-- `web/src/session/ui/` — session page interaction wiring, sidebars, search filters
-- `web/src/session/artifacts/` — artifact registry and right-sidebar Artifacts panel
-- `web/src/session/annotations/` — inline review annotations and annotations SSE sync
-- `web/src/session/cat-gatekeeper/` — cat gate overlay and settings
+Session frontend modules under `web/src/session/` are split by ownership:
 
-Future migration work should keep extracting these DOM-oriented modules into Svelte components without mixing live-only code into the export bundle.
+- `data/` — payload decoding + the reactive `SessionDataModel` (`session-data.svelte.js`, the single source of truth: entries/lookups/tree/active-path/view-state, `reconcile()`)
+- `tree/`, `render/`, `navigation/` — **pure** tree/format/markdown/navigation helpers consumed by the Svelte components (and the export). `render/session-entry-renderer.js` still emits message HTML consumed by `<SessionEntry>` via `{@html}` (decomposition into sub-components is pending)
+- `session-globals.js`, `session-content-runtime.js`, `lazy-highlight.js` — the relocated live glue (see above)
+- `chat/` — chat composer runtime + selectors, **owned by `ChatComposer.svelte`** (invoked in its `onMount`)
+- `live/` — SSE/live-reload runtime, **owned by `LiveReload.svelte`**
+- `ui/` — sidebar/search/toggle/session-ui-runner helpers used by `setupSessionUi` and `RightSidebar`
+- `artifacts/`, `annotations/` — pure registries/filters/ranges + the fetch API wrappers; the panels themselves are `ArtifactPanel.svelte`/`AnnotationLayer.svelte`
+- `cat-gatekeeper/` — pure timer/storage logic behind `CatGatekeeper.svelte`
+
+Future migration work: inline the remaining `chat/` + `live/` runner modules into their components (or keep only pure helpers) and decompose `session-entry-renderer.js` into Svelte sub-components — without mixing live-only code into the export bundle.
 
 ## Static / Share Export
 

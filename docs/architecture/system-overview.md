@@ -9,7 +9,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 | Layer | Technology |
 |-------|------------|
 | Backend | Go 1.25+ |
-| Frontend (live app) | Svelte 5 SPA (`web/src/main.js` → `App.svelte`) over vanilla-JS runtime modules, built by Vite; Go serves a single embedded shell (`internal/ui/embedded/app.html`) + injects bootstrap data |
+| Frontend (live app) | Svelte 5 SPA (`web/src/main.js` → `App.svelte`), built by Vite; the session viewer is component-driven over a reactive `SessionDataModel` (a few component-owned chat/live runtime modules remain). Go serves a single embedded shell (`internal/ui/embedded/app.html`) + injects bootstrap data |
 | Static export | Go `html/template` (`internal/ui/embedded/session.html`) + inlined `export.js`/CSS, built from the same `web/src/session/` modules (self-contained Gist) |
 | Styling | Custom CSS (multi-theme: dark/light/nord/dracula/custom) |
 | Live Updates | Server-Sent Events (SSE) |
@@ -29,11 +29,11 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   │  main.js → App.svelte (path router)   │  │      /events?id=…       │  │
 │   │                                       │  │                         │  │
 │   │  / → SessionsPage    (index runtime)  │  │  • reload (session)     │  │
-│   │  /session → SessionPage (viewer +     │  │  • new-session (index)  │  │
-│   │     chat, marked.js, highlight)       │  │  • status-delta         │  │
+│   │  /session → SessionPage (Svelte       │  │  • new-session (index)  │  │
+│   │     components + reactive model)      │  │  • status-delta         │  │
 │   │  /settings → SettingsPage             │  │  • status-snapshot      │  │
 │   │  /login → LoginPage                   │  │  • annotations, btw…    │  │
-│   │  delegates to web/src/{session,index} │  │                         │  │
+│   │  index still uses web/src/index       │  │                         │  │
 │   └──────────────────────────────────────┘  └─────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────────┘
                                     │
