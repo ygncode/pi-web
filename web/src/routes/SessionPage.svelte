@@ -9,6 +9,7 @@
   import ImageModal from '../components/session/ImageModal.svelte';
   import ShortcutsModal from '../components/session/ShortcutsModal.svelte';
   import ModelUsageModal from '../components/session/ModelUsageModal.svelte';
+  import ForkModal, { buildUserMessageList } from '../components/session/ForkModal.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
@@ -37,6 +38,11 @@
   let shortcutsOpen = $state(false);
   // Model-usage modal: opened from the command menu via a window bridge.
   let modelUsageOpen = $state(false);
+  // Fork palette: opened from the command menu, which fetches fresh entries and
+  // passes them + the fork callback through the window bridge.
+  let forkOpen = $state(false);
+  let forkEntries = $state([]);
+  let forkOnSelect = $state(null);
 
   let loading = $state(true);
   let showLoading = $state(false);
@@ -59,6 +65,14 @@
     // <ShortcutsModal> component.
     window.__piOpenShortcuts = () => { shortcutsOpen = true; };
     window.__piOpenModelUsage = () => { modelUsageOpen = true; };
+    window.__piOpenForkModal = ({ entries, onSelect } = {}) => {
+      // Returns false (no open) when there are no user messages to fork from.
+      if (buildUserMessageList(entries || []).length === 0) return false;
+      forkEntries = entries;
+      forkOnSelect = onSelect;
+      forkOpen = true;
+      return true;
+    };
     // The session view is a fixed app shell (no body scroll, internal scroll
     // containers). Mark the document so the session-only layout rules in the
     // shared SPA stylesheet do not pin body height on the index/settings pages.
@@ -147,6 +161,7 @@
 
   <ShortcutsModal bind:open={shortcutsOpen} />
   <ModelUsageModal bind:open={modelUsageOpen} />
+  <ForkModal bind:open={forkOpen} entries={forkEntries} onSelect={forkOnSelect} />
 
   <ShareDialog />
   <script id="session-data" type="application/json" bind:this={dataEl}></script>

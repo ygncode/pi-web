@@ -546,11 +546,12 @@ inward toward the coupled chat/live core.
 
 | ✅ DONE + verified | **`ModelUsageModal.svelte`** (sheet-infra 2/4). Svelte port of `live/model-usage-modal.js`: pure stat/cost/breakdown helpers + reactive markup over `<FullScreenSheet>`, computed from the shared model via context (no `escapeHtml` needed — Svelte auto-escapes; `formatTokens` from `session-stats`). Trigger bridged via `window.__piOpenModelUsage` (command-menu's `model-usage` action). Also added `backdropClass`/`panelClass`/`bodyClass` props to `FullScreenSheet` (the former `showSheet` consumers tag the sheet for CSS) — **fixes a missed `shortcuts-sheet-*` styling regression** from 1/4 — and a destroy-time listener/scroll-lock cleanup. **`live/model-usage-modal.js` + test DELETED** (ported to `ModelUsageModal.test.js`); `command-menu.test.js` updated. Verified: web 545 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 53/2. |
 
-Sheet-infra chunk remaining (each its own e2e-green commit, then delete
-`full-screen-sheet.js` + test once the last consumer migrates): `ForkModal` (3/4),
-`CatGatekeeperSettings`/`cat-settings` (4/4). After the sheet group: the coupled
-core (`CommandMenu`, `btw-popup`, `share-overlay`, `RightSidebar`/panels,
-`ChatComposer`, `LiveReload`, `session.js` teardown).
+| ✅ DONE + verified | **`ForkModal.svelte`** (sheet-infra 3/4). Svelte port of `live/fork-modal.js`: searchable user-message palette with keyboard nav (↑/↓/Enter), preview pane, and `onSelect(entryId)` fork callback, over `<FullScreenSheet>`. `<script module>` exports `buildUserMessageList` so `SessionPage`'s bridge can do the "no user messages" empty check (returns false → command-menu shows the toast, parity with the old null-sheet). command-menu's `fork` action fetches fresh entries then calls `window.__piOpenForkModal({ entries, onSelect })`. **`live/fork-modal.js` + test DELETED** (ported to `ForkModal.test.js`). Verified: web 546 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 54/2. |
+
+Sheet-infra chunk remaining (then delete `full-screen-sheet.js` + test once the
+last consumer migrates): `CatGatekeeperSettings`/`cat-settings` (4/4). After the
+sheet group: the coupled core (`CommandMenu`, `btw-popup`, `share-overlay`,
+`RightSidebar`/panels, `ChatComposer`, `LiveReload`, `session.js` teardown).
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,

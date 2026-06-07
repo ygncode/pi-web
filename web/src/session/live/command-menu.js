@@ -1,4 +1,3 @@
-import { showForkModal } from './fork-modal.js';
 import { openVersionModal } from '../../shared/version.js';
 
 const userDocsUrl = 'https://github.com/ygncode/pi-web/tree/main/user-docs';
@@ -221,29 +220,27 @@ export function setupCommandMenu({
           .then((res) => res.json())
           .then((data) => {
             const entries = data.entries || [];
-            const forkSheet = showForkModal({
-              entries,
-              escapeHtml,
-              documentImpl,
-              windowImpl,
-              onSelect: (entryId) => {
-                fetchImpl(chatUrl('/api/fork-session', sessionId), {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ entryId }),
+            // The fork palette is the <ForkModal> Svelte component; SessionPage
+            // exposes an opener that returns false when there are no user
+            // messages to fork from (parity with the old null-sheet case).
+            const onSelect = (entryId) => {
+              fetchImpl(chatUrl('/api/fork-session', sessionId), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entryId }),
+              })
+                .then((res) => res.json())
+                .then((data) => {
+                  if (data.id) {
+                    windowImpl.location.href = '/session?id=' + encodeURIComponent(data.id);
+                  } else {
+                    showToast(data.error || 'Fork failed', documentImpl, windowImpl);
+                  }
                 })
-                  .then((res) => res.json())
-                  .then((data) => {
-                    if (data.id) {
-                      windowImpl.location.href = '/session?id=' + encodeURIComponent(data.id);
-                    } else {
-                      showToast(data.error || 'Fork failed', documentImpl, windowImpl);
-                    }
-                  })
-                  .catch(() => showToast('Fork failed', documentImpl, windowImpl));
-              },
-            });
-            if (!forkSheet) {
+                .catch(() => showToast('Fork failed', documentImpl, windowImpl));
+            };
+            const opened = windowImpl.__piOpenForkModal?.({ entries, onSelect });
+            if (opened === false) {
               showToast('No user messages to fork from', documentImpl, windowImpl);
             }
           })
