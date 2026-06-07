@@ -13,7 +13,6 @@ import * as sidebarApi from './ui/sidebar.js';
 import * as searchFiltersApi from './ui/search-filters.js';
 import { setupSessionUi } from './ui/session-ui-runner.js';
 import { collectArtifacts } from './artifacts/artifact-registry.js';
-import { createArtifactPanel } from './artifacts/artifact-panel.js';
 import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './artifacts/artifact-filter.js';
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { createAnnotationLayer } from './annotations/annotation-layer.js';
@@ -98,8 +97,11 @@ export function runSessionApp({ target = window } = {}) {
     })
   };
 
-  let artifactPanel = null;
   let annotationLayer = null;
+  // The artifacts panel is the <ArtifactPanel> Svelte component (rendered inside
+  // <RightSidebar>); it exposes its imperative API on window.__piArtifactPanel.
+  // session.js still owns artifact collection/filtering and pushes the visible
+  // set into the component.
   // Hide the Artifacts tab entirely when the feature is disabled; if it was the
   // active tab, fall back to Scratchpad so the user isn't left on a blank pane.
   function applyArtifactsEnabled(enabled) {
@@ -111,12 +113,12 @@ export function runSessionApp({ target = window } = {}) {
     }
   }
   function refreshArtifacts() {
-    if (!artifactPanel) return;
+    if (!target.__piArtifactPanel) return;
     const all = collectArtifacts(dataModel.entries);
     const settings = readArtifactSettings(target.localStorage);
     applyArtifactsEnabled(settings.enabled);
     const { visible, hiddenCount } = filterArtifacts(all, settings);
-    artifactPanel.setArtifacts(visible, { hiddenCount });
+    target.__piArtifactPanel.setArtifacts(visible, { hiddenCount });
     const countEl = documentImpl.getElementById('artifact-tab-count');
     if (countEl) {
       countEl.textContent = String(visible.length);
@@ -223,35 +225,12 @@ export function runSessionApp({ target = window } = {}) {
     navigateTo: (...args) => navigateTo(...args),
   });
 
-  // Artifacts panel (right-sidebar "Artifacts" tab). Live-only: the host element
-  // is rendered only when IsLive, so this is a no-op on export snapshots.
+  // Artifacts panel (right-sidebar "Artifacts" tab). Live-only: the
+  // <ArtifactPanel> component (and its window bridge) exists only when IsLive,
+  // so this is a no-op on export snapshots.
   const artifactHost = documentImpl.getElementById('artifact-panel-host');
   if (artifactHost) {
-    let artifactHljs = null;
-    const artifactHighlight = (code, lang) => {
-      if (!artifactHljs) return null;
-      try {
-        return lang && artifactHljs.getLanguage(lang)
-          ? artifactHljs.highlight(code, { language: lang }).value
-          : artifactHljs.highlightAuto(code).value;
-      } catch { return null; }
-    };
-    artifactPanel = createArtifactPanel({
-      host: artifactHost,
-      escapeHtml: sessionFormat.escapeHtml,
-      highlight: artifactHighlight,
-      renderMarkdown: (text) => safeMarkedParse(text, { marked }),
-      documentImpl,
-      windowImpl: target,
-      navigatorImpl: target.navigator,
-      URLImpl: target.URL,
-      BlobImpl: target.Blob
-    });
     refreshArtifacts();
-    import('highlight.js').then(({ default: loaded }) => {
-      artifactHljs = loaded;
-      artifactPanel.render();
-    });
 
     // Reflect artifact-setting changes made on the /settings page (in another
     // tab) without a reload. The `storage` event fires only in other documents,
@@ -423,7 +402,7 @@ export function runSessionApp({ target = window } = {}) {
       escapeHtml: sessionFormat.escapeHtml,
       onSelectArtifact: (artifactId) => {
         ui.activateRightTab('artifacts');
-        artifactPanel?.selectArtifact(artifactId);
+        target.__piArtifactPanel?.selectArtifact(artifactId);
       },
       onCreate: () => {
         ui.openRightSidebar();
@@ -438,7 +417,7 @@ export function runSessionApp({ target = window } = {}) {
         target.dispatchEvent(new target.CustomEvent('pi-chat-attach-text', { detail: attachment }));
         if (ui.isMobileLayout()) ui.collapseRightSidebar();
       },
-      resolveArtifact: (artifactId) => artifactPanel?.getArtifact(artifactId) || null,
+      resolveArtifact: (artifactId) => target.__piArtifactPanel?.getArtifact(artifactId) || null,
       documentImpl,
       windowImpl: target
     });

@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { icon, CircleHelp, Maximize2, X } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
+  import ArtifactPanel from './ArtifactPanel.svelte';
 
   let { scratchpad = '', projectPath = '' } = $props();
 
@@ -296,7 +297,7 @@
     </div>
     <div id="right-pane-artifacts" class="right-sidebar-pane" role="tabpanel" aria-labelledby="right-tab-artifacts" hidden>
       <button id="artifact-help-btn" class="right-sidebar-btn artifact-help-btn" title={t('sidebar.howArtifactsWork')} aria-label={t('sidebar.howArtifactsWork')}>{@html icon(CircleHelp, { size: 15 })}</button>
-      <div id="artifact-panel-host" class="artifact-panel-host"></div>
+      <ArtifactPanel />
     </div>
     <div id="right-pane-notes" class="right-sidebar-pane" role="tabpanel" aria-labelledby="right-tab-notes" hidden>
       <div id="annotation-list-host" class="annotation-list-host"></div>
