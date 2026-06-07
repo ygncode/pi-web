@@ -460,6 +460,14 @@ Findings that shape it (verified by reading the code):
   to `#messages` (siblings AFTER `#messages-list`), so Svelte never reconciles them.
   (CSS check done: no `#messages > …` direct-child selectors exist.)
 
+**Scope reality (confirmed by reading the code):** retiring append is not a small
+step — it migrates the WHOLE incremental live-update subsystem at once:
+`live-reload-runner.js` + `live-events.js` + `live-entries.js` + `live-renderer.js`
+(`appendEntry`/`upsertEntry`/`refreshEntriesAffectedByToolResult`) **and**
+`chat-preview.js`, on the live-chat path. Treat sub-step B as the Phase-3 live
+migration, executed with full budget + the complete e2e suite — not a tail-end
+change. (`renderEntry` determinism precondition: CONFIRMED — no `Date.now`/random.)
+
 Wiring steps: SessionPage holds a `SessionContentRuntime` ($state `renderEntry` +
 `afterRender`), exposes it on `window.__piContentRuntime`, renders
 `<SessionContent renderEntry={rt.renderEntry} afterRender={rt.afterRender}/>` inside
