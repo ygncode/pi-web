@@ -11,8 +11,6 @@ import * as toggleStateApi from './ui/toggle-state.js';
 import * as sidebarApi from './ui/sidebar.js';
 import * as searchFiltersApi from './ui/search-filters.js';
 import { setupSessionUi } from './ui/session-ui-runner.js';
-import { collectArtifacts } from './artifacts/artifact-registry.js';
-import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './artifacts/artifact-filter.js';
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { setupLoadEarlierBanner } from './ui/load-earlier.js';
 import * as doneNotifier from './chat/done-notifier.js';
@@ -84,32 +82,9 @@ export function runSessionApp({ target = window } = {}) {
 
   let annotationLayer = null;
   // The artifacts panel is the <ArtifactPanel> Svelte component (rendered inside
-  // <RightSidebar>); it exposes its imperative API on window.__piArtifactPanel.
-  // session.js still owns artifact collection/filtering and pushes the visible
-  // set into the component.
-  // Hide the Artifacts tab entirely when the feature is disabled; if it was the
-  // active tab, fall back to Scratchpad so the user isn't left on a blank pane.
-  function applyArtifactsEnabled(enabled) {
-    const tab = documentImpl.getElementById('right-tab-artifacts');
-    if (!tab) return;
-    tab.hidden = !enabled;
-    if (!enabled && tab.classList.contains('active')) {
-      documentImpl.getElementById('right-tab-scratchpad')?.click();
-    }
-  }
-  function refreshArtifacts() {
-    if (!target.__piArtifactPanel) return;
-    const all = collectArtifacts(dataModel.entries);
-    const settings = readArtifactSettings(target.localStorage);
-    applyArtifactsEnabled(settings.enabled);
-    const { visible, hiddenCount } = filterArtifacts(all, settings);
-    target.__piArtifactPanel.setArtifacts(visible, { hiddenCount });
-    const countEl = documentImpl.getElementById('artifact-tab-count');
-    if (countEl) {
-      countEl.textContent = String(visible.length);
-      countEl.hidden = visible.length === 0;
-    }
-  }
+  // <RightSidebar>); it collects/filters artifacts reactively from the shared
+  // model and exposes selectArtifact/getArtifact on window.__piArtifactPanel for
+  // the annotation layer.
 
   function replaceMapContents(targetMap, nextMap) {
     targetMap.clear();
@@ -146,8 +121,8 @@ export function runSessionApp({ target = window } = {}) {
 
     // Live reload reconciles the data model when the session JSONL changes.
     // The in-place entries splice + map refills above are reactive, so the
-    // Svelte <SessionTreeNodes> sidebar + <SessionContent> update automatically.
-    refreshArtifacts();
+    // Svelte <SessionTreeNodes> sidebar, <SessionContent>, and <ArtifactPanel>
+    // (which collects from model.entries) all update automatically.
   }
 
   const entryRenderer = sessionEntryRenderer.createSessionEntryRenderer({
@@ -188,35 +163,10 @@ export function runSessionApp({ target = window } = {}) {
     navigateTo: (...args) => navigateTo(...args),
   });
 
-  // Artifacts panel (right-sidebar "Artifacts" tab). Live-only: the
-  // <ArtifactPanel> component (and its window bridge) exists only when IsLive,
-  // so this is a no-op on export snapshots.
-  const artifactHost = documentImpl.getElementById('artifact-panel-host');
-  if (artifactHost) {
-    refreshArtifacts();
-
-    // Reflect artifact-setting changes made on the /settings page (in another
-    // tab) without a reload. The `storage` event fires only in other documents,
-    // so this won't double-fire for changes originating in this same tab. A null
-    // key means storage was cleared — refresh to re-read defaults.
-    target.addEventListener('storage', (e) => {
-      if (e.key === null || ARTIFACT_SETTING_KEYS.includes(e.key)) refreshArtifacts();
-    });
-
-    // Artifacts help (?) modal — shown only on the Artifacts tab via CSS.
-    const helpBtn = documentImpl.getElementById('artifact-help-btn');
-    const helpModal = documentImpl.getElementById('artifact-help-modal');
-    if (helpBtn && helpModal) {
-      const hideHelp = () => { helpModal.hidden = true; };
-      helpBtn.addEventListener('click', () => { helpModal.hidden = false; });
-      helpModal.addEventListener('click', (e) => {
-        if (e.target.closest('[data-action="close-artifact-help"]')) hideHelp();
-      });
-      target.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && !helpModal.hidden) hideHelp();
-      });
-    }
-  }
+  // Artifacts (right-sidebar "Artifacts" tab) are collected reactively by the
+  // <ArtifactPanel> Svelte component from the shared model; the help (?) modal +
+  // cross-tab settings refresh live in <ArtifactPanel>/<RightSidebar>. Live-only:
+  // those components exist only when IsLive, so nothing happens on export.
 
   // navigateTo is owned by SessionPage (created from the reactive model) and
   // exposed on window; the tree/chat/live components share this one instance.

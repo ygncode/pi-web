@@ -1,12 +1,25 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { marked } from 'marked';
   import { safeMarkedParse } from '../../session/render/markdown.js';
+  import { getSessionModel } from '../../session/session-context.js';
+  import { collectArtifacts } from '../../session/artifacts/artifact-registry.js';
+  import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from '../../session/artifacts/artifact-filter.js';
   import { t } from '../../shared/i18n.js';
 
   // `highlight`/`renderMarkdown` are injectable for tests; in the live app the
   // component lazy-loads highlight.js itself and renders markdown via marked.
   let { highlight = null, renderMarkdown = null } = $props();
+
+  // The panel collects artifacts straight from the shared reactive model: on
+  // mount and whenever entries change (live reload), it re-runs collection +
+  // filtering. Standalone (tests, no context) the model is undefined and the
+  // panel is driven imperatively via the window.__piArtifactPanel.setArtifacts
+  // bridge instead.
+  const model = getSessionModel();
+  // Bumped by the cross-tab `storage` listener so the collection effect re-reads
+  // the artifact settings (enable/include filter) without a reload.
+  let settingsTick = $state(0);
 
   let artifacts = $state([]);
   let selectedId = $state('');
@@ -118,10 +131,58 @@
     selectedId = id;
   }
 
+  // Hide the Artifacts tab entirely when the feature is disabled; if it was the
+  // active tab, fall back to Scratchpad so the user isn't left on a blank pane.
+  function applyArtifactsEnabled(enabled) {
+    const tab = document.getElementById('right-tab-artifacts');
+    if (!tab) return;
+    tab.hidden = !enabled;
+    if (!enabled && tab.classList.contains('active')) {
+      document.getElementById('right-tab-scratchpad')?.click();
+    }
+  }
+
+  // Reactive collection from the shared model (live only; null in standalone /
+  // imperative mode). Recomputes when entries change (live reload) or the
+  // settings tick bumps (cross-tab settings change). Kept as a $derived so the
+  // sync $effect below depends only on this value, not on the artifact $state it
+  // writes (which would self-trigger).
+  const collected = $derived.by(() => {
+    if (!model) return null;
+    settingsTick; // eslint-disable-line no-unused-expressions -- dependency
+    const all = collectArtifacts(model.entries);
+    const settings = readArtifactSettings(window.localStorage);
+    const { visible, hiddenCount: hidden } = filterArtifacts(all, settings);
+    return { visible, hiddenCount: hidden, enabled: settings.enabled };
+  });
+
+  // Push the derived collection into the panel's display $state + tab chrome.
+  // Reading/writing artifacts/selectedId via setArtifacts is untracked so the
+  // effect's only dependency is `collected`.
+  $effect(() => {
+    const c = collected;
+    if (!c) return;
+    untrack(() => setArtifacts(c.visible, { hiddenCount: c.hiddenCount }));
+    applyArtifactsEnabled(c.enabled);
+    const countEl = document.getElementById('artifact-tab-count');
+    if (countEl) {
+      countEl.textContent = String(c.visible.length);
+      countEl.hidden = c.visible.length === 0;
+    }
+  });
+
   onMount(() => {
     if (!highlight) {
       import('highlight.js').then(({ default: loaded }) => { loadedHljs = loaded; }).catch(() => {});
     }
+    // Reflect artifact-setting changes made on the /settings page (in another
+    // tab) without a reload. The `storage` event fires only in other documents,
+    // so this won't double-fire for changes originating in this same tab. A null
+    // key means storage was cleared — re-read defaults.
+    const onStorage = (e) => {
+      if (e.key === null || ARTIFACT_SETTING_KEYS.includes(e.key)) settingsTick += 1;
+    };
+    if (model) window.addEventListener('storage', onStorage);
     window.__piArtifactPanel = {
       setArtifacts,
       selectArtifact,
@@ -130,7 +191,10 @@
       getArtifact: (id) => artifacts.find((a) => a.id === id) || null,
       getCount: () => artifacts.length,
     };
-    return () => { delete window.__piArtifactPanel; };
+    return () => {
+      if (model) window.removeEventListener('storage', onStorage);
+      delete window.__piArtifactPanel;
+    };
   });
 </script>
 

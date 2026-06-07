@@ -265,6 +265,29 @@
     if (savedWidth !== null) applyWidth(savedWidth);
     if (textarea) lastSaved = textarea.value;
 
+    // ── Artifacts help (?) modal ─────────────────────────────────────────────
+    // Shown only on the Artifacts tab via CSS; toggled by the help button.
+    const helpBtn = documentImpl.getElementById('artifact-help-btn');
+    const helpModal = documentImpl.getElementById('artifact-help-modal');
+    if (helpBtn && helpModal) {
+      const hideHelp = () => { helpModal.hidden = true; };
+      const onHelpBtn = () => { helpModal.hidden = false; };
+      const onHelpModal = (e) => {
+        if (e.target.closest('[data-action="close-artifact-help"]')) hideHelp();
+      };
+      const onHelpKeydown = (e) => {
+        if (e.key === 'Escape' && !helpModal.hidden) hideHelp();
+      };
+      helpBtn.addEventListener('click', onHelpBtn);
+      helpModal.addEventListener('click', onHelpModal);
+      windowImpl.addEventListener('keydown', onHelpKeydown);
+      cleanups.push(() => {
+        helpBtn.removeEventListener('click', onHelpBtn);
+        helpModal.removeEventListener('click', onHelpModal);
+        windowImpl.removeEventListener('keydown', onHelpKeydown);
+      });
+    }
+
     window.__piRightSidebar = {
       toggle: toggleSidebar,
       open: openSidebar,
