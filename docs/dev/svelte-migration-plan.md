@@ -614,7 +614,14 @@ per increment.
 `<AskQuestion>`; `live-renderer`/`live-entries` deleted (reactive model). What's
 left under `session/chat/` + `session/live/` is **pure/shared helpers only**:
 `chat-api`, `git-api`, `chat-selectors`, `done-notifier`, `chat-preview`. `knip` is
-clean. **The only remaining migration phase is Phase 4 (index + settings routes).**
+clean.
+
+### Phase 4 — index + settings routes (IN PROGRESS)
+
+| Status | Item |
+|---|---|
+| ✅ DONE + verified | **Index route (`/`) Svelte cut-over.** Added `SessionsList.svelte` + `SessionCard.svelte` and moved the sessions data helpers/API wrappers into `index/sessions.js`; `SessionsPage.svelte` now owns `/api/sessions`, `/api/new-session`, `/api/projects`, `/api/recent-locations`, `__all__` SSE running-state updates, layout persistence, the web menu, and modal state. `CommandPalette.svelte` absorbed the shared session-list palette behavior and exposes `window.__piOpenSessionPalette` for both the index Cmd+K path and the session `<CommandMenu>` action. **Deleted** `index/{index,sessions-page,session-card}.js` and `shared/session-list-palette.js` (+ old tests); component/pure tests added. Verified: web tests 490 → 483 after deleting obsolete suites, `npm run build`, `npm run knip`, `go test ./internal/ui/...`, `go vet ./...`, `go build -o pi-web ./cmd/pi-web`, Desktop-Chrome e2e **56 passed / 2 skipped / 1 flaky retry passed** (documented load-earlier retry). |
+| 🔶 partial | **Settings route (`/settings`) moved off `settings/settings.js`.** The old settings runtime was relocated into `SettingsPage.svelte`'s module script so the `settings/settings.js` deletion-list item is removed and the route stays green. This preserves behavior while the per-section local `$state` split and the `shared/version.js` UI component extraction remain to finish Phase 4b/5. |
 
 | Status | Item |
 |---|---|

@@ -49,7 +49,12 @@ export default {
   'index.closeManageProjects': 'Close Manage projects',
   'index.noProjectsMatch': 'No projects match your search.',
   'index.noProjectsFound': 'No projects found yet.',
+  'index.viewOnly': 'View only',
   'index.removeProject': 'Remove',
+  'index.enterPath': 'Please enter a path',
+  'index.failedCreateSession': 'Failed to create session',
+  'index.networkError': 'Network error',
+  'index.failedLoadProjects': 'Failed to load projects',
   'index.failedUpdateProject': 'Failed to update project',
   'index.failedRemoveProject': 'Failed to remove project',
   'index.filterOnDesc': 'Only checked projects appear on the homepage.',
@@ -60,6 +65,8 @@ export default {
   'palette.closeSearch': 'Close search',
   'palette.actions': 'Actions',
   'palette.newSession': 'New session',
+  'palette.noSessionsFound': 'No sessions found',
+  'palette.failedLoadSessions': 'Failed to load sessions',
 
   // ── Session viewer ──
   'session.back': 'Sessions',

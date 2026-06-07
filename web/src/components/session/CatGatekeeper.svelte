@@ -7,8 +7,8 @@
   import { onMount } from 'svelte';
   import { setupCatGatekeeper } from '../../session/cat-gatekeeper/cat-gatekeeper.js';
 
-  let overlayEl;
-  let videoEl;
+  let overlayEl = $state();
+  let videoEl = $state();
 
   let visible = $state(false);
   let everShown = $state(false);

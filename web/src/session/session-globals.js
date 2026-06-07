@@ -13,7 +13,6 @@ import * as sidebarApi from './ui/sidebar.js';
 import { setupLoadEarlierBanner } from './ui/load-earlier.js';
 import { createVersionController } from '../shared/version.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
-import { setupSessionListPalette } from '../shared/session-list-palette.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 
 export function setupSessionGlobals({
@@ -45,21 +44,9 @@ export function setupSessionGlobals({
 
   createVersionController({ documentImpl, windowImpl: target });
 
-  // Session list palette (Cmd+K / "List Sessions" menu item). Exposed on window
-  // so <CommandMenu>'s list-sessions action and the Cmd+K shortcut below can open
-  // it without a direct reference.
-  const sessionPalette = setupSessionListPalette({
-    documentImpl,
-    windowImpl: target,
-    overlayId: 'sessionPalette',
-    searchInputId: 'session-palette-search',
-    clearOnClose: true,
-    onNewSession: () => {
-      const newBtn = documentImpl.getElementById('new-btn');
-      if (newBtn) newBtn.click();
-    },
-  });
-  target.__piOpenSessionPalette = () => sessionPalette.open();
+  // Session list palette (Cmd+K / "List Sessions" menu item). The Svelte
+  // <CommandPalette> component owns the palette and exposes
+  // window.__piOpenSessionPalette for this global shortcut and <CommandMenu>.
 
   // ── Global keyboard shortcuts ──────────────────────────────────────────────
   // Cmd+K — session list palette

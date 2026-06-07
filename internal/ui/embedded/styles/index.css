@@ -644,6 +644,13 @@ body.modal-sheet-open { overflow: hidden; }
     direction: rtl;
     text-align: left;
 }
+.project-row button.project-row-name {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+}
+.project-row button.project-row-name:disabled { cursor: default; }
 .project-row-name bdi { direction: ltr; unicode-bidi: bidi-override; }
 .project-row-count { color: var(--muted); font-size: 11px; white-space: nowrap; flex: 0 0 auto; order: 2; }
 .project-row-remove {
