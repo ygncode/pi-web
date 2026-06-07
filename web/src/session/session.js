@@ -11,14 +11,9 @@ import * as sidebarApi from './ui/sidebar.js';
 import * as searchFiltersApi from './ui/search-filters.js';
 import { setupSessionUi } from './ui/session-ui-runner.js';
 import { createAnnotationApi } from './annotations/annotation-api.js';
-import { setupLoadEarlierBanner } from './ui/load-earlier.js';
-import * as doneNotifier from './chat/done-notifier.js';
 // Chat composer + git footer → <ChatComposer>; live reload (SSE) → <LiveReload>.
-// share-overlay → <ShareDialog>. All rendered by SessionPage.
-import { createVersionController } from '../shared/version.js';
-import { setupKeyboardNav } from '../shared/keyboard-nav.js';
-import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
-import { setupSessionListPalette } from '../shared/session-list-palette.js';
+// share-overlay → <ShareDialog>. Page-global glue → setupSessionGlobals (called
+// by SessionPage). All rendered/invoked by SessionPage.
 import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
 import { t } from '../shared/i18n.js';
 export { buildSessionLookups, createSessionDataModel, decodeBase64JSON, getSessionSearchParams, loadSessionData, readSessionPayload } from './data/session-data.js';
@@ -85,12 +80,9 @@ export function runSessionApp({ target = window } = {}) {
   // model and exposes selectArtifact/getArtifact on window.__piArtifactPanel for
   // the annotation layer.
 
-  // Live reload + load-earlier reconcile the data model when the JSONL changes.
-  // SessionDataModel.reconcile() replaces entries + refills the lookup maps in
-  // place (all reactive), so the Svelte <SessionTreeNodes> sidebar,
-  // <SessionContent>, and <ArtifactPanel> (which collects from model.entries)
-  // all update automatically. Plain fallback models (no reconcile) are tolerated.
-  const syncDataModelEntries = (entries) => dataModel.reconcile?.(entries);
+  // Live reload + load-earlier reconcile the model via SessionDataModel.reconcile()
+  // (in-place entries splice + lookup-map refills, all reactive), exposed by
+  // SessionPage on window.__piReconcileEntries.
 
   const entryRenderer = sessionEntryRenderer.createSessionEntryRenderer({
     entries: dataModel.entries,
@@ -293,182 +285,12 @@ export function runSessionApp({ target = window } = {}) {
   // Image click-to-zoom is now the <ImageModal> Svelte component (rendered by
   // SessionPage); no imperative setup needed here.
 
-  doneNotifier.setupDoneNotifyToggle({ documentImpl, windowImpl: target });
-  doneNotifier.setupAppBadgeClearing({ documentImpl, windowImpl: target });
-  target.addEventListener('pi-worker-done', () => {
-    doneNotifier.notifyDone({ documentImpl, windowImpl: target });
-  });
-
-  // Live reload (SSE) is the <LiveReload> Svelte component (rendered by
-  // SessionPage); it self-inits in onMount. session.js still owns model
-  // reconciliation (shared with load-earlier), exposed here for <LiveReload>'s
-  // onSessionDataReload to call when the JSONL changes.
-  target.__piReconcileEntries = (entries) => syncDataModelEntries(entries);
-
-  setupKeyboardNav({ windowImpl: target, documentImpl });
-
-  createVersionController({ documentImpl, windowImpl: target });
-
-  // Cat Gatekeeper (focus/break + bedtime companion) is the <CatGatekeeper>
-  // Svelte component (rendered by SessionPage); it wires its controller +
-  // overlay in onMount and exposes it on window.__piCatGatekeeper.
-
-  // The session actions menu is the <CommandMenu> Svelte component (rendered by
-  // SessionPage); it wires its own behavior in onMount.
-
-  // Set up session list palette (Cmd+K / "List Sessions" menu item). Exposed on
-  // window so <CommandMenu>'s list-sessions action and the Cmd+K shortcut below
-  // can open it without a direct reference.
-  const sessionPalette = setupSessionListPalette({
-    documentImpl,
-    windowImpl: target,
-    overlayId: 'sessionPalette',
-    searchInputId: 'session-palette-search',
-    clearOnClose: true,
-    onNewSession: () => {
-      const newBtn = documentImpl.getElementById('new-btn');
-      if (newBtn) newBtn.click();
-    },
-  });
-  target.__piOpenSessionPalette = () => sessionPalette.open();
-
-  // Cmd+K keyboard shortcut for session list palette
-  target.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-      e.preventDefault();
-      target.__piOpenSessionPalette?.();
-    }
-  });
-
-  // Cmd+B keyboard shortcut to toggle sidebar/tree
-  target.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
-      e.preventDefault();
-      const sidebar = documentImpl.getElementById('sidebar');
-      if (target.matchMedia('(max-width: 900px)').matches) {
-        const isOpen = sidebar?.classList.contains('open');
-        sidebarApi.setSidebarOpen(!isOpen, { documentImpl });
-      } else {
-        const isCollapsed = documentImpl.body?.classList.contains('sidebar-collapsed');
-        const next = !isCollapsed;
-        sidebarApi.setSidebarCollapsed(next, { documentImpl });
-        sidebarApi.saveSidebarCollapsed(next);
-      }
-    }
-  });
-
-  // Cmd+T keyboard shortcut for new session
-  target.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 't') {
-      e.preventDefault();
-      const newBtn = documentImpl.getElementById('new-btn');
-      if (newBtn) newBtn.click();
-    }
-  });
-
-  // Cmd+Shift+L keyboard shortcut for system theme toggle
-  // Use capture phase so the browser doesn't swallow Cmd+Shift+L before we see it.
-  target.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
-      e.preventDefault();
-      e.stopPropagation();
-      toggleTheme(target, documentImpl);
-      syncThemeIcons(documentImpl);
-    }
-  }, { capture: true });
-
-  // Cmd+Shift+N keyboard shortcut to toggle scratchpad (right sidebar)
-  target.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
-      e.preventDefault();
-      ui.toggleRightSidebar();
-    }
-  });
-
-  // Cmd+/ keyboard shortcut to show keyboard shortcuts help modal. The modal is
-  // the <ShortcutsModal> Svelte component; SessionPage exposes the opener.
-  target.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === '/') {
-      e.preventDefault();
-      target.__piOpenShortcuts?.();
-    }
-  });
-
-  const shortcutsBtn = documentImpl.getElementById('shortcuts-help-btn');
-  if (shortcutsBtn) {
-    shortcutsBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      target.__piOpenShortcuts?.();
-    });
-  }
-
-  const newSessionHeaderBtn = documentImpl.getElementById('new-session-header-btn');
-  if (newSessionHeaderBtn) {
-    newSessionHeaderBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      documentImpl.getElementById('new-btn')?.click();
-    });
-  }
-
-  // The chat composer (+ git footer) is the <ChatComposer> Svelte component
-  // (rendered by SessionPage); it self-inits in onMount. <LiveReload> mounts
-  // first, so its optimistic "message sent" listener exists before the user can
-  // submit.
-
-  // The btw floating scratch-chat is the <BtwPopup> Svelte component (rendered
-  // by SessionPage); it self-wires its #pi-btw-button trigger in onMount.
-
-  // For huge sessions the server embeds only the tail entries in the initial
-  // HTML render. Wire a "Load earlier" banner that fetches preceding windows
-  // via /api/session?id=...&from=N&count=K and merges them into the model.
-  // No-ops on small sessions (dataModel.truncated is false).
-  setupLoadEarlierBanner({
-    dataModel,
-    sessionId,
-    syncDataModelEntries,
-    // Re-render the conversation from the current leaf so the prepended earlier
-    // entries actually appear in #messages, keeping the viewport anchored on the
-    // message that was previously at the top (anchorId) to avoid a scroll jump.
-    rerender: (anchorId) => navigateTo(dataModel.leafId, anchorId ? 'target' : 'bottom', anchorId || null),
-    documentImpl,
-    fetchImpl: target.fetch.bind(target),
-  });
-
-  // Handle Visual Viewport changes to prevent mobile browsers from shifting
-  // the top fixed header out of view when the virtual keyboard is open.
-  if (target.visualViewport) {
-    const handleVisualViewportChange = () => {
-      const height = target.visualViewport.height;
-      documentImpl.documentElement.style.setProperty('--viewport-height', `${height}px`);
-
-      // Dynamically adjust the top header's vertical position to offset
-      // layout viewport scroll/shift caused by mobile virtual keyboard.
-      const offsetTop = Math.max(0, target.visualViewport.offsetTop);
-      const header = documentImpl.querySelector('.session-header-bar');
-      if (header) {
-        header.style.transform = `translateY(${offsetTop}px)`;
-      }
-    };
-    target.visualViewport.addEventListener('resize', handleVisualViewportChange);
-    target.visualViewport.addEventListener('scroll', handleVisualViewportChange);
-    handleVisualViewportChange();
-  }
-
-  // Prevent mobile browser from auto-scrolling the layout viewport when keyboard opens
-  target.addEventListener('scroll', () => {
-    if (target.scrollY !== 0 || target.scrollX !== 0) {
-      target.scrollTo(0, 0);
-    }
-  });
-  documentImpl.addEventListener('scroll', () => {
-    if (documentImpl.documentElement.scrollTop !== 0 || documentImpl.documentElement.scrollLeft !== 0) {
-      documentImpl.documentElement.scrollTop = 0;
-      documentImpl.documentElement.scrollLeft = 0;
-    }
-    if (documentImpl.body.scrollTop !== 0 || documentImpl.body.scrollLeft !== 0) {
-      documentImpl.body.scrollTop = 0;
-      documentImpl.body.scrollLeft = 0;
-    }
-  });
+  // Page-global glue (done-notifier, keyboard shortcuts, version checker,
+  // session-list palette, load-earlier, visual-viewport/scroll) lives in
+  // setupSessionGlobals(), called by <SessionPage> after this. Cat gatekeeper,
+  // command menu, chat composer, live reload, and btw are self-initializing
+  // Svelte components rendered by SessionPage. Model reconciliation for
+  // <LiveReload> + load-earlier is exposed on window.__piReconcileEntries
+  // (set by SessionPage from model.reconcile).
 }
 

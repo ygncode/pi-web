@@ -18,6 +18,7 @@
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
+  import { setupSessionGlobals } from '../session/session-globals.js';
   import { loadSessionPageState } from './session-page-data.js';
   import { SessionDataModel } from '../session/data/session-data.svelte.js';
   import { createSessionDataModel, decodeBase64JSON } from '../session/data/session-data.js';
@@ -77,6 +78,7 @@
   onMount(() => {
     const previousTitle = document.title;
     let active = true;
+    let disposeGlobals = null;
     // Bridge for the imperative shortcuts triggers (session.js) to open the
     // <ShortcutsModal> component.
     window.__piOpenShortcuts = () => { shortcutsOpen = true; };
@@ -144,6 +146,9 @@
         });
         window.navigateTo = navigator.navigateTo;
         window.__piSessionNavigator = navigator;
+        // Model reconciliation for <LiveReload> (SSE) + the load-earlier banner.
+        // Set before the child components mount so a reload can never race it.
+        window.__piReconcileEntries = (entries) => sessionModel.reconcile(entries);
         // Expose the content runtime BEFORE runSessionApp so session.js can hand
         // it the entry renderer + afterRender hook that drive <SessionContent>.
         window.__piContentRuntime = contentRuntime;
@@ -155,6 +160,16 @@
         // element, so the embedded session payload must be assigned directly.
         if (dataEl) dataEl.textContent = payloadBase64;
         runSessionApp({ target: window });
+        // Page-global glue (keyboard shortcuts, version checker, session-list
+        // palette, load-earlier, done-notifier, visual-viewport/scroll). Runs
+        // after runSessionApp so the sidebar/right-sidebar window bridges exist.
+        disposeGlobals = setupSessionGlobals({
+          windowImpl: window,
+          documentImpl: document,
+          model: sessionModel,
+          sessionId,
+          navigateTo: window.navigateTo,
+        });
         applyLazyHighlighting(document);
       } catch (err) {
         if (!active) return;
@@ -167,6 +182,7 @@
     return () => {
       active = false;
       clearTimeout(loadingTimer);
+      disposeGlobals?.();
       document.title = previousTitle;
       document.documentElement.classList.remove('pi-session-page');
       document.body.classList.remove('pi-session-page');

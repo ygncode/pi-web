@@ -79,16 +79,18 @@ describe('session entrypoint', () => {
     Object.defineProperty(window, 'navigator', { value: {}, configurable: true });
     window.fetch = vi.fn(async () => new Response('{}', { status: 200 }));
 
-    // SessionPage provides the shared reactive model on window before
-    // runSessionApp; mirror that so reconciliation flows through the model.
-    window.__piSessionDataModel = new SessionDataModel(payload);
+    // SessionPage provides the shared reactive model + the reconcile bridge on
+    // window before runSessionApp; mirror that so reconciliation flows through
+    // the model (SessionDataModel.reconcile()), as <LiveReload> / load-earlier do.
+    const sharedModel = new SessionDataModel(payload);
+    window.__piSessionDataModel = sharedModel;
+    window.__piReconcileEntries = (entries) => sharedModel.reconcile(entries);
     installNavigator(window);
     runSessionApp({ target: window });
 
     // The sidebar tree DOM is rendered by <SessionTreeNodes> and live reload
-    // (SSE) by <LiveReload>; session.js owns reconciling the shared model, which
-    // it exposes on window.__piReconcileEntries for <LiveReload> to call. This
-    // asserts that reconciliation path.
+    // (SSE) by <LiveReload>; the shared model owns reconciliation, exposed on
+    // window.__piReconcileEntries for <LiveReload> to call. This asserts that path.
     const model = window.__piSessionDataModel;
     expect(model.entries.map((e) => e.id)).toEqual(['root']);
     expect(typeof window.__piReconcileEntries).toBe('function');
