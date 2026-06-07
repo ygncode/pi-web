@@ -433,6 +433,45 @@ Do these as one carefully-sequenced, e2e-gated effort:
 4. **Replace incremental append with reactivity:** live-reload mutates `model.entries` (already reactive); `activePath` recomputes and `{#each}` adds new entries. Retire `live-entries.js` append/upsert/seen; keep the new-entry highlight + auto-scroll as a `$effect`. This is the Phase 3 live-reload migration.
 5. Move scroll/highlight (`scrollMode` target/bottom) into a `$effect` keyed on `currentTargetId` / entries length.
 6. Delete `session-entry-renderer.js` only once live + export render via `<SessionContent>`; verify `npm run test` + `npm run build` + guard + full e2e (chat, live-reload, annotations, artifacts, session-view, share).
+
+#### Sub-step A — DONE (committed, staged, not wired)
+
+`SessionDataModel.activePath`, `<SessionEntry>` ({@html renderEntry}), `<SessionContent>`
+({#each model.activePath} in `#messages-list` + `afterRender` hook), all unit-tested.
+Web 550 green, knip clean.
+
+#### Sub-step B — wiring design (the high-risk cut-over)
+
+Findings that shape it (verified by reading the code):
+
+- **DOM stability vs annotations:** `session.js` `syncDataModelEntries` replaces
+  entries with NEW objects each reload, so a keyed `{#each}` sees "same id, new
+  object" and re-runs `{@html renderEntry(entry)}`. That's safe ONLY because
+  `renderEntry` is deterministic → identical string → Svelte's `{@html}` skips the
+  DOM write → annotation offset anchors + scroll survive. Verify this holds (no
+  per-render nonces/timestamps-of-now in `renderEntry`); if not, memoize html by an
+  entry content-signature. CPU: re-runs `renderEntry` for the whole path per reload
+  — fine for normal sessions, optimize for huge ones later.
+- **Buttons:** bind ONE delegated `click` handler on `#messages` (copy/fork/label
+  via `e.target.closest(...)`) instead of per-node binding — avoids double-binding
+  across reactive re-renders.
+- **chat-preview coexistence:** `<SessionContent>` renders into `#messages-list`;
+  `chat-preview.js` keeps `appendChild`-ing `#chat-pending-user`/`#chat-preview-stream`
+  to `#messages` (siblings AFTER `#messages-list`), so Svelte never reconciles them.
+  (CSS check done: no `#messages > …` direct-child selectors exist.)
+
+Wiring steps: SessionPage holds a `SessionContentRuntime` ($state `renderEntry` +
+`afterRender`), exposes it on `window.__piContentRuntime`, renders
+`<SessionContent renderEntry={rt.renderEntry} afterRender={rt.afterRender}/>` inside
+`#messages` (drop `firstMessageStub`). `session.js` sets `rt.renderEntry =
+entryRenderer.renderEntry` and `rt.afterRender = (c)=>{applyToggleStateToNode(c);
+applyLazyHighlighting(doc);}`, binds the delegated button handler once, and gates the
+navigator to **onNavigate + scroll only** (drop the `#messages` fragment build,
+`renderEntryToNode`/`entryCache`, button wiring). Retire `live-entries.js`
+append/upsert/seen (live reload now flows through the reactive model); keep the
+new-entry highlight + auto-scroll as effects. Mirror in `export-entry.js` (mount
+`<SessionContent>` into `#messages`). Then delete `session-entry-renderer.js`.
+Verify full e2e (esp. live-reload, chat streaming, annotations anchoring).
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,
