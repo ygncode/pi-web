@@ -7,6 +7,7 @@
   import SessionInfoHeader from '../components/session/SessionInfoHeader.svelte';
   import SessionContent from '../components/session/SessionContent.svelte';
   import ImageModal from '../components/session/ImageModal.svelte';
+  import ShortcutsModal from '../components/session/ShortcutsModal.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
@@ -30,6 +31,10 @@
   // paint reactively as soon as they're set. See svelte-migration-plan §sub-step B.
   const contentRuntime = $state({ renderEntry: null, afterRender: null });
 
+  // Keyboard-shortcuts modal: opened imperatively (Cmd+/ and #shortcuts-help-btn
+  // wired in session.js) via a window bridge set in onMount.
+  let shortcutsOpen = $state(false);
+
   let loading = $state(true);
   let showLoading = $state(false);
   let error = $state('');
@@ -47,6 +52,9 @@
   onMount(() => {
     const previousTitle = document.title;
     let active = true;
+    // Bridge for the imperative shortcuts triggers (session.js) to open the
+    // <ShortcutsModal> component.
+    window.__piOpenShortcuts = () => { shortcutsOpen = true; };
     // The session view is a fixed app shell (no body scroll, internal scroll
     // containers). Mark the document so the session-only layout rules in the
     // shared SPA stylesheet do not pin body height on the index/settings pages.
@@ -132,6 +140,8 @@
     <RightSidebar {scratchpad} />
     <ImageModal />
   </div>
+
+  <ShortcutsModal bind:open={shortcutsOpen} />
 
   <ShareDialog />
   <script id="session-data" type="application/json" bind:this={dataEl}></script>

@@ -42,7 +42,6 @@ import { createVersionController } from '../shared/version.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
-import { showShortcutsModal } from './live/shortcuts-modal.js';
 import { setupCatGatekeeper } from './cat-gatekeeper/cat-gatekeeper.js';
 import { openLabelModal } from './ui/label-modal.js';
 import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
@@ -571,11 +570,12 @@ export function runSessionApp({ target = window } = {}) {
     }
   });
 
-  // Cmd+/ keyboard shortcut to show keyboard shortcuts help modal
+  // Cmd+/ keyboard shortcut to show keyboard shortcuts help modal. The modal is
+  // the <ShortcutsModal> Svelte component; SessionPage exposes the opener.
   target.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key === '/') {
       e.preventDefault();
-      showShortcutsModal({ documentImpl, windowImpl: target });
+      target.__piOpenShortcuts?.();
     }
   });
 
@@ -583,7 +583,7 @@ export function runSessionApp({ target = window } = {}) {
   if (shortcutsBtn) {
     shortcutsBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      showShortcutsModal({ documentImpl, windowImpl: target });
+      target.__piOpenShortcuts?.();
     });
   }
 
