@@ -1,11 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { JSDOM } from 'jsdom';
 import {
   CAT_DEFAULTS,
   loadCatSettings,
   saveCatSettings,
   normalizeBedtime,
-  showCatSettings,
 } from './cat-settings.js';
 
 function makeStorage(initial = {}) {
@@ -55,24 +53,5 @@ describe('cat settings storage', () => {
     expect(normalizeBedtime('23:59')).toBe('23:59');
     expect(normalizeBedtime('24:00')).toBe(CAT_DEFAULTS.bedtime);
     expect(normalizeBedtime('foo')).toBe(CAT_DEFAULTS.bedtime);
-  });
-});
-
-describe('cat settings sheet', () => {
-  it('renders the form and persists the enable toggle', () => {
-    const dom = new JSDOM('<body></body>');
-    const storage = makeStorage();
-    const win = dom.window;
-
-    showCatSettings({ documentImpl: win.document, windowImpl: win, storage });
-
-    const root = win.document.querySelector('.cat-settings');
-    expect(root).not.toBeNull();
-
-    const toggle = win.document.querySelector('.cat-settings-toggle');
-    expect(toggle.checked).toBe(true);
-    toggle.checked = false;
-    toggle.dispatchEvent(new win.Event('change'));
-    expect(loadCatSettings({ storage }).enabled).toBe(false);
   });
 });

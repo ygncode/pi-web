@@ -1,10 +1,10 @@
 /**
- * Cat Gatekeeper settings — persistent focus/break/bedtime configuration plus
- * the settings sheet UI. Pure storage helpers are exported separately so the
- * controller can read settings without pulling in DOM code.
+ * Cat Gatekeeper settings — persistent focus/break/bedtime storage helpers.
+ * The settings sheet UI now lives in components/session/CatGatekeeperSettings.svelte
+ * (Svelte migration Phase 3); this module is the framework-free storage layer
+ * shared by the controller and that component.
  */
 
-import { showSheet } from '../live/full-screen-sheet.js';
 import { writeSetting } from '../../shared/settings-store.js';
 
 export const CAT_KEYS = {
@@ -25,7 +25,7 @@ export const CAT_DEFAULTS = {
   sleepMin: 5,
 };
 
-const LIMITS = {
+export const LIMITS = {
   focusMin: { min: 1, max: 240 },
   breakMin: { min: 1, max: 120 },
   sleepMin: { min: 1, max: 60 },
@@ -75,134 +75,4 @@ export function saveCatSettings(partial = {}, { storage = globalThis.localStorag
   if ('wakeup' in partial) write(CAT_KEYS.wakeup, normalizeBedtime(partial.wakeup, CAT_DEFAULTS.wakeup));
   if ('sleepMin' in partial) write(CAT_KEYS.sleepMin, clampInt(partial.sleepMin, LIMITS.sleepMin, CAT_DEFAULTS.sleepMin));
   return loadCatSettings({ storage });
-}
-
-/**
- * Open the Cat Gatekeeper settings sheet. `controller` (optional) provides live
- * status: getStatusText() and skipToBreak() power the "next break" row.
- */
-export function showCatSettings({
-  documentImpl = document,
-  windowImpl = window,
-  storage = windowImpl.localStorage,
-  onChange = () => {},
-  controller = null,
-} = {}) {
-  const settings = loadCatSettings({ storage });
-
-  return showSheet({
-    title: 'Cat Gatekeeper',
-    showBack: true,
-    showClose: false,
-    documentImpl,
-    windowImpl,
-    renderBody: ({ bodyEl }) => {
-      const root = documentImpl.createElement('div');
-      root.className = 'cat-settings';
-
-      const field = (labelText, control, hint) => {
-        const row = documentImpl.createElement('label');
-        row.className = 'cat-settings-row';
-        const text = documentImpl.createElement('div');
-        text.className = 'cat-settings-label';
-        text.textContent = labelText;
-        if (hint) {
-          const h = documentImpl.createElement('div');
-          h.className = 'cat-settings-hint';
-          h.textContent = hint;
-          text.appendChild(h);
-        }
-        row.appendChild(text);
-        row.appendChild(control);
-        return row;
-      };
-
-      const numberInput = (key, value) => {
-        const input = documentImpl.createElement('input');
-        input.type = 'number';
-        input.className = 'cat-settings-number';
-        input.min = String(LIMITS[key].min);
-        input.max = String(LIMITS[key].max);
-        input.value = String(value);
-        input.addEventListener('change', () => {
-          const next = saveCatSettings({ [key]: input.value }, { storage });
-          input.value = String(next[key]);
-          onChange(next);
-        });
-        return input;
-      };
-
-      // Master toggle
-      const toggle = documentImpl.createElement('input');
-      toggle.type = 'checkbox';
-      toggle.className = 'cat-settings-toggle';
-      toggle.checked = settings.enabled;
-      toggle.addEventListener('change', () => {
-        const next = saveCatSettings({ enabled: toggle.checked }, { storage });
-        onChange(next);
-      });
-      root.appendChild(field('Enable Cat Gatekeeper', toggle, 'A cat appears when it is time to rest.'));
-
-      root.appendChild(field('Focus time (minutes)', numberInput('focusMin', settings.focusMin), 'Uninterrupted work before the cat appears.'));
-      root.appendChild(field('Break time (minutes)', numberInput('breakMin', settings.breakMin), 'How long the cat keeps you away.'));
-
-      const bedtime = documentImpl.createElement('input');
-      bedtime.type = 'time';
-      bedtime.className = 'cat-settings-time';
-      bedtime.value = settings.bedtime;
-      bedtime.addEventListener('change', () => {
-        const next = saveCatSettings({ bedtime: bedtime.value }, { storage });
-        bedtime.value = next.bedtime;
-        onChange(next);
-      });
-      root.appendChild(field('Bedtime', bedtime, 'When the cat says goodnight.'));
-
-      const wakeup = documentImpl.createElement('input');
-      wakeup.type = 'time';
-      wakeup.className = 'cat-settings-time';
-      wakeup.value = settings.wakeup;
-      wakeup.addEventListener('change', () => {
-        const next = saveCatSettings({ wakeup: wakeup.value }, { storage });
-        wakeup.value = next.wakeup;
-        onChange(next);
-      });
-      root.appendChild(field('Wakeup', wakeup, 'When the cat lets you back in.'));
-
-      root.appendChild(field('Sleep reminder (minutes)', numberInput('sleepMin', settings.sleepMin), 'How long the sleepy cat stays before locking.'));
-
-      // Live status: next break + skip-to-break.
-      if (controller) {
-        const statusRow = documentImpl.createElement('div');
-        statusRow.className = 'cat-settings-status';
-
-        const statusText = documentImpl.createElement('div');
-        statusText.className = 'cat-settings-status-text';
-        const updateStatus = () => { statusText.textContent = controller.getStatusText?.() || ''; };
-        updateStatus();
-
-        const skipBtn = documentImpl.createElement('button');
-        skipBtn.type = 'button';
-        skipBtn.className = 'cat-settings-skip';
-        skipBtn.textContent = 'Take a break now';
-        skipBtn.addEventListener('click', () => {
-          controller.skipToBreak?.();
-          updateStatus();
-        });
-
-        statusRow.appendChild(statusText);
-        statusRow.appendChild(skipBtn);
-        root.appendChild(statusRow);
-
-        const timer = windowImpl.setInterval(updateStatus, 1000);
-        root.addEventListener('cat-sheet-closed', () => windowImpl.clearInterval(timer), { once: true });
-      }
-
-      return root;
-    },
-    onClose: () => {
-      // Stop the status interval when the sheet closes.
-      const body = documentImpl.querySelector('.cat-settings');
-      body?.dispatchEvent?.(new windowImpl.Event('cat-sheet-closed'));
-    },
-  });
 }

@@ -10,6 +10,7 @@
   import ShortcutsModal from '../components/session/ShortcutsModal.svelte';
   import ModelUsageModal from '../components/session/ModelUsageModal.svelte';
   import ForkModal, { buildUserMessageList } from '../components/session/ForkModal.svelte';
+  import CatGatekeeperSettings from '../components/session/CatGatekeeperSettings.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
@@ -43,6 +44,11 @@
   let forkOpen = $state(false);
   let forkEntries = $state([]);
   let forkOnSelect = $state(null);
+  // Cat Gatekeeper settings: opened by the cat-gatekeeper controller, which
+  // passes its live-status controller + onChange through the window bridge.
+  let catSettingsOpen = $state(false);
+  let catController = $state(null);
+  let catOnChange = $state(() => {});
 
   let loading = $state(true);
   let showLoading = $state(false);
@@ -72,6 +78,11 @@
       forkOnSelect = onSelect;
       forkOpen = true;
       return true;
+    };
+    window.__piOpenCatSettings = ({ controller, onChange } = {}) => {
+      catController = controller || null;
+      catOnChange = onChange || (() => {});
+      catSettingsOpen = true;
     };
     // The session view is a fixed app shell (no body scroll, internal scroll
     // containers). Mark the document so the session-only layout rules in the
@@ -162,6 +173,7 @@
   <ShortcutsModal bind:open={shortcutsOpen} />
   <ModelUsageModal bind:open={modelUsageOpen} />
   <ForkModal bind:open={forkOpen} entries={forkEntries} onSelect={forkOnSelect} />
+  <CatGatekeeperSettings bind:open={catSettingsOpen} controller={catController} onChange={catOnChange} />
 
   <ShareDialog />
   <script id="session-data" type="application/json" bind:this={dataEl}></script>
