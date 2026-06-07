@@ -6,7 +6,6 @@ import { buildActivePathIds as buildActivePathIdsForModel, buildTree as buildTre
 import { extractContent, filterNodes as filterNodesForState, getSearchableText, hasTextContent, recalculateVisualStructure } from './tree/session-filter.js';
 import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml as getTreeNodeDisplayHtmlForState, shortenPath, truncate } from './render/session-format.js';
 import { configureSessionMarkdown, safeMarkedParse } from './render/markdown.js';
-import * as sessionHeaderRenderer from './render/session-header-renderer.js';
 import * as sessionEntryRenderer from './render/session-entry-renderer.js';
 import { createSessionNavigator } from './navigation/session-navigation.js';
 import * as toggleStateApi from './ui/toggle-state.js';
@@ -224,15 +223,6 @@ export function runSessionApp({ target = window } = {}) {
   });
   target.downloadSessionJson = entryRenderer.downloadSessionJson;
 
-  const renderHeader = () => sessionHeaderRenderer.renderSessionHeader({
-    header: dataModel.header,
-    entries: dataModel.entries,
-    systemPrompt: dataModel.systemPrompt,
-    tools: dataModel.tools,
-    escapeHtml: sessionFormat.escapeHtml,
-    formatTokens: entryRenderer.formatTokens
-  });
-
   const ui = setupSessionUi({
     documentImpl,
     windowImpl: target,
@@ -313,8 +303,6 @@ export function runSessionApp({ target = window } = {}) {
     windowImpl: target,
     getPath: sessionTree.getPath,
     renderTree,
-    renderHeader,
-    attachHeaderHandlers: ui.attachHeaderHandlers,
     renderEntry: entryRenderer.renderEntry,
     buildShareUrl: entryRenderer.buildShareUrl,
     copyToClipboard: entryRenderer.copyToClipboard,
@@ -392,6 +380,10 @@ export function runSessionApp({ target = window } = {}) {
   // mobile drawer (parity with the old tree renderer).
   target.__piIsMobileLayout = ui.isMobileLayout;
   target.__piCloseSidebar = ui.closeSidebar;
+
+  // The header card is now a persistent Svelte component (<SessionInfoHeader>),
+  // not re-rendered per navigation, so bind its toggle buttons exactly once.
+  ui.attachHeaderHandlers();
 
   // Replace the server-rendered first-message LCP stub with the canonical
   // active path before live reload starts. Otherwise reload appends canonical

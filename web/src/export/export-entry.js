@@ -35,10 +35,10 @@ import {
   truncate,
 } from '../session/render/session-format.js';
 import { configureSessionMarkdown, safeMarkedParse } from '../session/render/markdown.js';
-import * as sessionHeaderRenderer from '../session/render/session-header-renderer.js';
 import * as sessionEntryRenderer from '../session/render/session-entry-renderer.js';
 import { mount } from 'svelte';
 import SessionTreeNodes from '../components/session/SessionTreeNodes.svelte';
+import SessionInfoHeader from '../components/session/SessionInfoHeader.svelte';
 import { SessionDataModel } from '../session/data/session-data.svelte.js';
 import { createSessionNavigator } from '../session/navigation/session-navigation.js';
 import * as toggleStateApi from '../session/ui/toggle-state.js';
@@ -152,15 +152,6 @@ export function runExportApp({ target = window } = {}) {
   });
   target.downloadSessionJson = entryRenderer.downloadSessionJson;
 
-  const renderHeader = () => sessionHeaderRenderer.renderSessionHeader({
-    header: dataModel.header,
-    entries: dataModel.entries,
-    systemPrompt: dataModel.systemPrompt,
-    tools: dataModel.tools,
-    escapeHtml: sessionFormat.escapeHtml,
-    formatTokens: entryRenderer.formatTokens,
-  });
-
   const ui = setupSessionUi({
     documentImpl,
     windowImpl: target,
@@ -188,8 +179,6 @@ export function runExportApp({ target = window } = {}) {
     windowImpl: target,
     getPath: sessionTree.getPath,
     renderTree,
-    renderHeader,
-    attachHeaderHandlers: ui.attachHeaderHandlers,
     renderEntry: entryRenderer.renderEntry,
     buildShareUrl: entryRenderer.buildShareUrl,
     copyToClipboard: entryRenderer.copyToClipboard,
@@ -219,6 +208,15 @@ export function runExportApp({ target = window } = {}) {
       },
     });
   }
+
+  // Mount the Svelte header card into #header-container (rendered once), then
+  // bind its toggle buttons exactly once (the controller doesn't guard against
+  // double-binding and the header no longer re-renders per navigation).
+  const headerEl = documentImpl.getElementById('header-container');
+  if (headerEl) {
+    mount(SessionInfoHeader, { target: headerEl, props: { model: treeModel } });
+  }
+  ui.attachHeaderHandlers();
 
   target.navigateTo = navigateTo;
   target.__piSessionNavigator = navigatorInstance;

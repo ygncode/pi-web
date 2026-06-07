@@ -4,6 +4,7 @@
   import CommandMenu from '../components/session/CommandMenu.svelte';
   import RightSidebar from '../components/session/RightSidebar.svelte';
   import SessionHeader from '../components/session/SessionHeader.svelte';
+  import SessionInfoHeader from '../components/session/SessionInfoHeader.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
@@ -115,7 +116,7 @@
   <div id="app">
     <SessionTree />
     <div id="content-container" class="content-container">
-      <main id="content"><div id="header-container"></div><div id="messages">{@html firstMessageStub(entries)}</div></main>
+      <main id="content"><div id="header-container">{#if sessionModel}<SessionInfoHeader model={sessionModel} />{/if}</div><div id="messages">{@html firstMessageStub(entries)}</div></main>
       <ChatComposer {sessionId} {chatAvailable} {chatDisabledReason} {cwd} {modelLabel} />
     </div>
     <RightSidebar {scratchpad} />

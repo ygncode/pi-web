@@ -7,7 +7,7 @@ import (
 )
 
 // Toggle-state behavior is owned by the shared modules (toggle-state.js,
-// session-ui-runner.js) plus the header markup (session-header-renderer.js) and
+// session-ui-runner.js) plus the header markup (SessionInfoHeader.svelte) and
 // session CSS. Live and static export both reuse these, so assert against the
 // source rather than the minified export bundle.
 func readSrc(t *testing.T, rel string) string {
@@ -22,7 +22,8 @@ func readSrc(t *testing.T, rel string) string {
 func TestSessionToggleButtonsReflectPersistedActiveState(t *testing.T) {
 	toggleSrc := readSrc(t, "web/src/session/ui/toggle-state.js")
 	runnerSrc := readSrc(t, "web/src/session/ui/session-ui-runner.js")
-	headerSrc := readSrc(t, "web/src/session/render/session-header-renderer.js")
+	// The header toggle-button markup now lives in the Svelte header card.
+	headerSrc := readSrc(t, "web/src/components/session/SessionInfoHeader.svelte")
 
 	srcChecks := map[string][]string{
 		toggleSrc: {

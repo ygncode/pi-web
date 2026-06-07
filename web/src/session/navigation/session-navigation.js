@@ -3,8 +3,6 @@ export function createSessionNavigator({
   windowImpl = window,
   getPath,
   renderTree,
-  renderHeader,
-  attachHeaderHandlers = () => {},
   renderEntry,
   buildShareUrl,
   copyToClipboard,
@@ -31,11 +29,8 @@ export function createSessionNavigator({
     const path = getPath(targetId);
     renderTree();
 
-    const header = documentImpl.getElementById('header-container');
-    if (header) {
-      header.innerHTML = renderHeader();
-      attachHeaderHandlers();
-    }
+    // The header card (#header-container) is rendered once by the Svelte
+    // <SessionInfoHeader> component (reactive to the model), not per navigation.
 
     const messagesEl = documentImpl.getElementById('messages');
     if (messagesEl) {
