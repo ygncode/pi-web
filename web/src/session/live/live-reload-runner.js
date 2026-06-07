@@ -16,9 +16,6 @@ export function runLiveReload({
   liveEvents,
   chatPreview,
   shareOverlay,
-  resumeButton,
-  newSessionButton,
-  cwd = '',
   onSessionDataReload = () => {},
   onAnnotations = null,
   // Reactive-content mode: the Svelte <SessionContent> owns #messages and
@@ -46,8 +43,6 @@ export function runLiveReload({
   const __piLiveEvents = liveEvents;
   const __piChatPreview = chatPreview;
   const __piShareOverlay = shareOverlay;
-  const __piResumeButton = resumeButton;
-  const __piNewSessionButton = newSessionButton;
     var LIVE_ENTRY_STATE = {
       seen: reactiveContent && typeof getInitialEntryIds === 'function'
         ? new Set(getInitialEntryIds())
@@ -386,24 +381,6 @@ export function runLiveReload({
       navigatorImpl: navigator
     });
 
-    // Terminal button
-    __piResumeButton.setupResumeButton({
-      documentImpl: document,
-      navigatorImpl: navigator,
-      state: {},
-      setTimeoutImpl: setTimeout,
-      clearTimeoutImpl: clearTimeout
-    });
-
-    // New session button
-    __piNewSessionButton.setupNewSessionButton({
-      documentImpl: document,
-      fetchImpl: fetch,
-      locationImpl: location,
-      cwd: cwd,
-      sessionId: sessId,
-      state: {},
-      setTimeoutImpl: setTimeout,
-      clearTimeoutImpl: clearTimeout
-    });
+    // Terminal (resume) + New Session buttons are now owned by the
+    // <SessionHeader> Svelte component (Phase 3); no setup needed here.
 }

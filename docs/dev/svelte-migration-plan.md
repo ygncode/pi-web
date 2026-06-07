@@ -540,12 +540,12 @@ inward toward the coupled chat/live core.
 | Status | Item |
 |---|---|
 | ✅ DONE + verified | **`ImageModal.svelte`** (shared, live + export). Click-to-zoom overlay absorbed from `ui/image-modal.js`: reactive `open`/`src`/`alt`, document-level delegated listener for `.message-image` / `.pi-chat-attachment-preview`, Escape/backdrop close. Live renders `<ImageModal/>` in `SessionPage`; export mounts it into `#image-modal-host` (static `#image-modal` markup removed from `session.html`). **`ui/image-modal.js` + test DELETED**, tests ported to `ImageModal.test.js`. Verified: web 553 + knip clean + `go test ./internal/ui` + Desktop-Chrome e2e 53/2. |
+| ✅ DONE + verified | **Resume ("Terminal") + New Session buttons → `SessionHeader.svelte`.** Behavior absorbed from `live/resume-button.js` + `live/new-session-button.js` into the component that already owns the hidden command-relay buttons (`onMount` wires `#resume-btn`/`#new-btn` by id, so the many `getElementById(...).click()` callers keep working unchanged). `SessionPage` passes `cwd`/`sessionId`. `runLiveReload` lost its `resumeButton`/`newSessionButton`/`cwd` deps + setup calls; `session.js` lost the imports. **4 files DELETED** (both modules + tests). Go resume source-guards (`export_html_test.go`) repointed to `SessionHeader.svelte` (`document.*`/`navigator.*`). Verified: web 544 + knip clean + `go test ./internal/ui` + Desktop-Chrome e2e 53/2. |
 
-Next isolatable targets (no session-data coupling): the live-only buttons
-(`ResumeButton`, `NewSessionButton`), then the shared-sheet infra (`FullScreenSheet`)
-and the modals built on it (`ShortcutsModal`, `ModelUsageModal`). The coupled core
-(`ChatComposer`, `LiveReload`, `RightSidebar`/panels, `session.js` teardown) lands
-last, once `navigateTo`/model ownership moves into the page component.
+Next targets: the shared-sheet infra (`FullScreenSheet`) and the modals built on it
+(`ShortcutsModal`, `ModelUsageModal`), then the coupled core (`ChatComposer`,
+`LiveReload`, `RightSidebar`/panels, `session.js` teardown) — last, once
+`navigateTo`/model ownership moves into the page component.
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,

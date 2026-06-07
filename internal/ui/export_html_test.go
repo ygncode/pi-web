@@ -131,22 +131,24 @@ func TestShareResultCopyButtonsUseClipboardFallbackAndToast(t *testing.T) {
 }
 
 func TestResumeButtonClipboardGuardAndFallback(t *testing.T) {
-	source, err := os.ReadFile(repoPath("web/src/session/live/resume-button.js"))
+	// Resume behavior now lives in the <SessionHeader> Svelte component
+	// (absorbed from the former live/resume-button.js in migration Phase 3).
+	source, err := os.ReadFile(repoPath("web/src/components/session/SessionHeader.svelte"))
 	if err != nil {
-		t.Fatalf("read web/src/session/live/resume-button.js: %v", err)
+		t.Fatalf("read web/src/components/session/SessionHeader.svelte: %v", err)
 	}
-	if !strings.Contains(string(source), "navigatorImpl.clipboard && navigatorImpl.clipboard.writeText") {
+	if !strings.Contains(string(source), "navigator.clipboard && navigator.clipboard.writeText") {
 		t.Fatalf("resume clipboard code should guard navigator.clipboard before writeText")
 	}
-	if !strings.Contains(string(source), "documentImpl.execCommand('copy')") {
+	if !strings.Contains(string(source), "document.execCommand('copy')") {
 		t.Fatalf("resume clipboard code should include execCommand fallback")
 	}
 }
 
 func TestResumeButtonShowsToastWithoutChangingButtonText(t *testing.T) {
-	source, err := os.ReadFile(repoPath("web/src/session/live/resume-button.js"))
+	source, err := os.ReadFile(repoPath("web/src/components/session/SessionHeader.svelte"))
 	if err != nil {
-		t.Fatalf("read web/src/session/live/resume-button.js: %v", err)
+		t.Fatalf("read web/src/components/session/SessionHeader.svelte: %v", err)
 	}
 	src := string(source)
 	if strings.Contains(src, `resumeBtn.textContent = 'Copied!'`) {
@@ -158,7 +160,7 @@ func TestResumeButtonShowsToastWithoutChangingButtonText(t *testing.T) {
 	if !strings.Contains(src, `Copied`) || !strings.Contains(liveSessionCss, `.toast-notice`) {
 		t.Fatalf("resume copy should show an accent-colored toast notification")
 	}
-	if !strings.Contains(src, `documentImpl.body.dataset.sessionUuid`) {
+	if !strings.Contains(src, `document.body.dataset.sessionUuid`) {
 		t.Fatalf("resume copy should read real session UUID from body data attribute")
 	}
 	if !strings.Contains(src, `resumeSessionArg`) {

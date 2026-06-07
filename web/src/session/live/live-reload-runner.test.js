@@ -12,7 +12,6 @@ describe('live reload runner', () => {
       createSessionEventSource: vi.fn(() => eventSource),
       wireSessionEvents: vi.fn()
     };
-    const newSessionButton = { setupNewSessionButton: vi.fn() };
     runLiveReload({
       documentImpl: dom.window.document,
       windowImpl: dom.window,
@@ -30,13 +29,9 @@ describe('live reload runner', () => {
       liveStats: { updateStatsDom: vi.fn() },
       liveEvents,
       chatPreview: { clearChatPreview: vi.fn(), renderChatPreview: vi.fn() },
-      shareOverlay: { setupShareButton: vi.fn() },
-      resumeButton: { setupResumeButton: vi.fn() },
-      newSessionButton,
-      cwd: '/projects/foo'
+      shareOverlay: { setupShareButton: vi.fn() }
     });
     expect(liveEvents.createSessionEventSource).toHaveBeenCalledWith('s', { EventSourceImpl });
     expect(liveEvents.wireSessionEvents).toHaveBeenCalled();
-    expect(newSessionButton.setupNewSessionButton).toHaveBeenCalled();
   });
 });
