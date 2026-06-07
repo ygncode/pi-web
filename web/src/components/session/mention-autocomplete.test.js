@@ -3,7 +3,7 @@ import {
   parseAtTrigger,
   renderFileList,
   setupMentionAutocomplete,
-} from './mention-autocomplete.js';
+} from './ChatComposer.svelte';
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
 

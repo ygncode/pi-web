@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { setupModelSelector } from './model-selector.js';
+import { setupModelSelector } from './ChatComposer.svelte';
 
 function createDom() {
   const div = document.createElement('div');

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { setupThinkingLevelSelector } from './thinking-selector.js';
+import { setupThinkingLevelSelector } from './ChatComposer.svelte';
 
 function createDom() {
   const div = document.createElement('div');

@@ -1,11 +1,22 @@
 <script module>
-  // The chat composer runtime, absorbed from chat-composer-runner.js (Svelte
-  // migration teardown, docs/dev/svelte-migration-plan.md §11). Kept as a
-  // DI-friendly exported function (called by the instance onMount below) so its
-  // behavioural unit tests can drive it directly. The model/thinking/slash/
-  // mention selectors + the chat API stay as injected helper modules.
+  // The chat composer runtime, absorbed from chat-composer-runner.js + the four
+  // selector modules (model/thinking/slash/mention) — Svelte migration teardown,
+  // docs/dev/svelte-migration-plan.md §11. runChatComposer stays a DI-friendly
+  // exported function (its selector params default to the absorbed setups, but
+  // tests can still inject mocks). The pure chat-selectors helpers + the chat API
+  // stay as separate modules.
   import { icon, Maximize2, Paperclip, TextQuote, X } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
+  import {
+    THINKING_LEVELS,
+    detectCurrentModel,
+    findModel,
+    groupModelsByProvider,
+    isScopedModel,
+    modelDisplayLabel,
+    detectCurrentThinkingLevel,
+    supportedThinkingLevels,
+  } from '../../session/chat/chat-selectors.js';
 
 export function runChatComposer({
   documentImpl = document,
@@ -18,11 +29,11 @@ export function runChatComposer({
   navigateTo = () => {},
   escapeHtml = (text) => String(text),
   chatApi,
-  chatSelectors,
-  modelSelector,
-  thinkingSelector,
-  slashSelector,
-  mentionSelector,
+  chatSelectors = { THINKING_LEVELS },
+  modelSelector = { setupModelSelector },
+  thinkingSelector = { setupThinkingLevelSelector },
+  slashSelector = { setupSlashCommands },
+  mentionSelector = { setupMentionAutocomplete },
   FormDataImpl = FormData,
   URLSearchParamsImpl = URLSearchParams,
   CustomEventImpl = CustomEvent,
@@ -1035,7 +1046,7 @@ export function runChatComposer({
     }
 
     _modelSelectorApi = loadModelSelector();
-    _thinkingSelectorApi = setupThinkingLevelSelector();
+    _thinkingSelectorApi = loadThinkingSelector();
     _slashSelectorApi = loadSlashSelector();
     _mentionSelectorApi = loadMentionSelector();
   }
@@ -1094,7 +1105,7 @@ export function runChatComposer({
   }
 
   // ── Thinking level selector ──────────────────────────────────────────
-  function setupThinkingLevelSelector() {
+  function loadThinkingSelector() {
     const sessionId = new URLSearchParams(window.location.search).get('id') || (document.getElementById('pi-chat-composer') || {}).dataset?.sessionId || '';
     const api = __piThinkingSelector.setupThinkingLevelSelector({
       documentImpl: document,
@@ -1125,17 +1136,826 @@ export function runChatComposer({
     navigateTo(entries[entries.length - 1].id, 'none');
   }
 }
+
+  // ── Model selector (absorbed from model-selector.js) ─────────────────────
+
+export function renderModelList(models, { filter = '', selectedModel = null, escapeHtml = String } = {}) {
+  const byProvider = groupModelsByProvider(models, filter);
+  const providers = Object.keys(byProvider).sort();
+  if (providers.length === 0) return '<div class="model-empty">No models match</div>';
+
+  let html = '';
+  providers.forEach((provider) => {
+    html += `<div class="model-provider">${escapeHtml(provider)}</div>`;
+    byProvider[provider].forEach((model) => {
+      const id = model.id || model.modelId || '';
+      const name = model.name || id;
+      const scoped = isScopedModel(model) ? '<span class="model-scope-badge">scoped</span>' : '';
+      const active = selectedModel && selectedModel.provider === provider && (selectedModel.id === id || selectedModel.modelId === id) ? ' selected' : '';
+      html += `<button type="button" class="model-item${active}" data-provider="${escapeHtml(provider)}" data-model-id="${escapeHtml(id)}">${escapeHtml(name)}${scoped}</button>`;
+    });
+  });
+  return html;
+}
+
+export function setupModelSelector({
+  documentImpl = document,
+  sessionId,
+  entries = [],
+  chatApi,
+  escapeHtml = String,
+  setModelLabel = () => {},
+  setChatStatus = () => {},
+  setKnownModelLabel = () => {},
+  getKnownModelLabel = () => '',
+  setCurrentModelForThinking = () => {},
+  setWorkerModelUpdate = () => {}
+} = {}) {
+  let allModels = [];
+  let selectedModel = null;
+
+  function setSelected(model) {
+    selectedModel = model;
+    setCurrentModelForThinking(model || null);
+  }
+
+  const popup = documentImpl.getElementById('pi-chat-model-popup');
+  const popupSearch = documentImpl.getElementById('pi-chat-model-search');
+  const popupList = documentImpl.getElementById('pi-chat-model-list');
+  const modelLabelBtn = documentImpl.getElementById('pi-chat-model-label');
+
+  // Always show the label button so the user can open the model picker.
+  // Server may have hidden it when no model was detected at page load.
+  if (modelLabelBtn) modelLabelBtn.style.display = '';
+
+  function renderPopupList(filter) {
+    if (!popupList) return;
+    popupList.innerHTML = renderModelList(allModels, { filter, selectedModel, escapeHtml });
+    popupList.dataset.activeIndex = '-1';
+  }
+
+  function openPopup() {
+    if (!popup) return;
+    popup.style.display = 'flex';
+    if (popupSearch) {
+      popupSearch.value = '';
+      popupSearch.focus();
+    }
+    renderPopupList('');
+  }
+
+  function closePopup(focusTextarea = false) {
+    if (popup) popup.style.display = 'none';
+    if (focusTextarea) {
+      const textarea = documentImpl.getElementById('pi-chat-message');
+      if (textarea) textarea.focus();
+    }
+  }
+
+  const api = {
+    open: openPopup,
+    close: closePopup,
+  };
+
+  // Attach click handlers immediately so the button is responsive
+  // even before the model list finishes loading.
+  modelLabelBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (popup && popup.style.display !== 'none') closePopup();
+    else openPopup();
+  });
+
+  popupSearch?.addEventListener('input', () => renderPopupList(popupSearch.value));
+  popupSearch?.addEventListener('keydown', (e) => {
+    const items = popupList ? popupList.querySelectorAll('.model-item') : [];
+    let popupActive = parseInt((popupList && popupList.dataset.activeIndex) || '-1', 10);
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      popupActive = Math.min(popupActive + 1, items.length - 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      popupActive = Math.max(popupActive - 1, 0);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (popupActive >= 0 && items[popupActive]) items[popupActive].click();
+      return;
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      e.stopPropagation();
+      closePopup();
+      modelLabelBtn?.focus();
+      return;
+    }
+    if (popupList) popupList.dataset.activeIndex = popupActive;
+    items.forEach((item, i) => item.classList.toggle('active', i === popupActive));
+    items[popupActive]?.scrollIntoView?.({ block: 'nearest' });
+  });
+
+  popupList?.addEventListener('click', async (e) => {
+    const item = e.target.closest('.model-item');
+    if (!item) return;
+    const provider = item.dataset.provider;
+    const modelId = item.dataset.modelId;
+    if (!provider || !modelId) return;
+    closePopup(true);
+    try {
+      const setRes = await chatApi.setModel(sessionId, { provider, modelId });
+      const setData = await setRes.json();
+      if (!setRes.ok) throw new Error(setData.error || 'set model failed');
+      const model = findModel(allModels, provider, modelId);
+      setSelected(model || { provider, id: modelId, name: modelId });
+      const newLabel = modelDisplayLabel(model || { provider, id: modelId, name: modelId });
+      setKnownModelLabel(newLabel);
+      setModelLabel(newLabel);
+    } catch (err) {
+      setChatStatus(err.message || String(err), 'error');
+    }
+  });
+
+  documentImpl.addEventListener('click', (e) => {
+    if (popup && popup.style.display !== 'none') {
+      const modelLabelBtnEl = documentImpl.getElementById('pi-chat-model-label');
+      if (!popup.contains(e.target) && e.target !== modelLabelBtnEl) closePopup();
+    }
+  });
+
+  // Load the model list asynchronously; the button is already wired.
+  // Fire-and-forget: the popup opens immediately (Ctrl+L) and renders
+  // available models as they load.
+  chatApi.listModels()
+    .then((res) => {
+      if (!res.ok) throw new Error('api error');
+      return res.json();
+    })
+    .then((data) => {
+      if (!data.models || data.models.length === 0) {
+        allModels = [];
+        if (popupList) {
+          popupList.innerHTML = '<div class="model-empty">No models configured<br><small>Run <code>pi setup</code> to configure</small></div>';
+        }
+        return;
+      }
+      allModels = data.models;
+      if (popup && popup.style.display !== 'none') {
+        renderPopupList(popupSearch ? popupSearch.value : '');
+      }
+      function updateToggleFromStatus(provider, modelId) {
+        if (!provider || !modelId) return;
+        const model = findModel(allModels, provider, modelId);
+        if (model) setSelected(model);
+      }
+      setWorkerModelUpdate(updateToggleFromStatus);
+      const detected = detectCurrentModel(entries);
+      if (detected.modelId) {
+        const model = findModel(allModels, detected.provider, detected.modelId);
+        if (model) {
+          setSelected(model);
+          const detectedLabel = modelDisplayLabel(model);
+          if (detectedLabel && !getKnownModelLabel()) {
+            setKnownModelLabel(detectedLabel);
+            setModelLabel(detectedLabel);
+          }
+        }
+      }
+    })
+    .catch(() => {
+      // Model list fetch failed; button still works (shows empty list).
+      if (popupList) {
+        popupList.innerHTML = '<div class="model-empty">Failed to load models<br><small>Check that <code>pi</code> is on PATH</small></div>';
+      }
+    });
+
+  return api;
+}
+
+  // ── Thinking-level selector (absorbed from thinking-selector.js) ─────────
+
+export function renderThinkingLevelList({ levels = THINKING_LEVELS, selectedLevel = '', currentModel = null } = {}) {
+  const supported = supportedThinkingLevels(currentModel, levels);
+  let html = '';
+  levels.forEach((level) => {
+    const active = level === selectedLevel ? ' selected' : '';
+    const disabled = supported.indexOf(level) < 0 ? ' disabled title="Not supported by current model"' : '';
+    const label = supported.indexOf(level) < 0 ? level + ' (unsupported)' : level;
+    html += `<button type="button" class="thinking-level-item thinking-${level}${active}" data-level="${level}"${disabled}>${label}</button>`;
+  });
+  return html;
+}
+
+export function setupThinkingLevelSelector({
+  documentImpl = document,
+  windowImpl = window,
+  sessionId,
+  entries = [],
+  getCurrentModel = () => null,
+  getKnownThinkingLevel = () => '',
+  setKnownThinkingLevel = () => {},
+  setThinkingLabel = () => {},
+  setChatStatus = () => {},
+  chatApi
+} = {}) {
+  const thinkingLabelBtn = documentImpl.getElementById('pi-chat-thinking-label');
+  const thinkingPopup = documentImpl.getElementById('pi-chat-thinking-popup');
+  const thinkingList = documentImpl.getElementById('pi-chat-thinking-list');
+  if (!thinkingLabelBtn || !thinkingPopup || !thinkingList) return false;
+
+  let cycleGeneration = 0;
+  let cycleQueue = Promise.resolve();
+  let queuedCycles = 0;
+  let confirmedThinkingLevel = getKnownThinkingLevel() || '';
+
+  function renderThinkingList(selectedLevel) {
+    thinkingList.innerHTML = renderThinkingLevelList({ selectedLevel, currentModel: getCurrentModel() });
+  }
+
+  function openThinkingPopup() {
+    thinkingPopup.style.display = 'flex';
+    renderThinkingList(getKnownThinkingLevel());
+    const rect = thinkingLabelBtn.getBoundingClientRect();
+    const minW = 120;
+    let left = rect.right - minW;
+    if (left < 4) left = 4;
+    if (left + minW > windowImpl.innerWidth - 4) left = windowImpl.innerWidth - minW - 4;
+    thinkingPopup.style.bottom = (windowImpl.innerHeight - rect.top + 4) + 'px';
+    thinkingPopup.style.left = left + 'px';
+    thinkingPopup.style.right = '';
+  }
+
+  function closeThinkingPopup() {
+    thinkingPopup.style.display = 'none';
+  }
+
+  thinkingLabelBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (thinkingPopup.style.display !== 'none') closeThinkingPopup();
+    else openThinkingPopup();
+  });
+
+  thinkingList.addEventListener('click', async (e) => {
+    const item = e.target.closest('.thinking-level-item');
+    if (!item) return;
+    if (item.disabled) return;
+    const level = item.dataset.level;
+    if (!level) return;
+    closeThinkingPopup();
+    const gen = ++cycleGeneration;
+    const run = async () => {
+      try {
+        const res = await chatApi.setThinkingLevel(sessionId, level);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'set thinking level failed');
+        const effectiveLevel = data.thinkingLevel || level;
+        confirmedThinkingLevel = effectiveLevel;
+        if (gen !== cycleGeneration) return;
+        setKnownThinkingLevel(effectiveLevel);
+        setThinkingLabel(effectiveLevel);
+      } catch (err) {
+        if (gen !== cycleGeneration) return;
+        setKnownThinkingLevel(confirmedThinkingLevel);
+        setThinkingLabel(confirmedThinkingLevel);
+        setChatStatus(err.message || String(err), 'error');
+      }
+    };
+    cycleQueue = cycleQueue.catch(() => {}).then(run);
+    await cycleQueue;
+  });
+
+  documentImpl.addEventListener('click', (e) => {
+    if (thinkingPopup.style.display !== 'none' && !thinkingPopup.contains(e.target) && e.target !== thinkingLabelBtn) {
+      closeThinkingPopup();
+    }
+  });
+
+  // Cycle to the next supported thinking level without opening the popup.
+  async function cycleThinkingLevel() {
+    const supported = supportedThinkingLevels(getCurrentModel(), THINKING_LEVELS);
+    const current = getKnownThinkingLevel() || '';
+    const idx = supported.indexOf(current);
+    const nextIdx = (idx + 1) % supported.length;
+    const next = supported[nextIdx];
+    if (!next || next === current) return;
+
+    if (queuedCycles === 0) confirmedThinkingLevel = current;
+    queuedCycles++;
+    const gen = ++cycleGeneration;
+    // Optimistically update local state so rapid Shift+Tab presses cycle through levels.
+    setKnownThinkingLevel(next);
+    setThinkingLabel(next);
+
+    const run = async () => {
+      try {
+        if (gen !== cycleGeneration) return; // stale before reaching backend
+        const res = await chatApi.setThinkingLevel(sessionId, next);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'set thinking level failed');
+        const effectiveLevel = data.thinkingLevel || next;
+        confirmedThinkingLevel = effectiveLevel;
+        if (gen !== cycleGeneration) return; // stale — a newer cycle has started
+        setKnownThinkingLevel(effectiveLevel);
+        setThinkingLabel(effectiveLevel);
+      } catch (err) {
+        if (gen !== cycleGeneration) return; // stale — a newer cycle has started
+        // Revert to the last level confirmed by the backend, not an optimistic value.
+        setKnownThinkingLevel(confirmedThinkingLevel);
+        setThinkingLabel(confirmedThinkingLevel);
+        setChatStatus(err.message || String(err), 'error');
+      } finally {
+        queuedCycles = Math.max(0, queuedCycles - 1);
+      }
+    };
+
+    // Queue requests so the backend observes the same order as the UI.
+    cycleQueue = cycleQueue.catch(() => {}).then(run);
+    return cycleQueue;
+  }
+
+  const detectedThinkingLevel = detectCurrentThinkingLevel(entries);
+  if (detectedThinkingLevel) {
+    confirmedThinkingLevel = detectedThinkingLevel;
+    setKnownThinkingLevel(detectedThinkingLevel);
+    setThinkingLabel(detectedThinkingLevel);
+  }
+
+  return {
+    open: openThinkingPopup,
+    close: closeThinkingPopup,
+    cycle: cycleThinkingLevel,
+  };
+}
+
+  // ── Slash-command palette (absorbed from slash-command.js) ───────────────
+// Slash-command palette for the chat composer. Typing "/" at the start of the
+// message opens a popup listing every command pi loaded for the session
+// (extensions, prompt templates, and skills), filtered as you type. Picking one
+// inserts "/<name> " into the composer.
+//
+// Commands only count to pi when the message *starts* with the slash, so the
+// trigger is deliberately anchored to position 0 — a slash mid-message (e.g. a
+// file path) never opens the palette.
+
+const SOURCE_ORDER = ["prompt", "skill"];
+const SOURCE_LABELS = {
+  prompt: "Prompts",
+  skill: "Skills",
+};
+
+// Only prompt templates and skills expand into a normal agent turn over the
+// headless RPC worker. Extension commands (e.g. /insights, /view) drive pi's
+// TUI via extension_ui_request events and never emit agent_end, so sending one
+// leaves the session stuck "running" forever. They are excluded from the
+// palette rather than offered and then hanging the composer.
+const PALETTE_SOURCES = new Set(["prompt", "skill"]);
+
+export function isPaletteCommand(cmd) {
+  return !!cmd && PALETTE_SOURCES.has(cmd.source);
+}
+
+// parseSlashTrigger inspects the textarea value + caret position and returns the
+// active command token, or null when the palette should not be open. The token
+// spans from the leading "/" (which must be the first character) up to the first
+// whitespace; once the caret moves past that token (i.e. the user typed a space
+// and is now writing arguments) it returns null so the popup closes.
+export function parseSlashTrigger(text, caret) {
+  if (typeof text !== "string" || !text.startsWith("/")) return null;
+  const wsMatch = text.match(/\s/);
+  const tokenEnd = wsMatch ? wsMatch.index : text.length;
+  if (caret > tokenEnd) return null;
+  return { query: text.slice(1, tokenEnd), start: 0, end: tokenEnd };
+}
+
+export function filterCommands(commands, query) {
+  const list = Array.isArray(commands) ? commands : [];
+  const q = (query || "").toLowerCase();
+  if (!q) return list.slice();
+  return list.filter((c) => (c.name || "").toLowerCase().includes(q));
+}
+
+// groupCommands returns ordered, non-empty groups (extensions, prompts, skills).
+// Sources pi may add in the future fall into a trailing "Other" group so they
+// are still reachable rather than silently dropped.
+export function groupCommands(commands) {
+  const buckets = new Map();
+  (commands || []).forEach((c) => {
+    const source = c.source || "other";
+    if (!buckets.has(source)) buckets.set(source, []);
+    buckets.get(source).push(c);
+  });
+  const groups = [];
+  SOURCE_ORDER.forEach((source) => {
+    if (buckets.has(source)) {
+      groups.push({
+        source,
+        label: SOURCE_LABELS[source],
+        items: buckets.get(source),
+      });
+      buckets.delete(source);
+    }
+  });
+  for (const [source, items] of buckets) {
+    groups.push({ source, label: "Other", items, _source: source });
+  }
+  return groups;
+}
+
+export function renderCommandList(
+  commands,
+  { query = "", escapeHtml = String, loading = false } = {},
+) {
+  if (loading) return '<div class="slash-empty">Loading commands…</div>';
+  const filtered = filterCommands(commands, query);
+  if (filtered.length === 0)
+    return '<div class="slash-empty">No commands match</div>';
+
+  let html = "";
+  groupCommands(filtered).forEach((group) => {
+    html += `<div class="slash-group">${escapeHtml(group.label)}</div>`;
+    group.items.forEach((cmd) => {
+      const name = cmd.name || "";
+      const desc = cmd.description || "";
+      const descHtml = desc
+        ? `<span class="slash-item-desc">${escapeHtml(desc)}</span>`
+        : "";
+      html +=
+        `<button type="button" class="slash-item" data-insert="${escapeHtml(name)}">` +
+        `<span class="slash-item-name">/${escapeHtml(name)}</span>${descHtml}</button>`;
+    });
+  });
+  return html;
+}
+
+export function setupSlashCommands({
+  documentImpl = document,
+  sessionId,
+  chatApi,
+  escapeHtml = String,
+} = {}) {
+  const textarea = documentImpl.getElementById("pi-chat-message");
+  const popup = documentImpl.getElementById("pi-chat-slash-popup");
+  const list = documentImpl.getElementById("pi-chat-slash-list");
+  if (!textarea || !popup || !list) return { handleKeydown: () => false };
+
+  let allCommands = [];
+  let loaded = false;
+  let loading = false;
+  let trigger = null;
+
+  function isOpen() {
+    return popup.style.display !== "none" && popup.style.display !== "";
+  }
+
+  function items() {
+    return list.querySelectorAll(".slash-item");
+  }
+
+  function setActive(index) {
+    const all = items();
+    const clamped = Math.max(0, Math.min(index, all.length - 1));
+    list.dataset.activeIndex = String(all.length ? clamped : -1);
+    all.forEach((el, i) => el.classList.toggle("active", i === clamped));
+    all[clamped]?.scrollIntoView?.({ block: "nearest" });
+  }
+
+  function render() {
+    list.innerHTML = renderCommandList(allCommands, {
+      query: trigger ? trigger.query : "",
+      escapeHtml,
+      loading: loading && !loaded,
+    });
+    setActive(0);
+  }
+
+  function open() {
+    popup.style.display = "block";
+    render();
+    if (!loaded && !loading) {
+      loading = true;
+      render();
+      chatApi
+        .getCommands(sessionId, { load: true })
+        .then((res) =>
+          res.ok ? res.json() : Promise.reject(new Error("commands error")),
+        )
+        .then((data) => {
+          allCommands = (data.commands || []).filter(isPaletteCommand);
+        })
+        .catch(() => {
+          allCommands = [];
+        })
+        .finally(() => {
+          loaded = true;
+          loading = false;
+          if (isOpen()) render();
+        });
+    }
+  }
+
+  function close() {
+    popup.style.display = "none";
+    trigger = null;
+  }
+
+  function refresh() {
+    const next = parseSlashTrigger(
+      textarea.value,
+      textarea.selectionStart ?? textarea.value.length,
+    );
+    if (!next) {
+      if (isOpen()) close();
+      return;
+    }
+    const wasOpen = isOpen();
+    trigger = next;
+    if (wasOpen) render();
+    else open();
+  }
+
+  function insert(name) {
+    if (!trigger) return;
+    const value = textarea.value;
+    const replacement = `/${name} `;
+    textarea.value =
+      value.slice(0, trigger.start) + replacement + value.slice(trigger.end);
+    const caret = trigger.start + replacement.length;
+    textarea.selectionStart = textarea.selectionEnd = caret;
+    close();
+    textarea.focus();
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  // Called by the composer's own keydown handler *before* its Enter-to-submit
+  // logic so navigation/selection wins while the palette is open. Returns true
+  // when the key was consumed.
+  function handleKeydown(event) {
+    if (!isOpen()) return false;
+    const all = items();
+    let active = parseInt(list.dataset.activeIndex || "-1", 10);
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setActive(active + 1);
+        return true;
+      case "ArrowUp":
+        event.preventDefault();
+        setActive(active - 1);
+        return true;
+      case "Enter":
+      case "Tab":
+        if (active >= 0 && all[active]) {
+          event.preventDefault();
+          all[active].click();
+          return true;
+        }
+        return false;
+      case "Escape":
+        event.preventDefault();
+        close();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  textarea.addEventListener("input", refresh);
+
+  list.addEventListener("click", (event) => {
+    const item = event.target.closest(".slash-item");
+    if (!item) return;
+    insert(item.dataset.insert || "");
+  });
+
+  documentImpl.addEventListener("click", (event) => {
+    if (isOpen() && !popup.contains(event.target) && event.target !== textarea)
+      close();
+  });
+
+  return { handleKeydown, open, close, isOpen, refresh };
+}
+
+  // ── @mention path autocomplete (absorbed from mention-autocomplete.js) ───
+// @mention path autocomplete for the chat composer. Typing "@" opens a popup
+// listing files and folders from the session's working directory, fetched from
+// GET /api/files. Filtering, ranking, and bounds live on the server; this module
+// just anchors the trigger, debounces requests, and inserts the chosen path.
+//
+// Unlike the slash palette (anchored to position 0), "@" can appear anywhere in
+// the message, so the trigger scans backward from the caret to the nearest "@"
+// at a token boundary. Selecting a directory keeps the popup open with a scoped
+// query (e.g. "@src/" then "@src/foo"); selecting a file inserts the path plus a
+// trailing space and closes.
+
+// parseAtTrigger inspects the textarea value + caret and returns the active
+// mention token, or null when the popup should be closed. The token starts at an
+// "@" that is either at the start of the message or preceded by whitespace, and
+// runs to the caret with no intervening whitespace. This deliberately ignores
+// emails like "foo@bar" because the "@" there is preceded by a non-space.
+export function parseAtTrigger(text, caret) {
+  if (typeof text !== "string") return null;
+  if (caret == null) caret = text.length;
+  let at = -1;
+  for (let i = caret - 1; i >= 0; i--) {
+    const ch = text[i];
+    if (ch === "@") {
+      at = i;
+      break;
+    }
+    if (/\s/.test(ch)) return null;
+  }
+  if (at < 0) return null;
+  if (at > 0 && !/\s/.test(text[at - 1])) return null;
+  return { query: text.slice(at + 1, caret), start: at, end: caret };
+}
+
+export function renderFileList(
+  files,
+  { escapeHtml = String, loading = false } = {},
+) {
+  if (loading) return '<div class="slash-empty">Searching files…</div>';
+  const list = Array.isArray(files) ? files : [];
+  if (list.length === 0)
+    return '<div class="slash-empty">No files match</div>';
+  let html = "";
+  list.forEach((f) => {
+    const path = f.path || "";
+    const display = f.isDir ? path + "/" : path;
+    html +=
+      `<button type="button" class="slash-item" data-insert="${escapeHtml(path)}" data-isdir="${f.isDir ? "1" : ""}">` +
+      `<span class="slash-item-name">${escapeHtml(display)}</span></button>`;
+  });
+  return html;
+}
+
+export function setupMentionAutocomplete({
+  documentImpl = document,
+  windowImpl = window,
+  sessionId,
+  chatApi,
+  escapeHtml = String,
+  debounceMs = 120,
+  setTimeoutImpl = (windowImpl || globalThis).setTimeout.bind(windowImpl || globalThis),
+  clearTimeoutImpl = (windowImpl || globalThis).clearTimeout.bind(windowImpl || globalThis),
+  AbortControllerImpl = (windowImpl || globalThis).AbortController,
+} = {}) {
+  const textarea = documentImpl.getElementById("pi-chat-message");
+  const popup = documentImpl.getElementById("pi-chat-mention-popup");
+  const list = documentImpl.getElementById("pi-chat-mention-list");
+  if (!textarea || !popup || !list) return { handleKeydown: () => false };
+
+  let trigger = null;
+  let debounceTimer = null;
+  let inflight = null;
+  let reqSeq = 0;
+
+  function isOpen() {
+    return popup.style.display !== "none" && popup.style.display !== "";
+  }
+
+  function items() {
+    return list.querySelectorAll(".slash-item");
+  }
+
+  function setActive(index) {
+    const all = items();
+    const clamped = Math.max(0, Math.min(index, all.length - 1));
+    list.dataset.activeIndex = String(all.length ? clamped : -1);
+    all.forEach((el, i) => el.classList.toggle("active", i === clamped));
+    all[clamped]?.scrollIntoView?.({ block: "nearest" });
+  }
+
+  function renderFiles(files, loading) {
+    list.innerHTML = renderFileList(files, { escapeHtml, loading });
+    setActive(0);
+  }
+
+  function open() {
+    popup.style.display = "block";
+  }
+
+  function close() {
+    popup.style.display = "none";
+    trigger = null;
+    if (debounceTimer != null) {
+      clearTimeoutImpl(debounceTimer);
+      debounceTimer = null;
+    }
+    if (inflight) {
+      inflight.abort();
+      inflight = null;
+    }
+  }
+
+  function fetchAndRender() {
+    if (!trigger) return;
+    const query = trigger.query;
+    const seq = ++reqSeq;
+    if (inflight) inflight.abort();
+    inflight = AbortControllerImpl ? new AbortControllerImpl() : null;
+    const signal = inflight ? inflight.signal : undefined;
+    chatApi
+      .getFiles(sessionId, query, { signal })
+      .then((res) =>
+        res.ok ? res.json() : Promise.reject(new Error("files error")),
+      )
+      .then((data) => {
+        if (seq !== reqSeq || !isOpen()) return; // stale response
+        renderFiles(data.files || [], false);
+      })
+      .catch((err) => {
+        if (err && err.name === "AbortError") return;
+        if (seq !== reqSeq || !isOpen()) return;
+        renderFiles([], false);
+      });
+  }
+
+  function refresh() {
+    const next = parseAtTrigger(
+      textarea.value,
+      textarea.selectionStart ?? textarea.value.length,
+    );
+    if (!next) {
+      if (isOpen()) close();
+      return;
+    }
+    trigger = next;
+    if (!isOpen()) {
+      open();
+      renderFiles([], true);
+    }
+    if (debounceTimer != null) clearTimeoutImpl(debounceTimer);
+    debounceTimer = setTimeoutImpl(() => {
+      debounceTimer = null;
+      fetchAndRender();
+    }, debounceMs);
+  }
+
+  function insert(path, isDir) {
+    if (!trigger) return;
+    const value = textarea.value;
+    const replacement = isDir ? `@${path}/` : `${path} `;
+    textarea.value =
+      value.slice(0, trigger.start) + replacement + value.slice(trigger.end);
+    const caret = trigger.start + replacement.length;
+    textarea.selectionStart = textarea.selectionEnd = caret;
+    if (!isDir) close();
+    textarea.focus();
+    // Re-running input lets a directory selection re-trigger a scoped query and
+    // a file selection close cleanly (no "@" remains before the caret).
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+
+  // Called by the composer's keydown handler before its Enter-to-submit logic so
+  // navigation/selection wins while the popup is open. Returns true when the key
+  // was consumed.
+  function handleKeydown(event) {
+    if (!isOpen()) return false;
+    const all = items();
+    let active = parseInt(list.dataset.activeIndex || "-1", 10);
+    switch (event.key) {
+      case "ArrowDown":
+        event.preventDefault();
+        setActive(active + 1);
+        return true;
+      case "ArrowUp":
+        event.preventDefault();
+        setActive(active - 1);
+        return true;
+      case "Enter":
+      case "Tab":
+        if (active >= 0 && all[active]) {
+          event.preventDefault();
+          all[active].click();
+          return true;
+        }
+        return false;
+      case "Escape":
+        event.preventDefault();
+        close();
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  textarea.addEventListener("input", refresh);
+
+  list.addEventListener("click", (event) => {
+    const item = event.target.closest(".slash-item");
+    if (!item) return;
+    insert(item.dataset.insert || "", item.dataset.isdir === "1");
+  });
+
+  documentImpl.addEventListener("click", (event) => {
+    if (isOpen() && !popup.contains(event.target) && event.target !== textarea)
+      close();
+  });
+
+  return { handleKeydown, open, close, isOpen, refresh };
+}
 </script>
 
 <script>
   import { onMount } from 'svelte';
   import { escapeHtml } from '../../session/render/session-format.js';
   import * as chatApi from '../../session/chat/chat-api.js';
-  import * as chatSelectors from '../../session/chat/chat-selectors.js';
-  import * as modelSelector from '../../session/chat/model-selector.js';
-  import * as thinkingSelector from '../../session/chat/thinking-selector.js';
-  import * as slashSelector from '../../session/chat/slash-command.js';
-  import * as mentionSelector from '../../session/chat/mention-autocomplete.js';
   import GitFooter from './GitFooter.svelte';
 
   let {
@@ -1165,11 +1985,6 @@ export function runChatComposer({
       navigateTo: target.navigateTo,
       escapeHtml: (text) => escapeHtml(text, { documentImpl: document }),
       chatApi,
-      chatSelectors,
-      modelSelector,
-      thinkingSelector,
-      slashSelector,
-      mentionSelector,
       FormDataImpl: target.FormData,
       URLSearchParamsImpl: target.URLSearchParams,
       CustomEventImpl: target.CustomEvent,
