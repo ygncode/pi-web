@@ -19,9 +19,10 @@ func TestSessionViteSourceIncludesChatPreviewSSEHandling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read web/src/session/live/chat-preview.js: %v", err)
 	}
-	runner, err := os.ReadFile(repoPath("web/src/session/live/live-reload-runner.js"))
+	// The live-reload runner was absorbed into <LiveReload>.
+	runner, err := os.ReadFile(repoPath("web/src/components/session/LiveReload.svelte"))
 	if err != nil {
-		t.Fatalf("read web/src/session/live/live-reload-runner.js: %v", err)
+		t.Fatalf("read web/src/components/session/LiveReload.svelte: %v", err)
 	}
 	combined := string(events) + string(preview) + string(runner)
 	for _, want := range []string{
@@ -36,9 +37,9 @@ func TestSessionViteSourceIncludesChatPreviewSSEHandling(t *testing.T) {
 }
 
 func TestSessionViteSourceForcesFollowOnChatSendAndScrollsNewEntries(t *testing.T) {
-	runner, err := os.ReadFile(repoPath("web/src/session/live/live-reload-runner.js"))
+	runner, err := os.ReadFile(repoPath("web/src/components/session/LiveReload.svelte"))
 	if err != nil {
-		t.Fatalf("read web/src/session/live/live-reload-runner.js: %v", err)
+		t.Fatalf("read web/src/components/session/LiveReload.svelte: %v", err)
 	}
 	scroll, err := os.ReadFile(repoPath("web/src/session/live/live-scroll.js"))
 	if err != nil {
