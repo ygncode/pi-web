@@ -7,9 +7,9 @@
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
-  import { firstMessageStub, loadSessionPageState, newestLeaf } from './session-page-data.js';
+  import { firstMessageStub, loadSessionPageState } from './session-page-data.js';
   import { SessionDataModel } from '../session/data/session-data.svelte.js';
-  import { createSessionDataModel } from '../session/data/session-data.js';
+  import { createSessionDataModel, decodeBase64JSON } from '../session/data/session-data.js';
   import { setSessionModel } from '../session/session-context.js';
   import { t } from '../shared/i18n.js';
 
@@ -64,12 +64,15 @@
         chatAvailable = state.chatAvailable;
         chatDisabledReason = state.chatDisabledReason;
         modelLabel = state.modelLabel;
-        // Hydrate the reactive model (provided via context above). Not yet the
-        // source of truth for rendering — that migrates in later phases.
+        // Hydrate the shared reactive model from the SAME payload the imperative
+        // runtime reads, then hand it to that runtime (window.__piSessionDataModel)
+        // so session.js reuses this one instance instead of building its own.
+        // The Svelte tree renders from it; session.js mutates it on live reload.
         sessionModel.load(createSessionDataModel(
-          { header: { cwd: state.cwd }, entries: state.entries, leafId: newestLeaf(state.entries) },
+          decodeBase64JSON(payloadBase64, { atobImpl: window.atob?.bind(window) }),
           new URLSearchParams(window.location.search),
         ));
+        window.__piSessionDataModel = sessionModel;
         loading = false;
         clearTimeout(loadingTimer);
         await tick();

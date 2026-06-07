@@ -8,7 +8,6 @@ import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml as getTreeNodeDispla
 import { configureSessionMarkdown, safeMarkedParse } from './render/markdown.js';
 import * as sessionHeaderRenderer from './render/session-header-renderer.js';
 import * as sessionEntryRenderer from './render/session-entry-renderer.js';
-import { createTreeRenderer } from './tree/tree-renderer.js';
 import { createSessionNavigator } from './navigation/session-navigation.js';
 import * as toggleStateApi from './ui/toggle-state.js';
 import * as sidebarApi from './ui/sidebar.js';
@@ -54,7 +53,6 @@ import { configureSettingsSync, hydrateSettings } from '../shared/settings-store
 import { t } from '../shared/i18n.js';
 export { buildSessionLookups, createSessionDataModel, decodeBase64JSON, getSessionSearchParams, loadSessionData, readSessionPayload } from './data/session-data.js';
 export { buildActivePathIds, buildTree, buildTreeNodeMap, buildTreePrefix, findNewestLeaf, flattenTree, getPath } from './tree/session-tree.js';
-export { createTreeRenderer } from './tree/tree-renderer.js';
 export { createSessionNavigator } from './navigation/session-navigation.js';
 export { extractContent, filterNodes, getSearchableText, hasTextContent, recalculateVisualStructure } from './tree/session-filter.js';
 export { escapeHtml, formatToolCall, getTreeNodeDisplayHtml, shortenPath, truncate } from './render/session-format.js';
@@ -163,20 +161,15 @@ export function runSessionApp({ target = window } = {}) {
       dataModel.leafId = nextLeafId;
       currentLeafId = nextLeafId;
       if (!currentTargetId) currentTargetId = nextLeafId;
-      if (treeRenderer) {
-        treeRenderer.currentLeafId = currentLeafId;
-        treeRenderer.currentTargetId = currentTargetId;
-      }
+      dataModel.currentLeafId = currentLeafId;
+      dataModel.currentTargetId = currentTargetId;
     }
 
-    // Live reload reconciles the data model when the session JSONL changes,
-    // but the tree renderer normally only patches active/path classes after
-    // its initial DOM build. Force a full rebuild so newly appended entries
-    // are added to the sidebar immediately.
-    if (treeRenderer) {
-      syncTreeRendererState();
-      treeRenderer.forceTreeRerender();
-    }
+    // Live reload reconciles the data model when the session JSONL changes.
+    // The in-place entries splice + map refills above are reactive, so the
+    // Svelte <SessionTreeNodes> sidebar updates automatically; just keep the
+    // model's filter/active view state in sync.
+    syncTreeRendererState();
 
     refreshArtifacts();
   }
@@ -195,17 +188,22 @@ export function runSessionApp({ target = window } = {}) {
 
   let currentLeafId = dataModel.leafId;
   let currentTargetId = dataModel.urlTargetId || dataModel.leafId;
-  let treeRenderer;
   let navigatorInstance;
 
+  // The tree sidebar is now rendered by <SessionTreeNodes> from the reactive
+  // dataModel (Svelte migration). renderTree/forceTreeRerender just push the
+  // current view state (filter/search/active path) into the model; the Svelte
+  // tree recomputes reactively — no manual DOM build/diff.
   const syncTreeRendererState = () => {
     target.__piFilterState.filterMode = filterMode;
     target.__piFilterState.searchQuery = searchQuery;
-    treeRenderer.currentLeafId = currentLeafId;
-    treeRenderer.currentTargetId = currentTargetId;
+    dataModel.filterMode = filterMode;
+    dataModel.searchQuery = searchQuery;
+    dataModel.currentLeafId = currentLeafId;
+    dataModel.currentTargetId = currentTargetId;
   };
-  const renderTree = () => { syncTreeRendererState(); return treeRenderer.renderTree(); };
-  const forceTreeRerender = () => { syncTreeRendererState(); return treeRenderer.forceTreeRerender(); };
+  const renderTree = () => { syncTreeRendererState(); };
+  const forceTreeRerender = () => { syncTreeRendererState(); };
 
   const entryRenderer = sessionEntryRenderer.createSessionEntryRenderer({
     entries: dataModel.entries,
@@ -310,23 +308,6 @@ export function runSessionApp({ target = window } = {}) {
   const navigateTo = (targetId, scrollMode = 'target', scrollToEntryId = null) => navigatorInstance.navigateTo(targetId, scrollMode, scrollToEntryId);
   const renderEntryToNode = (entry) => navigatorInstance.renderEntryToNode(entry);
 
-  treeRenderer = createTreeRenderer({
-    documentImpl,
-    windowImpl: target,
-    initialLeafId: currentLeafId,
-    initialTargetId: currentTargetId,
-    buildTree: sessionTree.buildTree,
-    buildActivePathIds: sessionTree.buildActivePathIds,
-    flattenTree,
-    filterNodes: (flatNodes, leaf) => filterNodesForState(flatNodes, leaf, { filterMode, searchQuery }),
-    buildTreePrefix,
-    getTreeNodeDisplayHtml: sessionFormat.getTreeNodeDisplayHtml,
-    findNewestLeaf: sessionTree.findNewestLeaf,
-    navigateTo,
-    isMobileLayout: ui.isMobileLayout,
-    closeSidebar: ui.closeSidebar
-  });
-
   navigatorInstance = createSessionNavigator({
     documentImpl,
     windowImpl: target,
@@ -340,8 +321,8 @@ export function runSessionApp({ target = window } = {}) {
     onNavigate: (leaf, targetId) => {
       currentLeafId = leaf;
       currentTargetId = targetId;
-      treeRenderer.currentLeafId = leaf;
-      treeRenderer.currentTargetId = targetId;
+      dataModel.currentLeafId = leaf;
+      dataModel.currentTargetId = targetId;
     },
     onFork: (entryId, btn) => {
       if (!target.confirm('Are you sure you want to fork a new session starting from this message?')) {
@@ -406,8 +387,11 @@ export function runSessionApp({ target = window } = {}) {
 
   target.navigateTo = navigateTo;
   target.renderEntryToNode = renderEntryToNode;
-  target.__piTreeRenderer = treeRenderer;
   target.__piSessionNavigator = navigatorInstance;
+  // Exposed for <SessionTree>'s node-click handler so it can auto-close the
+  // mobile drawer (parity with the old tree renderer).
+  target.__piIsMobileLayout = ui.isMobileLayout;
+  target.__piCloseSidebar = ui.closeSidebar;
 
   // Replace the server-rendered first-message LCP stub with the canonical
   // active path before live reload starts. Otherwise reload appends canonical

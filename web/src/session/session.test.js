@@ -21,7 +21,7 @@ describe('session entrypoint', () => {
     expect(runSessionApp).toBeInstanceOf(Function);
   });
 
-  it('updates the sidebar tree when live reload receives new entries', async () => {
+  it('reconciles the session model when live reload receives new entries', async () => {
     const initialEntries = [
       {
         id: 'root',
@@ -80,13 +80,19 @@ describe('session entrypoint', () => {
 
     runSessionApp({ target: window });
 
-    expect([...document.querySelectorAll('.tree-node')].map((node) => node.dataset.id)).toEqual(['root']);
+    // The sidebar tree DOM is now rendered by <SessionTreeNodes> from the
+    // model (see SessionTreeNodes.test.js); session.js owns reconciling the
+    // shared model on live reload, which is what we assert here.
+    const model = window.__piSessionDataModel;
+    expect(model.entries.map((e) => e.id)).toEqual(['root']);
+
     FakeEventSource.instances[0].onmessage({ data: 'reload' });
 
     await vi.waitFor(() => {
-      expect([...document.querySelectorAll('.tree-node')].map((node) => node.dataset.id)).toEqual(['root', 'child']);
+      expect(model.entries.map((e) => e.id)).toEqual(['root', 'child']);
     });
-    expect(document.getElementById('tree-status').textContent).toBe('2 / 2 entries');
+    // the active leaf advances to the newest entry
+    expect(model.currentLeafId).toBe('child');
   });
 
   it('initializes live reload before chat so optimistic send events are observed', () => {
