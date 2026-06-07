@@ -65,6 +65,7 @@ describe('setupKeyboardNav', () => {
     return {
       scrollBy: vi.fn(),
       scrollTo: vi.fn(),
+      history: { pushState: vi.fn() },
     };
   }
 
@@ -181,28 +182,26 @@ describe('setupKeyboardNav', () => {
   it('navigates to /settings on Cmd+, (and Ctrl+,)', () => {
     const doc = createMockDocument();
     const win = createMockWindow();
-    win.location = { href: '' };
 
     setupKeyboardNav({ windowImpl: win, documentImpl: doc });
 
     const e1 = doc._dispatch('keydown', { key: ',', metaKey: true });
-    expect(win.location.href).toBe('/settings');
+    expect(win.history.pushState).toHaveBeenCalledWith({}, '', '/settings');
     expect(e1.preventDefault).toHaveBeenCalled();
 
-    win.location.href = '';
+    win.history.pushState.mockClear();
     doc._dispatch('keydown', { key: ',', ctrlKey: true });
-    expect(win.location.href).toBe('/settings');
+    expect(win.history.pushState).toHaveBeenCalledWith({}, '', '/settings');
   });
 
   it('does not navigate to /settings on Cmd+Shift+,', () => {
     const doc = createMockDocument();
     const win = createMockWindow();
-    win.location = { href: '' };
 
     setupKeyboardNav({ windowImpl: win, documentImpl: doc });
     doc._dispatch('keydown', { key: ',', metaKey: true, shiftKey: true });
 
-    expect(win.location.href).toBe('');
+    expect(win.history.pushState).not.toHaveBeenCalled();
   });
 
   it('scrolls down on j', () => {

@@ -63,4 +63,49 @@ describe('App', () => {
 
     expect(document.querySelector('[aria-label="Svelte app probe"]')?.textContent).toContain('Svelte ready for pi-web');
   });
+
+  it('swaps views on pushState navigation', () => {
+    document.body.innerHTML = '<div id="app"></div>';
+    mounted = mountApp({ props: { path: '/' } });
+    flushSync(); // let onMount attach the history listeners
+    expect(document.querySelector('[data-sessions-content]')).toBeTruthy();
+
+    window.history.pushState({}, '', '/settings');
+    flushSync();
+
+    expect(document.querySelector('.settings-page h1')?.textContent).toBe('Settings');
+  });
+
+  it('swaps views on browser back/forward (popstate)', async () => {
+    document.body.innerHTML = '<div id="app"></div>';
+    window.history.pushState({}, '', '/');
+    mounted = mountApp({ props: { path: '/' } });
+    flushSync(); // let onMount attach the history listeners
+
+    window.history.pushState({}, '', '/settings');
+    flushSync();
+    expect(document.querySelector('.settings-page')).toBeTruthy();
+
+    const popped = new Promise((resolve) => window.addEventListener('popstate', resolve, { once: true }));
+    window.history.back();
+    await popped;
+    flushSync();
+
+    expect(document.querySelector('[data-sessions-content]')).toBeTruthy();
+  });
+
+  it('does not swap when pushState keeps the same pathname', () => {
+    document.body.innerHTML = '<div id="app"></div>';
+    window.history.pushState({}, '', '/settings');
+    mounted = mountApp({ props: { path: '/settings' } });
+    flushSync(); // let onMount attach the history listeners
+    expect(document.querySelector('.settings-page')).toBeTruthy();
+
+    // Mirrors FullScreenSheet's mobile back-button trap: a pushState that keeps
+    // the pathname must not tear down and remount the current page.
+    window.history.pushState({}, '', '/settings?sheet=1');
+    flushSync();
+
+    expect(document.querySelector('.settings-page')).toBeTruthy();
+  });
 });

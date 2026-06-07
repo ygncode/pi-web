@@ -1,3 +1,5 @@
+import { navigate } from './navigation.js';
+
 const SCROLL_AMOUNT = 300;
 const GG_TIMEOUT = 500; // ms window for double-tap 'gg'
 
@@ -78,7 +80,7 @@ export function setupKeyboardNav({
   documentImpl.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key === ',') {
       e.preventDefault();
-      windowImpl.location.href = '/settings';
+      navigate('/settings', { windowImpl });
     }
   });
 

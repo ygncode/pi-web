@@ -1,5 +1,6 @@
 <script>
   import { t } from '../../shared/i18n.js';
+  import { handleNavClick } from '../../shared/navigation.js';
   import { formatRelativeTime, formatRunningModel, sessionModelLabel, sessionSearchText } from '../../index/sessions.js';
 
   let { session, running = false, runningStatus = null, now = Date.now() } = $props();
@@ -15,6 +16,7 @@
   class="session-card"
   class:session-card--running={running}
   href={href}
+  onclick={(event) => handleNavClick(event, href)}
   data-id={session.id}
   data-session-id={session.id}
   data-search={search}

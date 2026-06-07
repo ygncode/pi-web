@@ -10,6 +10,7 @@
   import { setupKeyboardNav } from '../shared/keyboard-nav.js';
   import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
   import { configureSettingsSync, hydrateSettings, writeSetting } from '../shared/settings-store.js';
+  import { navigate } from '../shared/navigation.js';
   import { icon, Sun, Moon } from '../shared/icons.js';
   import { t } from '../shared/i18n.js';
   import {
@@ -133,7 +134,7 @@
     try {
       const response = await defaultCreateSession(path);
       if (response.ok && response.id) {
-        window.location.href = '/session?id=' + encodeURIComponent(response.id);
+        navigate('/session?id=' + encodeURIComponent(response.id));
         return;
       }
       newSessionError = response.error || t('index.failedCreateSession');
@@ -268,7 +269,7 @@
 
 <button class="new-session-btn new-session-btn-mobile" id="newSessionBtn" type="button" data-new-session-btn aria-label={t('index.startNewSession')} title={t('index.newSession')} onclick={openNewSessionModal}>+</button>
 
-<CommandPalette onQueryChange={(q) => { query = q; }} onNewSession={openNewSessionModal} />
+<CommandPalette onQueryChange={(q) => { query = q; }} onNewSession={openNewSessionModal} navigate={(url) => navigate(url)} />
 
 <SessionsList {sessions} {layout} {query} {runningSessionIds} {runningStatuses} {loading} {layoutReady} />
 
