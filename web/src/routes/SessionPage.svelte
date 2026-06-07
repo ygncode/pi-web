@@ -6,6 +6,7 @@
   import SessionHeader from '../components/session/SessionHeader.svelte';
   import SessionInfoHeader from '../components/session/SessionInfoHeader.svelte';
   import SessionContent from '../components/session/SessionContent.svelte';
+  import ImageModal from '../components/session/ImageModal.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
@@ -129,7 +130,7 @@
       <ChatComposer {sessionId} {chatAvailable} {chatDisabledReason} {cwd} {modelLabel} />
     </div>
     <RightSidebar {scratchpad} />
-    <div id="image-modal" class="image-modal"><img id="modal-image" src="" alt=""></div>
+    <ImageModal />
   </div>
 
   <ShareDialog />

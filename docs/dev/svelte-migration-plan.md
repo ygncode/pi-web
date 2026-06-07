@@ -526,6 +526,26 @@ live app and the static export; the imperative `#messages` build is gone.
   · full **Desktop Chrome** e2e **53 passed / 2 skipped** (load-earlier's documented
   contention flake passes on its configured retry). Other browsers untried (matching
   the existing baseline).
+
+### Phase 3 — live-only components (IN PROGRESS)
+
+Sequencing note: the headline modules (`ChatComposer`, `LiveReload`, `RightSidebar`)
+are tightly coupled to `session.js` — they need `navigateTo`, the shared model, and
+a strict init ordering (chat must initialise after live-reload). Per the plan those
+can only be fully extracted as `session.js` is dismantled at the END of Phase 3, so
+Phase 3 starts with the genuinely **isolatable** components (no session-data /
+`navigateTo` coupling), each a clean, deletable, e2e-green increment, and works
+inward toward the coupled chat/live core.
+
+| Status | Item |
+|---|---|
+| ✅ DONE + verified | **`ImageModal.svelte`** (shared, live + export). Click-to-zoom overlay absorbed from `ui/image-modal.js`: reactive `open`/`src`/`alt`, document-level delegated listener for `.message-image` / `.pi-chat-attachment-preview`, Escape/backdrop close. Live renders `<ImageModal/>` in `SessionPage`; export mounts it into `#image-modal-host` (static `#image-modal` markup removed from `session.html`). **`ui/image-modal.js` + test DELETED**, tests ported to `ImageModal.test.js`. Verified: web 553 + knip clean + `go test ./internal/ui` + Desktop-Chrome e2e 53/2. |
+
+Next isolatable targets (no session-data coupling): the live-only buttons
+(`ResumeButton`, `NewSessionButton`), then the shared-sheet infra (`FullScreenSheet`)
+and the modals built on it (`ShortcutsModal`, `ModelUsageModal`). The coupled core
+(`ChatComposer`, `LiveReload`, `RightSidebar`/panels, `session.js` teardown) lands
+last, once `navigateTo`/model ownership moves into the page component.
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,

@@ -18,7 +18,6 @@ import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { createAnnotationLayer } from './annotations/annotation-layer.js';
 import { setupLoadEarlierBanner } from './ui/load-earlier.js';
-import { setupImageModal } from './ui/image-modal.js';
 import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
 import * as chatApi from './chat/chat-api.js';
@@ -452,7 +451,8 @@ export function runSessionApp({ target = window } = {}) {
     target.addEventListener('pi-session-reload', () => annotationLayer.reapply());
   }
 
-  setupImageModal({ documentImpl });
+  // Image click-to-zoom is now the <ImageModal> Svelte component (rendered by
+  // SessionPage); no imperative setup needed here.
 
   doneNotifier.setupDoneNotifyToggle({ documentImpl, windowImpl: target });
   doneNotifier.setupAppBadgeClearing({ documentImpl, windowImpl: target });
