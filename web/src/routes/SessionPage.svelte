@@ -1,6 +1,7 @@
 <script>
   import { onMount, tick } from 'svelte';
   import ChatComposer from '../components/session/ChatComposer.svelte';
+  import LiveReload from '../components/session/LiveReload.svelte';
   import CommandMenu from '../components/session/CommandMenu.svelte';
   import RightSidebar from '../components/session/RightSidebar.svelte';
   import SessionHeader from '../components/session/SessionHeader.svelte';
@@ -181,6 +182,10 @@
   <SessionHeader {title} {cwd} {sessionId} />
 
   <CommandMenu {sessionId} />
+
+  <!-- Live reload (SSE) mounts before <ChatComposer> so its optimistic
+       "message sent" listener is attached before the user can send. -->
+  <LiveReload />
 
   <div id="sidebar-overlay"></div>
   <div id="app">

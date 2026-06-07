@@ -15,25 +15,10 @@ import { collectArtifacts } from './artifacts/artifact-registry.js';
 import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './artifacts/artifact-filter.js';
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { setupLoadEarlierBanner } from './ui/load-earlier.js';
-import * as chatComposerRunner from './chat/chat-composer-runner.js';
 import * as doneNotifier from './chat/done-notifier.js';
-import * as chatApi from './chat/chat-api.js';
-import * as gitApi from './chat/git-api.js';
-import { setupGitFooter } from './chat/git-footer.js';
 import { setupBtwPopup } from './live/btw-popup.js';
-import * as chatSelectors from './chat/chat-selectors.js';
-import * as thinkingSelector from './chat/thinking-selector.js';
-import * as modelSelector from './chat/model-selector.js';
-import * as slashSelector from './chat/slash-command.js';
-import * as mentionSelector from './chat/mention-autocomplete.js';
-import * as liveReloadRunner from './live/live-reload-runner.js';
-import * as liveScroll from './live/live-scroll.js';
-import * as liveStats from './live/live-stats.js';
-import * as liveEntries from './live/live-entries.js';
-import * as chatPreview from './live/chat-preview.js';
-import * as liveEvents from './live/live-events.js';
-import * as liveRenderer from './live/live-renderer.js';
-// share-overlay absorbed into <ShareDialog> (rendered by SessionPage).
+// Chat composer + git footer → <ChatComposer>; live reload (SSE) → <LiveReload>.
+// share-overlay → <ShareDialog>. All rendered by SessionPage.
 import { createVersionController } from '../shared/version.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
@@ -399,32 +384,11 @@ export function runSessionApp({ target = window } = {}) {
     doneNotifier.notifyDone({ documentImpl, windowImpl: target });
   });
 
-  globalThis.__PI_TEST_LIVE_RELOAD_HOOK__?.();
-  liveReloadRunner.runLiveReload({
-    documentImpl,
-    windowImpl: target,
-    locationImpl: target.location,
-    navigatorImpl: target.navigator,
-    markedImpl: marked,
-    fetchImpl: target.fetch.bind(target),
-    EventSourceImpl: target.EventSource,
-    requestAnimationFrameImpl: target.requestAnimationFrame.bind(target),
-    setTimeoutImpl: target.setTimeout.bind(target),
-    clearTimeoutImpl: target.clearTimeout.bind(target),
-    liveEntries,
-    liveRenderer,
-    liveScroll,
-    liveStats,
-    liveEvents,
-    chatPreview,
-    cwd: dataModel.header?.cwd || '',
-    // The Svelte <SessionContent> owns #messages and re-renders from the model,
-    // so live reload reconciles through onSessionDataReload (no DOM patching).
-    reactiveContent: true,
-    getInitialEntryIds: () => dataModel.entries.map((e) => e.id).filter(Boolean),
-    onSessionDataReload: (data) => syncDataModelEntries(data.entries),
-    onAnnotations: (list) => annotationLayer?.setAnnotations(list)
-  });
+  // Live reload (SSE) is the <LiveReload> Svelte component (rendered by
+  // SessionPage); it self-inits in onMount. session.js still owns model
+  // reconciliation (shared with load-earlier), exposed here for <LiveReload>'s
+  // onSessionDataReload to call when the JSONL changes.
+  target.__piReconcileEntries = (entries) => syncDataModelEntries(entries);
 
   setupKeyboardNav({ windowImpl: target, documentImpl });
 
@@ -531,38 +495,10 @@ export function runSessionApp({ target = window } = {}) {
     });
   }
 
-  // Initialize chat after live reload so the optimistic "message sent" event
-  // has a listener before the user can submit. Otherwise cold-start sends can
-  // clear/disable the composer without rendering the pending message preview.
-  globalThis.__PI_TEST_CHAT_COMPOSER_HOOK__?.();
-  chatComposerRunner.runChatComposer({
-    documentImpl,
-    windowImpl: target,
-    locationImpl: target.location,
-    localEntries: dataModel.entries,
-    leafId: dataModel.leafId,
-    urlTargetId: dataModel.urlTargetId,
-    byId: dataModel.byId,
-    navigateTo,
-    escapeHtml: sessionFormat.escapeHtml,
-    chatApi,
-    chatSelectors,
-    modelSelector,
-    thinkingSelector,
-    slashSelector,
-    mentionSelector,
-    FormDataImpl: target.FormData,
-    URLSearchParamsImpl: target.URLSearchParams,
-    CustomEventImpl: target.CustomEvent,
-    setIntervalImpl: target.setInterval.bind(target)
-  });
-
-  setupGitFooter({
-    documentImpl,
-    windowImpl: target,
-    sessionId: getSessionSearchParams({ documentImpl, windowImpl: target }).get('id') || '',
-    gitApi
-  });
+  // The chat composer (+ git footer) is the <ChatComposer> Svelte component
+  // (rendered by SessionPage); it self-inits in onMount. <LiveReload> mounts
+  // first, so its optimistic "message sent" listener exists before the user can
+  // submit.
 
   setupBtwPopup({
     documentImpl,

@@ -1,6 +1,18 @@
 <script>
+  import { onMount } from 'svelte';
   import { icon, Maximize2, Paperclip, ChevronDown, ExternalLink, X } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
+  import { escapeHtml } from '../../session/render/session-format.js';
+  import { runChatComposer } from '../../session/chat/chat-composer-runner.js';
+  import * as chatApi from '../../session/chat/chat-api.js';
+  import * as chatSelectors from '../../session/chat/chat-selectors.js';
+  import * as modelSelector from '../../session/chat/model-selector.js';
+  import * as thinkingSelector from '../../session/chat/thinking-selector.js';
+  import * as slashSelector from '../../session/chat/slash-command.js';
+  import * as mentionSelector from '../../session/chat/mention-autocomplete.js';
+  import * as gitApi from '../../session/chat/git-api.js';
+  import { setupGitFooter } from '../../session/chat/git-footer.js';
+
   let {
     sessionId = '',
     chatAvailable = true,
@@ -8,6 +20,39 @@
     cwd = '',
     modelLabel = '',
   } = $props();
+
+  // The composer absorbs the chat runner + git footer. It reads the shared model
+  // and navigateTo (owned by SessionPage, on window) at mount — both are ready
+  // before this onMount. Live reload mounts first, so its pi-chat-message-sent
+  // listener is attached before the user can send. Live-only.
+  onMount(() => {
+    const target = window;
+    const model = target.__piSessionDataModel;
+    globalThis.__PI_TEST_CHAT_COMPOSER_HOOK__?.();
+    runChatComposer({
+      documentImpl: document,
+      windowImpl: target,
+      locationImpl: target.location,
+      localEntries: model?.entries || [],
+      leafId: model?.leafId || '',
+      urlTargetId: model?.urlTargetId || '',
+      byId: model?.byId || new Map(),
+      navigateTo: target.navigateTo,
+      escapeHtml: (text) => escapeHtml(text, { documentImpl: document }),
+      chatApi,
+      chatSelectors,
+      modelSelector,
+      thinkingSelector,
+      slashSelector,
+      mentionSelector,
+      FormDataImpl: target.FormData,
+      URLSearchParamsImpl: target.URLSearchParams,
+      CustomEventImpl: target.CustomEvent,
+      setIntervalImpl: target.setInterval.bind(target),
+    });
+
+    setupGitFooter({ documentImpl: document, windowImpl: target, sessionId, gitApi });
+  });
 </script>
 
 <form id="pi-chat-composer" class="pi-chat-composer" data-session-id={sessionId} data-chat-available={chatAvailable} data-chat-disabled-reason={chatDisabledReason}>
