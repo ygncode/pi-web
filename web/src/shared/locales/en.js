@@ -14,6 +14,7 @@ export default {
   'common.userDocs': 'User Docs',
   'common.telegram': 'Community Telegram',
   'common.version': 'Version',
+  'common.back': 'Back',
   'common.copied': 'Copied',
   'common.copyFailed': 'Copy failed',
 
@@ -164,6 +165,9 @@ export default {
   'settings.contentFontSize': 'Content font size',
   'settings.contentFontSizeHint': 'Size of rendered message text (px).',
   'settings.fontBuiltIn': 'Built-in',
+  'settings.fontInstalled': 'Installed',
+  'settings.fontDetectUnsupported': 'This browser cannot list installed fonts. Use Custom… to type a font name.',
+  'settings.fontDetectDenied': 'Could not read installed fonts (permission denied). Use Custom… to type a font name.',
   'settings.fontActions': 'Actions',
   'settings.fontMono': 'Monospace',
   'settings.fontSystem': 'System',

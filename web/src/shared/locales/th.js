@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'ขนาดฟอนต์เนื้อหา',
   'settings.contentFontSizeHint': 'ขนาดข้อความที่แสดง (px)',
   'settings.fontBuiltIn': 'ในตัว',
+  'settings.fontInstalled': 'Installed',
+  'settings.fontDetectUnsupported': 'This browser cannot list installed fonts. Use Custom… to type a font name.',
+  'settings.fontDetectDenied': 'Could not read installed fonts (permission denied). Use Custom… to type a font name.',
   'settings.fontActions': 'การดำเนินการ',
   'settings.fontMono': 'Monospace',
   'settings.fontSystem': 'ระบบ',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>การอัปเดตให้ทันสมัย</strong> ไฟล์ที่เอเจนต์ <em>เขียน</em> หรือ <em>แก้ไข</em> จะอัปเดตโดยอัตโนมัติ และการเปลี่ยนชื่อหรือลบอย่างง่าย (<code>mv</code>, <code>git mv</code>, <code>rm</code>) ก็ถูกติดตามด้วย แต่การเปลี่ยนแปลงผ่านคำสั่งเชลล์อื่น — เช่น <code>sed</code> หรือการเปลี่ยนทิศทางเอาต์พุต — ไม่สามารถติดตามได้จากการสนทนา ดังนั้นบางครั้งอาร์ติแฟกต์อาจแสดงเวอร์ชันเก่ากว่า เมื่อสงสัย ให้ตรวจสอบไฟล์บนดิสก์',
   'artifactHelp.note': 'อาร์ติแฟกต์เป็นส่วนหนึ่งของมุมมองสดเท่านั้นและไม่รวมอยู่ในสแนปช็อตที่ส่งออก',
 
+  'common.back': 'กลับ',
   'common.copied': 'คัดลอกแล้ว',
   'common.copyFailed': 'คัดลอกไม่สำเร็จ',
   'index.noProjectsMatch': 'ไม่มีโปรเจกต์ที่ตรงกับการค้นหาของคุณ',

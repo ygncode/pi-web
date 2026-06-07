@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'Ukuran font konten',
   'settings.contentFontSizeHint': 'Ukuran teks pesan yang ditampilkan (px).',
   'settings.fontBuiltIn': 'Bawaan',
+  'settings.fontInstalled': 'Installed',
+  'settings.fontDetectUnsupported': 'This browser cannot list installed fonts. Use Custom… to type a font name.',
+  'settings.fontDetectDenied': 'Could not read installed fonts (permission denied). Use Custom… to type a font name.',
   'settings.fontActions': 'Tindakan',
   'settings.fontMono': 'Monospace',
   'settings.fontSystem': 'Sistem',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>Tetap terkini.</strong> File yang <em>ditulis</em> atau <em>diedit</em> agen diperbarui otomatis, dan penggantian nama atau penghapusan sederhana (<code>mv</code>, <code>git mv</code>, <code>rm</code>) juga dilacak. Namun perubahan melalui perintah shell lain — seperti <code>sed</code> atau pengalihan keluaran — tidak dapat diikuti dari percakapan, jadi sesekali artefak mungkin menampilkan versi lama. Jika ragu, periksa file di disk.',
   'artifactHelp.note': 'Artefak hanya bagian dari tampilan langsung dan tidak disertakan dalam snapshot yang diekspor.',
 
+  'common.back': 'Kembali',
   'common.copied': 'Disalin',
   'common.copyFailed': 'Gagal menyalin',
   'index.noProjectsMatch': 'Tidak ada proyek yang cocok dengan pencarian Anda.',

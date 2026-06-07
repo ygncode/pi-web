@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'အကြောင်းအရာ ဖောင့်အရွယ်',
   'settings.contentFontSizeHint': 'ပြသထားသော မက်ဆေ့ချ်စာသား အရွယ် (px)။',
   'settings.fontBuiltIn': 'အတွင်းပါ',
+  'settings.fontInstalled': 'Installed',
+  'settings.fontDetectUnsupported': 'This browser cannot list installed fonts. Use Custom… to type a font name.',
+  'settings.fontDetectDenied': 'Could not read installed fonts (permission denied). Use Custom… to type a font name.',
   'settings.fontActions': 'လုပ်ဆောင်ချက်များ',
   'settings.fontMono': 'Monospace',
   'settings.fontSystem': 'စနစ်',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>အမြဲမွမ်းမံထားခြင်း။</strong> အေးဂျင့် <em>ရေးသား</em> သို့မဟုတ် <em>တည်းဖြတ်</em> သော ဖိုင်များသည် အလိုအလျောက် မွမ်းမံပြီး ရိုးရှင်းသော အမည်ပြောင်းခြင်း သို့မဟုတ် ဖျက်ခြင်း (<code>mv</code>, <code>git mv</code>, <code>rm</code>) ကိုလည်း ခြေရာခံသည်။ သို့သော် အခြား shell command များ — <code>sed</code> သို့မဟုတ် output redirect ကဲ့သို့ — မှ ပြုလုပ်သော ပြောင်းလဲမှုများကို စကားဝိုင်းမှ မခြေရာခံနိုင်သဖြင့် တစ်ခါတစ်ရံ အာတိဖက်သည် ဗားရှင်းဟောင်းကို ပြသနိုင်သည်။ သံသယရှိပါက ဒစ်ခ်ပေါ်ရှိ ဖိုင်ကို စစ်ဆေးပါ။',
   'artifactHelp.note': 'အာတိဖက်များသည် တိုက်ရိုက်မြင်ကွင်း၏ အစိတ်အပိုင်းသာဖြစ်ပြီး ထုတ်ယူသော snapshot များတွင် မပါဝင်ပါ။',
 
+  'common.back': 'နောက်သို့',
   'common.copied': 'ကူးယူပြီး',
   'common.copyFailed': 'ကူးယူ၍ မရပါ',
   'index.noProjectsMatch': 'သင့်ရှာဖွေမှုနှင့် ကိုက်ညီသော ပရောဂျက် မရှိပါ။',

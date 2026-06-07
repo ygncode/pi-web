@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'ទំហំពុម្ពអក្សរមាតិកា',
   'settings.contentFontSizeHint': 'ទំហំអត្ថបទសារដែលបង្ហាញ (px)។',
   'settings.fontBuiltIn': 'មានស្រាប់',
+  'settings.fontInstalled': 'Installed',
+  'settings.fontDetectUnsupported': 'This browser cannot list installed fonts. Use Custom… to type a font name.',
+  'settings.fontDetectDenied': 'Could not read installed fonts (permission denied). Use Custom… to type a font name.',
   'settings.fontActions': 'សកម្មភាព',
   'settings.fontMono': 'Monospace',
   'settings.fontSystem': 'ប្រព័ន្ធ',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>ការរក្សាឱ្យទាន់សម័យ។</strong> ឯកសារដែលភ្នាក់ងារ <em>សរសេរ</em> ឬ <em>កែសម្រួល</em> ធ្វើបច្ចុប្បន្នភាពស្វ័យប្រវត្តិ ហើយការប្ដូរឈ្មោះ ឬលុបសាមញ្ញ (<code>mv</code>, <code>git mv</code>, <code>rm</code>) ក៏ត្រូវបានតាមដានដែរ។ ប៉ុន្តែការផ្លាស់ប្ដូរតាមរយៈពាក្យបញ្ជា shell ផ្សេងៗ — ដូចជា <code>sed</code> ឬការប្ដូរទិសលទ្ធផល — មិនអាចតាមដានពីការសន្ទនាបានទេ ដូច្នេះម្ដងម្កាលអាទីហ្វាក់អាចបង្ហាញកំណែចាស់។ នៅពេលសង្ស័យ សូមពិនិត្យឯកសារនៅលើថាស។',
   'artifactHelp.note': 'អាទីហ្វាក់គឺជាផ្នែកនៃទិដ្ឋភាពផ្ទាល់តែប៉ុណ្ណោះ ហើយមិនរួមបញ្ចូលក្នុង snapshot ដែលនាំចេញទេ។',
 
+  'common.back': 'ត្រឡប់ក្រោយ',
   'common.copied': 'បានចម្លង',
   'common.copyFailed': 'ចម្លងបរាជ័យ',
   'index.noProjectsMatch': 'គ្មានគម្រោងត្រូវនឹងការស្វែងរករបស់អ្នកទេ។',

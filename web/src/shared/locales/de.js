@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'Schriftgröße des Inhalts',
   'settings.contentFontSizeHint': 'Größe des gerenderten Nachrichtentexts (px).',
   'settings.fontBuiltIn': 'Integriert',
+  'settings.fontInstalled': 'Installiert',
+  'settings.fontDetectUnsupported': 'Dieser Browser kann installierte Schriften nicht auflisten. Verwende Benutzerdefiniert…',
+  'settings.fontDetectDenied': 'Installierte Schriften konnten nicht gelesen werden (Berechtigung verweigert).',
   'settings.fontActions': 'Aktionen',
   'settings.fontMono': 'Dicktengleich',
   'settings.fontSystem': 'System',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>Aktuell bleiben.</strong> Dateien, die der Agent <em>schreibt</em> oder <em>bearbeitet</em>, werden automatisch aktualisiert, und einfache Umbenennungen oder Löschungen (<code>mv</code>, <code>git mv</code>, <code>rm</code>) werden ebenfalls verfolgt. Aber Änderungen über andere Shell-Befehle — wie <code>sed</code> oder Ausgabe-Umleitungen — lassen sich aus dem Gespräch nicht nachverfolgen, sodass ein Artefakt gelegentlich eine ältere Version zeigen kann. Im Zweifel prüfe die Datei auf der Festplatte.',
   'artifactHelp.note': 'Artefakte sind nur Teil der Live-Ansicht und werden nicht in exportierte Snapshots aufgenommen.',
 
+  'common.back': 'Zurück',
   'common.copied': 'Kopiert',
   'common.copyFailed': 'Kopieren fehlgeschlagen',
   'index.noProjectsMatch': 'Keine Projekte passen zu deiner Suche.',

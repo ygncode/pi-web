@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'Laki ng font ng nilalaman',
   'settings.contentFontSizeHint': 'Laki ng naka-render na teksto ng mensahe (px).',
   'settings.fontBuiltIn': 'Built-in',
+  'settings.fontInstalled': 'Installed',
+  'settings.fontDetectUnsupported': 'This browser cannot list installed fonts. Use Custom… to type a font name.',
+  'settings.fontDetectDenied': 'Could not read installed fonts (permission denied). Use Custom… to type a font name.',
   'settings.fontActions': 'Mga Aksyon',
   'settings.fontMono': 'Monospace',
   'settings.fontSystem': 'System',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>Pananatiling napapanahon.</strong> Ang mga file na <em>isinusulat</em> o <em>ine-edit</em> ng agent ay awtomatikong nag-a-update, at sinusubaybayan din ang simpleng pagpapalit ng pangalan o pagtanggal (<code>mv</code>, <code>git mv</code>, <code>rm</code>). Pero ang mga pagbabagong ginawa sa ibang shell command — tulad ng <code>sed</code> o output redirect — ay hindi masusubaybayan mula sa usapan, kaya minsan ay maaaring magpakita ang artifact ng mas lumang bersyon. Kapag may pag-aalinlangan, tingnan ang file sa disk.',
   'artifactHelp.note': 'Ang mga artifact ay bahagi lamang ng live view at hindi kasama sa mga na-export na snapshot.',
 
+  'common.back': 'Bumalik',
   'common.copied': 'Nakopya',
   'common.copyFailed': 'Nabigong kopyahin',
   'index.noProjectsMatch': 'Walang proyektong tumugma sa iyong paghahanap.',

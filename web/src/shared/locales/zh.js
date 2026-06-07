@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': '内容字号',
   'settings.contentFontSizeHint': '渲染消息文字的大小（px）。',
   'settings.fontBuiltIn': '内置',
+  'settings.fontInstalled': '已安装',
+  'settings.fontDetectUnsupported': '此浏览器无法列出已安装字体。请使用自定义…输入字体名称。',
+  'settings.fontDetectDenied': '无法读取已安装字体（权限被拒绝）。请使用自定义…',
   'settings.fontActions': '操作',
   'settings.fontMono': '等宽',
   'settings.fontSystem': '系统',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>保持最新。</strong>代理<em>写入</em>或<em>编辑</em>的文件会自动更新，简单的重命名或删除（<code>mv</code>、<code>git mv</code>、<code>rm</code>）也会被跟踪。但通过其他 shell 命令所做的更改——例如 <code>sed</code> 或输出重定向——无法从对话中跟踪，因此产物偶尔可能显示较旧的版本。如有疑问，请检查磁盘上的文件。',
   'artifactHelp.note': '产物仅属于实时视图，不会包含在导出的快照中。',
 
+  'common.back': '返回',
   'common.copied': '已复制',
   'common.copyFailed': '复制失败',
   'index.noProjectsMatch': '没有符合搜索的项目。',

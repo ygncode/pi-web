@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'Tamaño de fuente del contenido',
   'settings.contentFontSizeHint': 'Tamaño del texto de los mensajes (px).',
   'settings.fontBuiltIn': 'Integradas',
+  'settings.fontInstalled': 'Instaladas',
+  'settings.fontDetectUnsupported': 'Este navegador no puede listar fuentes instaladas. Usa Personalizado… para escribir un nombre.',
+  'settings.fontDetectDenied': 'No se pudieron leer las fuentes instaladas (permiso denegado). Usa Personalizado…',
   'settings.fontActions': 'Acciones',
   'settings.fontMono': 'Monoespaciada',
   'settings.fontSystem': 'Del sistema',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>Mantenerse al día.</strong> Los archivos que el agente <em>escribe</em> o <em>edita</em> se actualizan automáticamente, y los renombrados o borrados simples (<code>mv</code>, <code>git mv</code>, <code>rm</code>) también se rastrean. Pero los cambios hechos mediante otros comandos de shell — como <code>sed</code> o redirecciones de salida — no se pueden seguir desde la conversación, así que de vez en cuando un artefacto puede mostrar una versión anterior. En caso de duda, revisa el archivo en disco.',
   'artifactHelp.note': 'Los artefactos forman parte solo de la vista en vivo y no se incluyen en las instantáneas exportadas.',
 
+  'common.back': 'Atrás',
   'common.copied': 'Copiado',
   'common.copyFailed': 'Error al copiar',
   'index.noProjectsMatch': 'Ningún proyecto coincide con tu búsqueda.',

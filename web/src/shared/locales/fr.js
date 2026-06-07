@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'Taille de police du contenu',
   'settings.contentFontSizeHint': 'Taille du texte des messages (px).',
   'settings.fontBuiltIn': 'Intégrées',
+  'settings.fontInstalled': 'Installées',
+  'settings.fontDetectUnsupported': 'Ce navigateur ne peut pas lister les polices installées. Utilisez Personnalisé…',
+  'settings.fontDetectDenied': 'Impossible de lire les polices installées (autorisation refusée). Utilisez Personnalisé…',
   'settings.fontActions': 'Actions',
   'settings.fontMono': 'À chasse fixe',
   'settings.fontSystem': 'Système',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>Rester à jour.</strong> Les fichiers que l’agent <em>écrit</em> ou <em>modifie</em> se mettent à jour automatiquement, et les renommages ou suppressions simples (<code>mv</code>, <code>git mv</code>, <code>rm</code>) sont aussi suivis. Mais les changements faits via d’autres commandes shell — comme <code>sed</code> ou les redirections de sortie — ne peuvent pas être suivis depuis la conversation, donc de temps en temps un artefact peut afficher une version plus ancienne. En cas de doute, vérifiez le fichier sur le disque.',
   'artifactHelp.note': 'Les artefacts font partie de la vue en direct uniquement et ne sont pas inclus dans les instantanés exportés.',
 
+  'common.back': 'Retour',
   'common.copied': 'Copié',
   'common.copyFailed': 'Échec de la copie',
   'index.noProjectsMatch': 'Aucun projet ne correspond à votre recherche.',

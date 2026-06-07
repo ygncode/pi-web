@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'Cỡ phông nội dung',
   'settings.contentFontSizeHint': 'Cỡ chữ tin nhắn hiển thị (px).',
   'settings.fontBuiltIn': 'Tích hợp',
+  'settings.fontInstalled': 'Installed',
+  'settings.fontDetectUnsupported': 'This browser cannot list installed fonts. Use Custom… to type a font name.',
+  'settings.fontDetectDenied': 'Could not read installed fonts (permission denied). Use Custom… to type a font name.',
   'settings.fontActions': 'Hành động',
   'settings.fontMono': 'Monospace',
   'settings.fontSystem': 'Hệ thống',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>Luôn cập nhật.</strong> Các tệp mà tác nhân <em>viết</em> hoặc <em>chỉnh sửa</em> được cập nhật tự động, và việc đổi tên hay xóa đơn giản (<code>mv</code>, <code>git mv</code>, <code>rm</code>) cũng được theo dõi. Nhưng những thay đổi qua các lệnh shell khác — như <code>sed</code> hoặc chuyển hướng đầu ra — không thể theo dõi từ cuộc trò chuyện, nên thỉnh thoảng một tạo phẩm có thể hiển thị phiên bản cũ. Khi nghi ngờ, hãy kiểm tra tệp trên đĩa.',
   'artifactHelp.note': 'Tạo phẩm chỉ là một phần của chế độ xem trực tiếp và không có trong các snapshot đã xuất.',
 
+  'common.back': 'Quay lại',
   'common.copied': 'Đã sao chép',
   'common.copyFailed': 'Sao chép thất bại',
   'index.noProjectsMatch': 'Không có dự án nào khớp với tìm kiếm của bạn.',

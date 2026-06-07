@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'コンテンツの文字サイズ',
   'settings.contentFontSizeHint': 'レンダリングされたメッセージテキストのサイズ（px）。',
   'settings.fontBuiltIn': '組み込み',
+  'settings.fontInstalled': 'インストール済み',
+  'settings.fontDetectUnsupported': 'このブラウザーではインストール済みフォントを一覧できません。カスタム…を使用してください。',
+  'settings.fontDetectDenied': 'インストール済みフォントを読み取れませんでした（権限拒否）。',
   'settings.fontActions': 'アクション',
   'settings.fontMono': '等幅',
   'settings.fontSystem': 'システム',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>最新の状態を保つ。</strong>エージェントが<em>書き込む</em>または<em>編集する</em>ファイルは自動的に更新され、単純な名前変更や削除（<code>mv</code>、<code>git mv</code>、<code>rm</code>）も追跡されます。ただし <code>sed</code> や出力リダイレクトなど、ほかのシェルコマンドによる変更は会話から追えないため、ときどきアーティファクトが古いバージョンを表示することがあります。疑わしい場合はディスク上のファイルを確認してください。',
   'artifactHelp.note': 'アーティファクトはライブビューのみの機能で、エクスポートしたスナップショットには含まれません。',
 
+  'common.back': '戻る',
   'common.copied': 'コピーしました',
   'common.copyFailed': 'コピーに失敗しました',
   'index.noProjectsMatch': '検索に一致するプロジェクトはありません。',

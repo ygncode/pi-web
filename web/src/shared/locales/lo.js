@@ -137,6 +137,9 @@ export default {
   'settings.contentFontSize': 'ຂະໜາດຟອນເນື້ອຫາ',
   'settings.contentFontSizeHint': 'ຂະໜາດຂໍ້ຄວາມທີ່ສະແດງ (px).',
   'settings.fontBuiltIn': 'ມີໃນຕົວ',
+  'settings.fontInstalled': 'Installed',
+  'settings.fontDetectUnsupported': 'This browser cannot list installed fonts. Use Custom… to type a font name.',
+  'settings.fontDetectDenied': 'Could not read installed fonts (permission denied). Use Custom… to type a font name.',
   'settings.fontActions': 'ການກະທຳ',
   'settings.fontMono': 'Monospace',
   'settings.fontSystem': 'ລະບົບ',
@@ -260,6 +263,7 @@ export default {
   'artifactHelp.upToDate': '<strong>ການຮັກສາໃຫ້ທັນສະໄໝ.</strong> ໄຟລ໌ທີ່ເອເຈັນ <em>ຂຽນ</em> ຫຼື <em>ແກ້ໄຂ</em> ຈະອັບເດດອັດຕະໂນມັດ ແລະ ການປ່ຽນຊື່ ຫຼື ລຶບແບບງ່າຍໆ (<code>mv</code>, <code>git mv</code>, <code>rm</code>) ກໍຖືກຕິດຕາມເຊັ່ນກັນ. ແຕ່ການປ່ຽນແປງຜ່ານຄຳສັ່ງ shell ອື່ນໆ — ເຊັ່ນ <code>sed</code> ຫຼື output redirect — ບໍ່ສາມາດຕິດຕາມໄດ້ຈາກການສົນທະນາ ສະນັ້ນບາງຄັ້ງອາທິແຟັກອາດສະແດງເວີຊັນເກົ່າກວ່າ. ເມື່ອສົງໄສ ໃຫ້ກວດເບິ່ງໄຟລ໌ໃນດິສ.',
   'artifactHelp.note': 'ອາທິແຟັກເປັນສ່ວນໜຶ່ງຂອງມຸມມອງສົດເທົ່ານັ້ນ ແລະ ບໍ່ລວມຢູ່ໃນ snapshot ທີ່ສົ່ງອອກ.',
 
+  'common.back': 'ກັບຄືນ',
   'common.copied': 'ສຳເນົາແລ້ວ',
   'common.copyFailed': 'ສຳເນົາບໍ່ສຳເລັດ',
   'index.noProjectsMatch': 'ບໍ່ມີໂປຣເຈັກທີ່ກົງກັບການຄົ້ນຫາຂອງທ່ານ.',
