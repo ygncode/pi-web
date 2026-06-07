@@ -16,7 +16,6 @@ import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from './
 import { createAnnotationApi } from './annotations/annotation-api.js';
 import { setupLoadEarlierBanner } from './ui/load-earlier.js';
 import * as doneNotifier from './chat/done-notifier.js';
-import { setupBtwPopup } from './live/btw-popup.js';
 // Chat composer + git footer → <ChatComposer>; live reload (SSE) → <LiveReload>.
 // share-overlay → <ShareDialog>. All rendered by SessionPage.
 import { createVersionController } from '../shared/version.js';
@@ -499,12 +498,8 @@ export function runSessionApp({ target = window } = {}) {
   // first, so its optimistic "message sent" listener exists before the user can
   // submit.
 
-  setupBtwPopup({
-    documentImpl,
-    windowImpl: target,
-    cwd: dataModel.header?.cwd || '',
-    parentId: getSessionSearchParams({ documentImpl, windowImpl: target }).get('id') || '',
-  });
+  // The btw floating scratch-chat is the <BtwPopup> Svelte component (rendered
+  // by SessionPage); it self-wires its #pi-btw-button trigger in onMount.
 
   // For huge sessions the server embeds only the tail entries in the initial
   // HTML render. Wire a "Load earlier" banner that fetches preceding windows

@@ -13,6 +13,7 @@
   import ForkModal, { buildUserMessageList } from '../components/session/ForkModal.svelte';
   import CatGatekeeperSettings from '../components/session/CatGatekeeperSettings.svelte';
   import CatGatekeeper from '../components/session/CatGatekeeper.svelte';
+  import BtwPopup from '../components/session/BtwPopup.svelte';
   import LabelModal from '../components/session/LabelModal.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
@@ -207,5 +208,6 @@
 
   <ShareDialog {sessionId} />
   <CatGatekeeper />
+  <BtwPopup {cwd} parentId={sessionId} />
   <script id="session-data" type="application/json" bind:this={dataEl}></script>
 {/if}
