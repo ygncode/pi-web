@@ -28,6 +28,7 @@
         { desc: t('shortcuts.focusInput'), keys: ['⇧', 'I'], keysWin: ['Shift', 'I'], note: t('shortcuts.noteOutsideInput') },
         { desc: t('shortcuts.cycleThinking'), keys: ['⇧', '⇥'], keysWin: ['Shift', 'Tab'], note: t('shortcuts.noteInsideInput') },
         { desc: t('shortcuts.switchModel'), keys: ['⌃', 'I'], keysWin: ['Ctrl', 'I'], note: t('shortcuts.noteInsideInput') },
+        { desc: t('shortcuts.compact'), keys: ['⌘', '⇧', 'K'], keysWin: ['Ctrl', 'Shift', 'K'], note: t('shortcuts.noteInsideInput') },
         { desc: t('shortcuts.submit'), keys: ['↩'], keysWin: ['Enter'], note: t('shortcuts.noteInsideInput') },
       ],
     },

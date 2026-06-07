@@ -688,6 +688,12 @@ export function runChatComposer({
           _thinkingSelectorApi.cycle();
         }
       }
+      // Cmd/Ctrl+Shift+K: compact context (/compact)
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        triggerCompact();
+        return;
+      }
       // Ctrl+I or Ctrl+L: open model selector, focus returns to textarea after selection
       if (event.ctrlKey && (event.key.toLowerCase() === 'i' || event.key.toLowerCase() === 'l')) {
         event.preventDefault();
@@ -762,6 +768,18 @@ export function runChatComposer({
         sendButton.disabled = false;
         updateSendEnabled();
       }
+    }
+
+    // Trigger /compact as a plain chat message: it travels the same
+    // POST /api/chat → worker.Prompt path as any prompt, so the worker emits
+    // agent_end normally (unlike extension commands, which would hang the chat).
+    // Sent directly instead of via the slash palette so the user's draft in the
+    // textarea is preserved.
+    async function triggerCompact() {
+      if (lastWorkerState === 'running') return;
+      const popover = document.getElementById('pi-chat-context-popover');
+      if (popover) popover.style.display = 'none';
+      await sendChatMessage('/compact', []);
     }
 
     form.addEventListener('submit', async (event) => {
@@ -884,6 +902,8 @@ export function runChatComposer({
           } catch (_) {}
         }
         if (data.state) lastWorkerState = data.state;
+        const compactBtn = document.getElementById('pi-chat-compact');
+        if (compactBtn) compactBtn.disabled = lastWorkerState === 'running';
         setModelLabel(knownModelLabel);
         setThinkingLabel(knownThinkingLevel);
         updateContextUsage();
@@ -994,6 +1014,8 @@ export function runChatComposer({
       popover.addEventListener('click', (e) => {
         if (e.target.closest('.pi-popover-close')) {
           popover.style.display = 'none';
+        } else if (e.target.closest('#pi-chat-compact')) {
+          triggerCompact();
         }
         e.stopPropagation();
       });
@@ -2044,6 +2066,10 @@ export function setupMentionAutocomplete({
             <span class="pi-row-value" id="pi-popover-val-total">0</span>
           </div>
         </div>
+        <button type="button" id="pi-chat-compact" class="pi-popover-compact" title={t('composer.compact')}>
+          <span class="pi-compact-label">{t('composer.compactLabel')}</span>
+          <span class="pi-compact-kbd"><kbd>⌘</kbd><kbd>⇧</kbd><kbd>K</kbd></span>
+        </button>
       </div>
     </div>
   </div>

@@ -586,4 +586,75 @@ describe('chat composer runner', () => {
     const popover = dom.window.document.getElementById('pi-chat-context-popover');
     expect(popover.querySelector('.pi-popover-limit').textContent).toBe('1.2M'); // 1,234,567 formats to 1.2M
   });
+
+  // /compact: triggered from the context popover button + Cmd/Ctrl+Shift+K, sent
+  // as a plain chat message so the worker emits agent_end normally (no hang).
+  const compactDom = () => new JSDOM('<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><div class="pi-chat-shell"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div><div id="pi-chat-context-popover" style="display:block"><button type="button" id="pi-chat-compact"><span class="pi-compact-label">Compact context</span></button></div></div></form></body>');
+
+  const runCompact = (dom, { sendChat, state = 'idle' }) => {
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      chatApi: {
+        getWorkerStatus: () => Promise.resolve(new Response(JSON.stringify({ state }), { status: 200 })),
+        sendChat
+      },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: { setupModelSelector: vi.fn(() => ({ open: vi.fn() })) },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn(() => ({ cycle: vi.fn() })) },
+      FormDataImpl: dom.window.FormData,
+      CustomEventImpl: dom.window.CustomEvent,
+      setIntervalImpl: () => {}
+    });
+    // No manual DOMContentLoaded dispatch: JSDOM fires it during the awaited
+    // tick below, so init runs exactly once (a manual dispatch would double it).
+  };
+
+  it('clicking the compact button sends /compact and closes the popover', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const dom = compactDom();
+    const sendChat = vi.fn(() => Promise.resolve(new Response('{"status":"queued"}', { status: 200 })));
+    runCompact(dom, { sendChat });
+    await tick();
+
+    dom.window.document.getElementById('pi-chat-compact').click();
+    await tick();
+
+    expect(sendChat).toHaveBeenCalledTimes(1);
+    expect(sendChat.mock.calls[0][1].get('message')).toBe('/compact');
+    expect(dom.window.document.getElementById('pi-chat-context-popover').style.display).toBe('none');
+  });
+
+  it('Cmd/Ctrl+Shift+K sends /compact without clearing the draft', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const dom = compactDom();
+    const sendChat = vi.fn(() => Promise.resolve(new Response('{"status":"queued"}', { status: 200 })));
+    runCompact(dom, { sendChat });
+    await tick();
+
+    const textarea = dom.window.document.getElementById('pi-chat-message');
+    textarea.value = 'my draft';
+    const event = new dom.window.KeyboardEvent('keydown', { key: 'K', ctrlKey: true, shiftKey: true, bubbles: true, cancelable: true });
+    textarea.dispatchEvent(event);
+    await tick();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(sendChat).toHaveBeenCalledTimes(1);
+    expect(sendChat.mock.calls[0][1].get('message')).toBe('/compact');
+    expect(textarea.value).toBe('my draft');
+  });
+
+  it('does not send /compact while the worker is running', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const dom = compactDom();
+    const sendChat = vi.fn(() => Promise.resolve(new Response('{"status":"queued"}', { status: 200 })));
+    runCompact(dom, { sendChat, state: 'running' });
+    await tick();
+
+    dom.window.document.getElementById('pi-chat-compact').click();
+    await tick();
+
+    expect(sendChat).not.toHaveBeenCalled();
+    expect(dom.window.document.getElementById('pi-chat-compact').disabled).toBe(true);
+  });
 });
