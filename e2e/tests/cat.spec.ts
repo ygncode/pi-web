@@ -30,6 +30,12 @@ test.describe("cat gatekeeper", () => {
               "pi-web:v1:cat:enabled": "true",
               "pi-web:v1:cat:focus-min": "25",
               "pi-web:v1:cat:break-min": "5",
+              // Equal bedtime/wakeup = zero-width sleep window, so the gatekeeper
+              // never enters bedtime mode. Otherwise a run during 23:00–07:00
+              // (the default window) shows the sleep overlay and skip-to-break,
+              // which only fires in the focus phase, can't open the break.
+              "pi-web:v1:cat:bedtime": "07:00",
+              "pi-web:v1:cat:wakeup": "07:00",
             },
           },
         });
@@ -40,6 +46,10 @@ test.describe("cat gatekeeper", () => {
     await page.addInitScript(() => {
       try {
         localStorage.setItem("pi-web:v1:cat:enabled", "true");
+        // Mirror the zero-width sleep window for the synchronous pre-hydration
+        // read so the controller's first tick never enters bedtime mode.
+        localStorage.setItem("pi-web:v1:cat:bedtime", "07:00");
+        localStorage.setItem("pi-web:v1:cat:wakeup", "07:00");
       } catch {
         /* ignore */
       }

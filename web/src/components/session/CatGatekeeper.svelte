@@ -102,10 +102,17 @@
     controller = setupCatGatekeeper({ windowImpl: win, storage: win.localStorage, isActive, view });
     controller.start();
 
+    // Test seam: the enforced break only fires after the (25-min) focus timer,
+    // so the e2e suite forces it via skipToBreak(). The controller has no in-app
+    // consumers, so this stays a plain window hook rather than a sessionRuntime
+    // registry slot. Cleared on destroy so SPA re-entry never sees a stale one.
+    win.__piCatGatekeeper = controller;
+
     return () => {
       controller.destroy();
       unblockInput();
       overlayEl?.remove();
+      if (win.__piCatGatekeeper === controller) win.__piCatGatekeeper = null;
       controller = null;
     };
   });
