@@ -10,6 +10,7 @@
   import { icon, Search, Pencil, Share2, GitFork, Copy, Terminal, ListTree, FileDiff, ChartColumn, BookOpen, Send, Settings, Tag } from '../../shared/icons.js';
   import * as sidebarApi from '../../session/ui/sidebar.js';
   import { openVersionModal } from '../../shared/version.js';
+  import { openModelUsage, openFork } from '../../session/session-modals.svelte.js';
 
   let { sessionId = '' } = $props();
 
@@ -111,7 +112,7 @@
           else sidebarApi.setSidebarCollapsed(false, { documentImpl: document });
           closeMenu();
           break;
-        case 'model-usage': window.__piOpenModelUsage?.(); closeMenu(); break;
+        case 'model-usage': openModelUsage(); closeMenu(); break;
         case 'rename': {
           const titleEl = document.getElementById('session-header-title');
           const current = titleEl ? titleEl.textContent : '';
@@ -149,7 +150,7 @@
                   })
                   .catch(() => showToast('Fork failed'));
               };
-              const opened = window.__piOpenForkModal?.({ entries, onSelect });
+              const opened = openFork({ entries, onSelect });
               if (opened === false) showToast('No user messages to fork from');
             })
             .catch(() => showToast('Failed to load messages'));

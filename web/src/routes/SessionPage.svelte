@@ -10,7 +10,7 @@
   import ImageModal from '../components/session/ImageModal.svelte';
   import ShortcutsModal from '../components/session/ShortcutsModal.svelte';
   import ModelUsageModal from '../components/session/ModelUsageModal.svelte';
-  import ForkModal, { buildUserMessageList } from '../components/session/ForkModal.svelte';
+  import ForkModal from '../components/session/ForkModal.svelte';
   import CatGatekeeperSettings from '../components/session/CatGatekeeperSettings.svelte';
   import CatGatekeeper from '../components/session/CatGatekeeper.svelte';
   import BtwPopup from '../components/session/BtwPopup.svelte';
@@ -33,6 +33,7 @@
   import { createSessionDataModel, decodeBase64JSON } from '../session/data/session-data.js';
   import { createSessionNavigator } from '../session/navigation/session-navigation.js';
   import { setSessionModel } from '../session/session-context.js';
+  import { sessionModals, resetSessionModals } from '../session/session-modals.svelte.js';
   import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
   import { t } from '../shared/i18n.js';
 
@@ -48,27 +49,10 @@
   // lazy highlight); the $state proxy makes the hook apply reactively.
   const contentRuntime = $state({ afterRender: null });
 
-  // Keyboard-shortcuts modal: opened imperatively (Cmd+/ and #shortcuts-help-btn,
-  // wired in setupSessionGlobals) via a window bridge set in onMount.
-  let shortcutsOpen = $state(false);
-  // Model-usage modal: opened from the command menu via a window bridge.
-  let modelUsageOpen = $state(false);
-  // Fork palette: opened from the command menu, which fetches fresh entries and
-  // passes them + the fork callback through the window bridge.
-  let forkOpen = $state(false);
-  let forkEntries = $state([]);
-  let forkOnSelect = $state(null);
-  // Cat Gatekeeper settings: opened by the cat-gatekeeper controller, which
-  // passes its live-status controller + onChange through the window bridge.
-  let catSettingsOpen = $state(false);
-  let catController = $state(null);
-  let catOnChange = $state(() => {});
-  // Label modal: opened from the per-entry label button (delegated in the content
-  // runtime).
-  let labelOpen = $state(false);
-  let labelEntryId = $state('');
-  let labelCurrent = $state('');
-  let labelOnSave = $state(null);
+  // Modal/sheet open-state lives in the shared sessionModals store so the
+  // command menu, keyboard globals, content runtime, and cat-gatekeeper can open
+  // them by importing the store helpers instead of via window bridges. The modal
+  // components below bind directly to it.
 
   let loading = $state(true);
   let showLoading = $state(false);
@@ -189,29 +173,6 @@
       });
     };
 
-    // Bridge for the imperative shortcuts triggers to open the <ShortcutsModal>
-    // component.
-    window.__piOpenShortcuts = () => { shortcutsOpen = true; };
-    window.__piOpenModelUsage = () => { modelUsageOpen = true; };
-    window.__piOpenForkModal = ({ entries, onSelect } = {}) => {
-      // Returns false (no open) when there are no user messages to fork from.
-      if (buildUserMessageList(entries || []).length === 0) return false;
-      forkEntries = entries;
-      forkOnSelect = onSelect;
-      forkOpen = true;
-      return true;
-    };
-    window.__piOpenCatSettings = ({ controller, onChange } = {}) => {
-      catController = controller || null;
-      catOnChange = onChange || (() => {});
-      catSettingsOpen = true;
-    };
-    window.__piOpenLabelModal = ({ entryId, currentLabel, onSave } = {}) => {
-      labelEntryId = entryId || '';
-      labelCurrent = currentLabel || '';
-      labelOnSave = onSave || null;
-      labelOpen = true;
-    };
     // The session view is a fixed app shell (no body scroll, internal scroll
     // containers). Mark the document so the session-only layout rules in the
     // shared SPA stylesheet do not pin body height on the index/settings pages.
@@ -279,6 +240,7 @@
       active = false;
       clearTimeout(loadingTimer);
       disposeGlobals?.();
+      resetSessionModals();
       document.title = previousTitle;
       document.documentElement.classList.remove('pi-session-page');
       document.body.classList.remove('pi-session-page');
@@ -312,11 +274,11 @@
     <ImageModal />
   </div>
 
-  <ShortcutsModal bind:open={shortcutsOpen} />
-  <ModelUsageModal bind:open={modelUsageOpen} />
-  <ForkModal bind:open={forkOpen} entries={forkEntries} onSelect={forkOnSelect} />
-  <CatGatekeeperSettings bind:open={catSettingsOpen} controller={catController} onChange={catOnChange} />
-  <LabelModal bind:open={labelOpen} entryId={labelEntryId} currentLabel={labelCurrent} onSave={labelOnSave} />
+  <ShortcutsModal bind:open={sessionModals.shortcuts} />
+  <ModelUsageModal bind:open={sessionModals.modelUsage} />
+  <ForkModal bind:open={sessionModals.fork.open} entries={sessionModals.fork.entries} onSelect={sessionModals.fork.onSelect} />
+  <CatGatekeeperSettings bind:open={sessionModals.catSettings.open} controller={sessionModals.catSettings.controller} onChange={sessionModals.catSettings.onChange} />
+  <LabelModal bind:open={sessionModals.label.open} entryId={sessionModals.label.entryId} currentLabel={sessionModals.label.currentLabel} onSave={sessionModals.label.onSave} />
 
   <ShareDialog {sessionId} />
   <CatGatekeeper />

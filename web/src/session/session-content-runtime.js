@@ -10,6 +10,7 @@
 
 import { setIconElement, Loader } from '../shared/icons.js';
 import { t } from '../shared/i18n.js';
+import { openLabel } from './session-modals.svelte.js';
 import { extractContent } from './tree/session-filter.js';
 import { escapeHtml, formatToolCall, getTreeNodeDisplayHtml, shortenPath, truncate } from './render/session-format.js';
 import { buildShareUrl, copyToClipboard, downloadSessionJson } from './render/session-entry-actions.js';
@@ -84,10 +85,10 @@ export function wireSessionContentRuntime({
       });
   };
 
-  // Set/clear an entry's tree label. The modal is <LabelModal> (SessionPage
-  // exposes the opener); this owns the save (API + reactive labelMap update).
+  // Set/clear an entry's tree label. The modal is <LabelModal>, opened via the
+  // shared sessionModals store; this owns the save (API + reactive labelMap update).
   const labelEntry = (entryId) => {
-    target.__piOpenLabelModal?.({
+    openLabel({
       entryId,
       currentLabel: model.labelMap.get(entryId) || '',
       onSave: ({ entryId: id, label }) => {

@@ -14,6 +14,7 @@
  */
 
 import { loadCatSettings } from './cat-settings.js';
+import { openCatSettings } from '../session-modals.svelte.js';
 
 const TICK_MS = 1000;
 // Cap how much a single focus tick can subtract so a throttled/backgrounded
@@ -235,9 +236,9 @@ export function setupCatGatekeeper({
   }
 
   function openSettings() {
-    // The settings sheet is the <CatGatekeeperSettings> Svelte component;
-    // SessionPage exposes the opener and reads cat-settings storage directly.
-    return windowImpl?.__piOpenCatSettings?.({
+    // The settings sheet is the <CatGatekeeperSettings> Svelte component, opened
+    // via the shared sessionModals store; it reads cat-settings storage directly.
+    return openCatSettings({
       controller: { getStatusText, skipToBreak },
       onChange: (next) => {
         // Apply focus duration changes immediately when idle in focus phase so
