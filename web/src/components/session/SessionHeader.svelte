@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { icon, PanelLeft, Plus, SquarePen, MoreHorizontal } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
+  import { navigate } from '../../shared/navigation.js';
   let { title = 'Session', cwd = '', sessionId = '' } = $props();
 
   // Resume ("Terminal") + New Session behavior, absorbed from the former
@@ -79,7 +80,7 @@
         if (data.error) {
           showToast('new-session-toast', data.error || 'Failed to create session', newHolder, 2500);
         } else if (data.id) {
-          window.location.href = '/session?id=' + encodeURIComponent(data.id);
+          navigate('/session?id=' + encodeURIComponent(data.id));
           return;
         } else {
           showToast('new-session-toast', 'Failed to create session', newHolder, 2500);

@@ -73,6 +73,7 @@
     const previousTitle = document.title;
     let active = true;
     let disposeGlobals = null;
+    let removeAnnotationReload = null;
 
     // Live session runtime — the imperative wiring that used to live in
     // session.js's runSessionApp (Svelte migration teardown). Runs once the
@@ -158,7 +159,9 @@
           },
           resolveArtifact: (artifactId) => sessionRuntime.artifacts?.getArtifact(artifactId) || null,
         });
-        window.addEventListener('pi-session-reload', () => annotationLayer.reapply());
+        const onAnnotationReload = () => annotationLayer.reapply();
+        window.addEventListener('pi-session-reload', onAnnotationReload);
+        removeAnnotationReload = () => window.removeEventListener('pi-session-reload', onAnnotationReload);
       }
 
       // Page-global glue (keyboard shortcuts, done-notifier,
@@ -240,6 +243,7 @@
       active = false;
       clearTimeout(loadingTimer);
       disposeGlobals?.();
+      removeAnnotationReload?.();
       resetSessionModals();
       resetSessionRuntime();
       document.title = previousTitle;

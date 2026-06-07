@@ -10,6 +10,7 @@
   import { icon, Search, Pencil, Share2, GitFork, Copy, Terminal, ListTree, FileDiff, ChartColumn, BookOpen, Send, Settings, Tag } from '../../shared/icons.js';
   import * as sidebarApi from '../../session/ui/sidebar.js';
   import { openVersionModal } from '../../shared/version.js';
+  import { navigate } from '../../shared/navigation.js';
   import { openModelUsage, openFork } from '../../session/session-modals.svelte.js';
 
   let { sessionId = '' } = $props();
@@ -145,7 +146,7 @@
                 })
                   .then((res) => res.json())
                   .then((data) => {
-                    if (data.id) window.location.href = '/session?id=' + encodeURIComponent(data.id);
+                    if (data.id) navigate('/session?id=' + encodeURIComponent(data.id));
                     else showToast(data.error || 'Fork failed');
                   })
                   .catch(() => showToast('Fork failed'));
@@ -165,7 +166,7 @@
           })
             .then((res) => res.json())
             .then((data) => {
-              if (data.id) window.location.href = '/session?id=' + encodeURIComponent(data.id);
+              if (data.id) navigate('/session?id=' + encodeURIComponent(data.id));
               else showToast(data.error || 'Clone failed');
             })
             .catch(() => showToast('Clone failed'));

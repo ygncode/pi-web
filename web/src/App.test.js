@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import { flushSync, unmount } from 'svelte';
 import { mountApp } from './main.js';
 
@@ -107,5 +107,48 @@ describe('App', () => {
     flushSync();
 
     expect(document.querySelector('.settings-page')).toBeTruthy();
+  });
+
+  // SessionPage fetches /api/session?id=<id> as it mounts, so a fetch for the new
+  // id is a reliable "it remounted and loaded the new session" signal.
+  it('remounts SessionPage on session→session navigation (?id change)', () => {
+    const fetchSpy = vi.fn(() => Promise.reject(new Error('stub')));
+    const origFetch = window.fetch;
+    window.fetch = fetchSpy;
+    try {
+      document.body.innerHTML = '<div id="app"></div>';
+      window.history.pushState({}, '', '/session?id=A');
+      mounted = mountApp({ props: { path: '/session', search: '?id=A' } });
+      flushSync();
+      expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('id=A'))).toBe(true);
+
+      fetchSpy.mockClear();
+      window.history.pushState({}, '', '/session?id=B');
+      flushSync();
+      expect(fetchSpy.mock.calls.some(([url]) => String(url).includes('id=B'))).toBe(true);
+    } finally {
+      window.fetch = origFetch;
+    }
+  });
+
+  it('does not remount SessionPage when the id is unchanged', () => {
+    const fetchSpy = vi.fn(() => Promise.reject(new Error('stub')));
+    const origFetch = window.fetch;
+    window.fetch = fetchSpy;
+    try {
+      document.body.innerHTML = '<div id="app"></div>';
+      window.history.pushState({}, '', '/session?id=A');
+      mounted = mountApp({ props: { path: '/session', search: '?id=A' } });
+      flushSync();
+
+      // A within-session URL change (non-id query param) must not tear down and
+      // reload the live session view.
+      fetchSpy.mockClear();
+      window.history.pushState({}, '', '/session?id=A&panel=tree');
+      flushSync();
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      window.fetch = origFetch;
+    }
   });
 });

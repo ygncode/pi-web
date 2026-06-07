@@ -6,21 +6,32 @@
   import SettingsPage from './routes/SettingsPage.svelte';
   import VersionController from './components/shared/VersionController.svelte';
 
-  let { path: initialPath = typeof window !== 'undefined' ? window.location.pathname : '/' } = $props();
+  let {
+    path: initialPath = typeof window !== 'undefined' ? window.location.pathname : '/',
+    search: initialSearch = typeof window !== 'undefined' ? window.location.search : '',
+  } = $props();
 
-  // Reactive current route. Seeded from the prop (so prop-driven tests stay
+  // Reactive current route. Seeded from the props (so prop-driven tests stay
   // deterministic) and thereafter updated only by real navigation events, never
   // re-read on mount.
   let path = $state(untrack(() => initialPath));
+  let search = $state(untrack(() => initialSearch));
+
+  // The session route is keyed on this so a session→session navigation (same
+  // pathname, different ?id=) tears down and remounts <SessionPage>, which reads
+  // ?id= only at mount. Within-session navigation never changes the URL, so this
+  // stays stable while reading a session.
+  const sessionId = $derived(new URLSearchParams(search).get('id') || '');
 
   // Make in-app history navigation swap views without a full reload. popstate
   // covers back/forward; pushState/replaceState don't emit a native event, so
-  // we wrap them to dispatch one. We only re-read pathname (not the query) — a
-  // pushState that keeps the same pathname (e.g. FullScreenSheet's mobile
-  // back-button trap, or /session?id=… → different id) is intentionally a no-op
-  // here, matching the previous full-navigation behaviour.
+  // we wrap them to dispatch one. syncPath re-reads pathname + search: the
+  // pathname drives which page renders, and search drives the session-route
+  // {#key} so /session?id=A → ?id=B remounts <SessionPage>. A pushState that
+  // changes neither (e.g. FullScreenSheet's mobile back-button trap, which
+  // pushes the same URL) is a no-op.
   onMount(() => {
-    const syncPath = () => { path = window.location.pathname; };
+    const syncPath = () => { path = window.location.pathname; search = window.location.search; };
     const { history } = window;
     const wrap = (name) => {
       const original = history[name];
@@ -51,7 +62,9 @@
 {#if path === '/'}
   <SessionsPage />
 {:else if path === '/session'}
-  <SessionPage />
+  {#key sessionId}
+    <SessionPage />
+  {/key}
 {:else if path === '/settings'}
   <SettingsPage />
 {:else if path === '/login'}
