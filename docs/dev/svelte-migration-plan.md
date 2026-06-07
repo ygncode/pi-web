@@ -564,9 +564,22 @@ and the `showCatSettings` UI).
 
 | ✅ DONE + verified | **`LabelModal.svelte`** (RightSidebar-group warm-up; well covered by `labels.spec.ts`). Svelte port of `ui/label-modal.js`: set/clear an entry's tree label, opened via `window.__piOpenLabelModal({ entryId, currentLabel, onSave })` (session.js's delegated label button still owns the save → API + tree refresh). **`ui/label-modal.js` + test DELETED** (ported to `LabelModal.test.js`). Verified: web 528 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 54/2 (labels/annotations/artifacts/session-view all green). |
 
-Coupled core remaining: `RightSidebar`/`ArtifactPanel`/`AnnotationLayer`,
-`ChatComposer`, `LiveReload`, `btw-popup`, the `cat-gatekeeper` controller, then
-`session.js` teardown.
+| ✅ DONE + verified | **`RightSidebar.svelte` chrome.** Absorbed `ui/right-sidebar.js` (`setupRightSidebar` + `setupRightSidebarTabs`: scratchpad load/save with 1s debounce, left-edge resize drag + dblclick reset, tab switching with persistence/restore, expand/collapse, backdrop/close) into `RightSidebar.svelte`'s `onMount`. The component exposes its controls on `window.__piRightSidebar`; `session-ui-runner.js` reads them lazily (its `setupRightSidebar*` calls + `projectPath` dep removed). **`ui/right-sidebar.js` + `right-sidebar-tabs.test.js` DELETED** (ported to `RightSidebar.test.js`). Verified: web 530 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 53/2. |
+| ✅ DONE + verified | **`ArtifactPanel.svelte`.** Replaced the imperative innerHTML `artifacts/artifact-panel.js` renderer with a reactive component mounted inside `<RightSidebar>`'s Artifacts pane. `session.js` still owns artifact collection/filter (`refreshArtifacts`) and pushes the visible set through `window.__piArtifactPanel` (also used by the annotation layer for `selectArtifact`/`getArtifact`). The component lazy-loads `highlight.js` and renders markdown previews itself; keeps the `<pre id="artifact-<id>">` annotation anchor + sandboxed iframe preview. **`artifact-panel.js` + test DELETED** (ported to `ArtifactPanel.test.js`, 16 cases). Verified: web 529 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 54/2. |
+| ✅ DONE + verified | **`AnnotationLayer.svelte`.** Replaced the imperative innerHTML `annotations/annotation-layer.js` with a reactive component in `<RightSidebar>`'s Notes pane. Notes list / comment popover / note modal render declaratively (delegated click listeners attached imperatively for a11y); selection detection, highlight (re)application via `MutationObserver`, and the annotations API stay imperative. `session.js` supplies runtime deps (`api`/`scopes`/`composerEl`/`countEl`/callbacks/`resolveArtifact`) via `window.__piAnnotationLayer.init(cfg)`; `setAnnotations`/`reapply` still flow from live reload + `pi-session-reload`. The popover + modal **relocate to `<body>`** in `onMount` so their fixed positioning stays viewport-relative (the right sidebar uses transforms). **`annotation-layer.js` + test DELETED** (ported to `AnnotationLayer.test.js`, 13 cases). Verified: web 529 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 54/2. |
+
+**RightSidebar group COMPLETE** — `RightSidebar` chrome + `ArtifactPanel` +
+`AnnotationLayer` are Svelte; 4 modules deleted (`right-sidebar`,
+`artifact-panel`, `annotation-layer`, and the right-sidebar bits of
+`session-ui-runner`). `annotation-api.js` (pure fetch wrapper) and
+`artifact-{registry,filter}.js` (pure) stay.
+
+Coupled core remaining (next, per plan §3 Phase 3): **`ChatComposer` +
+`LiveReload`** (do together — `session.js` orders live-reload before chat, and
+both need `navigateTo` + the shared model; the plan calls for moving
+`navigateTo`/model ownership into `SessionPage` first). Then `btw-popup` + the
+`cat-gatekeeper` controller (NO e2e — add coverage BEFORE converting), then
+`session.js` teardown + the docs pass.
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,
