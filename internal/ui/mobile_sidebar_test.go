@@ -32,7 +32,7 @@ func TestMobileSidebarClosesWhenNavigatingTree(t *testing.T) {
 			t.Fatalf("sidebar.js missing %q; mobile sidebar can remain stuck over chat", check)
 		}
 	}
-	if !strings.Contains(string(liveTreeSrc), "__piCloseSidebar") {
+	if !strings.Contains(string(liveTreeSrc), "sessionRuntime.layout?.closeSidebar") {
 		t.Fatal("SessionTree.svelte missing mobile close-on-navigate; sidebar can remain stuck over chat")
 	}
 	if !strings.Contains(string(exportSrc), "ui.closeSidebar()") {

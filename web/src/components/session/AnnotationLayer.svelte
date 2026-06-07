@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { t } from '../../shared/i18n.js';
   import { getSelectionInfo, applyHighlights } from '../../session/annotations/annotation-range.js';
+  import { sessionRuntime } from '../../session/session-runtime.js';
 
   // Reactive view state. The notes list, floating "Comment" popover, and note
   // modal are rendered declaratively; the selection/highlight machinery and API
@@ -331,7 +332,7 @@
       else if (action === 'cancel-note') closeNote();
     });
 
-    window.__piAnnotationLayer = { init, setAnnotations, reapply, refresh };
+    sessionRuntime.annotations = { init, setAnnotations, reapply, refresh };
 
     return () => {
       observer?.disconnect();
@@ -341,7 +342,7 @@
       document.removeEventListener('keydown', onKeyDown);
       popoverEl?.remove();
       modalEl?.remove();
-      delete window.__piAnnotationLayer;
+      sessionRuntime.annotations = null;
     };
   });
 </script>

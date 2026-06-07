@@ -34,6 +34,7 @@
   import { createSessionNavigator } from '../session/navigation/session-navigation.js';
   import { setSessionModel } from '../session/session-context.js';
   import { sessionModals, resetSessionModals } from '../session/session-modals.svelte.js';
+  import { sessionRuntime, resetSessionRuntime } from '../session/session-runtime.js';
   import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
   import { t } from '../shared/i18n.js';
 
@@ -115,8 +116,7 @@
       });
 
       // Exposed for <SessionTree>'s node-click handler (auto-close mobile drawer).
-      window.__piIsMobileLayout = ui.isMobileLayout;
-      window.__piCloseSidebar = ui.closeSidebar;
+      sessionRuntime.layout = { isMobileLayout: ui.isMobileLayout, closeSidebar: ui.closeSidebar };
 
       // The header card is a persistent <SessionInfoHeader>, so bind its toggle
       // buttons exactly once.
@@ -127,10 +127,10 @@
       // below the stub and the conversation appears duplicated).
       window.navigateTo(model.currentLeafId, model.urlTargetId ? 'target' : 'bottom', model.urlTargetId || null);
 
-      // Annotation layer (right-sidebar "Notes" tab) — <AnnotationLayer> exposes
-      // init/setAnnotations/reapply on window.__piAnnotationLayer; supply its
+      // Annotation layer (right-sidebar "Notes" tab) — <AnnotationLayer> registers
+      // init/setAnnotations/reapply in sessionRuntime.annotations; supply its
       // runtime deps here. Anchors to entries by `entry-<id>` + offsets.
-      const annotationLayer = window.__piAnnotationLayer || null;
+      const annotationLayer = sessionRuntime.annotations || null;
       const messagesEl = document.getElementById('messages');
       if (annotationLayer && messagesEl && sessionId) {
         const annotationArtifactHost = document.getElementById('artifact-panel-host');
@@ -141,7 +141,7 @@
           countEl: document.getElementById('annotation-tab-count'),
           onSelectArtifact: (artifactId) => {
             ui.activateRightTab('artifacts');
-            window.__piArtifactPanel?.selectArtifact(artifactId);
+            sessionRuntime.artifacts?.selectArtifact(artifactId);
           },
           onCreate: () => {
             ui.openRightSidebar();
@@ -156,7 +156,7 @@
             window.dispatchEvent(new window.CustomEvent('pi-chat-attach-text', { detail: attachment }));
             if (ui.isMobileLayout()) ui.collapseRightSidebar();
           },
-          resolveArtifact: (artifactId) => window.__piArtifactPanel?.getArtifact(artifactId) || null,
+          resolveArtifact: (artifactId) => sessionRuntime.artifacts?.getArtifact(artifactId) || null,
         });
         window.addEventListener('pi-session-reload', () => annotationLayer.reapply());
       }
@@ -241,6 +241,7 @@
       clearTimeout(loadingTimer);
       disposeGlobals?.();
       resetSessionModals();
+      resetSessionRuntime();
       document.title = previousTitle;
       document.documentElement.classList.remove('pi-session-page');
       document.body.classList.remove('pi-session-page');

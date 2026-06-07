@@ -549,6 +549,7 @@ export function updateStatsDom(entries, { documentImpl = document } = {}) {
   import { marked } from 'marked';
   import { escapeHtml } from '../../session/render/session-format.js';
   import { safeMarkedParse } from '../../session/render/markdown.js';
+  import { sessionRuntime } from '../../session/session-runtime.js';
 
   onMount(() => {
     const documentImpl = document;
@@ -773,7 +774,7 @@ export function updateStatsDom(entries, { documentImpl = document } = {}) {
         eventSource: es,
         onReload: triggerReload,
         onChatPreview: renderChatPreview,
-        onAnnotations: (list) => windowImpl.__piAnnotationLayer?.setAnnotations(list),
+        onAnnotations: (list) => sessionRuntime.annotations?.setAnnotations(list),
         onError: () => {
           // EventSource onerror fires for transient blips (auto-retried) and
           // terminal closures (readyState===CLOSED, e.g. device wake). Handle

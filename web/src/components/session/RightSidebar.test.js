@@ -2,13 +2,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { tick } from 'svelte';
 import { render, cleanup } from '@testing-library/svelte';
 import RightSidebar from './RightSidebar.svelte';
+import { sessionRuntime, resetSessionRuntime } from '../../session/session-runtime.js';
 
 afterEach(() => {
   cleanup();
   document.body.className = '';
   document.documentElement.removeAttribute('style');
   localStorage.clear();
-  delete window.__piRightSidebar;
+  resetSessionRuntime();
 });
 
 beforeEach(() => {
@@ -52,7 +53,7 @@ describe('RightSidebar tabs', () => {
 
   it('ignores activation for an unknown pane name via the window bridge', () => {
     render(RightSidebar);
-    window.__piRightSidebar.activateTab('nonexistent');
+    sessionRuntime.rightSidebar.activateTab('nonexistent');
     expect(document.querySelector('[data-pane="scratchpad"]').classList.contains('active')).toBe(true);
   });
 });
@@ -62,13 +63,13 @@ describe('RightSidebar visibility controls', () => {
     document.body.classList.add('right-sidebar-collapsed');
     render(RightSidebar);
 
-    window.__piRightSidebar.open();
+    sessionRuntime.rightSidebar.open();
     expect(document.body.classList.contains('right-sidebar-collapsed')).toBe(false);
 
-    window.__piRightSidebar.collapse();
+    sessionRuntime.rightSidebar.collapse();
     expect(document.body.classList.contains('right-sidebar-collapsed')).toBe(true);
 
-    window.__piRightSidebar.toggle();
+    sessionRuntime.rightSidebar.toggle();
     expect(document.body.classList.contains('right-sidebar-collapsed')).toBe(false);
   });
 

@@ -4,6 +4,7 @@
   import { t } from '../../shared/i18n.js';
   import ArtifactPanel from './ArtifactPanel.svelte';
   import AnnotationLayer from './AnnotationLayer.svelte';
+  import { sessionRuntime } from '../../session/session-runtime.js';
 
   let { scratchpad = '', projectPath = '' } = $props();
 
@@ -59,13 +60,13 @@
     // ── Sidebar visibility/resize/scratchpad ─────────────────────────────────
     const cleanups = [];
     if (!sidebar) {
-      window.__piRightSidebar = {
+      sessionRuntime.rightSidebar = {
         toggle: () => {},
         open: () => {},
         collapse: () => {},
         activateTab,
       };
-      return () => { delete window.__piRightSidebar; };
+      return () => { sessionRuntime.rightSidebar = null; };
     }
 
     function isCollapsed() {
@@ -288,7 +289,7 @@
       });
     }
 
-    window.__piRightSidebar = {
+    sessionRuntime.rightSidebar = {
       toggle: toggleSidebar,
       open: openSidebar,
       collapse: collapseSidebar,
@@ -297,7 +298,7 @@
 
     return () => {
       for (const fn of cleanups) fn();
-      delete window.__piRightSidebar;
+      sessionRuntime.rightSidebar = null;
     };
   });
 </script>

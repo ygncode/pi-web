@@ -6,6 +6,7 @@
   import { collectArtifacts } from '../../session/artifacts/artifact-registry.js';
   import { filterArtifacts, readArtifactSettings, ARTIFACT_SETTING_KEYS } from '../../session/artifacts/artifact-filter.js';
   import { t } from '../../shared/i18n.js';
+  import { sessionRuntime } from '../../session/session-runtime.js';
 
   // `highlight`/`renderMarkdown` are injectable for tests; in the live app the
   // component lazy-loads highlight.js itself and renders markdown via marked.
@@ -14,8 +15,8 @@
   // The panel collects artifacts straight from the shared reactive model: on
   // mount and whenever entries change (live reload), it re-runs collection +
   // filtering. Standalone (tests, no context) the model is undefined and the
-  // panel is driven imperatively via the window.__piArtifactPanel.setArtifacts
-  // bridge instead.
+  // panel is driven imperatively via the sessionRuntime.artifacts.setArtifacts
+  // handle instead.
   const model = getSessionModel();
   // Bumped by the cross-tab `storage` listener so the collection effect re-reads
   // the artifact settings (enable/include filter) without a reload.
@@ -183,7 +184,7 @@
       if (e.key === null || ARTIFACT_SETTING_KEYS.includes(e.key)) settingsTick += 1;
     };
     if (model) window.addEventListener('storage', onStorage);
-    window.__piArtifactPanel = {
+    sessionRuntime.artifacts = {
       setArtifacts,
       selectArtifact,
       render: () => {},
@@ -193,7 +194,7 @@
     };
     return () => {
       if (model) window.removeEventListener('storage', onStorage);
-      delete window.__piArtifactPanel;
+      sessionRuntime.artifacts = null;
     };
   });
 </script>

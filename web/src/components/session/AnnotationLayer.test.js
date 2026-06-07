@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { tick } from 'svelte';
 import { render, cleanup } from '@testing-library/svelte';
 import AnnotationLayer from './AnnotationLayer.svelte';
+import { sessionRuntime, resetSessionRuntime } from '../../session/session-runtime.js';
 
 const flush = () => new Promise((r) => setTimeout(r, 0));
 const waitFor = async (fn, { timeout = 1000, interval = 5 } = {}) => {
@@ -17,7 +18,7 @@ const waitFor = async (fn, { timeout = 1000, interval = 5 } = {}) => {
 afterEach(() => {
   cleanup();
   document.body.innerHTML = '';
-  delete window.__piAnnotationLayer;
+  resetSessionRuntime();
   vi.restoreAllMocks();
 });
 
@@ -52,7 +53,7 @@ function setup({ api, selectionDelayMs = 250, onCreate = null, onSend = null, on
   document.body.appendChild(count);
 
   render(AnnotationLayer);
-  const layer = window.__piAnnotationLayer;
+  const layer = sessionRuntime.annotations;
   const resolvedApi = api || fakeApi();
   if (init) {
     layer.init({ api: resolvedApi, scopes: [messages], composerEl: composer, countEl: count, onCreate, onSend, onAddToChat, selectionDelayMs });
@@ -214,7 +215,7 @@ describe('AnnotationLayer', () => {
       : null);
 
     render(AnnotationLayer);
-    const layer = window.__piAnnotationLayer;
+    const layer = sessionRuntime.annotations;
     layer.init({ api: fakeApi(), scopes: [messages], composerEl: composer, resolveArtifact });
     layer.setAnnotations([
       { id: 'n1', anchorId: 'artifact-art-1', startOffset: 0, endOffset: 4, text: 'add (burmese)', original: 'line' },
@@ -275,7 +276,7 @@ describe('AnnotationLayer', () => {
     const api = fakeApi();
 
     render(AnnotationLayer);
-    const layer = window.__piAnnotationLayer;
+    const layer = sessionRuntime.annotations;
     layer.init({ api, scopes: [messages, artHost], countEl: count });
     await flush();
 
@@ -300,7 +301,7 @@ describe('AnnotationLayer', () => {
 
   it('is a no-op when required deps are missing', () => {
     render(AnnotationLayer);
-    const layer = window.__piAnnotationLayer;
+    const layer = sessionRuntime.annotations;
     expect(() => { layer.init({}); layer.setAnnotations([]); layer.reapply(); }).not.toThrow();
   });
 });

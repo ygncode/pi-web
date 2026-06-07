@@ -19,10 +19,13 @@
   let showMessage = $state(false);
   let showSnooze = $state(false);
 
+  // Assigned in onMount; the snooze button (rendered before mount) reads it here.
+  let controller = null;
+
   function onSnooze(e) {
     e.preventDefault();
     e.stopPropagation();
-    window.__piCatGatekeeper?.snooze?.();
+    controller?.snooze?.();
   }
 
   onMount(() => {
@@ -96,15 +99,14 @@
       return !hidden && focused;
     };
 
-    const controller = setupCatGatekeeper({ windowImpl: win, storage: win.localStorage, isActive, view });
-    win.__piCatGatekeeper = controller;
+    controller = setupCatGatekeeper({ windowImpl: win, storage: win.localStorage, isActive, view });
     controller.start();
 
     return () => {
       controller.destroy();
       unblockInput();
       overlayEl?.remove();
-      if (win.__piCatGatekeeper === controller) delete win.__piCatGatekeeper;
+      controller = null;
     };
   });
 </script>

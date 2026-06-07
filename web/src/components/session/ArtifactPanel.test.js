@@ -2,10 +2,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { tick } from 'svelte';
 import { render, cleanup } from '@testing-library/svelte';
 import ArtifactPanel from './ArtifactPanel.svelte';
+import { sessionRuntime, resetSessionRuntime } from '../../session/session-runtime.js';
 
 afterEach(() => {
   cleanup();
-  delete window.__piArtifactPanel;
+  resetSessionRuntime();
   vi.restoreAllMocks();
 });
 
@@ -13,7 +14,7 @@ afterEach(() => {
 // data-highlight-pending) and skips the component's lazy highlight.js import.
 function renderPanel(props = {}) {
   render(ArtifactPanel, { props: { highlight: () => null, ...props } });
-  return window.__piArtifactPanel;
+  return sessionRuntime.artifacts;
 }
 
 const arts = [
@@ -78,14 +79,14 @@ describe('ArtifactPanel', () => {
   it('uses highlight output when available, else falls back to escaped text', async () => {
     const highlight = vi.fn(() => '<span class="tok">x</span>');
     renderPanel({ highlight });
-    window.__piArtifactPanel.setArtifacts(arts);
+    sessionRuntime.artifacts.setArtifacts(arts);
     await tick();
     expect(highlight).toHaveBeenCalled();
     expect(document.querySelector('.artifact-source code').innerHTML).toContain('tok');
     cleanup();
 
     renderPanel();
-    window.__piArtifactPanel.setArtifacts([{ id: 'x', kind: 'code', title: 't', lang: '', content: '<b>raw</b>' }]);
+    sessionRuntime.artifacts.setArtifacts([{ id: 'x', kind: 'code', title: 't', lang: '', content: '<b>raw</b>' }]);
     await tick();
     expect(document.querySelector('.artifact-source code').innerHTML).toContain('&lt;b&gt;');
     expect(document.querySelector('code[data-highlight-pending]')).not.toBeNull();

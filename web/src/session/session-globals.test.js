@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setupSessionGlobals } from './session-globals.js';
 import { sessionModals, resetSessionModals } from './session-modals.svelte.js';
+import { sessionRuntime, resetSessionRuntime } from './session-runtime.js';
 
 // Focused coverage for the global keyboard shortcuts + relay buttons, which the
 // e2e suite does not exercise. The other wiring (done-notifier, version, palette,
@@ -47,7 +48,7 @@ describe('setupSessionGlobals — keyboard shortcuts', () => {
     vi.restoreAllMocks();
     document.body.innerHTML = '';
     resetSessionModals();
-    delete window.__piRightSidebar;
+    resetSessionRuntime();
     delete window.__piOpenSessionPalette;
   });
 
@@ -71,9 +72,9 @@ describe('setupSessionGlobals — keyboard shortcuts', () => {
     expect(document.body.classList.contains('sidebar-collapsed')).toBe(true);
   });
 
-  it('Cmd+Shift+N toggles the right sidebar via its window bridge', () => {
+  it('Cmd+Shift+N toggles the right sidebar via the runtime registry', () => {
     const toggle = vi.fn();
-    window.__piRightSidebar = { toggle };
+    sessionRuntime.rightSidebar = { toggle };
     dispatchKey('n', { meta: true, shift: true });
     expect(toggle).toHaveBeenCalledOnce();
   });

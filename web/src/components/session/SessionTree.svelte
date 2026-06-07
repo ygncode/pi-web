@@ -2,6 +2,7 @@
   import { icon, PanelLeftClose, X } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
   import { getSessionModel } from '../../session/session-context.js';
+  import { sessionRuntime } from '../../session/session-runtime.js';
   import SessionTreeNodes from './SessionTreeNodes.svelte';
 
   const model = getSessionModel();
@@ -15,7 +16,7 @@
   function onNavigate(id) {
     const leaf = model?.newestLeaf(id) || id;
     window.navigateTo?.(leaf, 'target', id);
-    if (window.__piIsMobileLayout?.()) window.__piCloseSidebar?.();
+    if (sessionRuntime.layout?.isMobileLayout?.()) sessionRuntime.layout?.closeSidebar?.();
   }
 </script>
 

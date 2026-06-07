@@ -1,3 +1,5 @@
+import { sessionRuntime } from '../session-runtime.js';
+
 export function setupSessionUi({
   documentImpl = document,
   windowImpl = window,
@@ -64,11 +66,11 @@ export function setupSessionUi({
     attachHeaderHandlers,
     toggleController,
     // The right-sidebar chrome (scratchpad/resize/tabs) lives in <RightSidebar>,
-    // which exposes its controls on window.__piRightSidebar. Read lazily so the
-    // calls resolve against the mounted component.
-    toggleRightSidebar: () => windowImpl.__piRightSidebar?.toggle(),
-    openRightSidebar: () => windowImpl.__piRightSidebar?.open(),
-    collapseRightSidebar: () => windowImpl.__piRightSidebar?.collapse(),
-    activateRightTab: (pane) => windowImpl.__piRightSidebar?.activateTab(pane),
+    // which registers its controls in sessionRuntime.rightSidebar. Read lazily so
+    // the calls resolve against the mounted component.
+    toggleRightSidebar: () => sessionRuntime.rightSidebar?.toggle(),
+    openRightSidebar: () => sessionRuntime.rightSidebar?.open(),
+    collapseRightSidebar: () => sessionRuntime.rightSidebar?.collapse(),
+    activateRightTab: (pane) => sessionRuntime.rightSidebar?.activateTab(pane),
   };
 }
