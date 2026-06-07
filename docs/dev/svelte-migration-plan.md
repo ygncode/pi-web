@@ -574,12 +574,14 @@ and the `showCatSettings` UI).
 `session-ui-runner`). `annotation-api.js` (pure fetch wrapper) and
 `artifact-{registry,filter}.js` (pure) stay.
 
-Coupled core remaining (next, per plan §3 Phase 3): **`ChatComposer` +
-`LiveReload`** (do together — `session.js` orders live-reload before chat, and
-both need `navigateTo` + the shared model; the plan calls for moving
-`navigateTo`/model ownership into `SessionPage` first). Then `btw-popup` + the
-`cat-gatekeeper` controller (NO e2e — add coverage BEFORE converting), then
-`session.js` teardown + the docs pass.
+| ✅ DONE + verified | **navigateTo + view-state ownership → model/SessionPage (prep).** `SessionPage` now builds the session navigator from the reactive model and exposes `navigateTo` on `window` (+ `__piSessionNavigator`) **before** the child components mount, so the tree, chat composer, and live reload share one instance. `currentLeafId`/`currentTargetId`/`filterMode`/`searchQuery` live solely on `SessionDataModel`; `session.js` dropped its mirrored locals, its own `createSessionNavigator` call, `syncTreeRendererState`, and `__piFilterState` (dead). `search-filters` callbacks write the model directly; an init guard seeds `currentLeafId/currentTargetId` for the plain fallback model. Pure refactor. Verified: web 529 + knip clean + `go test ./internal/ui` + Desktop-Chrome e2e 54/2. |
+| ✅ DONE + verified | **`ChatComposer` + `LiveReload` → components.** `ChatComposer.svelte` self-inits the chat runner (`runChatComposer`) + git footer (`setupGitFooter`) in `onMount`; new **`LiveReload.svelte`** (markup-less) self-inits the SSE runner (`runLiveReload`, `reactiveContent:true`) in `onMount`. Both read the shared model + `target.navigateTo` from `window`. `session.js` no longer wires chat/live — it just exposes model reconciliation on `window.__piReconcileEntries` (also used by load-earlier) for `<LiveReload>`'s `onSessionDataReload`, and dropped all chat/live/selector imports + the `__PI_TEST_*` hook calls (relocated to the components). `<LiveReload>` mounts before `<ChatComposer>` (SessionPage markup order) so the optimistic `pi-chat-message-sent` listener is attached before the user can send. The chat/live **runner modules stay** as component-owned implementation detail (their own tests still pass); full inlining/deletion is the later cleanup. `session.test.js` updated (reconcile path asserted via `__piReconcileEntries`; the obsolete session.js ordering test removed). Verified: web 528 + knip clean + no a11y warnings + export guard green (`go test ./internal/ui`) + Desktop-Chrome e2e 54/2. |
+
+Coupled core remaining: `btw-popup` (621) + the `cat-gatekeeper` controller (369)
+— **NO e2e; add coverage BEFORE converting** — then `session.js` teardown (inline
+or delete the now component-owned chat/live runner modules per §8; delete
+`session.js` once empty) + the docs pass (AGENTS.md, templates-vs-web,
+system-overview/frontend).
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,
