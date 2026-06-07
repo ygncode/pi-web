@@ -10,7 +10,6 @@
   import { setupKeyboardNav } from '../shared/keyboard-nav.js';
   import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
   import { configureSettingsSync, hydrateSettings, writeSetting } from '../shared/settings-store.js';
-  import { createVersionController } from '../shared/version.js';
   import { icon, Sun, Moon } from '../shared/icons.js';
   import { t } from '../shared/i18n.js';
   import {
@@ -196,7 +195,6 @@
     document.title = 'Pi Sessions';
     configureSettingsSync({ fetchImpl: window.fetch.bind(window) });
     setupKeyboardNav({ windowImpl: window, documentImpl: document });
-    createVersionController({ documentImpl: document, windowImpl: window });
 
     try { layout = localStorage.getItem(layoutStorageKey) === 'projects' ? 'projects' : 'timeline'; } catch {}
     hydrateSettings({ storage: localStorage }).then((settings) => {

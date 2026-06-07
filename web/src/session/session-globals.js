@@ -11,7 +11,6 @@
 import * as doneNotifier from './chat/done-notifier.js';
 import * as sidebarApi from './ui/sidebar.js';
 import { setupLoadEarlierBanner } from './ui/load-earlier.js';
-import { createVersionController } from '../shared/version.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 
@@ -41,8 +40,6 @@ export function setupSessionGlobals({
   });
 
   setupKeyboardNav({ windowImpl: target, documentImpl });
-
-  createVersionController({ documentImpl, windowImpl: target });
 
   // Session list palette (Cmd+K / "List Sessions" menu item). The Svelte
   // <CommandPalette> component owns the palette and exposes

@@ -6,6 +6,15 @@
   <div class="settings-section-title">{t('settings.about')}</div>
   <div class="settings-row">
     <div class="settings-row-label">
+      <span class="name">{t('common.version')}</span>
+      <span class="hint">pi-web</span>
+    </div>
+    <div class="settings-control">
+      <button class="settings-link" type="button" data-version-row><span data-version-status>…</span></button>
+    </div>
+  </div>
+  <div class="settings-row">
+    <div class="settings-row-label">
       <span class="name">{t('settings.docs')}</span>
       <span class="hint">{t('settings.docsHint')}</span>
     </div>

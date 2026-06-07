@@ -3,6 +3,7 @@
   import SessionsPage from './routes/SessionsPage.svelte';
   import SessionPage from './routes/SessionPage.svelte';
   import SettingsPage from './routes/SettingsPage.svelte';
+  import VersionController from './components/shared/VersionController.svelte';
 
   let { path = typeof window !== 'undefined' ? window.location.pathname : '/' } = $props();
 </script>
@@ -20,3 +21,5 @@
     Svelte ready for pi-web
   </section>
 {/if}
+
+<VersionController />
