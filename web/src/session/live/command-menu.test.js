@@ -58,30 +58,23 @@ describe('setupCommandMenu rename', () => {
     expect(dom.window.document.title).toBe('Old');
   });
 
-  it('opens model usage from the detail page menu', () => {
+  it('opens model usage via the window bridge from the detail page menu', () => {
     const dom = makeDom();
     dom.window.matchMedia = vi.fn(() => ({ matches: false }));
     dom.window.requestAnimationFrame = (fn) => fn();
+    // The usage modal is now the <ModelUsageModal> Svelte component; the command
+    // menu just invokes the opener SessionPage exposes on window.
+    const openModelUsage = vi.fn();
+    dom.window.__piOpenModelUsage = openModelUsage;
 
     setupCommandMenu({
       documentImpl: dom.window.document,
       windowImpl: dom.window,
-      getEntries: () => ([{
-        type: 'message',
-        message: {
-          role: 'assistant',
-          provider: 'p',
-          model: 'm',
-          usage: { input: 1000, output: 2000, cost: { input: 0.001, output: 0.002 } },
-          content: [{ type: 'toolCall' }],
-        },
-      }]),
+      getEntries: () => [],
       escapeHtml: (s) => String(s),
-      formatTokens: (n) => String(n),
     });
 
     expect(() => dom.window.document.querySelector('[data-action="model-usage"]').click()).not.toThrow();
-    expect(dom.window.document.querySelector('.pi-sheet-panel')).toBeTruthy();
-    expect(dom.window.document.querySelector('.pi-sheet-body').textContent).toContain('Total cost');
+    expect(openModelUsage).toHaveBeenCalled();
   });
 });

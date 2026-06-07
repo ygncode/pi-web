@@ -8,6 +8,7 @@
   import SessionContent from '../components/session/SessionContent.svelte';
   import ImageModal from '../components/session/ImageModal.svelte';
   import ShortcutsModal from '../components/session/ShortcutsModal.svelte';
+  import ModelUsageModal from '../components/session/ModelUsageModal.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
@@ -34,6 +35,8 @@
   // Keyboard-shortcuts modal: opened imperatively (Cmd+/ and #shortcuts-help-btn
   // wired in session.js) via a window bridge set in onMount.
   let shortcutsOpen = $state(false);
+  // Model-usage modal: opened from the command menu via a window bridge.
+  let modelUsageOpen = $state(false);
 
   let loading = $state(true);
   let showLoading = $state(false);
@@ -55,6 +58,7 @@
     // Bridge for the imperative shortcuts triggers (session.js) to open the
     // <ShortcutsModal> component.
     window.__piOpenShortcuts = () => { shortcutsOpen = true; };
+    window.__piOpenModelUsage = () => { modelUsageOpen = true; };
     // The session view is a fixed app shell (no body scroll, internal scroll
     // containers). Mark the document so the session-only layout rules in the
     // shared SPA stylesheet do not pin body height on the index/settings pages.
@@ -142,6 +146,7 @@
   </div>
 
   <ShortcutsModal bind:open={shortcutsOpen} />
+  <ModelUsageModal bind:open={modelUsageOpen} />
 
   <ShareDialog />
   <script id="session-data" type="application/json" bind:this={dataEl}></script>

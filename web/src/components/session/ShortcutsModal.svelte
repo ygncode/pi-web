@@ -68,7 +68,14 @@
   });
 </script>
 
-<FullScreenSheet bind:open title={t('shortcuts.title')} showClose={false}>
+<FullScreenSheet
+  bind:open
+  title={t('shortcuts.title')}
+  showClose={false}
+  backdropClass="shortcuts-sheet-backdrop"
+  panelClass="shortcuts-sheet-panel"
+  bodyClass="shortcuts-sheet-body"
+>
   <div class="shortcuts-palette">
     <div class="shortcuts-search-wrap">
       <input

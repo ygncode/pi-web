@@ -1,4 +1,3 @@
-import { showModelUsageModal } from './model-usage-modal.js';
 import { showForkModal } from './fork-modal.js';
 import { openVersionModal } from '../../shared/version.js';
 
@@ -190,14 +189,9 @@ export function setupCommandMenu({
         break;
       }
       case 'model-usage': {
-        if (getEntries) {
-          showModelUsageModal({
-            entries: getEntries(),
-            escapeHtml,
-            formatTokens,
-            documentImpl,
-          });
-        }
+        // The usage modal is the <ModelUsageModal> Svelte component (reads the
+        // shared model reactively); SessionPage exposes the opener.
+        windowImpl.__piOpenModelUsage?.();
         closeMenu();
         break;
       }

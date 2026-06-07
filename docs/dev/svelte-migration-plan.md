@@ -544,11 +544,13 @@ inward toward the coupled chat/live core.
 
 | ✅ DONE + verified | **`FullScreenSheet.svelte` + `ShortcutsModal.svelte`** (sheet-infra chunk, part 1/4). Svelte port of `live/full-screen-sheet.js` (`showSheet`): same markup/classes/behavior — ref-counted scroll-lock, focus trap, Escape/backdrop close (backdrop listener attached imperatively to match the codebase's delegated convention + avoid a11y lint), mobile synthetic-history back-gesture close — driven by a single bindable `open`. `ShortcutsModal` ports `live/shortcuts-modal.js` with reactive search. Triggers bridged via `window.__piOpenShortcuts` (set in `SessionPage`, called from `session.js` Cmd+/ + `#shortcuts-help-btn`). **`live/shortcuts-modal.js` DELETED**; component tests added. `full-screen-sheet.js` retained for the 3 remaining consumers. Verified: web 547 + knip clean + no a11y build warnings + `go test ./internal/ui` + Desktop-Chrome e2e 54/2. |
 
+| ✅ DONE + verified | **`ModelUsageModal.svelte`** (sheet-infra 2/4). Svelte port of `live/model-usage-modal.js`: pure stat/cost/breakdown helpers + reactive markup over `<FullScreenSheet>`, computed from the shared model via context (no `escapeHtml` needed — Svelte auto-escapes; `formatTokens` from `session-stats`). Trigger bridged via `window.__piOpenModelUsage` (command-menu's `model-usage` action). Also added `backdropClass`/`panelClass`/`bodyClass` props to `FullScreenSheet` (the former `showSheet` consumers tag the sheet for CSS) — **fixes a missed `shortcuts-sheet-*` styling regression** from 1/4 — and a destroy-time listener/scroll-lock cleanup. **`live/model-usage-modal.js` + test DELETED** (ported to `ModelUsageModal.test.js`); `command-menu.test.js` updated. Verified: web 545 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 53/2. |
+
 Sheet-infra chunk remaining (each its own e2e-green commit, then delete
-`full-screen-sheet.js` + test once the last consumer migrates): `ModelUsageModal`
-(2/4), `ForkModal` (3/4), `CatGatekeeperSettings`/`cat-settings` (4/4). After the
-sheet group: the coupled core (`CommandMenu`, `btw-popup`, `share-overlay`,
-`RightSidebar`/panels, `ChatComposer`, `LiveReload`, `session.js` teardown).
+`full-screen-sheet.js` + test once the last consumer migrates): `ForkModal` (3/4),
+`CatGatekeeperSettings`/`cat-settings` (4/4). After the sheet group: the coupled
+core (`CommandMenu`, `btw-popup`, `share-overlay`, `RightSidebar`/panels,
+`ChatComposer`, `LiveReload`, `session.js` teardown).
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,

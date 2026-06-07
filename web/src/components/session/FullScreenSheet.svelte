@@ -8,7 +8,7 @@
   // Driven by a single bindable `open`; internal triggers (Escape, backdrop,
   // back/close buttons, mobile popstate) set `open = false` and an $effect runs
   // the open/close side effects. Body content is provided as the default snippet.
-  import { tick } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { icon, X } from '../../shared/icons.js';
 
   let {
@@ -19,6 +19,11 @@
     closeOnEscape = true,
     closeOnBackdrop = true,
     onClose = null,
+    // Per-modal styling hooks (the former showSheet consumers tagged the
+    // backdrop/panel/body with their own classes for CSS).
+    backdropClass = '',
+    panelClass = '',
+    bodyClass = '',
     children,
   } = $props();
 
@@ -49,14 +54,20 @@
       && window.matchMedia(`(max-width: ${SHEET_BREAKPOINT}px)`).matches;
   }
 
+  let scrollLocked = false;
+
   // Ref-counted page-scroll lock so nested/stacked sheets don't unlock early.
   function lockScroll() {
+    if (scrollLocked) return;
+    scrollLocked = true;
     const body = document.body;
     const count = Number(body.dataset.piSheetCount || '0') + 1;
     body.dataset.piSheetCount = String(count);
     body.classList.add('pi-sheet-open');
   }
   function unlockScroll() {
+    if (!scrollLocked) return;
+    scrollLocked = false;
     const body = document.body;
     const count = Math.max(0, Number(body.dataset.piSheetCount || '0') - 1);
     if (count === 0) {
@@ -148,17 +159,27 @@
     if (open && !mounted) doOpen();
     else if (!open && mounted) doClose();
   });
+
+  // Release any global listeners / scroll-lock / pending timer if the component
+  // is destroyed while still open (e.g. SPA route change).
+  onMount(() => () => {
+    document.removeEventListener('keydown', onKey);
+    backdropEl?.removeEventListener('click', onBackdrop);
+    if (popHandler) window.removeEventListener('popstate', popHandler);
+    clearTimeout(removeTimer);
+    unlockScroll();
+  });
 </script>
 
 {#if mounted}
   <div
-    class="pi-sheet-backdrop"
+    class="pi-sheet-backdrop {backdropClass}"
     class:pi-sheet-mobile={mobile}
     class:open={shown}
     bind:this={backdropEl}
   >
     <div
-      class="pi-sheet-panel"
+      class="pi-sheet-panel {panelClass}"
       class:pi-sheet-mobile={mobile}
       class:open={shown}
       bind:this={panelEl}
@@ -180,7 +201,7 @@
           <button class="pi-sheet-close-x" aria-label="Close" onclick={() => (open = false)}>{@html icon(X, { size: 16 })}</button>
         {/if}
       </div>
-      <div class="pi-sheet-body">{@render children?.()}</div>
+      <div class="pi-sheet-body {bodyClass}">{@render children?.()}</div>
     </div>
   </div>
 {/if}
