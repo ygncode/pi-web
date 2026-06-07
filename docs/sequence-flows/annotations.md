@@ -26,13 +26,14 @@ Because the session view rebuilds `#messages` on navigation/live-reload and the
 artifact panel rebuilds its host on every selection, highlights are **recomputed
 from offsets** rather than kept as live nodes. See "Highlight (re)application".
 
-Frontend modules (`web/src/session/annotations/`):
+Frontend (`web/src/session/annotations/` helpers + the `<AnnotationLayer>` component):
 
 - `annotation-range.js` — selection → `{anchorId, start, end, text}`, and
   wrapping a `[start,end)` range in `<mark class="pi-annotation">`
 - `annotation-api.js` — `list` / `create` / `remove` against `/api/annotations`
-- `annotation-layer.js` — orchestration: selection popover, the note modal,
-  highlight application, the Annotations tab list, and send-to-pi
+- `components/session/AnnotationLayer.svelte` — orchestration: selection popover,
+  the note modal, highlight application, the Annotations tab list, and send-to-pi
+  (runtime deps supplied via `window.__piAnnotationLayer.init({...})`)
 
 Backend: `internal/server/annotations.go` (table, handlers, SSE broadcast),
 wired in `server.go`.
@@ -83,12 +84,14 @@ Key points:
   POST resolves. A monotonic load counter ensures a slow in-flight `list()` can't
   clobber a newer optimistic create or SSE snapshot.
 - **Reveal on save.** Saving fires the layer's `onCreate` callback, which
-  `session.js` wires to open the right sidebar if it's collapsed and switch to the
-  Annotations tab — so the just-created note is always visible where it lands.
+  `SessionPage`'s `startSessionRuntime()` wires to open the right sidebar if it's
+  collapsed and switch to the Annotations tab — so the just-created note is always
+  visible where it lands.
 
 ## Load flow
 
-On session page init (`session.js`), `annotationLayer.init()` calls
+On session page init (`SessionPage`'s `startSessionRuntime()`),
+`annotationLayer.init()` calls
 `refresh()` → `GET /api/annotations?session=<id>` → `applyHighlights` across all
 scopes + render the Annotations tab list + update the tab count badge.
 
@@ -120,9 +123,9 @@ Every POST/DELETE calls `broadcastAnnotations(sessionID)`.
 | `annotations` | `sessID` | `{ "type": "snapshot", "annotations": [...] }` | a note is created/deleted for that session |
 
 A **snapshot** (full set) is sent rather than granular add/remove events — the
-client just calls `setAnnotations(...)` and re-renders. Wiring:
-`live/live-events.js` (`onAnnotations`) ← `live/live-reload-runner.js` ←
-`session.js` (`onAnnotations: (list) => annotationLayer.setAnnotations(list)`).
+client just calls `setAnnotations(...)` and re-renders. Wiring: the SSE
+`annotations` handler lives in `<LiveReload>` (`wireSessionEvents`'s
+`onAnnotations: (list) => window.__piAnnotationLayer?.setAnnotations(list)`).
 
 ## Highlight (re)application
 
@@ -150,7 +153,7 @@ current task, not a new or separate request") so a weaker model treats it as
 follow-up edits rather than a fresh conversation.
 
 On mobile the sidebar is a full-screen overlay, so sending fires the layer's
-`onSend` callback — `session.js` wires it to collapse the right sidebar (mobile
+`onSend` callback — `startSessionRuntime()` wires it to collapse the right sidebar (mobile
 only) before the composer is focused, so the filled composer is actually visible
 and ready to type into.
 

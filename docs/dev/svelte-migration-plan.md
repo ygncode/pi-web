@@ -603,9 +603,18 @@ per increment.
 | ✅ DONE + verified | **Page-global glue → `session-globals.js` (called by SessionPage).** Relocated the "tail" of `runSessionApp` — done-notifier, `setupKeyboardNav`, version checker, session-list palette (+ Cmd+K), the global keyboard shortcuts (Cmd+K/B/T/⇧L/⇧N//), the shortcuts/new-session relay buttons, the load-earlier banner, and the mobile visual-viewport/scroll-lock handlers — into `setupSessionGlobals({ windowImpl, documentImpl, model, sessionId, navigateTo })`. It tracks the listeners it adds and returns a disposer that `<SessionPage>` calls on unmount. `window.__piReconcileEntries` now set by `<SessionPage>` (from `model.reconcile`) *before* the child components mount, closing the reload race. `session.js` dropped 6 imports + ~175 lines (now 296). Added `session-globals.test.js` covering the keyboard shortcuts (no e2e for those). Verified: web 538 + knip clean + build (no a11y) + `go test ./internal/ui` + go vet + Desktop-Chrome e2e 56/2 (+1 documented load-earlier retry). |
 | ✅ DONE + verified | **`session.js` DELETED — head relocated into `<SessionPage>` + two utils.** The remaining `runSessionApp` head moved to `<SessionPage>`'s `onMount` as a local `startSessionRuntime()`: per-page settings/markdown bootstrap, `setupSessionUi`, the content-runtime wiring, the `__piIsMobileLayout`/`__piCloseSidebar` bridges, `attachHeaderHandlers`, the initial `navigateTo`, and the annotation-layer `init({...})`. Two extracted utils: **`lazy-highlight.js`** (`applyLazyHighlighting`) and **`session-content-runtime.js`** (`wireSessionContentRuntime`: builds the entry renderer + `sessionFormat`, assigns `contentRuntime.renderEntry`/`afterRender`, sets `downloadSessionJson`, and binds the single delegated copy/fork/label handler on `#messages`). **`session/session.js` + `session.test.js` DELETED** (the dead re-exports went with it; reconcile is unit-tested on the model). Go guard `TestNavigationReappliesCurrentToggleStateAfterRenderingMessages` repointed from `session.js` → `session-content-runtime.js`. Verified: web 535 + knip clean + build (no a11y) + `go test ./internal/ui` + go vet + **Desktop-Chrome e2e 57/2 (clean, no flake)**. |
 
-**`session.js` teardown COMPLETE** — the live session runtime is now `<SessionPage>` (orchestration) + `session-globals.js` + `session-content-runtime.js` + `lazy-highlight.js`, all reading the reactive `SessionDataModel`. The remaining §8 deletions (the chat/live runner modules still owned by `<ChatComposer>`/`<LiveReload>`, and decomposing `session-entry-renderer.js` into Svelte sub-components) are the next tranche.
+**`session.js` teardown COMPLETE** — the live session runtime is now `<SessionPage>` (orchestration) + `session-globals.js` + `session-content-runtime.js` + `lazy-highlight.js`, all reading the reactive `SessionDataModel`.
 
-### Phase 3 — chat/live runner inlining (IN PROGRESS)
+### Phase 3 — chat/live runner inlining (COMPLETE)
+
+**Tranche COMPLETE.** Every runner/renderer is absorbed into its component:
+`chat-composer-runner` + the four selectors → `<ChatComposer>`; `live-reload-runner`
++ `live-events`/`live-scroll`/`live-stats` → `<LiveReload>`; `git-footer` →
+`<GitFooter>`; `session-entry-renderer` → `<SessionEntry>`/`<ToolCall>`/`<ToolOutput>`/
+`<AskQuestion>`; `live-renderer`/`live-entries` deleted (reactive model). What's
+left under `session/chat/` + `session/live/` is **pure/shared helpers only**:
+`chat-api`, `git-api`, `chat-selectors`, `done-notifier`, `chat-preview`. `knip` is
+clean. **The only remaining migration phase is Phase 4 (index + settings routes).**
 
 | Status | Item |
 |---|---|

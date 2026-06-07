@@ -9,7 +9,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 | Layer | Technology |
 |-------|------------|
 | Backend | Go 1.25+ |
-| Frontend (live app) | Svelte 5 SPA (`web/src/main.js` → `App.svelte`), built by Vite; the session viewer is component-driven over a reactive `SessionDataModel` (a few component-owned chat/live runtime modules remain). Go serves a single embedded shell (`internal/ui/embedded/app.html`) + injects bootstrap data |
+| Frontend (live app) | Svelte 5 SPA (`web/src/main.js` → `App.svelte`), built by Vite; the session viewer is fully component-driven over a reactive `SessionDataModel`. Go serves a single embedded shell (`internal/ui/embedded/app.html`) + injects bootstrap data |
 | Static export | Go `html/template` (`internal/ui/embedded/session.html`) + inlined `export.js`/CSS, built from the same `web/src/session/` modules (self-contained Gist) |
 | Styling | Custom CSS (multi-theme: dark/light/nord/dracula/custom) |
 | Live Updates | Server-Sent Events (SSE) |

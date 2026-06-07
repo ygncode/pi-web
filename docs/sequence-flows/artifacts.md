@@ -14,12 +14,13 @@ Frontend modules (`web/src/session/artifacts/`):
 - `artifact-registry.js` — pure, DOM-free detection → an array of descriptors
 - `artifact-filter.js` — pure, DOM-free narrowing of that array by the user's
   Artifacts settings (enable toggle + include-glob list)
-- `artifact-panel.js` — the right-sidebar panel (list, source view, preview,
-  copy/download, help modal)
+- `components/session/ArtifactPanel.svelte` — the right-sidebar panel (list,
+  source view, preview, copy/download); the help modal lives in `<RightSidebar>`
 
-Wired in `session.js` (`refreshArtifacts`): `collectArtifacts(dataModel.entries)`
-detects everything, `filterArtifacts(...)` narrows it by settings, and the result
-feeds the panel on load and again on every live-reload (`syncDataModelEntries`).
+`<ArtifactPanel>` collects reactively from the shared model: a `$derived` runs
+`collectArtifacts(model.entries)` → `filterArtifacts(...)` (by settings), so the
+panel updates on load and on every live-reload (when `model.reconcile()` mutates
+`entries`) + on a cross-tab settings change.
 
 ## Detection: path-keyed, edit-aware
 

@@ -10,14 +10,16 @@ real `cwd`. It is never part of the export/Gist snapshot (which has no composer)
 
 ## Components
 
-Frontend (`web/src/session/chat/`):
+Frontend (`web/src/components/session/ChatComposer.svelte`'s `<script module>`,
+absorbed from the former `session/chat/` modules):
 
-- `mention-autocomplete.js` — `parseAtTrigger(text, caret)` (pure trigger
-  detection), and `setupMentionAutocomplete(...)`: debounced fetch, render,
-  keyboard nav, and path insertion.
-- `chat-api.js` — `getFiles(sessionId, query, { signal })` → `GET /api/files`.
-- `chat-composer-runner.js` — wires the controller in (`loadMentionSelector`)
-  and gives it first dibs on navigation keys, after the slash palette.
+- `parseAtTrigger(text, caret)` (pure trigger detection) + `setupMentionAutocomplete(...)`:
+  debounced fetch, render, keyboard nav, and path insertion.
+- `chat-api.js` (`web/src/session/chat/`, still a module) —
+  `getFiles(sessionId, query, { signal })` → `GET /api/files`.
+- `runChatComposer` (same `<script module>`) wires the controller in
+  (`loadMentionSelector`) and gives it first dibs on navigation keys, after the
+  slash palette.
 
 Backend:
 
