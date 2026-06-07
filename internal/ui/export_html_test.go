@@ -113,14 +113,16 @@ func TestPrepareSessionPageDataUsesLastNonLabelEntryWithIDAsLeaf(t *testing.T) {
 }
 
 func TestShareResultCopyButtonsUseClipboardFallbackAndToast(t *testing.T) {
-	source, err := os.ReadFile(repoPath("web/src/session/live/share-overlay.js"))
+	// Share UI now lives in the <ShareDialog> Svelte component (absorbed from the
+	// former live/share-overlay.js in migration Phase 3).
+	source, err := os.ReadFile(repoPath("web/src/components/session/ShareDialog.svelte"))
 	if err != nil {
-		t.Fatalf("read web/src/session/live/share-overlay.js: %v", err)
+		t.Fatalf("read web/src/components/session/ShareDialog.svelte: %v", err)
 	}
 	for _, want := range []string{
-		"export function copyShareUrl(",
-		"navigatorImpl.clipboard && navigatorImpl.clipboard.writeText",
-		"documentImpl.execCommand('copy')",
+		"function copyShareUrl(",
+		"navigator.clipboard && navigator.clipboard.writeText",
+		"document.execCommand('copy')",
 		"share-copy-notice",
 		"t('share.copiedSuffix', { label })",
 	} {

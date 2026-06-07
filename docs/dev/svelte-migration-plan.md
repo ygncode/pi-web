@@ -552,10 +552,17 @@ inward toward the coupled chat/live core.
 
 **Sheet-infra chunk COMPLETE** — `FullScreenSheet` + 4 modals are Svelte; 5 modules
 deleted (`full-screen-sheet`, `shortcuts-modal`, `model-usage-modal`, `fork-modal`,
-and the `showCatSettings` UI). Remaining Phase 3 (the coupled core): `CommandMenu`,
-`btw-popup`, `share-overlay`, `RightSidebar`/`ArtifactPanel`/`AnnotationLayer`,
-`ChatComposer`, `LiveReload`, then the `cat-gatekeeper` controller + `session.js`
-teardown.
+and the `showCatSettings` UI).
+
+### Phase 3 — coupled core (IN PROGRESS)
+
+| Status | Item |
+|---|---|
+| ✅ DONE + verified | **`ShareDialog.svelte`** (self-contained). Absorbed `live/share-overlay.js`: wires the hidden `#share-btn` relay → `POST /share` → reactive overlay showing gist/preview URLs (or error) with clipboard-copy + toast. `runLiveReload` lost its `shareOverlay` dep + the `setupShareButton` block (and the now-unused `escapeHtml` helper); `session.js` lost the import. **`live/share-overlay.js` + test DELETED** (ported to `ShareDialog.test.js`); Go share source-guard repointed to `ShareDialog.svelte`. Verified: web 528 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 54/2. |
+
+Coupled core remaining: `CommandMenu`, `btw-popup`, `RightSidebar`/`ArtifactPanel`/
+`AnnotationLayer`, `ChatComposer`, `LiveReload`, the `cat-gatekeeper` controller,
+then `session.js` teardown.
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,

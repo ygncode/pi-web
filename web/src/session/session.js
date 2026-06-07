@@ -34,9 +34,9 @@ import * as liveScroll from './live/live-scroll.js';
 import * as liveStats from './live/live-stats.js';
 import * as liveEntries from './live/live-entries.js';
 import * as chatPreview from './live/chat-preview.js';
-import * as shareOverlay from './live/share-overlay.js';
 import * as liveEvents from './live/live-events.js';
 import * as liveRenderer from './live/live-renderer.js';
+// share-overlay absorbed into <ShareDialog> (rendered by SessionPage).
 import { setupCommandMenu } from './live/command-menu.js';
 import { createVersionController } from '../shared/version.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
@@ -475,7 +475,6 @@ export function runSessionApp({ target = window } = {}) {
     liveStats,
     liveEvents,
     chatPreview,
-    shareOverlay,
     cwd: dataModel.header?.cwd || '',
     // The Svelte <SessionContent> owns #messages and re-renders from the model,
     // so live reload reconciles through onSessionDataReload (no DOM patching).

@@ -28,8 +28,7 @@ describe('live reload runner', () => {
       liveScroll: { isAtBottom: () => true, scrollToBottom: vi.fn(), scrollElementAboveComposer: vi.fn(), createFollowButton: vi.fn(), setFollowButtonText: vi.fn(), removeFollowButton: vi.fn() },
       liveStats: { updateStatsDom: vi.fn() },
       liveEvents,
-      chatPreview: { clearChatPreview: vi.fn(), renderChatPreview: vi.fn() },
-      shareOverlay: { setupShareButton: vi.fn() }
+      chatPreview: { clearChatPreview: vi.fn(), renderChatPreview: vi.fn() }
     });
     expect(liveEvents.createSessionEventSource).toHaveBeenCalledWith('s', { EventSourceImpl });
     expect(liveEvents.wireSessionEvents).toHaveBeenCalled();

@@ -15,7 +15,6 @@ export function runLiveReload({
   liveStats,
   liveEvents,
   chatPreview,
-  shareOverlay,
   onSessionDataReload = () => {},
   onAnnotations = null,
   // Reactive-content mode: the Svelte <SessionContent> owns #messages and
@@ -42,7 +41,7 @@ export function runLiveReload({
   const __piLiveStats = liveStats;
   const __piLiveEvents = liveEvents;
   const __piChatPreview = chatPreview;
-  const __piShareOverlay = shareOverlay;
+  // share-overlay removed — sharing is the <ShareDialog> Svelte component.
     var LIVE_ENTRY_STATE = {
       seen: reactiveContent && typeof getInitialEntryIds === 'function'
         ? new Set(getInitialEntryIds())
@@ -62,11 +61,6 @@ export function runLiveReload({
     }
 
     var liveRenderer = __piLiveRenderer.createLiveRenderer({ documentImpl: document, markedImpl: marked });
-    var escapeHtml = function(t) {
-      var d = document.createElement('div');
-      d.textContent = t;
-      return d.innerHTML;
-    };
     var renderEntry = liveRenderer.renderEntry;
     var renderMarkdown = liveRenderer.renderMarkdown;
 
@@ -370,16 +364,7 @@ export function runLiveReload({
       triggerReload();
     });
 
-    // Share button
-    var SHARE_OVERLAY_STATE = { shareOverlay: null, shareCopyHideTimer: null };
-    __piShareOverlay.setupShareButton({
-      documentImpl: document,
-      fetchImpl: fetch,
-      sessionId: sessId,
-      state: SHARE_OVERLAY_STATE,
-      escapeHtml: escapeHtml,
-      navigatorImpl: navigator
-    });
+    // Share button is now the <ShareDialog> Svelte component; no setup here.
 
     // Terminal (resume) + New Session buttons are now owned by the
     // <SessionHeader> Svelte component (Phase 3); no setup needed here.

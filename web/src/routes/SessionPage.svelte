@@ -175,6 +175,6 @@
   <ForkModal bind:open={forkOpen} entries={forkEntries} onSelect={forkOnSelect} />
   <CatGatekeeperSettings bind:open={catSettingsOpen} controller={catController} onChange={catOnChange} />
 
-  <ShareDialog />
+  <ShareDialog {sessionId} />
   <script id="session-data" type="application/json" bind:this={dataEl}></script>
 {/if}
