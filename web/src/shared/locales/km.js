@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': 'សារមុនៗ',
+  'session.showingLatestMessages': 'កំពុងបង្ហាញសារចុងក្រោយ {shown} ក្នុងចំណោម {total}។',
+  'session.loadEarlierCount': 'ផ្ទុកមុននេះ {count}',
+  'session.loadingEarlier': 'កំពុងផ្ទុក…',
+  'session.loadEarlierFailed': 'ផ្ទុកបរាជ័យ៖ {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'ស្វែងរកវគ្គ',

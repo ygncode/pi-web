@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': 'Messages précédents',
+  'session.showingLatestMessages': 'Affichage des {shown} derniers messages sur {total}.',
+  'session.loadEarlierCount': 'Charger {count} précédents',
+  'session.loadingEarlier': 'Chargement…',
+  'session.loadEarlierFailed': 'Échec du chargement : {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Rechercher des sessions',

@@ -15,6 +15,7 @@
   import CatGatekeeper from '../components/session/CatGatekeeper.svelte';
   import BtwPopup from '../components/session/BtwPopup.svelte';
   import LabelModal from '../components/session/LabelModal.svelte';
+  import LoadEarlier from '../components/session/LoadEarlier.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { marked } from 'marked';
@@ -176,8 +177,8 @@
         window.addEventListener('pi-session-reload', () => annotationLayer.reapply());
       }
 
-      // Page-global glue (keyboard shortcuts, version checker, session-list
-      // palette, load-earlier, done-notifier, visual-viewport/scroll). After the
+      // Page-global glue (keyboard shortcuts, done-notifier,
+      // visual-viewport/scroll). After the
       // above so the sidebar / right-sidebar window bridges exist.
       disposeGlobals = setupSessionGlobals({
         windowImpl: window,
@@ -304,7 +305,7 @@
   <div id="app">
     <SessionTree />
     <div id="content-container" class="content-container">
-      <main id="content"><div id="header-container">{#if sessionModel}<SessionInfoHeader model={sessionModel} />{/if}</div><div id="messages">{#if sessionModel}<SessionContent model={sessionModel} afterRender={contentRuntime.afterRender} live />{/if}</div></main>
+      <main id="content"><div id="header-container">{#if sessionModel}<SessionInfoHeader model={sessionModel} />{/if}</div>{#if sessionModel}<LoadEarlier model={sessionModel} {sessionId} navigateTo={typeof window !== 'undefined' ? window.navigateTo : null} />{/if}<div id="messages">{#if sessionModel}<SessionContent model={sessionModel} afterRender={contentRuntime.afterRender} live />{/if}</div></main>
       <ChatComposer {sessionId} {chatAvailable} {chatDisabledReason} {cwd} {modelLabel} />
     </div>
     <RightSidebar {scratchpad} projectPath={cwd} />

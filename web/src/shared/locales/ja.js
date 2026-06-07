@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': '以前のメッセージ',
+  'session.showingLatestMessages': '最新 {shown} / {total} 件のメッセージを表示中。',
+  'session.loadEarlierCount': '以前の {count} 件を読み込む',
+  'session.loadingEarlier': '読み込み中…',
+  'session.loadEarlierFailed': '読み込み失敗: {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'セッションを検索',

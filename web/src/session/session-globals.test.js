@@ -3,7 +3,7 @@ import { setupSessionGlobals } from './session-globals.js';
 
 // Focused coverage for the global keyboard shortcuts + relay buttons, which the
 // e2e suite does not exercise. The other wiring (done-notifier, version, palette,
-// load-earlier) is covered by those modules' own tests; here we just confirm
+// component-owned pieces are covered by their own tests; here we just confirm
 // setupSessionGlobals registers them without throwing in jsdom.
 
 function dispatchKey(key, { meta = false, shift = false } = {}) {

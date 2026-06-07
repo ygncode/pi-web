@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': 'အစောပိုင်း မက်ဆေ့ချ်များ',
+  'session.showingLatestMessages': 'မက်ဆေ့ချ် {total} ခုထဲမှ နောက်ဆုံး {shown} ခု ပြနေသည်။',
+  'session.loadEarlierCount': 'အစောပိုင်း {count} ခု ဖွင့်ရန်',
+  'session.loadingEarlier': 'ဖွင့်နေသည်…',
+  'session.loadEarlierFailed': 'ဖွင့်မရပါ: {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'ဆက်ရှင်များ ရှာဖွေ',

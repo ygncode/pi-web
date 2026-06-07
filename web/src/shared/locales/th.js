@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': 'ข้อความก่อนหน้า',
+  'session.showingLatestMessages': 'กำลังแสดง {shown} ล่าสุดจาก {total} ข้อความ',
+  'session.loadEarlierCount': 'โหลดก่อนหน้า {count} รายการ',
+  'session.loadingEarlier': 'กำลังโหลด…',
+  'session.loadEarlierFailed': 'โหลดไม่สำเร็จ: {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'ค้นหาเซสชัน',

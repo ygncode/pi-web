@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': 'Tin nhắn trước đó',
+  'session.showingLatestMessages': 'Đang hiển thị {shown} mới nhất trong {total} tin nhắn.',
+  'session.loadEarlierCount': 'Tải {count} trước đó',
+  'session.loadingEarlier': 'Đang tải…',
+  'session.loadEarlierFailed': 'Tải thất bại: {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Tìm phiên',

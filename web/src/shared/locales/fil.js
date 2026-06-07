@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': 'Mas naunang mga mensahe',
+  'session.showingLatestMessages': 'Ipinapakita ang pinakabagong {shown} sa {total} mensahe.',
+  'session.loadEarlierCount': 'Mag-load ng {count} nauna',
+  'session.loadingEarlier': 'Naglo-load…',
+  'session.loadEarlierFailed': 'Hindi na-load: {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Maghanap ng Session',

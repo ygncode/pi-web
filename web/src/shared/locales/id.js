@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': 'Pesan sebelumnya',
+  'session.showingLatestMessages': 'Menampilkan {shown} terbaru dari {total} pesan.',
+  'session.loadEarlierCount': 'Muat {count} sebelumnya',
+  'session.loadingEarlier': 'Memuat…',
+  'session.loadEarlierFailed': 'Gagal memuat: {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'Cari Sesi',

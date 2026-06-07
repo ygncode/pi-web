@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': '较早消息',
+  'session.showingLatestMessages': '正在显示最新 {shown} / {total} 条消息。',
+  'session.loadEarlierCount': '加载较早 {count} 条',
+  'session.loadingEarlier': '正在加载…',
+  'session.loadEarlierFailed': '加载失败：{error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': '搜索会话',

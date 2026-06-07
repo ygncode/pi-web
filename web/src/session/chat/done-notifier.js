@@ -259,7 +259,7 @@ export async function setupSoundSelector({ documentImpl = document, windowImpl =
 
   selectors.forEach(sel => {
     // Clear existing options
-    sel.innerHTML = '';
+    sel.replaceChildren();
     
     // Add options
     sounds.forEach(soundName => {

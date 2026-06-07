@@ -79,6 +79,11 @@ export default {
   'session.labelInput': 'Label',
   'session.removeLabel': 'Remove label',
   'session.labelPrompt': 'Label (empty to remove):',
+  'session.earlierMessages': 'ຂໍ້ຄວາມກ່ອນໜ້າ',
+  'session.showingLatestMessages': 'ກຳລັງສະແດງ {shown} ລ່າສຸດຈາກ {total} ຂໍ້ຄວາມ.',
+  'session.loadEarlierCount': 'ໂຫຼດ {count} ກ່ອນໜ້າ',
+  'session.loadingEarlier': 'ກຳລັງໂຫຼດ…',
+  'session.loadEarlierFailed': 'ໂຫຼດບໍ່ສຳເລັດ: {error}',
   'session.labelSaveFailed': 'Failed to save label',
 
   'menu.searchSessions': 'ຄົ້ນຫາເຊດຊັນ',

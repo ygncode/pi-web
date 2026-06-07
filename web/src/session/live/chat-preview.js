@@ -138,6 +138,51 @@ function getActiveMessage(content) {
   return "Generating response...";
 }
 
+function setMarkdownContent(el, html) {
+  // `renderMarkdown` returns sanitized markdown HTML (or escaped fallback). This
+  // is content rendering, not structural view construction; the surrounding
+  // preview DOM is built with elements so the helper stays narrowly scoped.
+  if (el) el.innerHTML = html;
+}
+
+function createMarkdownBlock(documentImpl, className) {
+  const el = documentImpl.createElement('div');
+  el.className = className;
+  return el;
+}
+
+function createPreviewLabel(documentImpl, config) {
+  const label = documentImpl.createElement('div');
+  label.className = 'preview-label';
+  const spinner = documentImpl.createElement('span');
+  spinner.className = 'preview-spinner';
+  spinner.style.color = 'var(--accent)';
+  spinner.style.marginRight = '6px';
+  spinner.style.fontFamily = config.fontFamily;
+  spinner.style.display = 'inline-block';
+  spinner.style.width = config.width;
+  spinner.style.textAlign = 'center';
+  spinner.textContent = config.frames[0];
+  const text = documentImpl.createElement('span');
+  text.className = 'preview-text';
+  text.style.color = 'var(--muted)';
+  text.textContent = 'Working...';
+  label.append(spinner, text);
+  return label;
+}
+
+function createAssistantPreview(documentImpl, { waiting = false, windowImpl = null } = {}) {
+  const config = getSpinnerConfig(windowImpl);
+  const el = documentImpl.createElement('div');
+  el.id = 'chat-preview-stream';
+  el.className = 'assistant-message chat-preview-stream' + (waiting ? ' chat-preview-waiting' : '');
+  el.append(
+    createMarkdownBlock(documentImpl, 'message-content assistant-text markdown-content'),
+    createPreviewLabel(documentImpl, config),
+  );
+  return el;
+}
+
 export function renderPendingChat(message, state, {
   documentImpl = document,
   windowImpl = typeof window !== 'undefined' ? window : null,
@@ -155,19 +200,12 @@ export function renderPendingChat(message, state, {
   state.pendingUserEl = documentImpl.createElement('div');
   state.pendingUserEl.id = 'chat-pending-user';
   state.pendingUserEl.className = 'user-message chat-pending-user';
-  state.pendingUserEl.innerHTML = '<div class="markdown-content"></div>';
-  const userContent = state.pendingUserEl.querySelector('.markdown-content');
-  if (userContent) userContent.innerHTML = renderMarkdown(text);
+  const userContent = createMarkdownBlock(documentImpl, 'markdown-content');
+  setMarkdownContent(userContent, renderMarkdown(text));
+  state.pendingUserEl.appendChild(userContent);
   container.appendChild(state.pendingUserEl);
 
-  const config = getSpinnerConfig(windowImpl);
-  const initialFrame = config.frames[0];
-  const initialStyle = `color: var(--accent); margin-right: 6px; font-family: ${config.fontFamily}; display: inline-block; width: ${config.width}; text-align: center;`;
-
-  state.chatPreviewEl = documentImpl.createElement('div');
-  state.chatPreviewEl.id = 'chat-preview-stream';
-  state.chatPreviewEl.className = 'assistant-message chat-preview-stream chat-preview-waiting';
-  state.chatPreviewEl.innerHTML = `<div class="message-content assistant-text markdown-content"></div><div class="preview-label"><span class="preview-spinner" style="${initialStyle}">${initialFrame}</span><span class="preview-text" style="color: var(--muted);">Working...</span></div>`;
+  state.chatPreviewEl = createAssistantPreview(documentImpl, { waiting: true, windowImpl });
   container.appendChild(state.chatPreviewEl);
 
   startWorkingAnimation(state, { setIntervalImpl, windowImpl });
@@ -191,14 +229,7 @@ export function renderChatPreview(payload, state, {
   if (!payload || typeof payload.content !== 'string') return false;
   const container = documentImpl.getElementById('messages') || documentImpl.getElementById('content') || documentImpl.body;
   if (!state.chatPreviewEl) {
-    const config = getSpinnerConfig(windowImpl);
-    const initialFrame = config.frames[0];
-    const initialStyle = `color: var(--accent); margin-right: 6px; font-family: ${config.fontFamily}; display: inline-block; width: ${config.width}; text-align: center;`;
-
-    state.chatPreviewEl = documentImpl.createElement('div');
-    state.chatPreviewEl.id = 'chat-preview-stream';
-    state.chatPreviewEl.className = 'assistant-message chat-preview-stream';
-    state.chatPreviewEl.innerHTML = `<div class="message-content assistant-text markdown-content"></div><div class="preview-label"><span class="preview-spinner" style="${initialStyle}">${initialFrame}</span><span class="preview-text" style="color: var(--muted);">Working...</span></div>`;
+    state.chatPreviewEl = createAssistantPreview(documentImpl, { windowImpl });
     container.appendChild(state.chatPreviewEl);
     startWorkingAnimation(state, { setIntervalImpl, windowImpl });
   }
@@ -212,7 +243,7 @@ export function renderChatPreview(payload, state, {
 
   state.chatPreviewEl.classList.remove('chat-preview-waiting');
   const content = state.chatPreviewEl.querySelector('.message-content');
-  if (content) content.innerHTML = renderMarkdown(payload.content);
+  setMarkdownContent(content, renderMarkdown(payload.content));
   if (payload.done) finishChatPreview(state);
   else state.chatPreviewEl.classList.remove('done');
   if (shouldFollow()) {

@@ -4,13 +4,11 @@
 // model + navigateTo are ready. Everything here is live-only (SSE/clipboard/
 // keyboard) and never runs in the static export.
 //
-// Covers: done-notifier, keyboard navigation, the version update checker, the
-// session-list palette (Cmd+K), the global keyboard shortcuts, the load-earlier
-// banner, and the mobile visual-viewport / scroll-lock handlers.
+// Covers: done-notifier, keyboard navigation, global keyboard shortcuts, and
+// the mobile visual-viewport / scroll-lock handlers.
 
 import * as doneNotifier from './chat/done-notifier.js';
 import * as sidebarApi from './ui/sidebar.js';
-import { setupLoadEarlierBanner } from './ui/load-earlier.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 
@@ -123,22 +121,6 @@ export function setupSessionGlobals({
       documentImpl.getElementById('new-btn')?.click();
     });
   }
-
-  // Load-earlier banner. For huge sessions the server embeds only the tail
-  // entries in the initial render; this fetches preceding windows via
-  // /api/session?id=...&from=N&count=K and merges them into the model. No-ops on
-  // small sessions (model.truncated is false).
-  setupLoadEarlierBanner({
-    dataModel: model,
-    sessionId,
-    syncDataModelEntries: (entries) => model.reconcile?.(entries),
-    // Re-render from the current leaf so prepended earlier entries appear in
-    // #messages, keeping the viewport anchored on the previously-top message
-    // (anchorId) to avoid a scroll jump.
-    rerender: (anchorId) => navigateTo(model.leafId, anchorId ? 'target' : 'bottom', anchorId || null),
-    documentImpl,
-    fetchImpl: target.fetch.bind(target),
-  });
 
   // Visual Viewport handling — keep the fixed top header in view when the mobile
   // virtual keyboard opens.
