@@ -27,6 +27,7 @@ import {
   flattenTree,
   buildActivePathIds,
   findNewestLeaf,
+  getPath,
 } from '../tree/session-tree.js';
 import { filterNodes } from '../tree/session-filter.js';
 
@@ -66,6 +67,9 @@ export class SessionDataModel {
   activePathIds = $derived(
     buildActivePathIds(this.currentTargetId || this.currentLeafId, this.byId),
   );
+  // Ordered root→leaf entries for the message pane (what the content view
+  // renders). Recomputes when entries or the active leaf change.
+  activePath = $derived(getPath(this.currentLeafId, this.byId));
   flatNodes = $derived(flattenTree(this.tree, this.activePathIds));
   filteredNodes = $derived(
     filterNodes(this.flatNodes, this.currentLeafId, {

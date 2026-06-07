@@ -68,6 +68,13 @@ describe('SessionDataModel', () => {
     expect(m.currentLeafId).toBe('leaf');
   });
 
+  it('derives the ordered active path (root→leaf)', () => {
+    const m = model();
+    expect(m.activePath.map((e) => e.id)).toEqual(['root', 'mid', 'leaf']);
+    m.navigateTo('old');
+    expect(m.activePath.map((e) => e.id)).toEqual(['root', 'old']);
+  });
+
   it('applies the search filter reactively', () => {
     const m = model();
     const unfiltered = m.filteredNodes.length;
