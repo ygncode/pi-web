@@ -562,9 +562,11 @@ and the `showCatSettings` UI).
 
 | ✅ DONE + verified | **`CommandMenu.svelte`** (self-contained behavior). Absorbed `live/command-menu.js` into the component's `onMount`: open/close (desktop popover + mobile panel), outside-click/Escape close, and the action dispatch (share/new/terminal click hidden relays; tree → `sidebarApi`; model-usage/fork via window bridges; rename/clone via fetch; version/user-docs/diff). The session-list palette is now reached via `window.__piOpenSessionPalette` (set in `session.js`, used by the `list-sessions` action **and** Cmd+K), replacing the `setupCommandMenu._palette` coupling. `session.js` dropped the `setupCommandMenu` import + call. **`live/command-menu.js` + test DELETED** (ported to `CommandMenu.test.js`). Verified: web 528 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 53/2. |
 
-Coupled core remaining: `btw-popup`, `RightSidebar`/`ArtifactPanel`/`AnnotationLayer`,
-`ChatComposer`, `LiveReload`, the `cat-gatekeeper` controller, then `session.js`
-teardown.
+| ✅ DONE + verified | **`LabelModal.svelte`** (RightSidebar-group warm-up; well covered by `labels.spec.ts`). Svelte port of `ui/label-modal.js`: set/clear an entry's tree label, opened via `window.__piOpenLabelModal({ entryId, currentLabel, onSave })` (session.js's delegated label button still owns the save → API + tree refresh). **`ui/label-modal.js` + test DELETED** (ported to `LabelModal.test.js`). Verified: web 528 + knip clean + no a11y warnings + `go test ./internal/ui` + Desktop-Chrome e2e 54/2 (labels/annotations/artifacts/session-view all green). |
+
+Coupled core remaining: `RightSidebar`/`ArtifactPanel`/`AnnotationLayer`,
+`ChatComposer`, `LiveReload`, `btw-popup`, the `cat-gatekeeper` controller, then
+`session.js` teardown.
 | 🔶 remaining | **Phase 2 was NOT isolatable from `session.js` (resolved for tree+header).** The tree's rendering, the active leaf/target (`currentLeafId`/`currentTargetId`), and `filterMode`/`searchQuery` all live as imperative locals in `session.js` (and `export-entry.js`); tree clicks drive **content** rendering via the navigator. Swapping only the tree DOM to `<SessionTreeNodes>` would need a throwaway bridge between that imperative state and the reactive model — which Phase 3 then deletes. **Do the tree cut-over together with moving navigation + filter state into `SessionDataModel`** (i.e. merge the front of Phase 3 into Phase 2), so the model is the single source of truth and `session.js`/`export-entry.js` stop owning that state. The staged `TreeNode`/`SessionTreeNodes` components are ready for that step. |
 
 **Recommended next step (combined Phase 2/3a):** move `currentLeafId`,

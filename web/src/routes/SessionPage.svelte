@@ -11,6 +11,7 @@
   import ModelUsageModal from '../components/session/ModelUsageModal.svelte';
   import ForkModal, { buildUserMessageList } from '../components/session/ForkModal.svelte';
   import CatGatekeeperSettings from '../components/session/CatGatekeeperSettings.svelte';
+  import LabelModal from '../components/session/LabelModal.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
   import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
@@ -49,6 +50,11 @@
   let catSettingsOpen = $state(false);
   let catController = $state(null);
   let catOnChange = $state(() => {});
+  // Label modal: opened from the per-entry label button (delegated in session.js).
+  let labelOpen = $state(false);
+  let labelEntryId = $state('');
+  let labelCurrent = $state('');
+  let labelOnSave = $state(null);
 
   let loading = $state(true);
   let showLoading = $state(false);
@@ -83,6 +89,12 @@
       catController = controller || null;
       catOnChange = onChange || (() => {});
       catSettingsOpen = true;
+    };
+    window.__piOpenLabelModal = ({ entryId, currentLabel, onSave } = {}) => {
+      labelEntryId = entryId || '';
+      labelCurrent = currentLabel || '';
+      labelOnSave = onSave || null;
+      labelOpen = true;
     };
     // The session view is a fixed app shell (no body scroll, internal scroll
     // containers). Mark the document so the session-only layout rules in the
@@ -174,6 +186,7 @@
   <ModelUsageModal bind:open={modelUsageOpen} />
   <ForkModal bind:open={forkOpen} entries={forkEntries} onSelect={forkOnSelect} />
   <CatGatekeeperSettings bind:open={catSettingsOpen} controller={catController} onChange={catOnChange} />
+  <LabelModal bind:open={labelOpen} entryId={labelEntryId} currentLabel={labelCurrent} onSave={labelOnSave} />
 
   <ShareDialog {sessionId} />
   <script id="session-data" type="application/json" bind:this={dataEl}></script>

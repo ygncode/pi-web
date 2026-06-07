@@ -42,7 +42,6 @@ import { setupKeyboardNav } from '../shared/keyboard-nav.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
 import { setupSessionListPalette } from '../shared/session-list-palette.js';
 import { setupCatGatekeeper } from './cat-gatekeeper/cat-gatekeeper.js';
-import { openLabelModal } from './ui/label-modal.js';
 import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
 import { t } from '../shared/i18n.js';
 export { buildSessionLookups, createSessionDataModel, decodeBase64JSON, getSessionSearchParams, loadSessionData, readSessionPayload } from './data/session-data.js';
@@ -322,10 +321,11 @@ export function runSessionApp({ target = window } = {}) {
   };
 
   const labelEntry = (entryId) => {
-    openLabelModal({
+    // The label modal is the <LabelModal> Svelte component; SessionPage exposes
+    // the opener. session.js still owns the save (API + tree refresh).
+    target.__piOpenLabelModal?.({
       entryId,
       currentLabel: dataModel.labelMap.get(entryId) || '',
-      documentImpl,
       onSave: ({ entryId: id, label }) => {
         target.fetch(`/api/label-session?id=${encodeURIComponent(sessionId)}`, {
           method: 'POST',
