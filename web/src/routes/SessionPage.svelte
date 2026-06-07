@@ -17,31 +17,38 @@
   import LabelModal from '../components/session/LabelModal.svelte';
   import SessionTree from '../components/session/SessionTree.svelte';
   import ShareDialog from '../components/session/ShareDialog.svelte';
-  import { applyLazyHighlighting, runSessionApp } from '../session/session.js';
+  import { marked } from 'marked';
+  import { applyLazyHighlighting } from '../session/lazy-highlight.js';
+  import { wireSessionContentRuntime } from '../session/session-content-runtime.js';
   import { setupSessionGlobals } from '../session/session-globals.js';
+  import { setupSessionUi } from '../session/ui/session-ui-runner.js';
+  import { createAnnotationApi } from '../session/annotations/annotation-api.js';
+  import { configureSessionMarkdown, safeMarkedParse } from '../session/render/markdown.js';
+  import * as sidebarApi from '../session/ui/sidebar.js';
+  import * as searchFiltersApi from '../session/ui/search-filters.js';
+  import * as toggleStateApi from '../session/ui/toggle-state.js';
   import { loadSessionPageState } from './session-page-data.js';
   import { SessionDataModel } from '../session/data/session-data.svelte.js';
   import { createSessionDataModel, decodeBase64JSON } from '../session/data/session-data.js';
   import { createSessionNavigator } from '../session/navigation/session-navigation.js';
   import { setSessionModel } from '../session/session-context.js';
+  import { configureSettingsSync, hydrateSettings } from '../shared/settings-store.js';
   import { t } from '../shared/i18n.js';
 
-  // Phase 1 of the Svelte migration (docs/dev/svelte-migration-plan.md):
-  // create the reactive model once and provide it via context so descendant
-  // components can begin reading from it in later phases. It is hydrated when
-  // the session payload loads below. The legacy runSessionApp() render path is
-  // still in charge of the DOM for now — this model is not yet consumed.
+  // The reactive session model (docs/dev/svelte-migration-plan.md): created once
+  // and provided via context so descendant components read from it. Hydrated
+  // from the session payload below; the live runtime (startSessionRuntime in
+  // onMount) mutates it on reload.
   const sessionModel = setSessionModel(new SessionDataModel());
 
-  // Reactive bridge to the imperative runtime: <SessionContent> renders
-  // model.activePath via renderEntry, and runs afterRender after each render.
-  // runSessionApp() (session.js) assigns both onto window.__piContentRuntime
-  // once its entry renderer is built; the $state proxy makes the message pane
-  // paint reactively as soon as they're set. See svelte-migration-plan §sub-step B.
+  // Reactive bridge to the message-pane renderer: <SessionContent> renders
+  // model.activePath via renderEntry and runs afterRender after each render.
+  // wireSessionContentRuntime() (in onMount) assigns both here once the entry
+  // renderer is built; the $state proxy makes the pane paint reactively.
   const contentRuntime = $state({ renderEntry: null, afterRender: null });
 
-  // Keyboard-shortcuts modal: opened imperatively (Cmd+/ and #shortcuts-help-btn
-  // wired in session.js) via a window bridge set in onMount.
+  // Keyboard-shortcuts modal: opened imperatively (Cmd+/ and #shortcuts-help-btn,
+  // wired in setupSessionGlobals) via a window bridge set in onMount.
   let shortcutsOpen = $state(false);
   // Model-usage modal: opened from the command menu via a window bridge.
   let modelUsageOpen = $state(false);
@@ -55,7 +62,8 @@
   let catSettingsOpen = $state(false);
   let catController = $state(null);
   let catOnChange = $state(() => {});
-  // Label modal: opened from the per-entry label button (delegated in session.js).
+  // Label modal: opened from the per-entry label button (delegated in the content
+  // runtime).
   let labelOpen = $state(false);
   let labelEntryId = $state('');
   let labelCurrent = $state('');
@@ -79,8 +87,109 @@
     const previousTitle = document.title;
     let active = true;
     let disposeGlobals = null;
-    // Bridge for the imperative shortcuts triggers (session.js) to open the
-    // <ShortcutsModal> component.
+
+    // Live session runtime — the imperative wiring that used to live in
+    // session.js's runSessionApp (Svelte migration teardown). Runs once the
+    // payload + reactive model are ready and the components have mounted.
+    const startSessionRuntime = () => {
+      const model = sessionModel;
+      // Per-page settings + markdown bootstrap (mirrors index/settings pages).
+      configureSettingsSync({ fetchImpl: window.fetch ? window.fetch.bind(window) : undefined });
+      hydrateSettings({ storage: window.localStorage });
+      window.marked = window.marked || marked;
+
+      // Wire the live message pane: entry renderer + content runtime + the
+      // delegated copy/fork/label handler on #messages.
+      const { sessionFormat } = wireSessionContentRuntime({
+        windowImpl: window,
+        documentImpl: document,
+        model,
+        sessionId,
+        contentRuntime,
+        applyLazyHighlighting,
+      });
+
+      // Sidebar / search / tree-toggle / header runtime.
+      const ui = setupSessionUi({
+        documentImpl: document,
+        windowImpl: window,
+        storage: window.localStorage,
+        marked,
+        hljs: null,
+        escapeHtml: sessionFormat.escapeHtml,
+        markdownApi: { configureSessionMarkdown, safeMarkedParse },
+        searchFiltersApi,
+        sidebarApi,
+        toggleStateApi,
+        getLeafId: () => model.leafId,
+        setSearchQuery: (value) => { model.searchQuery = value; },
+        setFilterMode: (value) => { model.filterMode = value; },
+        // The reactive model recomputes filteredNodes; no manual rerender needed.
+        forceTreeRerender: () => {},
+        navigateTo: (...args) => window.navigateTo(...args),
+      });
+
+      // Exposed for <SessionTree>'s node-click handler (auto-close mobile drawer).
+      window.__piIsMobileLayout = ui.isMobileLayout;
+      window.__piCloseSidebar = ui.closeSidebar;
+
+      // The header card is a persistent <SessionInfoHeader>, so bind its toggle
+      // buttons exactly once.
+      ui.attachHeaderHandlers();
+
+      // Replace the server-rendered first-message LCP stub with the canonical
+      // active path before live reload starts (otherwise reload appends entries
+      // below the stub and the conversation appears duplicated).
+      window.navigateTo(model.currentLeafId, model.urlTargetId ? 'target' : 'bottom', model.urlTargetId || null);
+
+      // Annotation layer (right-sidebar "Notes" tab) — <AnnotationLayer> exposes
+      // init/setAnnotations/reapply on window.__piAnnotationLayer; supply its
+      // runtime deps here. Anchors to entries by `entry-<id>` + offsets.
+      const annotationLayer = window.__piAnnotationLayer || null;
+      const messagesEl = document.getElementById('messages');
+      if (annotationLayer && messagesEl && sessionId) {
+        const annotationArtifactHost = document.getElementById('artifact-panel-host');
+        annotationLayer.init({
+          api: createAnnotationApi({ sessionId, fetchImpl: window.fetch.bind(window) }),
+          scopes: [messagesEl, annotationArtifactHost].filter(Boolean),
+          composerEl: document.getElementById('pi-chat-message'),
+          countEl: document.getElementById('annotation-tab-count'),
+          onSelectArtifact: (artifactId) => {
+            ui.activateRightTab('artifacts');
+            window.__piArtifactPanel?.selectArtifact(artifactId);
+          },
+          onCreate: () => {
+            ui.openRightSidebar();
+            ui.activateRightTab('notes');
+          },
+          onSend: () => {
+            // On mobile the sidebar is a full-screen overlay; collapse it so the
+            // composer it just filled is visible and ready to type into.
+            if (ui.isMobileLayout()) ui.collapseRightSidebar();
+          },
+          onAddToChat: (attachment) => {
+            window.dispatchEvent(new window.CustomEvent('pi-chat-attach-text', { detail: attachment }));
+            if (ui.isMobileLayout()) ui.collapseRightSidebar();
+          },
+          resolveArtifact: (artifactId) => window.__piArtifactPanel?.getArtifact(artifactId) || null,
+        });
+        window.addEventListener('pi-session-reload', () => annotationLayer.reapply());
+      }
+
+      // Page-global glue (keyboard shortcuts, version checker, session-list
+      // palette, load-earlier, done-notifier, visual-viewport/scroll). After the
+      // above so the sidebar / right-sidebar window bridges exist.
+      disposeGlobals = setupSessionGlobals({
+        windowImpl: window,
+        documentImpl: document,
+        model,
+        sessionId,
+        navigateTo: window.navigateTo,
+      });
+    };
+
+    // Bridge for the imperative shortcuts triggers to open the <ShortcutsModal>
+    // component.
     window.__piOpenShortcuts = () => { shortcutsOpen = true; };
     window.__piOpenModelUsage = () => { modelUsageOpen = true; };
     window.__piOpenForkModal = ({ entries, onSelect } = {}) => {
@@ -127,20 +236,18 @@
         chatAvailable = state.chatAvailable;
         chatDisabledReason = state.chatDisabledReason;
         modelLabel = state.modelLabel;
-        // Hydrate the shared reactive model from the SAME payload the imperative
-        // runtime reads, then hand it to that runtime (window.__piSessionDataModel)
-        // so session.js reuses this one instance instead of building its own.
-        // The Svelte tree renders from it; session.js mutates it on live reload.
+        // Hydrate the shared reactive model from the embedded payload and expose
+        // it on window so the live runtime + chat/live components share this one
+        // instance. The Svelte tree/content render from it; live reload mutates it.
         sessionModel.load(createSessionDataModel(
           decodeBase64JSON(payloadBase64, { atobImpl: window.atob?.bind(window) }),
           new URLSearchParams(window.location.search),
         ));
         window.__piSessionDataModel = sessionModel;
-        // navigateTo ownership lives here (not session.js): the navigator writes
-        // the reactive model's active leaf/target (→ <SessionContent>/<SessionTree>
-        // recompute) and scrolls. Exposed on window BEFORE the child components
-        // mount so the tree, chat composer, and live reload share this one
-        // instance. session.js reads target.navigateTo.
+        // navigateTo ownership lives here: the navigator writes the reactive
+        // model's active leaf/target (→ <SessionContent>/<SessionTree> recompute)
+        // and scrolls. Exposed on window BEFORE the child components mount so the
+        // tree, chat composer, and live reload share this one instance.
         const navigator = createSessionNavigator({
           onNavigate: (leaf, target) => { sessionModel.currentLeafId = leaf; sessionModel.currentTargetId = target; },
         });
@@ -149,8 +256,6 @@
         // Model reconciliation for <LiveReload> (SSE) + the load-earlier banner.
         // Set before the child components mount so a reload can never race it.
         window.__piReconcileEntries = (entries) => sessionModel.reconcile(entries);
-        // Expose the content runtime BEFORE runSessionApp so session.js can hand
-        // it the entry renderer + afterRender hook that drive <SessionContent>.
         window.__piContentRuntime = contentRuntime;
         loading = false;
         clearTimeout(loadingTimer);
@@ -159,17 +264,7 @@
         // Svelte does not interpolate mustache tags inside a <script> raw-text
         // element, so the embedded session payload must be assigned directly.
         if (dataEl) dataEl.textContent = payloadBase64;
-        runSessionApp({ target: window });
-        // Page-global glue (keyboard shortcuts, version checker, session-list
-        // palette, load-earlier, done-notifier, visual-viewport/scroll). Runs
-        // after runSessionApp so the sidebar/right-sidebar window bridges exist.
-        disposeGlobals = setupSessionGlobals({
-          windowImpl: window,
-          documentImpl: document,
-          model: sessionModel,
-          sessionId,
-          navigateTo: window.navigateTo,
-        });
+        startSessionRuntime();
         applyLazyHighlighting(document);
       } catch (err) {
         if (!active) return;

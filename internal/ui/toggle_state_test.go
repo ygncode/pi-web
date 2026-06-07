@@ -69,13 +69,14 @@ func TestToolsVisibilityAndOutputExpansionAreSeparateStates(t *testing.T) {
 
 func TestNavigationReappliesCurrentToggleStateAfterRenderingMessages(t *testing.T) {
 	// The message pane is now rendered by the reactive <SessionContent>, which
-	// runs an afterRender(container) hook after each (re)render; session.js wires
-	// that hook to re-apply persisted toggle state via applyToggleStateToNode.
+	// runs an afterRender(container) hook after each (re)render; the live content
+	// runtime wires that hook to re-apply persisted toggle state via
+	// applyToggleStateToNode.
 	contentSrc := readSrc(t, "web/src/components/session/SessionContent.svelte")
-	sessionSrc := readSrc(t, "web/src/session/session.js")
+	runtimeSrc := readSrc(t, "web/src/session/session-content-runtime.js")
 	srcChecks := map[string][]string{
 		contentSrc: {"afterRender(containerEl)"},
-		sessionSrc: {
+		runtimeSrc: {
 			"contentRuntime.afterRender =",
 			"target.applyToggleStateToNode?.(container)",
 		},
