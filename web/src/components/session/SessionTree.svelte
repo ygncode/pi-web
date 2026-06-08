@@ -3,19 +3,21 @@
   import { t } from '../../shared/i18n.js';
   import { getSessionModel } from '../../session/session-context.js';
   import { sessionRuntime } from '../../session/session-runtime.js';
+  import { getSessionRuntime } from '../../session/session-runtime-context.js';
   import SessionTreeNodes from './SessionTreeNodes.svelte';
 
   const model = getSessionModel();
 
-  // Route a tree-node click through the imperative navigator (window.navigateTo,
-  // installed by session.js) so message content scrolls/renders; the navigator's
+  // Route a tree-node click through the imperative navigator so message content
+  // scrolls/renders; the navigator's
   // onNavigate writes back to the model, which re-highlights the tree reactively.
   // Parity with the old tree-renderer: navigate to the newest leaf under the
   // clicked node, with the clicked node as the scroll target; auto-close the
   // drawer on mobile.
   function onNavigate(id) {
     const leaf = model?.newestLeaf(id) || id;
-    window.navigateTo?.(leaf, 'target', id);
+    const navigateTo = getSessionRuntime().navigateTo || window.navigateTo;
+    navigateTo?.(leaf, 'target', id);
     if (sessionRuntime.layout?.isMobileLayout?.()) sessionRuntime.layout?.closeSidebar?.();
   }
 </script>

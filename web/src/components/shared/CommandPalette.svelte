@@ -1,4 +1,6 @@
 <script module>
+  import { getSessionRuntime } from '../../session/session-runtime-context.js';
+
   function debounce(fn, ms) {
     let timer;
     return (...args) => {
@@ -62,7 +64,7 @@
 
   export function defaultSessionPaletteCwd(windowImpl = window) {
     try {
-      const preload = windowImpl.__piSessionDataModel;
+      const preload = getSessionRuntime().model || windowImpl.__piSessionDataModel;
       const data = preload && typeof preload.header === 'object' ? preload.header : {};
       return data.cwd || '';
     } catch {

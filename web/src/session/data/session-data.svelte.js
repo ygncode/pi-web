@@ -5,7 +5,7 @@
 // (session-data.js): it exposes the same fields (entries, header, byId,
 // toolCallMap, labelMap, leafId, urlTargetId, systemPrompt, tools,
 // renderedTools, total/from/truncated) so the imperative session.js / export
-// runtimes can use it via window.__piSessionDataModel with no field changes —
+// runtimes can use it via the session runtime context/window shim with no field changes —
 // while ALSO being reactive so the Svelte tree updates automatically.
 //
 // Key reactivity rules that keep it compatible with the imperative code:

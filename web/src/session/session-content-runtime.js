@@ -40,6 +40,7 @@ export function wireSessionContentRuntime({
     }),
   };
 
+  const previousDownloadSessionJson = target.downloadSessionJson;
   target.downloadSessionJson = () => downloadSessionJson({
     entries: model.entries,
     header: model.header,
@@ -122,7 +123,7 @@ export function wireSessionContentRuntime({
   // One delegated handler for the per-entry copy/fork/label buttons; survives the
   // reactive re-renders of #messages.
   const messagesEl = documentImpl.getElementById('messages');
-  messagesEl?.addEventListener('click', (e) => {
+  const onMessagesClick = (e) => {
     const copyBtn = e.target.closest?.('.copy-link-btn');
     if (copyBtn) {
       e.stopPropagation();
@@ -146,7 +147,15 @@ export function wireSessionContentRuntime({
       e.stopPropagation();
       labelEntry(labelBtn.dataset.entryId);
     }
-  });
+  };
+  messagesEl?.addEventListener('click', onMessagesClick);
 
-  return { sessionFormat };
+  return {
+    sessionFormat,
+    dispose: () => {
+      messagesEl?.removeEventListener('click', onMessagesClick);
+      if (previousDownloadSessionJson === undefined) delete target.downloadSessionJson;
+      else target.downloadSessionJson = previousDownloadSessionJson;
+    },
+  };
 }

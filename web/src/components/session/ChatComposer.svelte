@@ -1955,6 +1955,7 @@ export function setupMentionAutocomplete({
 <script>
   import { onMount } from 'svelte';
   import { escapeHtml } from '../../session/render/session-format.js';
+  import { getSessionRuntime } from '../../session/session-runtime-context.js';
   import * as chatApi from '../../session/chat/chat-api.js';
   import GitFooter from './GitFooter.svelte';
 
@@ -1967,12 +1968,13 @@ export function setupMentionAutocomplete({
   } = $props();
 
   // The composer runtime lives in <script module> (runChatComposer). It reads the
-  // shared model + navigateTo (owned by SessionPage, on window) at mount — both
-  // are ready before this onMount. <LiveReload> mounts first, so its
+  // shared model + navigateTo (owned by SessionPage runtime context) at mount —
+  // both are ready before this onMount. <LiveReload> mounts first, so its
   // pi-chat-message-sent listener is attached before the user can send. Live-only.
   onMount(() => {
     const target = window;
-    const model = target.__piSessionDataModel;
+    const runtime = getSessionRuntime();
+    const model = runtime.model || target.__piSessionDataModel;
     globalThis.__PI_TEST_CHAT_COMPOSER_HOOK__?.();
     runChatComposer({
       documentImpl: document,
@@ -1982,7 +1984,7 @@ export function setupMentionAutocomplete({
       leafId: model?.leafId || '',
       urlTargetId: model?.urlTargetId || '',
       byId: model?.byId || new Map(),
-      navigateTo: target.navigateTo,
+      navigateTo: runtime.navigateTo || target.navigateTo,
       escapeHtml: (text) => escapeHtml(text, { documentImpl: document }),
       chatApi,
       FormDataImpl: target.FormData,

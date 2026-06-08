@@ -536,7 +536,7 @@ export function updateStatsDom(entries, { documentImpl = document } = {}) {
   // and reconciles the shared reactive model when the session JSONL changes. The
   // Svelte <SessionContent> owns #messages and re-renders from the model, so this
   // never patches the message DOM (reactive-only): on reload it reconciles the
-  // model (window.__piReconcileEntries) and only tracks brand-new ids for the
+  // model (session runtime context, with window shim fallback) and only tracks brand-new ids for the
   // follow/scroll/highlight decisions. Live-only: never imported by the static
   // export bundle.
   //
@@ -550,11 +550,13 @@ export function updateStatsDom(entries, { documentImpl = document } = {}) {
   import { escapeHtml } from '../../session/render/session-format.js';
   import { safeMarkedParse } from '../../session/render/markdown.js';
   import { sessionRuntime } from '../../session/session-runtime.js';
+  import { getSessionRuntime } from '../../session/session-runtime-context.js';
 
   onMount(() => {
     const documentImpl = document;
     const windowImpl = window;
-    const model = windowImpl.__piSessionDataModel;
+    const runtime = getSessionRuntime();
+    const model = runtime.model || windowImpl.__piSessionDataModel;
     globalThis.__PI_TEST_LIVE_RELOAD_HOOK__?.();
 
     const fetchImpl = windowImpl.fetch.bind(windowImpl);
@@ -754,7 +756,7 @@ export function updateStatsDom(entries, { documentImpl = document } = {}) {
         scrollAfterLayout,
         incrementPending: (count) => { pendingCount += count; },
         showFollowButton,
-        onReloaded: (data) => { windowImpl.__piReconcileEntries?.(data.entries); },
+        onReloaded: (data) => { (runtime.reconcileEntries || windowImpl.__piReconcileEntries)?.(data.entries); },
         onNewEntries: highlightNewEntries,
       }).catch((err) => { console.error('Live update failed:', err); });
     }
