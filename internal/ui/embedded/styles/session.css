@@ -4432,6 +4432,82 @@
       display: none;
     }
 
+    /* Diff review modal — full-page sheet hosting the @pierre/diffs viewer.
+       Overrides the default centered-dialog sheet sizing. */
+    .pi-sheet-panel.diff-sheet-panel {
+      max-width: none;
+      width: 100vw;
+      height: 100vh;
+      max-height: 100vh;
+      border-radius: 0;
+      border: none;
+      background: var(--container-bg);
+    }
+    .pi-sheet-body.diff-sheet-body {
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: var(--container-bg);
+    }
+    .diff-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--dim);
+      flex-shrink: 0;
+    }
+    .diff-toggle {
+      display: inline-flex;
+      border: 1px solid var(--dim);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .diff-toggle-btn {
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+      color: var(--text-soft);
+      padding: 4px 12px;
+      font-size: 13px;
+    }
+    .diff-toggle-btn.active {
+      background: var(--accent);
+      color: var(--body-bg);
+    }
+    .diff-submit {
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: var(--body-bg);
+      padding: 5px 14px;
+      font-size: 13px;
+    }
+    .diff-submit:disabled {
+      cursor: default;
+      opacity: 0.5;
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--dim);
+    }
+    .diff-status {
+      padding: 32px 8px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .diff-status-error {
+      color: var(--error, #cc6666);
+    }
+    .diff-codeview {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      background: var(--body-bg);
+    }
+
     /* Model Usage — card-based, premium density (works inside any sheet) */
     .mu-section {
       margin-bottom: 12px;

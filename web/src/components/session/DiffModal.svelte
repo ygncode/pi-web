@@ -110,11 +110,15 @@
     codeView = new CodeView({
       diffStyle: layout,
       themeType,
-      theme: { dark: 'github-dark', light: 'github-light' },
+      // pierre-dark / pierre-light are the library's bundled default themes;
+      // other names (e.g. github-*) aren't shipped and fall back to white.
+      theme: { dark: 'pierre-dark', light: 'pierre-light' },
       enableLineSelection: true,
+      enableGutterUtility: true,
+      lineHoverHighlight: 'both',
       stickyHeaders: true,
       renderAnnotation: (annotation) => renderAnnotation(annotation),
-      onSelectedLinesChange: (selection) => onSelectionChange(selection),
+      onGutterUtilityClick: (range, context) => onGutterUtilityClick(range, context),
     });
     codeView.setup(viewport);
     codeView.setItems(files.map((f) => makeItem(f)));
@@ -149,9 +153,12 @@
     commentCount = comments.length;
   }
 
-  function onSelectionChange(selection) {
-    if (!selection || !selection.range) return;
-    const { range, id } = selection;
+  // The gutter "+" button (shown on line hover / after a drag-selection) opens
+  // a comment composer for the hovered line or the selected range. In a
+  // CodeView the callback also receives the file item as context.
+  function onGutterUtilityClick(range, context) {
+    const id = context?.item?.id;
+    if (!range || !id) return;
     const side = range.endSide || range.side || 'additions';
     const a = range.start;
     const b = range.end ?? range.start;
@@ -393,58 +400,5 @@
   <div class="diff-codeview" use:mountDiff hidden={loading || !!errorMsg || !!emptyState}></div>
 </FullScreenSheet>
 
-<style>
-  .diff-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding: 8px 4px 12px;
-  }
-  .diff-toggle {
-    display: inline-flex;
-    border: 1px solid var(--border, #444);
-    border-radius: 6px;
-    overflow: hidden;
-  }
-  .diff-toggle-btn {
-    cursor: pointer;
-    border: 0;
-    background: transparent;
-    color: var(--text-soft, #b7bbc4);
-    padding: 4px 12px;
-    font-size: 13px;
-  }
-  .diff-toggle-btn.active {
-    background: var(--accent, #9cc7c0);
-    color: #111;
-  }
-  .diff-submit {
-    cursor: pointer;
-    border-radius: 6px;
-    border: 1px solid var(--accent, #9cc7c0);
-    background: var(--accent, #9cc7c0);
-    color: #111;
-    padding: 5px 14px;
-    font-size: 13px;
-  }
-  .diff-submit:disabled {
-    cursor: default;
-    opacity: 0.5;
-    background: transparent;
-    color: var(--muted, #858a96);
-    border-color: var(--border, #444);
-  }
-  .diff-status {
-    padding: 32px 8px;
-    text-align: center;
-    color: var(--muted, #858a96);
-  }
-  .diff-status-error {
-    color: var(--error, #cc6666);
-  }
-  .diff-codeview {
-    height: 70vh;
-    overflow: hidden;
-  }
-</style>
+<!-- Styles live in internal/ui/embedded/styles/session.css (the app loads global
+     stylesheets, not Svelte-scoped <style> blocks — see ModelUsageModal). -->
