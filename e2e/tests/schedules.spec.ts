@@ -20,6 +20,14 @@ test.describe("schedules (stubbed pi)", () => {
     await page.locator("[data-schedules-btn]").click();
     await expect(page).toHaveURL(/\/schedules$/);
     await expect(page.locator('[data-testid="schedule-new"]')).toBeVisible();
+
+    // Guard against the styling regression where the page rendered unstyled:
+    // the schedules stylesheet must be inlined into the SPA shell. A plain div
+    // has max-width "none"; .schedules-page sets it to 880px.
+    const maxWidth = await page
+      .locator(".schedules-page")
+      .evaluate((el) => getComputedStyle(el).maxWidth);
+    expect(maxWidth).toBe("880px");
   });
 
   test("create, run now, view run log, and delete a schedule", async ({
