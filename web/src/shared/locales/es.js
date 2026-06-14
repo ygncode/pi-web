@@ -356,11 +356,12 @@ export default {
   'schedules.new': 'Nueva programación',
   'schedules.edit': 'Editar',
   'schedules.delete': 'Eliminar',
-  'schedules.backToSessions': '← Sesiones',
+  'schedules.backToSessions': 'Sesiones',
   'schedules.loading': 'Cargando…',
   'schedules.emptyTitle': 'Aún no hay programaciones',
   'schedules.emptyHint':
     'Crea una programación para ejecutar pi automáticamente con un temporizador.',
+  'schedules.active': 'Activo',
   'schedules.paused': 'Pausada',
   'schedules.next': 'Siguiente',
   'schedules.last': 'Última',

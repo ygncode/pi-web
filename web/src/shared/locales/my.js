@@ -357,11 +357,12 @@ export default {
   'schedules.new': 'အချိန်ဇယားအသစ်',
   'schedules.edit': 'တည်းဖြတ်',
   'schedules.delete': 'ဖျက်',
-  'schedules.backToSessions': '← Sessions',
+  'schedules.backToSessions': 'Sessions',
   'schedules.loading': 'ဖွင့်နေသည်…',
   'schedules.emptyTitle': 'အချိန်ဇယားမရှိသေးပါ',
   'schedules.emptyHint':
     'pi ကို အချိန်တိုင်းအတိုင်း အလိုအလျောက် လည်ပတ်စေရန် အချိန်ဇယားတစ်ခု ဖန်တီးပါ။',
+  'schedules.active': 'ဖွင့်ထား',
   'schedules.paused': 'ခေတ္တရပ်ထားသည်',
   'schedules.next': 'နောက်တစ်ခု',
   'schedules.last': 'နောက်ဆုံး',

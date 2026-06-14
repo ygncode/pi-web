@@ -8,6 +8,20 @@
     THINKING_LEVELS,
   } from '../session/chat/chat-selectors.js';
   import {
+    icon,
+    CalendarClock,
+    ChevronLeft,
+    Clock,
+    ExternalLink,
+    ListTree,
+    Pause,
+    Pencil,
+    Play,
+    Plus,
+    Trash2,
+    X,
+  } from '../shared/icons.js';
+  import {
     FREQUENCIES,
     buildCron,
     parseCron,
@@ -286,27 +300,46 @@
   }
 </script>
 
+<!-- eslint-disable svelte/no-at-html-tags -- trusted: Lucide icon SVG from icons.js -->
+
 <div class="schedules-page">
   <header class="schedules-header">
-    <button type="button" class="link-btn" onclick={() => navigate('/')}>
-      {t('schedules.backToSessions')}
+    <button type="button" class="sched-back" onclick={() => navigate('/')}>
+      <span class="sched-ico" aria-hidden="true">{@html icon(ChevronLeft, { size: 16 })}</span>
+      <span>{t('schedules.backToSessions')}</span>
     </button>
-    <h1>{t('schedules.title')}</h1>
-    <button type="button" class="primary-btn" data-testid="schedule-new" onclick={openCreate}
-      >{t('schedules.new')}</button
+    <h1 class="schedules-title">
+      <span class="sched-ico" aria-hidden="true">{@html icon(CalendarClock, { size: 20 })}</span>
+      {t('schedules.title')}
+    </h1>
+    <button
+      type="button"
+      class="sched-btn sched-btn-primary"
+      data-testid="schedule-new"
+      onclick={openCreate}
     >
+      <span class="sched-ico" aria-hidden="true">{@html icon(Plus, { size: 15 })}</span>
+      <span>{t('schedules.new')}</span>
+    </button>
   </header>
 
   {#if loadError}
-    <p class="error" role="alert">{loadError}</p>
+    <p class="sched-error" role="alert">{loadError}</p>
   {/if}
 
   {#if loading}
-    <p class="muted">{t('schedules.loading')}</p>
+    <p class="sched-muted">{t('schedules.loading')}</p>
   {:else if schedules.length === 0}
-    <div class="empty">
-      <p>{t('schedules.emptyTitle')}</p>
-      <p class="muted">{t('schedules.emptyHint')}</p>
+    <div class="sched-empty">
+      <span class="sched-empty-icon" aria-hidden="true"
+        >{@html icon(CalendarClock, { size: 32 })}</span
+      >
+      <p class="sched-empty-title">{t('schedules.emptyTitle')}</p>
+      <p class="sched-muted">{t('schedules.emptyHint')}</p>
+      <button type="button" class="sched-btn sched-btn-primary" onclick={openCreate}>
+        <span class="sched-ico" aria-hidden="true">{@html icon(Plus, { size: 15 })}</span>
+        <span>{t('schedules.new')}</span>
+      </button>
     </div>
   {:else}
     <ul class="schedule-list">
@@ -317,75 +350,91 @@
           data-testid="schedule-card"
           data-schedule-id={schedule.id}
         >
-          <div class="schedule-main">
-            <div class="schedule-info">
-              <div class="schedule-name" data-testid="schedule-card-name">
-                {schedule.name}
-                {#if !schedule.enabled}<span class="badge">{t('schedules.paused')}</span>{/if}
-              </div>
-              <div class="schedule-meta">
-                <span>{freqLabel(schedule)}</span>
-                {#if schedule.nextRunAt}
-                  <span class="muted">· {t('schedules.next')}: {fmtTime(schedule.nextRunAt)}</span>
-                {/if}
-                {#if schedule.lastRunAt}
-                  <span class="muted">· {t('schedules.last')}: {fmtTime(schedule.lastRunAt)}</span>
-                {/if}
-              </div>
-              {#if schedule.projectPath}
-                <div class="schedule-path muted">{schedule.projectPath}</div>
+          <div class="schedule-card-head">
+            <div class="schedule-title-row">
+              <span class="schedule-name" data-testid="schedule-card-name">{schedule.name}</span>
+              <span class="schedule-pill" data-state={schedule.enabled ? 'active' : 'paused'}>
+                {schedule.enabled ? t('schedules.active') : t('schedules.paused')}
+              </span>
+            </div>
+            <div class="schedule-meta">
+              <span class="schedule-cadence">
+                <span class="sched-ico" aria-hidden="true">{@html icon(Clock, { size: 13 })}</span>
+                {freqLabel(schedule)}
+              </span>
+              {#if schedule.nextRunAt}
+                <span class="schedule-tag"
+                  >{t('schedules.next')}: {fmtTime(schedule.nextRunAt)}</span
+                >
+              {/if}
+              {#if schedule.lastRunAt}
+                <span class="schedule-tag"
+                  >{t('schedules.last')}: {fmtTime(schedule.lastRunAt)}</span
+                >
               {/if}
             </div>
-            <div class="schedule-actions">
-              <button
-                type="button"
-                class="small-btn"
-                data-testid="schedule-run"
-                onclick={() => runNow(schedule)}
+            {#if schedule.projectPath}
+              <div class="schedule-path">{schedule.projectPath}</div>
+            {/if}
+          </div>
+
+          <div class="schedule-actions">
+            <button
+              type="button"
+              class="sched-btn sched-btn-accent"
+              data-testid="schedule-run"
+              onclick={() => runNow(schedule)}
+            >
+              <span class="sched-ico" aria-hidden="true">{@html icon(Play, { size: 14 })}</span>
+              <span>{t('schedules.runNow')}</span>
+            </button>
+            <button
+              type="button"
+              class="sched-btn"
+              data-testid="schedule-toggle"
+              onclick={() => toggleEnabled(schedule)}
+            >
+              <span class="sched-ico" aria-hidden="true"
+                >{@html icon(schedule.enabled ? Pause : Play, { size: 14 })}</span
               >
-                {t('schedules.runNow')}
-              </button>
-              <button
-                type="button"
-                class="small-btn"
-                data-testid="schedule-toggle"
-                onclick={() => toggleEnabled(schedule)}
-              >
-                {schedule.enabled ? t('schedules.pause') : t('schedules.resume')}
-              </button>
-              <button
-                type="button"
-                class="small-btn"
-                data-testid="schedule-edit"
-                onclick={() => openEdit(schedule)}
-              >
-                {t('schedules.edit')}
-              </button>
-              <button
-                type="button"
-                class="small-btn"
-                data-testid="schedule-runs"
-                onclick={() => toggleRuns(schedule)}
-              >
-                {t('schedules.runs')}
-              </button>
-              <button
-                type="button"
-                class="small-btn danger"
-                data-testid="schedule-delete"
-                onclick={() => remove(schedule)}
-              >
-                {t('schedules.delete')}
-              </button>
-            </div>
+              <span>{schedule.enabled ? t('schedules.pause') : t('schedules.resume')}</span>
+            </button>
+            <button
+              type="button"
+              class="sched-btn"
+              data-testid="schedule-edit"
+              onclick={() => openEdit(schedule)}
+            >
+              <span class="sched-ico" aria-hidden="true">{@html icon(Pencil, { size: 14 })}</span>
+              <span>{t('schedules.edit')}</span>
+            </button>
+            <button
+              type="button"
+              class="sched-btn"
+              class:active={expandedId === schedule.id}
+              data-testid="schedule-runs"
+              onclick={() => toggleRuns(schedule)}
+            >
+              <span class="sched-ico" aria-hidden="true">{@html icon(ListTree, { size: 14 })}</span>
+              <span>{t('schedules.runs')}</span>
+            </button>
+            <button
+              type="button"
+              class="sched-btn sched-btn-danger"
+              data-testid="schedule-delete"
+              onclick={() => remove(schedule)}
+            >
+              <span class="sched-ico" aria-hidden="true">{@html icon(Trash2, { size: 14 })}</span>
+              <span>{t('schedules.delete')}</span>
+            </button>
           </div>
 
           {#if expandedId === schedule.id}
             <div class="run-log">
               {#if runsLoading}
-                <p class="muted">{t('schedules.loading')}</p>
+                <p class="sched-muted">{t('schedules.loading')}</p>
               {:else if runs.length === 0}
-                <p class="muted">{t('schedules.noRuns')}</p>
+                <p class="sched-muted">{t('schedules.noRuns')}</p>
               {:else}
                 <ul data-testid="run-log">
                   {#each runs as run (run.id)}
@@ -396,15 +445,18 @@
                       {:else if run.sessionId}
                         <button
                           type="button"
-                          class="link-btn"
+                          class="sched-link"
                           data-testid="run-open"
                           onclick={() =>
                             navigate('/session?id=' + encodeURIComponent(run.sessionId))}
                         >
+                          <span class="sched-ico" aria-hidden="true"
+                            >{@html icon(ExternalLink, { size: 13 })}</span
+                          >
                           {t('schedules.openSession')}
                         </button>
                       {:else}
-                        <span class="muted">{t('schedules.runStarted')}</span>
+                        <span class="sched-muted">{t('schedules.runStarted')}</span>
                       {/if}
                     </li>
                   {/each}
@@ -426,7 +478,15 @@
     aria-modal="true"
     aria-label={t('schedules.editorTitle')}
   >
-    <h2>{editingId ? t('schedules.editTitle') : t('schedules.new')}</h2>
+    <div class="schedule-editor-head">
+      <h2>{editingId ? t('schedules.editTitle') : t('schedules.new')}</h2>
+      <button
+        type="button"
+        class="schedule-editor-close"
+        aria-label={t('common.cancel')}
+        onclick={closeEditor}>{@html icon(X, { size: 18 })}</button
+      >
+    </div>
 
     <label class="field">
       <span>{t('schedules.fieldName')}</span>
@@ -475,7 +535,7 @@
           {form.modelLabel || t('schedules.modelDefault')}
         </button>
         {#if form.modelId}
-          <button type="button" class="small-btn" onclick={clearModel}
+          <button type="button" class="sched-btn" onclick={clearModel}
             >{t('schedules.modelClear')}</button
           >
         {/if}
@@ -490,7 +550,7 @@
           />
           <div class="model-list">
             {#if filteredProviders.length === 0}
-              <div class="muted">{t('schedules.modelNone')}</div>
+              <div class="sched-muted">{t('schedules.modelNone')}</div>
             {:else}
               {#each filteredProviders as group (group.provider)}
                 <div class="model-provider">{group.provider}</div>
@@ -529,30 +589,32 @@
       </select>
     </label>
 
-    {#if form.frequency === 'hourly'}
-      <label class="field">
-        <span>{t('schedules.fieldMinute')}</span>
-        <input type="number" min="0" max="59" bind:value={form.minute} />
-      </label>
-    {/if}
+    <div class="field-row">
+      {#if form.frequency === 'hourly'}
+        <label class="field">
+          <span>{t('schedules.fieldMinute')}</span>
+          <input type="number" min="0" max="59" bind:value={form.minute} />
+        </label>
+      {/if}
 
-    {#if showTime}
-      <label class="field">
-        <span>{t('schedules.fieldTime')}</span>
-        <input type="time" value={timeValue} oninput={onTimeInput} />
-      </label>
-    {/if}
+      {#if showTime}
+        <label class="field">
+          <span>{t('schedules.fieldTime')}</span>
+          <input type="time" value={timeValue} oninput={onTimeInput} />
+        </label>
+      {/if}
 
-    {#if form.frequency === 'weekly'}
-      <label class="field">
-        <span>{t('schedules.fieldWeekday')}</span>
-        <select bind:value={form.weekday}>
-          {#each [0, 1, 2, 3, 4, 5, 6] as d (d)}
-            <option value={d}>{t('schedules.weekday' + d)}</option>
-          {/each}
-        </select>
-      </label>
-    {/if}
+      {#if form.frequency === 'weekly'}
+        <label class="field">
+          <span>{t('schedules.fieldWeekday')}</span>
+          <select bind:value={form.weekday}>
+            {#each [0, 1, 2, 3, 4, 5, 6] as d (d)}
+              <option value={d}>{t('schedules.weekday' + d)}</option>
+            {/each}
+          </select>
+        </label>
+      {/if}
+    </div>
 
     {#if form.frequency === 'custom'}
       <label class="field">
@@ -563,7 +625,7 @@
           bind:value={form.customCron}
           placeholder="0 9 * * 1-5"
         />
-        <small class="muted">{t('schedules.cronHint')}</small>
+        <small class="sched-muted">{t('schedules.cronHint')}</small>
       </label>
     {/if}
 
@@ -580,16 +642,16 @@
     </label>
 
     {#if formError}
-      <p class="error" role="alert">{formError}</p>
+      <p class="sched-error" role="alert">{formError}</p>
     {/if}
 
     <div class="schedule-editor-actions">
-      <button type="button" class="small-btn" data-testid="schedule-cancel" onclick={closeEditor}
+      <button type="button" class="sched-btn" data-testid="schedule-cancel" onclick={closeEditor}
         >{t('common.cancel')}</button
       >
       <button
         type="button"
-        class="primary-btn"
+        class="sched-btn sched-btn-primary"
         data-testid="schedule-save"
         onclick={save}
         disabled={saving}

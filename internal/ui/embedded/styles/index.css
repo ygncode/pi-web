@@ -191,6 +191,38 @@ a { color: inherit; }
 [data-session-layout="projects"] [data-sessions-content]:not(.index-layout-ready) {
     visibility: hidden;
 }
+.workspace-views {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.schedules-nav-btn {
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    border: 1px solid color-mix(in srgb, var(--dim) 76%, transparent);
+    background: color-mix(in srgb, var(--surface) 54%, transparent);
+    color: var(--muted);
+    border-radius: 6px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 13px;
+    line-height: 1;
+    transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.schedules-nav-btn:hover {
+    color: var(--text);
+    background: var(--surface-2);
+    border-color: var(--dim);
+}
+.schedules-nav-icon {
+    display: inline-flex;
+    align-items: center;
+    color: var(--accent);
+}
 .stat-running {
     display: none;
     align-items: center;

@@ -358,11 +358,12 @@ export default {
   'schedules.new': 'Nouvelle planification',
   'schedules.edit': 'Modifier',
   'schedules.delete': 'Supprimer',
-  'schedules.backToSessions': '← Sessions',
+  'schedules.backToSessions': 'Sessions',
   'schedules.loading': 'Chargement…',
   'schedules.emptyTitle': 'Aucune planification pour le moment',
   'schedules.emptyHint':
     'Créez une planification pour exécuter pi automatiquement selon une minuterie.',
+  'schedules.active': 'Actif',
   'schedules.paused': 'En pause',
   'schedules.next': 'Suivante',
   'schedules.last': 'Dernière',

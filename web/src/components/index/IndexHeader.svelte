@@ -1,5 +1,5 @@
 <script>
-  import { icon, MoreHorizontal } from '../../shared/icons.js';
+  import { icon, MoreHorizontal, CalendarClock } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
 
   let {
@@ -67,32 +67,19 @@
             onclick={() => onLayoutChange('projects')}>{t('index.layoutProjects')}</button
           >
         </div>
-        <button type="button" class="schedules-nav-btn" data-schedules-btn onclick={onSchedules}
-          >{t('schedules.navTitle')}</button
+        <button
+          type="button"
+          class="schedules-nav-btn"
+          data-schedules-btn
+          title={t('schedules.navTitle')}
+          onclick={onSchedules}
+          ><span class="schedules-nav-icon" aria-hidden="true"
+            >{@html icon(CalendarClock, {
+              size: 15,
+            })}</span
+          ><span>{t('schedules.navTitle')}</span></button
         >
       </div>
     </div>
   </div>
 </div>
-
-<style>
-  .workspace-views {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .schedules-nav-btn {
-    appearance: none;
-    border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    font-size: 0.85rem;
-    padding: 4px 12px;
-    border-radius: 999px;
-    cursor: pointer;
-  }
-  .schedules-nav-btn:hover {
-    background: var(--surface-hover, rgba(127, 127, 127, 0.12));
-  }
-</style>
