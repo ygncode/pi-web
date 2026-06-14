@@ -36,6 +36,10 @@
   let comments = [];
   let draft = null; // { file, startLine, endLine, side } pending compose box
   let editingId = '';
+  let themeObserver = null;
+  // CodeView.updateItem only re-renders when the item's `version` changes, so
+  // every (re)built item gets a fresh monotonic version.
+  let itemVersion = 0;
 
   // The mount container is driven by an action rather than bind:this: the
   // action mounts when <FullScreenSheet> reveals its body (open) and is
@@ -86,6 +90,8 @@
   }
 
   function teardown() {
+    themeObserver?.disconnect();
+    themeObserver = null;
     try {
       codeView?.cleanUp();
     } catch {
@@ -103,10 +109,13 @@
     commentCount = 0;
   }
 
+  function currentThemeType() {
+    return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+  }
+
   function buildCodeView(files) {
     const { CodeView } = diffsMod;
-    const theme = document.documentElement.dataset.theme;
-    const themeType = theme === 'light' ? 'light' : 'dark';
+    const themeType = currentThemeType();
     codeView = new CodeView({
       diffStyle: layout,
       themeType,
@@ -124,10 +133,27 @@
     codeView.setItems(files.map((f) => makeItem(f)));
     codeView.render();
     updateCommentCount();
+
+    // Live-follow the app theme: re-theme the diff when the user switches it.
+    themeObserver = new MutationObserver(() => {
+      if (!codeView) return;
+      codeView.setOptions({ themeType: currentThemeType() });
+      codeView.render();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
   }
 
   function makeItem(file) {
-    return { id: file.name, type: 'diff', fileDiff: file, annotations: annotationsFor(file.name) };
+    return {
+      id: file.name,
+      type: 'diff',
+      fileDiff: file,
+      annotations: annotationsFor(file.name),
+      version: ++itemVersion,
+    };
   }
 
   function annotationsFor(fileName) {

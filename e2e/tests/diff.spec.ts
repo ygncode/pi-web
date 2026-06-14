@@ -84,35 +84,62 @@ test.describe("diff review modal", () => {
     await expect(page.locator(".diff-status")).toContainText("Not a git repository");
   });
 
-  test("loads a persisted comment and submits the review into the composer", async ({
+  test("adds a comment from the gutter, persists it across reload, and submits it", async ({
     page,
     sessionsDir,
-    baseURL,
   }, testInfo) => {
     const { entries } = buildSession({ cwd: gitRepoWithChanges() });
     const name = uniqueSessionName(testInfo, "diffreview");
     writeSession(sessionsDir, name, entries);
 
-    // Seed a review comment through the API the modal reads from.
-    const res = await page.request.post(
-      `${baseURL}/api/diff/reviews?session=${encodeURIComponent(name)}`,
-      { data: { file: "hello.txt", startLine: 2, endLine: 2, side: "new", body: "please revert this" } },
-    );
-    expect(res.ok()).toBeTruthy();
-
     await page.goto(`/session?id=${encodeURIComponent(name)}`);
     await openDiffModal(page);
-    await expect(page.locator(".diff-codeview diffs-container").first()).toBeVisible({
-      timeout: 15000,
-    });
-
-    // The seeded comment renders inside the diff's shadow DOM.
     const container = page.locator(".diff-codeview diffs-container").first();
+    await expect(container).toBeVisible({ timeout: 15000 });
+
+    // Hover the changed line, click the gutter "+", type a comment, and save.
+    await container.getByText("CHANGED two").hover();
+    await container.locator("button[data-utility-button]").first().click({ force: true });
+    await container.locator("textarea").first().fill("please revert this");
+    await container.getByRole("button", { name: "Save" }).click();
     await expect(container.locator("text=please revert this")).toBeVisible();
+
+    // Reload the page and reopen — the comment was persisted server-side.
+    await page.reload();
+    await openDiffModal(page);
+    const container2 = page.locator(".diff-codeview diffs-container").first();
+    await expect(container2).toBeVisible({ timeout: 15000 });
+    await expect(container2.locator("text=please revert this")).toBeVisible();
 
     // Submitting composes the comment into the chat composer.
     await page.locator(".diff-submit").click();
     await expect(page.locator("#pi-chat-message")).toHaveValue(/please revert this/);
     await expect(page.locator(".diff-toolbar")).toBeHidden();
+  });
+
+  test("re-themes the diff when the app theme changes", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const { entries } = buildSession({ cwd: gitRepoWithChanges() });
+    const name = uniqueSessionName(testInfo, "difftheme");
+    writeSession(sessionsDir, name, entries);
+
+    await page.goto(`/session?id=${encodeURIComponent(name)}`);
+    await openDiffModal(page);
+    const container = page.locator(".diff-codeview diffs-container").first();
+    await expect(container).toBeVisible({ timeout: 15000 });
+
+    const colorScheme = () =>
+      page.evaluate(
+        () =>
+          getComputedStyle(
+            document.querySelector(".diff-codeview diffs-container") as HTMLElement,
+          ).colorScheme,
+      );
+
+    await expect.poll(colorScheme).toBe("dark");
+    await page.evaluate(() => (document.documentElement.dataset.theme = "light"));
+    await expect.poll(colorScheme).toBe("light");
   });
 });
