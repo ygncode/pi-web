@@ -92,8 +92,13 @@ func (s *Server) recomputeAndBroadcastStatus(sessionID string) {
 
 	// Transition running → idle: fire a push notification so subscribed
 	// clients learn the response is ready even when the tab is closed
-	// or the device is locked.
+	// or the device is locked. Scheduled runs get a schedule-specific push
+	// (shown even in the foreground) instead of the generic one.
 	if was && !now && s.push != nil {
-		go s.push.NotifyDone(sessionID)
+		if name, ok := s.scheduleNameForSession(sessionID); ok {
+			go s.push.NotifyScheduleDone(name, sessionID)
+		} else {
+			go s.push.NotifyDone(sessionID)
+		}
 	}
 }

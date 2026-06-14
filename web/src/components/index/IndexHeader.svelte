@@ -10,6 +10,7 @@
     onSearch = () => {},
     onToggleMenu = () => {},
     onLayoutChange = () => {},
+    onSchedules = () => {},
   } = $props();
 </script>
 
@@ -51,20 +52,47 @@
           ><span class="stat-running-label"> {t('index.active')}</span></span
         >
       </div>
-      <div class="layout-toggle" aria-label={t('index.sessionLayout')}>
-        <button
-          type="button"
-          data-layout-btn="timeline"
-          aria-pressed={String(layout === 'timeline')}
-          onclick={() => onLayoutChange('timeline')}>{t('index.layoutTimeline')}</button
-        >
-        <button
-          type="button"
-          data-layout-btn="projects"
-          aria-pressed={String(layout === 'projects')}
-          onclick={() => onLayoutChange('projects')}>{t('index.layoutProjects')}</button
+      <div class="workspace-views">
+        <div class="layout-toggle" aria-label={t('index.sessionLayout')}>
+          <button
+            type="button"
+            data-layout-btn="timeline"
+            aria-pressed={String(layout === 'timeline')}
+            onclick={() => onLayoutChange('timeline')}>{t('index.layoutTimeline')}</button
+          >
+          <button
+            type="button"
+            data-layout-btn="projects"
+            aria-pressed={String(layout === 'projects')}
+            onclick={() => onLayoutChange('projects')}>{t('index.layoutProjects')}</button
+          >
+        </div>
+        <button type="button" class="schedules-nav-btn" data-schedules-btn onclick={onSchedules}
+          >{t('schedules.navTitle')}</button
         >
       </div>
     </div>
   </div>
 </div>
+
+<style>
+  .workspace-views {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .schedules-nav-btn {
+    appearance: none;
+    border: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 0.85rem;
+    padding: 4px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .schedules-nav-btn:hover {
+    background: var(--surface-hover, rgba(127, 127, 127, 0.12));
+  }
+</style>

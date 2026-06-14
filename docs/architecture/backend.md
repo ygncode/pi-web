@@ -66,7 +66,9 @@ pi-web/
 │   │   ├── annotations.go      # Per-session review annotations: list/create/delete + SSE snapshot (SQLite)
 │   │   ├── projects.go         # Project visibility prefs: list/toggle/register + index filtering (SQLite)
 │   │   ├── sound.go            # /api/sounds + /sounds/ asset serving
-│   │   ├── push.go             # PushManager: VAPID, subscribe/unsubscribe, NotifyDone
+│   │   ├── push.go             # PushManager: VAPID, subscribe/unsubscribe, NotifyDone, NotifyScheduleDone
+│   │   ├── scheduler.go        # Cron tick loop + fireSchedule runner (creates a session, sends instructions)
+│   │   ├── schedules_api.go    # /api/schedules + /api/schedule(/run|/runs) handlers
 │   │   ├── update.go           # /api/version, check-update, update, restart handlers
 │   │   ├── events.go           # SSE endpoint (/events)
 │   │   ├── sse_format.go       # SSE event framing helper
@@ -80,6 +82,8 @@ pi-web/
 │   │   ├── title.go            # ReadTitleInputs: extract auto-title source text from a session
 │   │   ├── cache.go            # Modtime-aware session cache
 │   │   └── lookup.go           # Resolve session by ID
+│   ├── schedules/
+│   │   └── schedule.go         # Schedule/Run structs, SQLite store, cron next-fire (robfig/cron)
 │   ├── share/
 │   │   └── share.go            # GitHub Gist creation logic
 │   └── workers/
@@ -278,6 +282,10 @@ type piRPCWorker struct {
 | `/api/push/vapid` | GET | `handleVapid` | VAPID public key (when push enabled) |
 | `/api/push/subscribe` | POST | `handleSubscribe` | Register a web-push subscription |
 | `/api/push/unsubscribe` | POST | `handleUnsubscribe` | Remove a web-push subscription |
+| `/api/schedules` | GET/POST | `handleApiSchedules` | List schedules (with `nextRunAt`) / create (SQLite) |
+| `/api/schedule` | GET/POST/PUT/DELETE | `handleApiSchedule` | Read/update/delete one schedule (`?id=`) |
+| `/api/schedule/run` | POST | `handleApiScheduleRun` | Fire a schedule now (`?id=`); returns created `sessionId` |
+| `/api/schedule/runs` | GET | `handleApiScheduleRuns` | Run log for a schedule (`?id=`) |
 | `/api/version` | GET | `handleVersion` | Current/latest version (when updater set) |
 | `/api/check-update` | POST | `handleCheckUpdate` | Force a version check |
 | `/api/update` | POST | `handleUpdate` | Install the latest pi-web |

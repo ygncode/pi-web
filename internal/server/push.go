@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -176,9 +177,36 @@ func (m *PushManager) handleUnsubscribe(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, 0, map[string]any{"ok": true})
 }
 
-// NotifyDone sends a push to every registered subscription. Failed endpoints
-// (gone / 410) are pruned. Best-effort: errors are logged to stderr.
+// NotifyDone sends a "response ready" push for a finished session.
 func (m *PushManager) NotifyDone(sessionID string) {
+	m.notify(map[string]string{
+		"type":      "session-done",
+		"sessionId": sessionID,
+		"title":     "pi session",
+		"body":      "Response ready",
+	})
+}
+
+// NotifyScheduleDone sends a schedule-specific push when a scheduled run
+// finishes. Unlike session-done, the service worker shows this even when the
+// app is foregrounded, since a schedule firing is a background event the user
+// may not be watching.
+func (m *PushManager) NotifyScheduleDone(scheduleName, sessionID string) {
+	title := scheduleName
+	if strings.TrimSpace(title) == "" {
+		title = "Scheduled run"
+	}
+	m.notify(map[string]string{
+		"type":      "schedule-done",
+		"sessionId": sessionID,
+		"title":     title,
+		"body":      "Scheduled run finished",
+	})
+}
+
+// notify marshals payload and sends it to every registered subscription. Failed
+// endpoints (gone / 410) are pruned. Best-effort: errors are logged to stderr.
+func (m *PushManager) notify(payload map[string]string) {
 	if m == nil {
 		return
 	}
@@ -196,12 +224,7 @@ func (m *PushManager) NotifyDone(sessionID string) {
 	subj := m.subject
 	m.mu.Unlock()
 
-	payload, _ := json.Marshal(map[string]string{
-		"type":      "session-done",
-		"sessionId": sessionID,
-		"title":     "pi session",
-		"body":      "Response ready",
-	})
+	payloadBytes, _ := json.Marshal(payload)
 
 	var stale []string
 	for _, s := range subs {
@@ -209,7 +232,7 @@ func (m *PushManager) NotifyDone(sessionID string) {
 			Endpoint: s.Endpoint,
 			Keys:     webpush.Keys{P256dh: s.Keys.P256dh, Auth: s.Keys.Auth},
 		}
-		resp, err := webpush.SendNotification(payload, ws, &webpush.Options{
+		resp, err := webpush.SendNotification(payloadBytes, ws, &webpush.Options{
 			HTTPClient:      m.client,
 			Subscriber:      subj,
 			VAPIDPublicKey:  pub,

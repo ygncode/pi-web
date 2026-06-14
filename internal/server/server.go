@@ -20,6 +20,7 @@ import (
 	"pi-web/internal/auth"
 	"pi-web/internal/render"
 	"pi-web/internal/rpc"
+	"pi-web/internal/schedules"
 	"pi-web/internal/sessions"
 	"pi-web/internal/updater"
 
@@ -80,6 +81,7 @@ type Server struct {
 	stopOnce            sync.Once
 	wg                  sync.WaitGroup
 	db                  *sql.DB
+	schedules           *schedules.Store
 	updater             *updater.Checker
 	runInstall          func(ctx context.Context) error
 	runRestart          func() error
@@ -150,6 +152,7 @@ func New(deps Deps) (*Server, error) {
 		lastKnown:           make(map[string]struct{}),
 		stopCh:              make(chan struct{}),
 		db:                  db,
+		schedules:           schedules.NewStore(db),
 		updater:             deps.Updater,
 		runInstall:          deps.RunInstall,
 		runRestart:          deps.RunRestart,
@@ -164,6 +167,7 @@ func New(deps Deps) (*Server, error) {
 			userOwned: make(map[string]bool),
 		},
 	}
+	s.schedules.Now = now
 	if pm, err := NewPushManager(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "push notifications unavailable: %v\n", err)
 	} else {
@@ -177,6 +181,11 @@ func New(deps Deps) (*Server, error) {
 	go func() {
 		defer s.wg.Done()
 		s.runStatusSweeper(s.stopCh, time.Second)
+	}()
+	s.wg.Add(1)
+	go func() {
+		defer s.wg.Done()
+		s.runScheduler(s.stopCh, scheduleTickInterval)
 	}()
 	return s, nil
 }
@@ -215,6 +224,10 @@ func initDB(agentDir string) (*sql.DB, error) {
 		{"btw_sessions table", btwSessionsSchema},
 		{"annotations table", annotationsSchema},
 		{"annotations index", annotationsIndex},
+		{"schedules table", schedules.SchedulesTableDDL},
+		{"schedule_runs table", schedules.RunsTableDDL},
+		{"schedule_runs schedule index", schedules.RunsScheduleIndexDDL},
+		{"schedule_runs session index", schedules.RunsSessionIndexDDL},
 	}
 	for _, s := range schema {
 		if _, err := db.Exec(s.stmt); err != nil {
@@ -274,6 +287,10 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/settings", s.getPostHandler(s.handleGetSettings, s.handleSaveSettings))
 	mux.HandleFunc("/api/btw", s.auth.Wrap(s.handleGetBtw))
 	mux.HandleFunc("/api/btw/new", s.auth.Wrap(s.handleNewBtw))
+	mux.HandleFunc("/api/schedules", s.auth.Wrap(s.handleApiSchedules))
+	mux.HandleFunc("/api/schedule", s.auth.Wrap(s.handleApiSchedule))
+	mux.HandleFunc("/api/schedule/run", s.auth.Wrap(s.handleApiScheduleRun))
+	mux.HandleFunc("/api/schedule/runs", s.auth.Wrap(s.handleApiScheduleRuns))
 	mux.HandleFunc("/metrics", s.auth.Wrap(s.handleMetricsPage))
 	mux.HandleFunc("/api/metrics", s.auth.Wrap(s.handleMetrics))
 	s.registerPprof(mux)
