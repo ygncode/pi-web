@@ -1,8 +1,10 @@
 package git
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -75,6 +77,54 @@ func TestDescribeNonRepo(t *testing.T) {
 	}
 	if info.IsRepo {
 		t.Fatalf("expected IsRepo false for non-repo dir")
+	}
+}
+
+func TestWorkingTreeDiff(t *testing.T) {
+	dir := initTestRepo(t)
+	mustGit := func(args ...string) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v (%s)", args, err, out)
+		}
+	}
+	write := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	// Clean tree: empty diff.
+	if out, err := WorkingTreeDiff(dir); err != nil || out != "" {
+		t.Fatalf("clean tree: got %q, %v; want empty", out, err)
+	}
+
+	// Tracked modification.
+	write("tracked.txt", "line1\nline2\n")
+	mustGit("add", "tracked.txt")
+	mustGit("commit", "-m", "add tracked")
+	write("tracked.txt", "line1\nCHANGED\n")
+	// Untracked new file.
+	write("untracked.txt", "brand new\n")
+
+	out, err := WorkingTreeDiff(dir)
+	if err != nil {
+		t.Fatalf("WorkingTreeDiff: %v", err)
+	}
+	for _, want := range []string{
+		"b/tracked.txt", "-line2", "+CHANGED",
+		"b/untracked.txt", "new file mode", "+brand new",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("diff missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestWorkingTreeDiffNonRepo(t *testing.T) {
+	if _, err := WorkingTreeDiff(filepath.Join(t.TempDir(), "nope")); err != ErrNotRepo {
+		t.Fatalf("got %v, want ErrNotRepo", err)
 	}
 }
 

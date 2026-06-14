@@ -133,6 +133,23 @@ export default {
   'menu.cloneFailed': 'Clone failed',
   'menu.notImplemented': 'Not yet implemented',
 
+  // ── Diff review modal ──
+  'diff.title': 'Diff',
+  'diff.loading': 'Loading diff…',
+  'diff.empty': 'No uncommitted changes',
+  'diff.notRepo': 'Not a git repository',
+  'diff.split': 'Split',
+  'diff.unified': 'Unified',
+  'diff.commentPlaceholder': 'Leave a comment…',
+  'diff.save': 'Save',
+  'diff.cancel': 'Cancel',
+  'diff.delete': 'Delete',
+  'diff.edit': 'Edit',
+  'diff.submitReview': 'Submit review',
+  'diff.reviewSubmitted': 'Review added to chat',
+  'diff.noComments': 'No comments to submit',
+  'diff.saveFailed': 'Failed to save comment',
+
   // ── Right sidebar ──
   'sidebar.scratchpad': 'Scratchpad',
   'sidebar.annotations': 'Annotations',

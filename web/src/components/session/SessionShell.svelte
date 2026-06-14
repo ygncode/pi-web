@@ -14,6 +14,7 @@
   import CatGatekeeper from './CatGatekeeper.svelte';
   import BtwPopup from './BtwPopup.svelte';
   import LabelModal from './LabelModal.svelte';
+  import DiffModal from './DiffModal.svelte';
   import LoadEarlier from './LoadEarlier.svelte';
   import SessionTree from './SessionTree.svelte';
   import ShareDialog from './ShareDialog.svelte';
@@ -129,6 +130,7 @@
   currentLabel={sessionModals.label.currentLabel}
   onSave={sessionModals.label.onSave}
 />
+<DiffModal bind:open={sessionModals.diff.open} sessionId={sessionModals.diff.sessionId} />
 
 <ShareDialog {sessionId} />
 <CatGatekeeper />

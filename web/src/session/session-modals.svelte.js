@@ -13,6 +13,7 @@ export const sessionModals = $state({
   fork: { open: false, entries: [], onSelect: null },
   catSettings: { open: false, controller: null, onChange: () => {} },
   label: { open: false, entryId: '', currentLabel: '', onSave: null },
+  diff: { open: false, sessionId: '' },
 });
 
 export function openShortcuts() {
@@ -46,6 +47,11 @@ export function openLabel({ entryId = '', currentLabel = '', onSave = null } = {
   sessionModals.label.open = true;
 }
 
+export function openDiff({ sessionId = '' } = {}) {
+  sessionModals.diff.sessionId = sessionId;
+  sessionModals.diff.open = true;
+}
+
 export function resetSessionModals() {
   sessionModals.shortcuts = false;
   sessionModals.modelUsage = false;
@@ -59,4 +65,6 @@ export function resetSessionModals() {
   sessionModals.label.entryId = '';
   sessionModals.label.currentLabel = '';
   sessionModals.label.onSave = null;
+  sessionModals.diff.open = false;
+  sessionModals.diff.sessionId = '';
 }

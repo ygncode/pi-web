@@ -110,6 +110,55 @@ func HasLocalChanges(dir string) bool {
 	return false
 }
 
+// diffRun runs a git diff-style command and returns its stdout verbatim (no
+// trimming, since patch whitespace is significant). git exits 1 to signal
+// "differences found", which is not an error for us; any higher exit code or a
+// failure to start the process is.
+func diffRun(dir string, args ...string) (string, error) {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = dir
+	out, err := cmd.Output()
+	if err != nil {
+		var exit *exec.ExitError
+		if errors.As(err, &exit) && exit.ExitCode() == 1 {
+			return string(out), nil
+		}
+		return "", err
+	}
+	return string(out), nil
+}
+
+// WorkingTreeDiff returns a single unified patch covering every uncommitted
+// change in dir: modifications to tracked files (staged and unstaged, compared
+// against HEAD) followed by untracked files rendered as all-additions. It
+// returns ErrNotRepo when dir is not a git work tree.
+func WorkingTreeDiff(dir string) (string, error) {
+	if dir == "" {
+		return "", ErrNotRepo
+	}
+	if _, err := run(dir, "rev-parse", "--is-inside-work-tree"); err != nil {
+		return "", ErrNotRepo
+	}
+	var b strings.Builder
+	// Tracked changes vs HEAD. In a repo with no commits yet HEAD is absent and
+	// this fails harmlessly — the untracked pass below still surfaces new files.
+	if tracked, err := diffRun(dir, "-c", "core.quotepath=false", "diff", "HEAD"); err == nil {
+		b.WriteString(tracked)
+	}
+	others, err := run(dir, "ls-files", "--others", "--exclude-standard", "-z")
+	if err == nil && others != "" {
+		for _, f := range strings.Split(others, "\x00") {
+			if f == "" {
+				continue
+			}
+			if patch, err := diffRun(dir, "-c", "core.quotepath=false", "diff", "--no-index", "--", "/dev/null", f); err == nil {
+				b.WriteString(patch)
+			}
+		}
+	}
+	return b.String(), nil
+}
+
 // existingOpenPRURL returns the URL of an OPEN pull request for the current
 // branch, using the gh CLI when available. It is best-effort: a missing/
 // unauthenticated gh, no PR, or a closed/merged PR all yield "".

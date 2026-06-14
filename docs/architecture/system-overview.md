@@ -60,6 +60,8 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   GET  /api/btw / POST /api/btw/new → btw scratch-chats (SQLite, SSE)    │
 │   GET  /api/files     →  handleApiFiles       (@mention autocomplete)    │
 │   GET  /api/git/info  / POST /api/git/rename-branch                      │
+│   GET  /api/git/diff → working-tree diff for the diff modal              │
+│   GET/POST/DELETE /api/diff/reviews → diff review comments (SQLite)      │
 │   GET/POST /api/scratchpad → scratchpad (SQLite)                         │
 │   GET/POST/DELETE /api/annotations → review annotations (SQLite, SSE)    │
 │   GET/POST /api/settings → user settings (SQLite, write-through cache)   │

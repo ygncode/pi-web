@@ -13,6 +13,7 @@
     "dev": "npm run build:export && vite build --watch"
   },
   "dependencies": {
+    "@pierre/diffs": "^1.2.10",
     "highlight.js": "latest",
     "lucide": "^1.17.0",
     "marked": "latest"
