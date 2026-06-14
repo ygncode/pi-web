@@ -292,7 +292,9 @@
       {t('schedules.backToSessions')}
     </button>
     <h1>{t('schedules.title')}</h1>
-    <button type="button" class="primary-btn" onclick={openCreate}>{t('schedules.new')}</button>
+    <button type="button" class="primary-btn" data-testid="schedule-new" onclick={openCreate}
+      >{t('schedules.new')}</button
+    >
   </header>
 
   {#if loadError}
@@ -309,10 +311,15 @@
   {:else}
     <ul class="schedule-list">
       {#each schedules as schedule (schedule.id)}
-        <li class="schedule-card" class:disabled={!schedule.enabled}>
+        <li
+          class="schedule-card"
+          class:disabled={!schedule.enabled}
+          data-testid="schedule-card"
+          data-schedule-id={schedule.id}
+        >
           <div class="schedule-main">
             <div class="schedule-info">
-              <div class="schedule-name">
+              <div class="schedule-name" data-testid="schedule-card-name">
                 {schedule.name}
                 {#if !schedule.enabled}<span class="badge">{t('schedules.paused')}</span>{/if}
               </div>
@@ -330,19 +337,44 @@
               {/if}
             </div>
             <div class="schedule-actions">
-              <button type="button" class="small-btn" onclick={() => runNow(schedule)}>
+              <button
+                type="button"
+                class="small-btn"
+                data-testid="schedule-run"
+                onclick={() => runNow(schedule)}
+              >
                 {t('schedules.runNow')}
               </button>
-              <button type="button" class="small-btn" onclick={() => toggleEnabled(schedule)}>
+              <button
+                type="button"
+                class="small-btn"
+                data-testid="schedule-toggle"
+                onclick={() => toggleEnabled(schedule)}
+              >
                 {schedule.enabled ? t('schedules.pause') : t('schedules.resume')}
               </button>
-              <button type="button" class="small-btn" onclick={() => openEdit(schedule)}>
+              <button
+                type="button"
+                class="small-btn"
+                data-testid="schedule-edit"
+                onclick={() => openEdit(schedule)}
+              >
                 {t('schedules.edit')}
               </button>
-              <button type="button" class="small-btn" onclick={() => toggleRuns(schedule)}>
+              <button
+                type="button"
+                class="small-btn"
+                data-testid="schedule-runs"
+                onclick={() => toggleRuns(schedule)}
+              >
                 {t('schedules.runs')}
               </button>
-              <button type="button" class="small-btn danger" onclick={() => remove(schedule)}>
+              <button
+                type="button"
+                class="small-btn danger"
+                data-testid="schedule-delete"
+                onclick={() => remove(schedule)}
+              >
                 {t('schedules.delete')}
               </button>
             </div>
@@ -355,9 +387,9 @@
               {:else if runs.length === 0}
                 <p class="muted">{t('schedules.noRuns')}</p>
               {:else}
-                <ul>
+                <ul data-testid="run-log">
                   {#each runs as run (run.id)}
-                    <li class="run-row">
+                    <li class="run-row" data-testid="run-row">
                       <span class="run-time">{fmtTime(run.firedAt)}</span>
                       {#if run.status === 'error'}
                         <span class="run-status error">{t('schedules.runError')}: {run.error}</span>
@@ -365,6 +397,7 @@
                         <button
                           type="button"
                           class="link-btn"
+                          data-testid="run-open"
                           onclick={() =>
                             navigate('/session?id=' + encodeURIComponent(run.sessionId))}
                         >
@@ -392,13 +425,19 @@
 
     <label class="field">
       <span>{t('schedules.fieldName')}</span>
-      <input type="text" bind:value={form.name} placeholder={t('schedules.namePlaceholder')} />
+      <input
+        type="text"
+        data-testid="schedule-name"
+        bind:value={form.name}
+        placeholder={t('schedules.namePlaceholder')}
+      />
     </label>
 
     <label class="field">
       <span>{t('schedules.fieldInstructions')}</span>
       <textarea
         rows="4"
+        data-testid="schedule-instructions"
         bind:value={form.instructions}
         placeholder={t('schedules.instructionsPlaceholder')}
       ></textarea>
@@ -408,6 +447,7 @@
       <span>{t('schedules.fieldProject')}</span>
       <input
         type="text"
+        data-testid="schedule-project"
         bind:value={form.projectPath}
         list="schedule-recent-paths"
         placeholder={t('schedules.projectPlaceholder')}
@@ -477,7 +517,7 @@
 
     <label class="field">
       <span>{t('schedules.fieldFrequency')}</span>
-      <select bind:value={form.frequency}>
+      <select data-testid="schedule-frequency" bind:value={form.frequency}>
         {#each FREQUENCIES as freq (freq)}
           <option value={freq}>{t('schedules.freq_' + freq)}</option>
         {/each}
@@ -512,7 +552,12 @@
     {#if form.frequency === 'custom'}
       <label class="field">
         <span>{t('schedules.fieldCron')}</span>
-        <input type="text" bind:value={form.customCron} placeholder="0 9 * * 1-5" />
+        <input
+          type="text"
+          data-testid="schedule-cron"
+          bind:value={form.customCron}
+          placeholder="0 9 * * 1-5"
+        />
         <small class="muted">{t('schedules.cronHint')}</small>
       </label>
     {/if}
@@ -534,8 +579,16 @@
     {/if}
 
     <div class="editor-actions">
-      <button type="button" class="small-btn" onclick={closeEditor}>{t('common.cancel')}</button>
-      <button type="button" class="primary-btn" onclick={save} disabled={saving}>
+      <button type="button" class="small-btn" data-testid="schedule-cancel" onclick={closeEditor}
+        >{t('common.cancel')}</button
+      >
+      <button
+        type="button"
+        class="primary-btn"
+        data-testid="schedule-save"
+        onclick={save}
+        disabled={saving}
+      >
         {saving ? t('schedules.saving') : t('common.save')}
       </button>
     </div>
