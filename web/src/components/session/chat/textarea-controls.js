@@ -30,7 +30,7 @@ export function setupTextareaControls({
   const onKeydown = (event) => {
     if (getSlashSelector()?.handleKeydown?.(event)) return;
     if (getMentionSelector()?.handleKeydown?.(event)) return;
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       if (isMobileTextInputMode()) return;
       event.preventDefault();
       form?.requestSubmit?.();
