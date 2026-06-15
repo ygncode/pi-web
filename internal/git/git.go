@@ -52,7 +52,11 @@ type Info struct {
 }
 
 func run(dir string, args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
+	// Bound every git invocation: a command that blocks (huge untracked tree,
+	// network filesystem, a stuck index lock) must not hang the HTTP handler.
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
