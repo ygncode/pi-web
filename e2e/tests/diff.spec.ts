@@ -131,6 +131,41 @@ test.describe("diff review modal", () => {
     await expect(page.locator(".diff-toolbar")).toBeHidden();
   });
 
+  test("reclaims the annotation's height after deleting the last comment", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const { entries } = buildSession({ cwd: gitRepoWithChanges() });
+    const name = uniqueSessionName(testInfo, "diffgap");
+    writeSession(sessionsDir, name, entries);
+
+    await page.goto(`/session?id=${encodeURIComponent(name)}`);
+    await openDiffModal(page);
+    const container = page.locator(".diff-codeview diffs-container").first();
+    await expect(container).toBeVisible({ timeout: 15000 });
+
+    // Distance from the top of the viewport to the file — must not balloon after
+    // a comment is added and removed (the virtualizer used to strand the
+    // annotation's reserved height, leaving a large gap).
+    const fileOffset = async () => {
+      const view = await page.locator(".diff-codeview").boundingBox();
+      const file = await container.boundingBox();
+      return file!.y - view!.y;
+    };
+    const baseline = await fileOffset();
+
+    await container.getByText("CHANGED two").hover();
+    await container.locator("button[data-utility-button]").first().click({ force: true });
+    await container.locator("textarea").first().fill("temporary");
+    await container.getByRole("button", { name: "Save" }).click();
+    await expect(container.locator("text=temporary")).toBeVisible();
+
+    await container.getByRole("button", { name: "Delete" }).click();
+    await expect(container.locator("text=temporary")).toHaveCount(0);
+
+    await expect.poll(fileOffset).toBeLessThan(baseline + 40);
+  });
+
   test("re-themes the diff when the app theme changes", async ({
     page,
     sessionsDir,

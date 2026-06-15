@@ -219,7 +219,23 @@
 
   function refreshItem(fileName) {
     const file = fileDiffs?.get(fileName);
-    if (file && codeView) codeView.updateItem(makeItem(file));
+    if (!file || !codeView) return;
+    const becameEmpty = annotationsFor(fileName).length === 0;
+    codeView.updateItem(makeItem(file));
+    // CodeView's reconcileHeights stops re-measuring a file once it has zero
+    // annotations, so removing the last comment/draft strands the height the
+    // annotation reserved (a tall gap). Bumping unsafeCSS — the only option with
+    // no visual effect that still resets the per-item layout cache — forces a
+    // clean re-measure that reclaims it. Highlighting is cached, so no reflash.
+    if (becameEmpty) forceRelayout();
+  }
+
+  let relayoutNonce = 0;
+  function forceRelayout() {
+    if (!codeView || !codeViewOptions) return;
+    codeViewOptions = { ...codeViewOptions, unsafeCSS: `/* relayout ${++relayoutNonce} */` };
+    codeView.setOptions(codeViewOptions);
+    codeView.render();
   }
 
   function updateCommentCount() {
