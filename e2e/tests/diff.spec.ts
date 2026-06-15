@@ -7,12 +7,16 @@ import { join } from "node:path";
 import type { Page } from "@playwright/test";
 
 // The diff viewer (@pierre/diffs) ships a heavy shiki + worker renderer. Verify
-// the actual rendering on Chromium only; cross-browser worker/highlighter
-// behavior is out of scope for this feature's coverage and prone to flake.
-test.skip(
-  ({ browserName }) => browserName !== "chromium",
-  "diff renderer is verified on Chromium only",
-);
+// the actual rendering on Desktop Chrome only — the mobile layout uses a
+// different command-menu surface, and cross-browser worker/highlighter behavior
+// is out of scope and prone to flake. testInfo is only available inside hooks,
+// not in module-level test.skip, so gate via beforeEach.
+test.beforeEach(({}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== "Desktop Chrome",
+    "diff renderer is verified on Desktop Chrome only",
+  );
+});
 
 /** A temp git repo with one committed file, an uncommitted edit, and an untracked file. */
 function gitRepoWithChanges(): string {
@@ -210,6 +214,10 @@ test.describe("diff review modal", () => {
 
     // Drag across the line-number gutter from line 2 to line 4 to select a range.
     const lineNumber = (n: number) => container.locator(`[data-column-number="${n}"]`).first();
+    // Wait for the unified layout's line-number elements to be laid out before
+    // reading their boxes (boundingBox returns null on unattached elements).
+    await lineNumber(2).waitFor({ state: "visible" });
+    await lineNumber(4).waitFor({ state: "visible" });
     const top = await lineNumber(2).boundingBox();
     const bottom = await lineNumber(4).boundingBox();
     await page.mouse.move(top!.x + 12, top!.y + top!.height / 2);
