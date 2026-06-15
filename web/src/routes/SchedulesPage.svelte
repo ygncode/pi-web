@@ -470,6 +470,15 @@
   {/if}
 </div>
 
+<button
+  type="button"
+  class="new-session-btn new-session-btn-mobile sched-fab"
+  data-testid="schedule-new-fab"
+  aria-label={t('schedules.new')}
+  title={t('schedules.new')}
+  onclick={openCreate}>{@html icon(Plus, { size: 26 })}</button
+>
+
 {#if editorOpen}
   <div class="schedule-editor-backdrop" role="presentation" onclick={closeEditor}></div>
   <div

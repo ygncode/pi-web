@@ -302,7 +302,8 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(2px);
-  z-index: 40;
+  /* Above the floating + (z-index 50) so it can't intercept editor clicks. */
+  z-index: 60;
 }
 .schedule-editor {
   position: fixed;
@@ -317,7 +318,7 @@
   border: 1px solid color-mix(in srgb, var(--dim) 90%, transparent);
   border-radius: 14px;
   padding: 22px 24px 24px;
-  z-index: 41;
+  z-index: 61;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
 }
 .schedule-editor-head {
@@ -486,9 +487,15 @@
   margin-top: 20px;
 }
 
+/* Floating "+" action. Hidden on desktop (the header button is used there);
+   shown on mobile, mirroring the sessions index. */
+.sched-fab {
+  display: none;
+}
+
 @media (max-width: 900px) {
   .schedules-page {
-    padding: 20px 14px 64px;
+    padding: 20px 14px 96px;
   }
   .schedules-page .run-time {
     min-width: 0;
@@ -496,5 +503,12 @@
   .schedules-page .schedule-actions .sched-btn {
     flex: 1;
     justify-content: center;
+  }
+  /* On mobile the floating + replaces the header button. */
+  .schedules-page .schedules-header .sched-btn-primary {
+    display: none;
+  }
+  .sched-fab {
+    display: flex;
   }
 }

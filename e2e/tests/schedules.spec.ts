@@ -14,12 +14,28 @@ function uniqueName(testInfo: import("@playwright/test").TestInfo): string {
   return `e2e sched ${proj} w${testInfo.workerIndex} ${Date.now()}`;
 }
 
+// The "new schedule" entry point is responsive: a header button on desktop, a
+// floating + on mobile (where the header button is hidden). Click whichever is
+// visible so the spec runs across every project's viewport.
+async function openCreateEditor(page: import("@playwright/test").Page) {
+  const header = page.locator('[data-testid="schedule-new"]');
+  if (await header.isVisible()) {
+    await header.click();
+  } else {
+    await page.locator('[data-testid="schedule-new-fab"]').click();
+  }
+}
+
 test.describe("schedules (stubbed pi)", () => {
   test("nav button opens the schedules page", async ({ page }) => {
     await page.goto("/");
     await page.locator("[data-schedules-btn]").click();
     await expect(page).toHaveURL(/\/schedules$/);
-    await expect(page.locator('[data-testid="schedule-new"]')).toBeVisible();
+    // A create entry point is present (header button on desktop, floating + on
+    // mobile).
+    const header = page.locator('[data-testid="schedule-new"]');
+    const fab = page.locator('[data-testid="schedule-new-fab"]');
+    expect((await header.isVisible()) || (await fab.isVisible())).toBe(true);
 
     // Guard against the styling regression where the page rendered unstyled:
     // the schedules stylesheet must be inlined into the SPA shell. A plain div
@@ -40,7 +56,7 @@ test.describe("schedules (stubbed pi)", () => {
     await page.goto("/schedules");
 
     // Create a manual schedule.
-    await page.locator('[data-testid="schedule-new"]').click();
+    await openCreateEditor(page);
     await page.locator('[data-testid="schedule-name"]').fill(name);
     await page
       .locator('[data-testid="schedule-instructions"]')
@@ -90,7 +106,7 @@ test.describe("schedules (stubbed pi)", () => {
     const name = uniqueName(testInfo) + " daily";
 
     await page.goto("/schedules");
-    await page.locator('[data-testid="schedule-new"]').click();
+    await openCreateEditor(page);
     await page.locator('[data-testid="schedule-name"]').fill(name);
     await page
       .locator('[data-testid="schedule-instructions"]')
