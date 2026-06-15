@@ -63,12 +63,18 @@
     loading = true;
     errorMsg = '';
     emptyState = '';
+    // Never spin forever: if the diff endpoint or the (large) renderer chunk
+    // stalls, surface an error instead of an indefinite "Loading diff…".
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error('__diff_timeout__')), 30000);
+    });
     try {
-      const [diffRes, reviewRes, mod] = await Promise.all([
-        getDiff(sessionId),
-        getReviewComments(sessionId),
-        import('@pierre/diffs'),
+      const [diffRes, reviewRes, mod] = await Promise.race([
+        Promise.all([getDiff(sessionId), getReviewComments(sessionId), import('@pierre/diffs')]),
+        timeout,
       ]);
+      clearTimeout(timer);
       diffsMod = mod;
       comments = reviewRes.comments || [];
       if (!diffRes.isRepo) {
@@ -88,7 +94,9 @@
       await tick();
       buildCodeView(files);
     } catch (err) {
-      errorMsg = err?.message || String(err);
+      clearTimeout(timer);
+      errorMsg =
+        err?.message === '__diff_timeout__' ? t('diff.timeout') : err?.message || String(err);
       loading = false;
     }
   }

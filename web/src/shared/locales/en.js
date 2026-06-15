@@ -136,6 +136,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': 'Loading diff…',
+  'diff.timeout': 'Diff timed out — try again.',
   'diff.empty': 'No uncommitted changes',
   'diff.notRepo': 'Not a git repository',
   'diff.split': 'Split',

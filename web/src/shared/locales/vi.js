@@ -18,6 +18,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': 'Đang tải diff…',
+  'diff.timeout': 'Diff đã hết thời gian — vui lòng thử lại.',
   'diff.empty': 'Không có thay đổi nào chưa commit',
   'diff.notRepo': 'Không phải kho lưu trữ git',
   'diff.split': 'Chia đôi',

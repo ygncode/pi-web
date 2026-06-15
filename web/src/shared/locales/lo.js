@@ -18,6 +18,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': 'ກຳລັງໂຫຼດ diff…',
+  'diff.timeout': 'Diff ໝົດເວລາ — ກະລຸນາລອງໃໝ່.',
   'diff.empty': 'ບໍ່ມີການປ່ຽນແປງທີ່ຍັງບໍ່ໄດ້ commit',
   'diff.notRepo': 'ບໍ່ແມ່ນ git repository',
   'diff.split': 'ແບ່ງ',

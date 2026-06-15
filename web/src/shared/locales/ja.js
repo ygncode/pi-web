@@ -18,6 +18,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': '差分を読み込み中…',
+  'diff.timeout': '差分がタイムアウトしました。もう一度お試しください。',
   'diff.empty': 'コミットされていない変更はありません',
   'diff.notRepo': 'Git リポジトリではありません',
   'diff.split': '分割',

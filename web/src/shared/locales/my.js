@@ -18,6 +18,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': 'diff ကို တင်နေသည်…',
+  'diff.timeout': 'Diff အချိန်ကုန်သွားသည် — ထပ်မံကြိုးစားပါ။',
   'diff.empty': 'commit မလုပ်ရသေးသော ပြောင်းလဲမှုများ မရှိပါ',
   'diff.notRepo': 'git repository မဟုတ်ပါ',
   'diff.split': 'ခွဲ၍ပြ',

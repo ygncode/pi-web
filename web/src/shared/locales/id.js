@@ -18,6 +18,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': 'Memuat diff…',
+  'diff.timeout': 'Diff melebihi batas waktu — coba lagi.',
   'diff.empty': 'Tidak ada perubahan yang belum di-commit',
   'diff.notRepo': 'Bukan repositori git',
   'diff.split': 'Terpisah',

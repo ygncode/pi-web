@@ -18,6 +18,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': '正在加载差异…',
+  'diff.timeout': 'Diff 超时 — 请重试。',
   'diff.empty': '没有未提交的更改',
   'diff.notRepo': '不是 git 仓库',
   'diff.split': '分栏',

@@ -18,6 +18,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': 'Cargando diff…',
+  'diff.timeout': 'Se agotó el tiempo del diff: inténtalo de nuevo.',
   'diff.empty': 'No hay cambios sin confirmar',
   'diff.notRepo': 'No es un repositorio git',
   'diff.split': 'Dividida',

@@ -5,11 +5,14 @@
 package git
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -115,7 +118,9 @@ func HasLocalChanges(dir string) bool {
 // "differences found", which is not an error for us; any higher exit code or a
 // failure to start the process is.
 func diffRun(dir string, args ...string) (string, error) {
-	cmd := exec.Command("git", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", args...)
 	cmd.Dir = dir
 	out, err := cmd.Output()
 	if err != nil {
@@ -128,10 +133,25 @@ func diffRun(dir string, args ...string) (string, error) {
 	return string(out), nil
 }
 
+const (
+	// maxDiffBytes bounds the combined patch so a repo with a huge working tree
+	// can't produce a multi-megabyte payload that stalls the request or the
+	// browser's diff renderer.
+	maxDiffBytes = 2 << 20 // 2 MiB
+	// maxUntrackedFileBytes skips reading the contents of very large untracked
+	// files (they are shown as a placeholder instead).
+	maxUntrackedFileBytes = 256 << 10 // 256 KiB
+)
+
 // WorkingTreeDiff returns a single unified patch covering every uncommitted
 // change in dir: modifications to tracked files (staged and unstaged, compared
 // against HEAD) followed by untracked files rendered as all-additions. It
 // returns ErrNotRepo when dir is not a git work tree.
+//
+// Untracked files are synthesized in-process (one file read each) rather than
+// shelling out to `git diff --no-index` per file, which previously spawned one
+// subprocess per untracked file and could take tens of seconds in trees with
+// thousands of untracked files. The combined output is capped at maxDiffBytes.
 func WorkingTreeDiff(dir string) (string, error) {
 	if dir == "" {
 		return "", ErrNotRepo
@@ -145,18 +165,71 @@ func WorkingTreeDiff(dir string) (string, error) {
 	if tracked, err := diffRun(dir, "-c", "core.quotepath=false", "diff", "HEAD"); err == nil {
 		b.WriteString(tracked)
 	}
+	if b.Len() >= maxDiffBytes {
+		return b.String(), nil
+	}
 	others, err := run(dir, "ls-files", "--others", "--exclude-standard", "-z")
 	if err == nil && others != "" {
 		for _, f := range strings.Split(others, "\x00") {
 			if f == "" {
 				continue
 			}
-			if patch, err := diffRun(dir, "-c", "core.quotepath=false", "diff", "--no-index", "--", "/dev/null", f); err == nil {
-				b.WriteString(patch)
+			if b.Len() >= maxDiffBytes {
+				break
 			}
+			appendUntrackedPatch(&b, dir, f)
 		}
 	}
 	return b.String(), nil
+}
+
+// appendUntrackedPatch writes a synthetic "new file" patch for an untracked
+// file. Directories, symlinks, and unreadable entries are skipped.
+func appendUntrackedPatch(b *strings.Builder, dir, rel string) {
+	full := filepath.Join(dir, rel)
+	info, err := os.Lstat(full)
+	if err != nil || !info.Mode().IsRegular() {
+		return
+	}
+	fmt.Fprintf(b, "diff --git a/%s b/%s\nnew file mode 100644\n", rel, rel)
+	if info.Size() > maxUntrackedFileBytes {
+		fmt.Fprintf(b, "--- /dev/null\n+++ b/%s\n@@ -0,0 +1 @@\n+[file too large to display]\n", rel)
+		return
+	}
+	data, err := os.ReadFile(full)
+	if err != nil {
+		return
+	}
+	if isBinary(data) {
+		fmt.Fprintf(b, "Binary files /dev/null and b/%s differ\n", rel)
+		return
+	}
+	fmt.Fprintf(b, "--- /dev/null\n+++ b/%s\n", rel)
+	if len(data) == 0 {
+		return
+	}
+	s := string(data)
+	noTrailingNewline := !strings.HasSuffix(s, "\n")
+	lines := strings.Split(strings.TrimSuffix(s, "\n"), "\n")
+	fmt.Fprintf(b, "@@ -0,0 +1,%d @@\n", len(lines))
+	for i, line := range lines {
+		b.WriteString("+")
+		b.WriteString(line)
+		b.WriteString("\n")
+		if noTrailingNewline && i == len(lines)-1 {
+			b.WriteString("\\ No newline at end of file\n")
+		}
+	}
+}
+
+// isBinary reports whether data looks binary (contains a NUL byte in its head),
+// matching git's own heuristic closely enough for display purposes.
+func isBinary(data []byte) bool {
+	head := data
+	if len(head) > 8000 {
+		head = head[:8000]
+	}
+	return bytes.IndexByte(head, 0) >= 0
 }
 
 // existingOpenPRURL returns the URL of an OPEN pull request for the current

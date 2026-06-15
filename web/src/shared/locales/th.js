@@ -18,6 +18,7 @@ export default {
   // ── Diff review modal ──
   'diff.title': 'Diff',
   'diff.loading': 'กำลังโหลด diff…',
+  'diff.timeout': 'Diff หมดเวลา — โปรดลองอีกครั้ง',
   'diff.empty': 'ไม่มีการเปลี่ยนแปลงที่ยังไม่ได้ commit',
   'diff.notRepo': 'ไม่ใช่ git repository',
   'diff.split': 'แยก',

@@ -1,11 +1,13 @@
 package git
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func initTestRepo(t *testing.T) string {
@@ -125,6 +127,43 @@ func TestWorkingTreeDiff(t *testing.T) {
 func TestWorkingTreeDiffNonRepo(t *testing.T) {
 	if _, err := WorkingTreeDiff(filepath.Join(t.TempDir(), "nope")); err != ErrNotRepo {
 		t.Fatalf("got %v, want ErrNotRepo", err)
+	}
+}
+
+func TestWorkingTreeDiffBinaryUntracked(t *testing.T) {
+	dir := initTestRepo(t)
+	if err := os.WriteFile(filepath.Join(dir, "blob.bin"), []byte{0x00, 0x01, 0x02, 0x00}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := WorkingTreeDiff(dir)
+	if err != nil {
+		t.Fatalf("WorkingTreeDiff: %v", err)
+	}
+	if !strings.Contains(out, "b/blob.bin") || !strings.Contains(out, "Binary files") {
+		t.Fatalf("expected a binary marker for blob.bin:\n%s", out)
+	}
+}
+
+// Many untracked files must stay bounded and fast (the previous implementation
+// spawned one `git` process per untracked file and stalled on large trees).
+func TestWorkingTreeDiffBoundedOnManyUntracked(t *testing.T) {
+	dir := initTestRepo(t)
+	big := strings.Repeat("a line of content that is reasonably long\n", 400) // ~17 KiB each
+	for i := 0; i < 1000; i++ {
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("u%04d.txt", i)), []byte(big), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	start := time.Now()
+	out, err := WorkingTreeDiff(dir)
+	if err != nil {
+		t.Fatalf("WorkingTreeDiff: %v", err)
+	}
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("WorkingTreeDiff took %v on 1000 untracked files; expected it to be fast", elapsed)
+	}
+	if len(out) > maxDiffBytes+(64<<10) {
+		t.Fatalf("output %d bytes exceeds the cap %d", len(out), maxDiffBytes)
 	}
 }
 
