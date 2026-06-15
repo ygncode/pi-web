@@ -59,24 +59,52 @@
     };
   }
 
+  // Resolve `promise` but reject with a stage-labelled timeout if it stalls, so
+  // a hang surfaces (in the UI and the console) as a specific step rather than
+  // an opaque "Loading diff…". The stage names are logged for support.
+  function withStage(stage, promise, ms) {
+    const started = performance.now();
+    console.info(`[diff] ${stage}: start`);
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        const err = new Error(`__diff_timeout__:${stage}`);
+        reject(err);
+      }, ms);
+    });
+    return Promise.race([promise, timeout]).then(
+      (value) => {
+        clearTimeout(timer);
+        console.info(`[diff] ${stage}: done in ${Math.round(performance.now() - started)}ms`);
+        return value;
+      },
+      (err) => {
+        clearTimeout(timer);
+        console.error(
+          `[diff] ${stage}: failed after ${Math.round(performance.now() - started)}ms`,
+          err,
+        );
+        throw err;
+      },
+    );
+  }
+
   async function init() {
     loading = true;
     errorMsg = '';
     emptyState = '';
-    // Never spin forever: if the diff endpoint or the (large) renderer chunk
-    // stalls, surface an error instead of an indefinite "Loading diff…".
-    let timer;
-    const timeout = new Promise((_, reject) => {
-      timer = setTimeout(() => reject(new Error('__diff_timeout__')), 30000);
-    });
     try {
-      const [diffRes, reviewRes, mod] = await Promise.race([
-        Promise.all([getDiff(sessionId), getReviewComments(sessionId), import('@pierre/diffs')]),
-        timeout,
+      // Load the (large, lazy) renderer and the diff in parallel; surface
+      // whichever stalls. Saved comments are best-effort — a failure there must
+      // not block the diff.
+      const [mod, diffRes] = await Promise.all([
+        withStage('renderer', import('@pierre/diffs'), 30000),
+        withStage('diff', getDiff(sessionId), 25000),
       ]);
-      clearTimeout(timer);
       diffsMod = mod;
-      comments = reviewRes.comments || [];
+      comments = await withStage('reviews', getReviewComments(sessionId), 15000)
+        .then((r) => r.comments || [])
+        .catch(() => []);
       if (!diffRes.isRepo) {
         emptyState = 'notrepo';
         loading = false;
@@ -94,9 +122,10 @@
       await tick();
       buildCodeView(files);
     } catch (err) {
-      clearTimeout(timer);
-      errorMsg =
-        err?.message === '__diff_timeout__' ? t('diff.timeout') : err?.message || String(err);
+      const msg = String(err?.message || err);
+      errorMsg = msg.startsWith('__diff_timeout__')
+        ? `${t('diff.timeout')} (${msg.split(':')[1] || ''})`
+        : msg;
       loading = false;
     }
   }
