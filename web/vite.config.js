@@ -16,11 +16,11 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('highlight.js')) return 'hljs';
-          // The diff viewer (shiki + workers) is large and only needed when the
-          // diff modal opens, so keep it in its own lazily-loaded chunk.
-          if (id.includes('@pierre/diffs') || id.includes('shiki') || id.includes('@shikijs')) {
-            return 'diffs';
-          }
+          // NOTE: do NOT force @pierre/diffs / shiki into a single manual chunk.
+          // The dynamic import('@pierre/diffs') already splits it off, and shiki
+          // lazy-loads individual language grammars as separate chunks. Grouping
+          // them all here inlines every grammar into one ~10 MB blob that stalls
+          // the diff modal on slow/remote links.
         },
       },
     },
