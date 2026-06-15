@@ -32,6 +32,10 @@
   let viewport = null; // container node, owned by CodeView (via the action)
   let diffsMod = null;
   let codeView = null;
+  // The full CodeView options. setOptions REPLACES (not merges), so every
+  // setOptions call must pass the complete object — otherwise diffStyle/theme
+  // changes would wipe enableLineSelection, the gutter "+", and renderAnnotation.
+  let codeViewOptions = null;
   let fileDiffs = null; // Map<fileName, FileDiffMetadata>
   let comments = [];
   let draft = null; // { file, startLine, endLine, side } pending compose box
@@ -99,6 +103,7 @@
     }
     viewport = null;
     codeView = null;
+    codeViewOptions = null;
     fileDiffs = null;
     comments = [];
     draft = null;
@@ -115,10 +120,9 @@
 
   function buildCodeView(files) {
     const { CodeView } = diffsMod;
-    const themeType = currentThemeType();
-    codeView = new CodeView({
+    codeViewOptions = {
       diffStyle: layout,
-      themeType,
+      themeType: currentThemeType(),
       // pierre-dark / pierre-light are the library's bundled default themes;
       // other names (e.g. github-*) aren't shipped and fall back to white.
       theme: { dark: 'pierre-dark', light: 'pierre-light' },
@@ -128,22 +132,28 @@
       stickyHeaders: true,
       renderAnnotation: (annotation) => renderAnnotation(annotation),
       onGutterUtilityClick: (range, context) => onGutterUtilityClick(range, context),
-    });
+    };
+    codeView = new CodeView(codeViewOptions);
     codeView.setup(viewport);
     codeView.setItems(files.map((f) => makeItem(f)));
     codeView.render();
     updateCommentCount();
 
     // Live-follow the app theme: re-theme the diff when the user switches it.
-    themeObserver = new MutationObserver(() => {
-      if (!codeView) return;
-      codeView.setOptions({ themeType: currentThemeType() });
-      codeView.render();
-    });
+    themeObserver = new MutationObserver(() => applyOptions({ themeType: currentThemeType() }));
     themeObserver.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
     });
+  }
+
+  // setOptions replaces the whole options object, so always merge into the
+  // retained codeViewOptions and pass the complete object.
+  function applyOptions(patch) {
+    if (!codeView || !codeViewOptions) return;
+    codeViewOptions = { ...codeViewOptions, ...patch };
+    codeView.setOptions(codeViewOptions);
+    codeView.render();
   }
 
   function makeItem(file) {
@@ -197,10 +207,7 @@
   function setLayout(next) {
     if (next === layout) return;
     layout = next;
-    if (codeView) {
-      codeView.setOptions({ diffStyle: next });
-      codeView.render();
-    }
+    applyOptions({ diffStyle: next });
   }
 
   async function persistComment(payload, fileName) {
