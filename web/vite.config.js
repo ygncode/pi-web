@@ -3,6 +3,9 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  // The Go server serves built assets under /static/. Without this, the chunk
+  // loader resolves dynamic imports against /assets/ and they 404.
+  base: '/static/',
   plugins: [svelte()],
   build: {
     manifest: true,
