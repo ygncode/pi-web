@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"pi-web/internal/git"
+	"pi-web/internal/sessions"
 )
 
 // Review comments are GitHub-style notes a reviewer attaches to a line range of
@@ -87,6 +88,38 @@ func (s *Server) listReviewComments(sessionID string) ([]reviewComment, error) {
 		out = append(out, c)
 	}
 	return out, rows.Err()
+}
+
+// reapOrphanedReviewComments deletes review comments whose session no longer
+// exists. Comments live in the app DB keyed by session id and are never part of
+// the append-only JSONL, so a deleted session would otherwise leave them behind
+// forever. `all` must be the full, unfiltered session list.
+func (s *Server) reapOrphanedReviewComments(all []sessions.SessionSummary) {
+	if s.db == nil {
+		return
+	}
+	existing := make(map[string]bool, len(all))
+	for _, sum := range all {
+		existing[sum.ID] = true
+	}
+	rows, err := s.db.Query("SELECT DISTINCT session_id FROM review_comments")
+	if err != nil {
+		return
+	}
+	var orphans []string
+	for rows.Next() {
+		var sessionID string
+		if err := rows.Scan(&sessionID); err != nil {
+			continue
+		}
+		if !existing[sessionID] {
+			orphans = append(orphans, sessionID)
+		}
+	}
+	rows.Close()
+	for _, sessionID := range orphans {
+		_, _ = s.db.Exec("DELETE FROM review_comments WHERE session_id = ?", sessionID)
+	}
 }
 
 func (s *Server) handleReviewComments(w http.ResponseWriter, r *http.Request) {

@@ -161,6 +161,7 @@ func (s *Server) handleApiSessions(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	s.reapOrphanedReviewComments(summaries)
 
 	q := r.URL.Query()
 	project := q.Get("project")

@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"pi-web/internal/sessions"
+
 	_ "modernc.org/sqlite"
 )
 
@@ -94,6 +96,36 @@ func TestReviewCommentsCreateListDelete(t *testing.T) {
 	}
 	if len(after) != 0 {
 		t.Fatalf("expected empty after delete, got %d", len(after))
+	}
+}
+
+func TestReapOrphanedReviewComments(t *testing.T) {
+	s := &Server{db: newReviewsDB(t)}
+
+	// One comment on a session that still exists, one on a deleted session.
+	if w := postReviewComment(t, s, "alive.jsonl", `{"file":"a.go","startLine":1,"endLine":2,"body":"keep"}`); w.Code != http.StatusOK {
+		t.Fatalf("seed alive: %d %s", w.Code, w.Body.String())
+	}
+	if w := postReviewComment(t, s, "gone.jsonl", `{"file":"b.go","startLine":3,"endLine":4,"body":"reap"}`); w.Code != http.StatusOK {
+		t.Fatalf("seed gone: %d %s", w.Code, w.Body.String())
+	}
+
+	// Only the alive session appears in the current list.
+	s.reapOrphanedReviewComments([]sessions.SessionSummary{{ID: "alive.jsonl"}})
+
+	alive, err := s.listReviewComments("alive.jsonl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(alive) != 1 {
+		t.Fatalf("expected alive session's comment kept, got %d", len(alive))
+	}
+	gone, err := s.listReviewComments("gone.jsonl")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gone) != 0 {
+		t.Fatalf("expected orphaned comments reaped, got %d", len(gone))
 	}
 }
 
