@@ -1,16 +1,32 @@
-# pi-web (Remote Control Your Pi)
+<h1 align="center">pi-web (Remote Control Your Pi)</h1>
+
+<div align="center">
+
+[![GitHub stars](https://img.shields.io/github/stars/ygncode/pi-web?style=flat&logo=github&label=stars&cacheSeconds=86400)](https://github.com/ygncode/pi-web/stargazers)
+[![npm downloads](https://img.shields.io/npm/dt/@ygncode/pi-web?label=downloads&color=2ea043)](https://www.npmjs.com/package/@ygncode/pi-web)
+[![license MIT](https://img.shields.io/npm/l/@ygncode/pi-web?label=license&color=0a7bbb)](LICENSE)
+[![Telegram](https://img.shields.io/badge/Telegram-Join-26A5E4?logo=telegram&logoColor=white)](https://t.me/+NJvFOTTa0wNjNTc9)
+![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-555)
+
+**English** · [Español](user-docs/readme/README.es.md) · [Français](user-docs/readme/README.fr.md) · [Deutsch](user-docs/readme/README.de.md) · [中文](user-docs/readme/README.zh.md) · [日本語](user-docs/readme/README.ja.md) · [Bahasa Indonesia](user-docs/readme/README.id.md) · [Bahasa Melayu](user-docs/readme/README.ms.md) · [Tiếng Việt](user-docs/readme/README.vi.md) · [ไทย](user-docs/readme/README.th.md) · [Filipino](user-docs/readme/README.fil.md) · [မြန်မာ](user-docs/readme/README.my.md) · [ភាសាខ្មែរ](user-docs/readme/README.km.md) · [ລາວ](user-docs/readme/README.lo.md)
+
+</div>
+
+<div align="center">
 
 Drive your [pi](https://pi.dev) coding agent from your phone, tablet, or laptop — anywhere on your network, or remotely over Tailscale.
 
-It's a full PWA, so you can install it and use it like a native app on any device. Think of it as your own personal AI workspace — like Claude's Cowork, but with different models — chat across models, code from your phone, or turn it into a [personal assistant](user-docs/personal-assistant.md) that lives on your machine.
+It's a full PWA, so you can install it and use it like a native app on any device. Think of it as your own personal AI workspace — like Claude's Cowork, but with different models — chat across models, code from your phone, or turn it into a [personal assistant](user-docs/en/personal-assistant.md) that lives on your machine.
 
 Make it yours: switch themes and fonts, and use it in your own language — pi-web ships with multiple languages and you can add your own. More features are on the way, but it won't get bloated: anything you don't need can be turned off in settings.
+
+</div>
 
 > [!WARNING]
 > pi-web is currently in **beta**. Things will change and break!
 
 > [!TIP]
-> New here? **[Read the user guide →](user-docs/README.md)** for a full tour of features, install steps, and tips.
+> New here? **[Read the user guide →](user-docs/en/README.md)** for a full tour of features, install steps, and tips. ([Other languages →](user-docs/README.md))
 
 ## Screenshots
 
@@ -53,11 +69,11 @@ Make it yours: switch themes and fonts, and use it in your own language — pi-w
 pi install npm:@ygncode/pi-web@beta
 ```
 
-That's it — it downloads the matching binary, sets up auto‑start, and registers the `/web`, `/remote`, and `/refresh` commands.
+That's it — it downloads the matching binary, sets up auto‑start, and registers the `/web`, `/pi-web`, `/remote`, and `/refresh` commands.
 
 Once installed, open `http://127.0.0.1:31415` in your browser. From pi, use `/web` to open the current session in your browser instantly. If Tailscale is running on your machine, pi-web automatically publishes an HTTPS endpoint on your tailnet — use `/remote` from pi to get a QR code and URL for any device on your tailnet.
 
-For manual installs, binary downloads, or building from source, see [user-docs/install.md](user-docs/install.md).
+For manual installs, binary downloads, or building from source, see [user-docs/install.md](user-docs/en/install.md).
 
 ## Pi Integration
 
@@ -92,7 +108,7 @@ To set a token for remote access, create `~/.config/pi-web/env`:
 PI_WEB_TOKEN=your-token-here
 ```
 
-For more details (manual setup, custom ports, non-loopback binds), see [user-docs/install.md](user-docs/install.md).
+For more details (manual setup, custom ports, non-loopback binds), see [user-docs/install.md](user-docs/en/install.md).
 
 ## Development
 
@@ -102,6 +118,3 @@ make check   # frontend test/build + Go test/vet
 make build   # setup if needed, build frontend, then build ./pi-web
 ```
 
-## License
-
-MIT

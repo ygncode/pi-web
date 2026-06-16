@@ -47,14 +47,14 @@ describe('App', () => {
     expect(document.querySelector('[data-setting="pi-web-theme"]')).toBeTruthy();
   });
 
-  it('mounts the fallback probe for unmigrated SPA routes', () => {
+  it('renders the 404 page for unknown routes', () => {
     document.body.innerHTML = '<div id="app"></div>';
 
     mounted = mountApp({ props: { path: '/future-route' } });
 
-    expect(document.querySelector('[aria-label="Svelte app probe"]')?.textContent).toContain(
-      'Svelte ready for pi-web',
-    );
+    expect(document.querySelector('[data-not-found]')).toBeTruthy();
+    expect(document.querySelector('.not-found-code')?.textContent).toBe('404');
+    expect(document.querySelector('.not-found-home')?.getAttribute('href')).toBe('/');
   });
 
   it('swaps views on pushState navigation', () => {

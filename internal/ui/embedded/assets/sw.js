@@ -10,14 +10,23 @@
 // when the server briefly went down, could surface as "Failed to load
 // module script: text/html" errors on lazy-loaded JS chunks.
 
-const VERSION = 'v4-no-fetch-handler';
+const VERSION = 'v5-purge-caches';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil((async () => {
+    // Older service-worker versions cached app assets via the Cache API. A
+    // stale entry can pin the page to an outdated bundle, so purge everything
+    // when this (no-cache) worker takes over.
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.map((k) => caches.delete(k)));
+    } catch (_) {}
+    await self.clients.claim();
+  })());
 });
 
 // Web Push: show a system notification when the server reports the

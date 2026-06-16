@@ -228,6 +228,8 @@ func initDB(agentDir string) (*sql.DB, error) {
 		{"schedule_runs table", schedules.RunsTableDDL},
 		{"schedule_runs schedule index", schedules.RunsScheduleIndexDDL},
 		{"schedule_runs session index", schedules.RunsSessionIndexDDL},
+		{"review_comments table", reviewCommentsSchema},
+		{"review_comments index", reviewCommentsIndex},
 	}
 	for _, s := range schema {
 		if _, err := db.Exec(s.stmt); err != nil {
@@ -278,6 +280,8 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/api/files", s.auth.Wrap(s.handleApiFiles))
 	mux.HandleFunc("/api/git/info", s.auth.Wrap(s.handleGitInfo))
 	mux.HandleFunc("/api/git/rename-branch", s.auth.Wrap(s.handleGitRenameBranch))
+	mux.HandleFunc("/api/git/diff", s.auth.Wrap(s.handleGitDiff))
+	mux.HandleFunc("/api/diff/reviews", s.auth.Wrap(s.handleReviewComments))
 	// Public (no auth): the login gate needs the custom palette to theme
 	// correctly before the user authenticates. Contents are non-secret color
 	// variables only.

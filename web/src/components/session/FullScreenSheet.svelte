@@ -26,6 +26,11 @@
     panelClass = '',
     bodyClass = '',
     children,
+    // Optional inline controls rendered between the back button and the
+    // close-X inside .pi-sheet-header. Lets a sheet host its primary actions
+    // in the header bar instead of a second toolbar row underneath — useful
+    // on mobile where vertical space is scarce.
+    headerExtra = null,
   } = $props();
 
   const SHEET_BREAKPOINT = 900;
@@ -146,8 +151,12 @@
     backdropEl?.addEventListener('click', onBackdrop);
     requestAnimationFrame(() => {
       shown = true;
-      const focusables = getFocusable();
-      (focusables[0] || panelEl)?.focus();
+      // Focus the panel itself (tabindex=-1, outline:none) rather than the
+      // first focusable control. Focusing a button shows :focus-visible after
+      // any keyboard-mode trigger (e.g. opening via URL after Cmd-R refresh),
+      // which surfaces a stray focus ring on the back arrow. The focus trap
+      // still works — Tab moves into the contained focusables.
+      panelEl?.focus();
     });
   }
 
@@ -224,6 +233,9 @@
           </button>
         {:else}
           <div></div>
+        {/if}
+        {#if headerExtra}
+          <div class="pi-sheet-header-extra">{@render headerExtra()}</div>
         {/if}
         {#if showClose}
           <button

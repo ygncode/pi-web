@@ -483,6 +483,52 @@ a { color: inherit; }
 }
 .empty-state h3 { color: var(--text); font-size: 14px; margin-bottom: 6px; }
 
+.not-found {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    padding: 48px 16px;
+    text-align: center;
+}
+.not-found-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 420px;
+}
+.not-found-cat {
+    width: 200px;
+    height: 200px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+.not-found-code {
+    margin-top: 8px;
+    font-size: 56px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+}
+.not-found-heading {
+    margin-top: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+}
+.not-found-message {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: var(--line-height);
+}
+.not-found-home {
+    margin-top: 22px;
+    text-decoration: none;
+    display: inline-block;
+}
+
 .modal-overlay {
     display: none;
     position: fixed;
