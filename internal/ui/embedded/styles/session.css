@@ -4332,6 +4332,29 @@
       flex-shrink: 0;
       gap: 12px;
     }
+    /* On an installed PWA running with window-controls-overlay (macOS shows
+       the traffic lights at the top-left), the back button at padding-left
+       16px sits behind the OS controls and looks missing — and any clicks
+       inside the title-bar strip get swallowed by the OS as window-drag
+       attempts unless we mark interactive children no-drag. Mirror the
+       drag/no-drag pattern from .session-header-bar. */
+    :root.wco .pi-sheet-header {
+      padding-left: calc(env(titlebar-area-x, 0px) + 18px);
+      padding-right: calc(100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100%) + 18px);
+      -webkit-app-region: drag;
+      app-region: drag;
+    }
+    :root.wco .pi-sheet-header a,
+    :root.wco .pi-sheet-header button {
+      -webkit-app-region: no-drag;
+      app-region: no-drag;
+    }
+    /* Diff sheet packs Split/Unified, Collapse all, and Submit review into
+       the header on desktop — never let the back button get crushed to 0 by
+       a slightly narrow window (PWA, split screen). */
+    .pi-sheet-panel.diff-sheet-panel .pi-sheet-back {
+      flex-shrink: 0;
+    }
     /* Optional inline controls rendered between back/close inside the sheet
        header (FullScreenSheet's `headerExtra` snippet). Takes the spare
        middle space so its children get pushed to the right of the back
