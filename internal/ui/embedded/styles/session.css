@@ -4462,13 +4462,23 @@
       flex-direction: column;
       background: var(--container-bg);
     }
-    /* The diff toolbar now lives inside the sheet header (via FullScreenSheet's
-       headerExtra snippet), so it inherits the header's padding and border. */
+    /* On desktop the diff toolbar lives inside the sheet header (via
+       FullScreenSheet's headerExtra snippet), so it inherits the header's
+       padding and border. On mobile it's rendered as a second row inside the
+       sheet body — the mobile override below re-adds the row chrome. */
     .diff-toolbar {
       display: flex;
       align-items: center;
       gap: 12px;
       flex-shrink: 0;
+    }
+    .pi-sheet-panel.pi-sheet-mobile .diff-sheet-body > .diff-toolbar {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--dim);
+      background: var(--container-bg);
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     .diff-toggle {
       display: inline-flex;
@@ -4503,6 +4513,27 @@
       background: transparent;
       color: var(--muted);
       border-color: var(--dim);
+    }
+    /* Secondary header action (Collapse all / Expand all). Sits between the
+       Split/Unified toggle and the primary Submit-review button. Without an
+       explicit rule the <button> falls back to the OS button chrome (light
+       grey background, black text) and looks broken in the dark theme. */
+    .diff-toolbar-btn {
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid var(--dim);
+      background: transparent;
+      color: var(--text-soft);
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+    .diff-toolbar-btn:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+    .diff-toolbar-btn:disabled {
+      cursor: default;
+      opacity: 0.5;
     }
     .diff-status {
       padding: 32px 8px;

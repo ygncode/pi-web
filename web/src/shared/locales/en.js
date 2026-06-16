@@ -150,6 +150,10 @@ export default {
   'diff.reviewSubmitted': 'Review added to chat',
   'diff.noComments': 'No comments to submit',
   'diff.saveFailed': 'Failed to save comment',
+  'diff.collapseAll': 'Collapse all',
+  'diff.expandAll': 'Expand all',
+  'diff.collapseFile': 'Collapse file',
+  'diff.expandFile': 'Expand file',
 
   // ── Right sidebar ──
   'sidebar.scratchpad': 'Scratchpad',

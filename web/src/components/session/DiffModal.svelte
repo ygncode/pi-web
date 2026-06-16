@@ -8,10 +8,11 @@
   // The CodeView and its annotation boxes live in shadow DOM, so annotation
   // elements are built imperatively with inline styles (CSS custom properties
   // pierce the shadow boundary, so app theme vars still apply).
-  import { tick } from 'svelte';
+  import { tick, onMount } from 'svelte';
   import FullScreenSheet from './FullScreenSheet.svelte';
   import { t } from '../../shared/i18n.js';
   import { showToast } from '../../shared/toast.js';
+  import { ChevronDown, ChevronRight, iconNode } from '../../shared/icons.js';
   import {
     getDiff,
     getReviewComments,
@@ -27,6 +28,23 @@
   let emptyState = $state(''); // '', 'empty', 'notrepo'
   let layout = $state('split');
   let commentCount = $state(0);
+  // Per-file collapse state. The Set holds collapsed file names; the count
+  // mirrors its size as $state so the "Collapse all" toggle label is reactive
+  // (a raw Set's mutations don't notify Svelte). fileCount is the total once
+  // the diff has loaded — drives the "all collapsed?" check. Set is a plain,
+  // non-reactive collection here: we don't iterate it in any template, only
+  // call has()/add()/delete() imperatively from render callbacks.
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- imperative storage; collapsedCount carries the reactivity
+  let collapsedFiles = new Set();
+  let collapsedCount = $state(0);
+  let fileCount = $state(0);
+  const allCollapsed = $derived(fileCount > 0 && collapsedCount >= fileCount);
+
+  // Matches FullScreenSheet's SHEET_BREAKPOINT. Drives where the toolbar
+  // renders (header on desktop, second row in body on mobile) and feeds the
+  // mobile-only CSS pumped into the shadow DOM via unsafeCSS.
+  const MOBILE_QUERY = '(max-width: 900px)';
+  let isMobile = $state(false);
 
   // Imperative, non-reactive handles (DOM-heavy; kept out of $state).
   let viewport = null; // container node, owned by CodeView (via the action)
@@ -44,6 +62,15 @@
   // CodeView.updateItem only re-renders when the item's `version` changes, so
   // every (re)built item gets a fresh monotonic version.
   let itemVersion = 0;
+
+  onMount(() => {
+    if (typeof window.matchMedia !== 'function') return;
+    const mql = window.matchMedia(MOBILE_QUERY);
+    const sync = () => (isMobile = mql.matches);
+    sync();
+    mql.addEventListener('change', sync);
+    return () => mql.removeEventListener('change', sync);
+  });
 
   // The mount container is driven by an action rather than bind:this: the
   // action mounts when <FullScreenSheet> reveals its body (open) and is
@@ -117,6 +144,7 @@
         return;
       }
       fileDiffs = new Map(files.map((f) => [f.name, f]));
+      fileCount = files.length;
       loading = false;
       // Let the container un-hide before CodeView measures its height.
       await tick();
@@ -131,6 +159,7 @@
   }
 
   function teardown() {
+    hideMobileComposeSheet();
     themeObserver?.disconnect();
     themeObserver = null;
     try {
@@ -149,6 +178,9 @@
     errorMsg = '';
     emptyState = '';
     commentCount = 0;
+    collapsedFiles = new Set();
+    collapsedCount = 0;
+    fileCount = 0;
   }
 
   function currentThemeType() {
@@ -168,6 +200,7 @@
       lineHoverHighlight: 'both',
       stickyHeaders: true,
       renderAnnotation: (annotation) => renderAnnotation(annotation),
+      renderHeaderPrefix: (fileDiff) => buildCollapseToggle(fileDiff),
       onGutterUtilityClick: (range, context) => onGutterUtilityClick(range, context),
     };
     codeView = new CodeView(codeViewOptions);
@@ -199,8 +232,50 @@
       type: 'diff',
       fileDiff: file,
       annotations: annotationsFor(file.name),
+      collapsed: collapsedFiles.has(file.name),
       version: ++itemVersion,
     };
+  }
+
+  // Chevron rendered as the file-header prefix. Lives inside the diffs shadow
+  // DOM but we attach a real click listener directly on the button; the
+  // library calls renderHeaderPrefix again on each updateItem, so the chevron
+  // icon stays in sync after toggleFileCollapsed.
+  function buildCollapseToggle(fileDiff) {
+    const collapsed = collapsedFiles.has(fileDiff.name);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.setAttribute('aria-label', collapsed ? t('diff.expandFile') : t('diff.collapseFile'));
+    btn.style.cssText =
+      'display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;' +
+      'background:transparent;border:0;cursor:pointer;color:var(--muted,#858a96);padding:0;' +
+      'margin-right:2px;border-radius:3px;flex-shrink:0;';
+    btn.appendChild(iconNode(collapsed ? ChevronRight : ChevronDown, { size: 14 }));
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleFileCollapsed(fileDiff.name);
+    });
+    return btn;
+  }
+
+  function setFileCollapsed(fileName, collapsed) {
+    if (collapsed) collapsedFiles.add(fileName);
+    else collapsedFiles.delete(fileName);
+    collapsedCount = collapsedFiles.size;
+  }
+
+  function toggleFileCollapsed(fileName) {
+    setFileCollapsed(fileName, !collapsedFiles.has(fileName));
+    refreshItem(fileName);
+  }
+
+  function toggleAllCollapsed() {
+    if (!fileDiffs) return;
+    const names = [...fileDiffs.keys()];
+    const collapse = !names.every((n) => collapsedFiles.has(n));
+    for (const name of names) setFileCollapsed(name, collapse);
+    for (const name of names) refreshItem(name);
   }
 
   function annotationsFor(fileName) {
@@ -334,7 +409,86 @@
     return startLine === endLine ? `Line ${startLine}` : `Lines ${startLine}-${endLine}`;
   }
 
-  function composeBox({ startLine, endLine, initialText, onSave, onCancel }) {
+  // Mobile-only body-level composer overlay (see composeBox for why it can't
+  // live inside the diffs shadow root). We keep a single instance and rebind
+  // its callbacks on re-render; preserving the typed text via the existing
+  // <textarea> avoids losing user input when the diff re-renders.
+  let mobileSheetEl = null;
+  let mobileSheetCancel = null;
+  let mobileSheetSave = null;
+
+  function showMobileComposeSheet({ startLine, endLine, initialText, onSave, onCancel }) {
+    mobileSheetCancel = onCancel;
+    mobileSheetSave = onSave;
+    if (mobileSheetEl) {
+      mobileSheetEl.querySelector('[data-pi-meta]').textContent = rangeLabel(startLine, endLine);
+      return;
+    }
+    const sheet = document.createElement('div');
+    sheet.style.cssText =
+      'position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));' +
+      'z-index:1000;padding:12px;border-radius:8px;display:flex;flex-direction:column;gap:8px;' +
+      'border:1px solid var(--border,#444);background:var(--surface-2,#191920);' +
+      'color:var(--text,#e6e7eb);font-size:14px;line-height:1.4;' +
+      'box-shadow:0 10px 30px rgba(0,0,0,0.5);';
+
+    const metaEl = document.createElement('div');
+    metaEl.dataset.piMeta = '';
+    metaEl.style.cssText = 'color:var(--muted,#858a96);font-size:12px;';
+    metaEl.textContent = rangeLabel(startLine, endLine);
+
+    const textarea = document.createElement('textarea');
+    textarea.rows = 4;
+    textarea.value = initialText || '';
+    textarea.placeholder = t('diff.commentPlaceholder');
+    textarea.style.cssText =
+      'width:100%;box-sizing:border-box;resize:vertical;border-radius:6px;padding:8px 10px;' +
+      'font:inherit;font-size:15px;background:var(--input-bg,#0e0e12);' +
+      'color:var(--text,#e6e7eb);border:1px solid var(--border,#444);';
+
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;';
+    row.append(
+      styledButton(t('diff.cancel'), () => mobileSheetCancel?.(), false),
+      styledButton(
+        t('diff.save'),
+        () => {
+          const text = textarea.value.trim();
+          if (text) mobileSheetSave?.(text);
+        },
+        true,
+      ),
+    );
+
+    sheet.append(metaEl, textarea, row);
+    document.body.appendChild(sheet);
+    mobileSheetEl = sheet;
+    queueMicrotask(() => textarea.focus());
+  }
+
+  function hideMobileComposeSheet() {
+    if (!mobileSheetEl) return;
+    mobileSheetEl.remove();
+    mobileSheetEl = null;
+    mobileSheetCancel = null;
+    mobileSheetSave = null;
+  }
+
+  function composeBox(args) {
+    if (isMobile) {
+      // On mobile we render the composer in light DOM (document.body) instead
+      // of inside the @pierre/diffs shadow root: the library's `code { contain:
+      // content }` creates a fixed-positioning containing block, so a sticky/
+      // fixed annotation child gets anchored to the column rather than the
+      // viewport. Return a zero-height placeholder so the library still
+      // reserves a slot.
+      showMobileComposeSheet(args);
+      const placeholder = document.createElement('div');
+      placeholder.style.cssText = 'height:0;margin:0;padding:0;';
+      return placeholder;
+    }
+    const { startLine, endLine, initialText, onSave, onCancel } = args;
+
     const box = document.createElement('div');
     box.style.cssText = BOX_STYLE;
     box.addEventListener('click', (e) => e.stopPropagation());
@@ -387,11 +541,13 @@
           };
           const fileName = draft.file;
           draft = null;
+          hideMobileComposeSheet();
           persistComment(payload, fileName);
         },
         onCancel: () => {
           const fileName = draft?.file;
           draft = null;
+          hideMobileComposeSheet();
           if (fileName) refreshItem(fileName);
         },
       });
@@ -405,10 +561,12 @@
         initialText: comment.body,
         onSave: (text) => {
           editingId = '';
+          hideMobileComposeSheet();
           persistComment({ ...comment, body: text }, comment.file);
         },
         onCancel: () => {
           editingId = '';
+          hideMobileComposeSheet();
           refreshItem(comment.file);
         },
       });
@@ -452,10 +610,13 @@
   backdropClass="diff-sheet-backdrop"
   panelClass="diff-sheet-panel"
   bodyClass="diff-sheet-body"
+  headerExtra={isMobile ? null : toolbar}
 >
-  {#snippet headerExtra()}
-    <!-- Lives in the sheet header so mobile doesn't pay a second toolbar row.
-         e2e and other call sites still target .diff-toolbar / .diff-submit. -->
+  {#snippet toolbar()}
+    <!-- Lives in the sheet header on desktop and as a second row in the body
+         on mobile (a phone-width header can't hold "← Diff" plus Split/Unified
+         + Collapse all + Submit review without crushing the back button). e2e
+         selectors still target .diff-toolbar / .diff-submit. -->
     <div class="diff-toolbar">
       <div class="diff-toggle" role="group" aria-label={t('diff.title')}>
         <button
@@ -473,6 +634,14 @@
       </div>
       <button
         type="button"
+        class="diff-toolbar-btn"
+        disabled={fileCount === 0}
+        onclick={toggleAllCollapsed}
+      >
+        {allCollapsed ? t('diff.expandAll') : t('diff.collapseAll')}
+      </button>
+      <button
+        type="button"
         class="diff-submit"
         disabled={commentCount === 0}
         onclick={submitReview}
@@ -481,6 +650,10 @@
       </button>
     </div>
   {/snippet}
+
+  {#if isMobile}
+    {@render toolbar()}
+  {/if}
 
   {#if loading}
     <div class="diff-status">{t('diff.loading')}</div>
