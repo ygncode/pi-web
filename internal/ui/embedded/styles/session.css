@@ -4504,7 +4504,10 @@
     .diff-codeview {
       flex: 1;
       min-height: 0;
-      overflow: hidden;
+      /* @pierre/diffs CodeView treats this node as its scroll viewport
+         (reads root.scrollTop, listens for scroll on root), so it must
+         scroll — overflow: hidden traps the diff at the visible region. */
+      overflow: auto;
       background: var(--body-bg);
     }
 
