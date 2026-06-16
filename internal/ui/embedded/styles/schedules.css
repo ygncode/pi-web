@@ -229,6 +229,10 @@
 .schedules-page .schedule-cadence .sched-ico {
   color: var(--accent);
 }
+.schedules-page .schedule-tz {
+  color: var(--muted);
+  font-weight: normal;
+}
 .schedules-page .schedule-tag {
   padding: 2px 8px;
   border-radius: 6px;

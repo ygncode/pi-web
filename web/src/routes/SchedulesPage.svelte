@@ -361,6 +361,9 @@
               <span class="schedule-cadence">
                 <span class="sched-ico" aria-hidden="true">{@html icon(Clock, { size: 13 })}</span>
                 {freqLabel(schedule)}
+                {#if schedule.cronExpr && schedule.timezone}
+                  <span class="schedule-tz" data-testid="schedule-tz">· {schedule.timezone}</span>
+                {/if}
               </span>
               {#if schedule.nextRunAt}
                 <span class="schedule-tag"
