@@ -151,8 +151,12 @@
     backdropEl?.addEventListener('click', onBackdrop);
     requestAnimationFrame(() => {
       shown = true;
-      const focusables = getFocusable();
-      (focusables[0] || panelEl)?.focus();
+      // Focus the panel itself (tabindex=-1, outline:none) rather than the
+      // first focusable control. Focusing a button shows :focus-visible after
+      // any keyboard-mode trigger (e.g. opening via URL after Cmd-R refresh),
+      // which surfaces a stray focus ring on the back arrow. The focus trap
+      // still works — Tab moves into the contained focusables.
+      panelEl?.focus();
     });
   }
 
