@@ -453,25 +453,34 @@
   panelClass="diff-sheet-panel"
   bodyClass="diff-sheet-body"
 >
-  <div class="diff-toolbar">
-    <div class="diff-toggle" role="group" aria-label={t('diff.title')}>
+  {#snippet headerExtra()}
+    <!-- Lives in the sheet header so mobile doesn't pay a second toolbar row.
+         e2e and other call sites still target .diff-toolbar / .diff-submit. -->
+    <div class="diff-toolbar">
+      <div class="diff-toggle" role="group" aria-label={t('diff.title')}>
+        <button
+          type="button"
+          class="diff-toggle-btn"
+          class:active={layout === 'split'}
+          onclick={() => setLayout('split')}>{t('diff.split')}</button
+        >
+        <button
+          type="button"
+          class="diff-toggle-btn"
+          class:active={layout === 'unified'}
+          onclick={() => setLayout('unified')}>{t('diff.unified')}</button
+        >
+      </div>
       <button
         type="button"
-        class="diff-toggle-btn"
-        class:active={layout === 'split'}
-        onclick={() => setLayout('split')}>{t('diff.split')}</button
+        class="diff-submit"
+        disabled={commentCount === 0}
+        onclick={submitReview}
       >
-      <button
-        type="button"
-        class="diff-toggle-btn"
-        class:active={layout === 'unified'}
-        onclick={() => setLayout('unified')}>{t('diff.unified')}</button
-      >
+        {t('diff.submitReview')}{commentCount > 0 ? ` (${commentCount})` : ''}
+      </button>
     </div>
-    <button type="button" class="diff-submit" disabled={commentCount === 0} onclick={submitReview}>
-      {t('diff.submitReview')}{commentCount > 0 ? ` (${commentCount})` : ''}
-    </button>
-  </div>
+  {/snippet}
 
   {#if loading}
     <div class="diff-status">{t('diff.loading')}</div>

@@ -4332,6 +4332,18 @@
       flex-shrink: 0;
       gap: 12px;
     }
+    /* Optional inline controls rendered between back/close inside the sheet
+       header (FullScreenSheet's `headerExtra` snippet). Takes the spare
+       middle space so its children get pushed to the right of the back
+       button without forcing the back button to wrap. */
+    .pi-sheet-header-extra {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      justify-content: flex-end;
+      gap: 12px;
+    }
 
     .pi-sheet-back {
       display: inline-flex;
@@ -4450,13 +4462,12 @@
       flex-direction: column;
       background: var(--container-bg);
     }
+    /* The diff toolbar now lives inside the sheet header (via FullScreenSheet's
+       headerExtra snippet), so it inherits the header's padding and border. */
     .diff-toolbar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
       gap: 12px;
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--dim);
       flex-shrink: 0;
     }
     .diff-toggle {

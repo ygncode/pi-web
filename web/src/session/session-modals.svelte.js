@@ -52,6 +52,35 @@ export function openDiff({ sessionId = '' } = {}) {
   sessionModals.diff.open = true;
 }
 
+// The diff modal's open state is mirrored to a `?diff=open` query param so a
+// page refresh restores the open sheet. SessionShell drives this — calling
+// syncDiffUrlParam whenever sessionModals.diff.open flips, and restoring from
+// the URL on mount before the sync effect runs (otherwise the effect would
+// strip the param before we could read it).
+export const DIFF_URL_PARAM = 'diff';
+export const DIFF_URL_VALUE = 'open';
+
+export function syncDiffUrlParam(open, { windowImpl } = {}) {
+  const win = windowImpl ?? (typeof window !== 'undefined' ? window : undefined);
+  if (!win) return;
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- one-shot read+mutate, fed to replaceState; not reactive state
+  const url = new URL(win.location.href);
+  const has = url.searchParams.get(DIFF_URL_PARAM) === DIFF_URL_VALUE;
+  if (open === has) return;
+  if (open) url.searchParams.set(DIFF_URL_PARAM, DIFF_URL_VALUE);
+  else url.searchParams.delete(DIFF_URL_PARAM);
+  // replaceState (not push) so back-button behavior is unchanged — closing the
+  // modal must not require a second back press.
+  win.history.replaceState(win.history.state, '', url);
+}
+
+export function hasDiffUrlParam({ windowImpl } = {}) {
+  const win = windowImpl ?? (typeof window !== 'undefined' ? window : undefined);
+  if (!win) return false;
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity -- one-shot read of location, not reactive state
+  return new URL(win.location.href).searchParams.get(DIFF_URL_PARAM) === DIFF_URL_VALUE;
+}
+
 export function resetSessionModals() {
   sessionModals.shortcuts = false;
   sessionModals.modelUsage = false;

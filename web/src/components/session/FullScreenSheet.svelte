@@ -26,6 +26,11 @@
     panelClass = '',
     bodyClass = '',
     children,
+    // Optional inline controls rendered between the back button and the
+    // close-X inside .pi-sheet-header. Lets a sheet host its primary actions
+    // in the header bar instead of a second toolbar row underneath — useful
+    // on mobile where vertical space is scarce.
+    headerExtra = null,
   } = $props();
 
   const SHEET_BREAKPOINT = 900;
@@ -224,6 +229,9 @@
           </button>
         {:else}
           <div></div>
+        {/if}
+        {#if headerExtra}
+          <div class="pi-sheet-header-extra">{@render headerExtra()}</div>
         {/if}
         {#if showClose}
           <button
