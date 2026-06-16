@@ -301,57 +301,11 @@
 }
 
 /* ── Editor modal ── */
-.schedule-editor-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  /* Above the floating + (z-index 50) so it can't intercept editor clicks. */
-  z-index: 60;
-}
-.schedule-editor {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(560px, calc(100vw - 32px));
-  max-height: calc(100vh - 48px);
-  overflow-y: auto;
-  background: var(--container-bg, var(--bg, #16181d));
-  color: var(--text);
-  border: 1px solid color-mix(in srgb, var(--dim) 90%, transparent);
-  border-radius: 14px;
-  padding: 22px 24px 24px;
-  z-index: 61;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
-}
-.schedule-editor-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 18px;
-}
-.schedule-editor-head h2 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 650;
-}
-.schedule-editor-close {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  border-radius: 7px;
-  cursor: pointer;
-  transition: color 0.12s, background 0.12s;
-}
-.schedule-editor-close:hover {
-  color: var(--text);
-  background: var(--surface-2);
+/* Editor hosted in a FullScreenSheet: centered dialog on desktop, fullscreen
+   bottom-sheet on mobile. Only widen the desktop panel; the sheet owns the rest
+   (backdrop, header, close, mobile layout). */
+.pi-sheet-panel.schedule-editor-panel {
+  max-width: 560px;
 }
 .schedule-editor .field {
   display: flex;
@@ -480,6 +434,12 @@
 }
 .schedule-editor .model-item:hover {
   background: var(--hover, color-mix(in srgb, var(--accent) 14%, transparent));
+}
+.schedule-editor .project-item {
+  font-family: var(--font-code, monospace);
+  font-size: 12px;
+  word-break: break-all;
+  white-space: normal;
 }
 .schedule-editor .field small.sched-muted {
   font-size: 12px;

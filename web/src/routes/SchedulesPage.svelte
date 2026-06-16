@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { navigate } from '../shared/navigation.js';
   import { t } from '../shared/i18n.js';
+  import FullScreenSheet from '../components/session/FullScreenSheet.svelte';
   import {
     groupModelsByProvider,
     modelDisplayLabel,
@@ -19,7 +20,6 @@
     Play,
     Plus,
     Trash2,
-    X,
   } from '../shared/icons.js';
   import {
     FREQUENCIES,
@@ -50,6 +50,7 @@
 
   let modelFilter = $state('');
   let modelPickerOpen = $state(false);
+  let projectPickerOpen = $state(false);
 
   let expandedId = $state('');
   let runs = $state([]);
@@ -78,6 +79,19 @@
     return Object.keys(byProvider)
       .sort()
       .map((provider) => ({ provider, models: byProvider[provider] }));
+  });
+
+  const filteredRecent = $derived.by(() => {
+    const paths = [];
+    for (const loc of recent) {
+      const path = (loc && loc.path) || loc;
+      if (typeof path === 'string' && path && !paths.includes(path)) {
+        paths.push(path);
+      }
+    }
+    const q = (form.projectPath || '').trim().toLowerCase();
+    if (!q) return paths;
+    return paths.filter((p) => p.toLowerCase().includes(q));
   });
 
   const showTime = $derived(['daily', 'weekdays', 'weekly'].includes(form.frequency));
@@ -118,6 +132,7 @@
     formError = '';
     modelFilter = '';
     modelPickerOpen = false;
+    projectPickerOpen = false;
     editorOpen = true;
   }
 
@@ -145,6 +160,7 @@
     formError = '';
     modelFilter = '';
     modelPickerOpen = false;
+    projectPickerOpen = false;
     editorOpen = true;
   }
 
@@ -175,6 +191,11 @@
     form.modelId = '';
     form.modelLabel = '';
     modelPickerOpen = false;
+  }
+
+  function selectProject(path) {
+    form.projectPath = path;
+    projectPickerOpen = false;
   }
 
   function cronForForm() {
@@ -482,194 +503,197 @@
   onclick={openCreate}>{@html icon(Plus, { size: 26 })}</button
 >
 
-{#if editorOpen}
-  <div class="schedule-editor-backdrop" role="presentation" onclick={closeEditor}></div>
-  <div
-    class="schedule-editor"
-    role="dialog"
-    aria-modal="true"
-    aria-label={t('schedules.editorTitle')}
-  >
-    <div class="schedule-editor-head">
-      <h2>{editingId ? t('schedules.editTitle') : t('schedules.new')}</h2>
+<FullScreenSheet
+  bind:open={editorOpen}
+  title={editingId ? t('schedules.editTitle') : t('schedules.new')}
+  panelClass="schedule-editor-panel"
+  bodyClass="schedule-editor"
+  onClose={() => (editingId = '')}
+>
+  <label class="field">
+    <span>{t('schedules.fieldName')}</span>
+    <input
+      type="text"
+      data-testid="schedule-name"
+      bind:value={form.name}
+      placeholder={t('schedules.namePlaceholder')}
+    />
+  </label>
+
+  <label class="field">
+    <span>{t('schedules.fieldInstructions')}</span>
+    <textarea
+      rows="4"
+      data-testid="schedule-instructions"
+      bind:value={form.instructions}
+      placeholder={t('schedules.instructionsPlaceholder')}
+    ></textarea>
+  </label>
+
+  <div class="field">
+    <span>{t('schedules.fieldProject')}</span>
+    <input
+      type="text"
+      data-testid="schedule-project"
+      bind:value={form.projectPath}
+      placeholder={t('schedules.projectPlaceholder')}
+      autocomplete="off"
+      onfocus={() => (projectPickerOpen = true)}
+      onblur={() => (projectPickerOpen = false)}
+    />
+    {#if projectPickerOpen && filteredRecent.length > 0}
+      <div class="model-popup project-popup">
+        <div class="model-list">
+          {#each filteredRecent as path (path)}
+            <button
+              type="button"
+              class="model-item project-item"
+              onpointerdown={(e) => {
+                e.preventDefault();
+                selectProject(path);
+              }}
+            >
+              {path}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <div class="field">
+    <span>{t('schedules.fieldModel')}</span>
+    <div class="model-select">
       <button
         type="button"
-        class="schedule-editor-close"
-        aria-label={t('common.cancel')}
-        onclick={closeEditor}>{@html icon(X, { size: 18 })}</button
+        class="model-trigger"
+        onclick={() => (modelPickerOpen = !modelPickerOpen)}
       >
-    </div>
-
-    <label class="field">
-      <span>{t('schedules.fieldName')}</span>
-      <input
-        type="text"
-        data-testid="schedule-name"
-        bind:value={form.name}
-        placeholder={t('schedules.namePlaceholder')}
-      />
-    </label>
-
-    <label class="field">
-      <span>{t('schedules.fieldInstructions')}</span>
-      <textarea
-        rows="4"
-        data-testid="schedule-instructions"
-        bind:value={form.instructions}
-        placeholder={t('schedules.instructionsPlaceholder')}
-      ></textarea>
-    </label>
-
-    <label class="field">
-      <span>{t('schedules.fieldProject')}</span>
-      <input
-        type="text"
-        data-testid="schedule-project"
-        bind:value={form.projectPath}
-        list="schedule-recent-paths"
-        placeholder={t('schedules.projectPlaceholder')}
-      />
-      <datalist id="schedule-recent-paths">
-        {#each recent as loc (loc.path || loc)}
-          <option value={loc.path || loc}></option>
-        {/each}
-      </datalist>
-    </label>
-
-    <div class="field">
-      <span>{t('schedules.fieldModel')}</span>
-      <div class="model-select">
-        <button
-          type="button"
-          class="model-trigger"
-          onclick={() => (modelPickerOpen = !modelPickerOpen)}
+        {form.modelLabel || t('schedules.modelDefault')}
+      </button>
+      {#if form.modelId}
+        <button type="button" class="sched-btn" onclick={clearModel}
+          >{t('schedules.modelClear')}</button
         >
-          {form.modelLabel || t('schedules.modelDefault')}
-        </button>
-        {#if form.modelId}
-          <button type="button" class="sched-btn" onclick={clearModel}
-            >{t('schedules.modelClear')}</button
-          >
-        {/if}
-      </div>
-      {#if modelPickerOpen}
-        <div class="model-popup">
-          <input
-            type="text"
-            class="model-search"
-            bind:value={modelFilter}
-            placeholder={t('schedules.modelSearch')}
-          />
-          <div class="model-list">
-            {#if filteredProviders.length === 0}
-              <div class="sched-muted">{t('schedules.modelNone')}</div>
-            {:else}
-              {#each filteredProviders as group (group.provider)}
-                <div class="model-provider">{group.provider}</div>
-                {#each group.models as model (model.id || model.modelId)}
-                  <button
-                    type="button"
-                    class="model-item"
-                    onclick={() => selectModel(group.provider, model)}
-                  >
-                    {model.name || model.id || model.modelId}
-                  </button>
-                {/each}
-              {/each}
-            {/if}
-          </div>
-        </div>
       {/if}
     </div>
-
-    <label class="field">
-      <span>{t('schedules.fieldThinking')}</span>
-      <select bind:value={form.thinkingLevel}>
-        <option value="">{t('schedules.thinkingDefault')}</option>
-        {#each THINKING_LEVELS as level (level)}
-          <option value={level}>{level}</option>
-        {/each}
-      </select>
-    </label>
-
-    <label class="field">
-      <span>{t('schedules.fieldFrequency')}</span>
-      <select data-testid="schedule-frequency" bind:value={form.frequency}>
-        {#each FREQUENCIES as freq (freq)}
-          <option value={freq}>{t('schedules.freq_' + freq)}</option>
-        {/each}
-      </select>
-    </label>
-
-    <div class="field-row">
-      {#if form.frequency === 'hourly'}
-        <label class="field">
-          <span>{t('schedules.fieldMinute')}</span>
-          <input type="number" min="0" max="59" bind:value={form.minute} />
-        </label>
-      {/if}
-
-      {#if showTime}
-        <label class="field">
-          <span>{t('schedules.fieldTime')}</span>
-          <input type="time" value={timeValue} oninput={onTimeInput} />
-        </label>
-      {/if}
-
-      {#if form.frequency === 'weekly'}
-        <label class="field">
-          <span>{t('schedules.fieldWeekday')}</span>
-          <select bind:value={form.weekday}>
-            {#each [0, 1, 2, 3, 4, 5, 6] as d (d)}
-              <option value={d}>{t('schedules.weekday' + d)}</option>
-            {/each}
-          </select>
-        </label>
-      {/if}
-    </div>
-
-    {#if form.frequency === 'custom'}
-      <label class="field">
-        <span>{t('schedules.fieldCron')}</span>
+    {#if modelPickerOpen}
+      <div class="model-popup">
         <input
           type="text"
-          data-testid="schedule-cron"
-          bind:value={form.customCron}
-          placeholder="0 9 * * 1-5"
+          class="model-search"
+          bind:value={modelFilter}
+          placeholder={t('schedules.modelSearch')}
         />
-        <small class="sched-muted">{t('schedules.cronHint')}</small>
-      </label>
+        <div class="model-list">
+          {#if filteredProviders.length === 0}
+            <div class="sched-muted">{t('schedules.modelNone')}</div>
+          {:else}
+            {#each filteredProviders as group (group.provider)}
+              <div class="model-provider">{group.provider}</div>
+              {#each group.models as model (model.id || model.modelId)}
+                <button
+                  type="button"
+                  class="model-item"
+                  onclick={() => selectModel(group.provider, model)}
+                >
+                  {model.name || model.id || model.modelId}
+                </button>
+              {/each}
+            {/each}
+          {/if}
+        </div>
+      </div>
     {/if}
-
-    {#if form.frequency !== 'manual'}
-      <label class="field">
-        <span>{t('schedules.fieldTimezone')}</span>
-        <input type="text" bind:value={form.timezone} placeholder="UTC" />
-      </label>
-    {/if}
-
-    <label class="field checkbox">
-      <input type="checkbox" bind:checked={form.enabled} />
-      <span>{t('schedules.fieldEnabled')}</span>
-    </label>
-
-    {#if formError}
-      <p class="sched-error" role="alert">{formError}</p>
-    {/if}
-
-    <div class="schedule-editor-actions">
-      <button type="button" class="sched-btn" data-testid="schedule-cancel" onclick={closeEditor}
-        >{t('common.cancel')}</button
-      >
-      <button
-        type="button"
-        class="sched-btn sched-btn-primary"
-        data-testid="schedule-save"
-        onclick={save}
-        disabled={saving}
-      >
-        {saving ? t('schedules.saving') : t('common.save')}
-      </button>
-    </div>
   </div>
-{/if}
+
+  <label class="field">
+    <span>{t('schedules.fieldThinking')}</span>
+    <select bind:value={form.thinkingLevel}>
+      <option value="">{t('schedules.thinkingDefault')}</option>
+      {#each THINKING_LEVELS as level (level)}
+        <option value={level}>{level}</option>
+      {/each}
+    </select>
+  </label>
+
+  <label class="field">
+    <span>{t('schedules.fieldFrequency')}</span>
+    <select data-testid="schedule-frequency" bind:value={form.frequency}>
+      {#each FREQUENCIES as freq (freq)}
+        <option value={freq}>{t('schedules.freq_' + freq)}</option>
+      {/each}
+    </select>
+  </label>
+
+  <div class="field-row">
+    {#if form.frequency === 'hourly'}
+      <label class="field">
+        <span>{t('schedules.fieldMinute')}</span>
+        <input type="number" min="0" max="59" bind:value={form.minute} />
+      </label>
+    {/if}
+
+    {#if showTime}
+      <label class="field">
+        <span>{t('schedules.fieldTime')}</span>
+        <input type="time" value={timeValue} oninput={onTimeInput} />
+      </label>
+    {/if}
+
+    {#if form.frequency === 'weekly'}
+      <label class="field">
+        <span>{t('schedules.fieldWeekday')}</span>
+        <select bind:value={form.weekday}>
+          {#each [0, 1, 2, 3, 4, 5, 6] as d (d)}
+            <option value={d}>{t('schedules.weekday' + d)}</option>
+          {/each}
+        </select>
+      </label>
+    {/if}
+  </div>
+
+  {#if form.frequency === 'custom'}
+    <label class="field">
+      <span>{t('schedules.fieldCron')}</span>
+      <input
+        type="text"
+        data-testid="schedule-cron"
+        bind:value={form.customCron}
+        placeholder="0 9 * * 1-5"
+      />
+      <small class="sched-muted">{t('schedules.cronHint')}</small>
+    </label>
+  {/if}
+
+  {#if form.frequency !== 'manual'}
+    <label class="field">
+      <span>{t('schedules.fieldTimezone')}</span>
+      <input type="text" bind:value={form.timezone} placeholder="UTC" />
+    </label>
+  {/if}
+
+  <label class="field checkbox">
+    <input type="checkbox" bind:checked={form.enabled} />
+    <span>{t('schedules.fieldEnabled')}</span>
+  </label>
+
+  {#if formError}
+    <p class="sched-error" role="alert">{formError}</p>
+  {/if}
+
+  <div class="schedule-editor-actions">
+    <button type="button" class="sched-btn" data-testid="schedule-cancel" onclick={closeEditor}
+      >{t('common.cancel')}</button
+    >
+    <button
+      type="button"
+      class="sched-btn sched-btn-primary"
+      data-testid="schedule-save"
+      onclick={save}
+      disabled={saving}
+    >
+      {saving ? t('schedules.saving') : t('common.save')}
+    </button>
+  </div>
+</FullScreenSheet>
