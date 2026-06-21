@@ -17,8 +17,10 @@
   import ChatSelectorPopups from './chat/ChatSelectorPopups.svelte';
   import ChatToolbar from './chat/ChatToolbar.svelte';
   import ContextUsage from './chat/ContextUsage.svelte';
+  import QueuePanel from './chat/QueuePanel.svelte';
   import TextAttachmentModal from './chat/TextAttachmentModal.svelte';
   import { ChatToolbarState } from './chat/chat-toolbar-state.svelte.js';
+  import { QueueStore } from './chat/queue-store.svelte.js';
 
   let {
     sessionId = '',
@@ -31,6 +33,9 @@
   // Reactive toolbar state owned here so the live runtime can mutate it while
   // <ChatToolbar> renders from it.
   const toolbar = new ChatToolbarState();
+  // Reactive queue panel state — shared with chat-composer-runtime so its
+  // steer/queue glue mutates the same items <QueuePanel> renders.
+  const queueStore = new QueueStore();
 
   // The composer runtime lives in <script module> (runChatComposer). It reads the
   // shared model + navigateTo (owned by SessionPage runtime context) at mount —
@@ -57,6 +62,7 @@
       CustomEventImpl: target.CustomEvent,
       setIntervalImpl: target.setInterval.bind(target),
       toolbar,
+      queueStore,
     });
   });
 </script>
@@ -84,7 +90,7 @@
         ><span class="pi-chat-focus-shortcut">{t('composer.focusShortcut')}</span>
       </div>{/if}
     {#if !chatAvailable}<div class="pi-chat-disabled-notice">{chatDisabledReason}</div>{/if}
-    <div id="pi-chat-pending" class="pi-chat-pending"></div>
+    <QueuePanel store={queueStore} />
     <textarea
       id="pi-chat-message"
       name="message"

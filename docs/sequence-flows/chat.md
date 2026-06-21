@@ -216,23 +216,36 @@ After 10 minutes of idle time (no user-initiated actions), the reaper goroutine 
 ### 11. Steering and Queuing
 
 While a response is running the composer stays enabled and the toolbar swaps the
-**Send** button for **Steer** plus a **Queue** button (`ChatToolbar.svelte`).
+**Send** button for **Steer** plus a **Queue** button (`ChatToolbar.svelte`). A
+docked panel (`QueuePanel.svelte`) appears above the textarea showing every
+pending message — queued and in-flight steers alike — with keyboard navigation,
+pause/resume, and per-row delete / send-now / edit actions.
 
 - **Steer** sends the message immediately through the same `POST /api/chat` path.
   Because the worker is already `running`, `piRPCWorker.Prompt` tags the command
   `streamingBehavior:"steer"` (step 4) so pi folds it into the active turn. The
-  message shows as a transient chip above the input until the run completes.
-- **Queue** holds the message in the browser as a deletable chip. There is no
+  message appears as a steer row in the panel until the run completes; the user
+  can also dismiss the row early (the message is still with pi).
+- **Queue** holds the message in the browser as a deletable row. There is no
   backend queue: when the worker transitions `running → idle` the composer fires
   `pi-worker-done` and the next queued message is sent as a fresh turn (one per
-  completed run, in order).
+  completed run, in order) — unless the panel is paused.
+- **Pause / Resume** (header button): pausing stops the auto-dequeue on
+  `pi-worker-done`; resuming flushes the next item immediately if the worker is
+  idle, otherwise the next `pi-worker-done` picks it up.
+- **Keyboard** (inside the listbox): ↑↓ navigate, ⌫ delete the focused row, ↩
+  send the focused queued message now, **E** pop the focused queued message back
+  into the textarea for editing, Esc blur the panel.
 
-The logic lives in `web/src/components/session/chat/steer-queue.js`. An
-`activeRun` flag — driven solely by the `pi-chat-message-sent` (→ true) and
-`pi-worker-done` (→ false) events — distinguishes the run-starting message from
-later steers, so the first message of a run and auto-dequeued messages are never
-mistaken for steers. Queued (not-yet-sent) chips are browser-local and are
-dropped on reload.
+State lives in `web/src/components/session/chat/queue-store.svelte.js` (a
+Svelte 5 `$state` class with `items`, `paused`, `focusIndex`). The runtime glue
+in `steer-queue.js` mutates the store from DOM events and installs `sendNow` /
+`edit` / `resume` callbacks the panel calls back into. An `activeRun` flag —
+driven solely by the `pi-chat-message-sent` (→ true) and `pi-worker-done`
+(→ false) events — distinguishes the run-starting message from later steers, so
+the first message of a run and auto-dequeued messages are never mistaken for
+steers. Queued rows (and dismissed steers) are browser-local and dropped on
+reload.
 
 ---
 

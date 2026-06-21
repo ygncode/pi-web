@@ -34,7 +34,7 @@ test.describe("steer / queue (stubbed pi)", () => {
     return { textarea };
   }
 
-  test("steering shows a pending chip and delivers the message", async ({
+  test("steering shows a panel row and delivers the message", async ({
     page,
     sessionsDir,
   }, testInfo) => {
@@ -44,17 +44,37 @@ test.describe("steer / queue (stubbed pi)", () => {
     await textarea.fill(steerMsg);
     await page.locator("#pi-chat-send").click();
 
-    // A steer chip appears above the input until the run picks it up.
-    const steerChip = page.locator("#pi-chat-pending .pi-chat-pending-steer");
-    await expect(steerChip).toContainText(steerMsg);
+    // A steer row appears in the queue panel until the run picks it up.
+    const steerRow = page.locator(".pi-queue-item.pi-queue-item--steer");
+    await expect(steerRow).toContainText(steerMsg);
 
     // The steered message is delivered and answered.
     await expect(page.locator("#messages")).toContainText(`Stub reply: ${steerMsg}`, {
       timeout: 20000,
     });
 
-    // Once the run completes, the steer chip clears.
-    await expect(steerChip).toHaveCount(0, { timeout: 20000 });
+    // Once the run completes, the steer row clears.
+    await expect(steerRow).toHaveCount(0, { timeout: 20000 });
+  });
+
+  test("user can dismiss a pending steer row before pickup", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "steer-cancel");
+
+    const steerMsg = `dismiss-${testInfo.workerIndex}-${Date.now()}`;
+    await textarea.fill(steerMsg);
+    await page.locator("#pi-chat-send").click();
+
+    const steerRow = page.locator(".pi-queue-item.pi-queue-item--steer");
+    await expect(steerRow).toContainText(steerMsg);
+
+    // Removing the steer row from the panel hides the chip immediately. The
+    // message has already been sent to pi (and will still arrive in the
+    // conversation), but the in-flight indicator goes away.
+    await steerRow.locator(".pi-queue-item-remove").click();
+    await expect(steerRow).toHaveCount(0);
   });
 
   test("queued messages stack, are deletable, and auto-send after the run", async ({
@@ -71,20 +91,46 @@ test.describe("steer / queue (stubbed pi)", () => {
     await textarea.fill(drop);
     await page.locator("#pi-chat-queue").click();
 
-    const queuedChips = page.locator("#pi-chat-pending .pi-chat-pending-queued");
-    await expect(queuedChips).toHaveCount(2);
+    // Queue rows are the non-steer rows in the panel.
+    const queuedRows = page.locator(".pi-queue-item:not(.pi-queue-item--steer)");
+    await expect(queuedRows).toHaveCount(2);
 
     // Delete the second queued message before it is ever sent.
-    await queuedChips.filter({ hasText: drop }).locator(".pi-chat-remove").click();
-    await expect(queuedChips).toHaveCount(1);
-    await expect(queuedChips.filter({ hasText: keep })).toHaveCount(1);
+    await queuedRows.filter({ hasText: drop }).locator(".pi-queue-item-remove").click();
+    await expect(queuedRows).toHaveCount(1);
+    await expect(queuedRows.filter({ hasText: keep })).toHaveCount(1);
 
     // After the running response completes, the kept message auto-sends.
     await expect(page.locator("#messages")).toContainText(`Stub reply: ${keep}`, {
       timeout: 20000,
     });
-    await expect(queuedChips).toHaveCount(0);
+    await expect(queuedRows).toHaveCount(0);
     // The deleted message was never sent.
     await expect(page.locator("#messages")).not.toContainText(`Stub reply: ${drop}`);
+  });
+
+  test("pause holds queued messages until the user resumes", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "queue-pause");
+
+    const msg = `paused-${testInfo.workerIndex}-${Date.now()}`;
+    await textarea.fill(msg);
+    await page.locator("#pi-chat-queue").click();
+
+    // Pause from the panel header.
+    await page.getByRole("button", { name: /^Pause$/ }).click();
+    await expect(page.locator(".pi-queue-panel--paused")).toBeVisible();
+
+    // Even after the run completes, the message stays in the queue.
+    await expect(page.locator(".pi-queue-item")).toHaveCount(1, { timeout: 20000 });
+
+    // Resume kicks the message out.
+    await page.getByRole("button", { name: /^Resume$/ }).click();
+    await expect(page.locator("#messages")).toContainText(`Stub reply: ${msg}`, {
+      timeout: 20000,
+    });
+    await expect(page.locator(".pi-queue-item")).toHaveCount(0);
   });
 });

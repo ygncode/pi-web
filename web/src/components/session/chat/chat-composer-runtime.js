@@ -23,6 +23,7 @@ import { navigateInitialChatLeaf } from './initial-navigation.js';
 import { ChatToolbarState } from './chat-toolbar-state.svelte.js';
 import { setupChatSubmission } from './chat-submit.js';
 import { setupSteerQueue } from './steer-queue.js';
+import { QueueStore } from './queue-store.svelte.js';
 import { createChatSelectorLoaders } from './selector-loaders.js';
 
 export function runChatComposer({
@@ -46,6 +47,7 @@ export function runChatComposer({
   CustomEventImpl = CustomEvent,
   setIntervalImpl = setInterval,
   toolbar = new ChatToolbarState(),
+  queueStore = new QueueStore(),
 } = {}) {
   const document = documentImpl;
   const window = windowImpl;
@@ -124,7 +126,6 @@ export function runChatComposer({
       sendButton,
       cancelButton,
       queueButton,
-      pendingList,
       shell,
       expandButton,
     } = getComposerElements({ documentImpl: document, form });
@@ -205,9 +206,8 @@ export function runChatComposer({
     });
 
     setupSteerQueue({
-      documentImpl: document,
       windowImpl: window,
-      pendingList,
+      store: queueStore,
       queueButton,
       textarea,
       attachments,
