@@ -120,6 +120,15 @@ export function syncToggleButtons(documentImpl, state) {
     btn.classList.toggle('active', isActive);
     btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
   });
+  // The tool-output toggle has no visible effect while tool calls are hidden,
+  // since the output blocks live inside the .tool-execution wrapper that's
+  // already display:none. Disable it (and its keyboard shortcut, see
+  // createToggleController.toggleToolOutputs) so the control doesn't claim to
+  // do something it can't until tools are turned back on.
+  const toolOutputBtn = documentImpl.querySelector('[data-action="toggle-tool-output"]');
+  if (toolOutputBtn) {
+    toolOutputBtn.disabled = !state.toolsVisible;
+  }
 }
 
 export function createToggleController({
@@ -154,7 +163,12 @@ export function createToggleController({
     syncButtons,
     toggleThinking: () => toggle('thinkingExpanded'),
     toggleToolsVisibility: () => toggle('toolsVisible'),
-    toggleToolOutputs: () => toggle('toolOutputsExpanded'),
+    toggleToolOutputs: () => {
+      // Hidden tool calls have no visible output to expand or collapse — no-op
+      // so the P shortcut and a disabled button click both stay quiet.
+      if (!state.toolsVisible) return;
+      toggle('toolOutputsExpanded');
+    },
     attachHeaderHandlers() {
       documentImpl
         .querySelector('[data-action="toggle-thinking"]')

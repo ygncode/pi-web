@@ -156,6 +156,53 @@ describe('toggle state helpers', () => {
     ).toBe('true');
   });
 
+  it('disables the tool-output button when tools are hidden, re-enables when they reappear', () => {
+    const dom = new JSDOM(
+      `<button data-action="toggle-thinking"></button><button data-action="toggle-tools"></button><button data-action="toggle-tool-output"></button>`,
+    );
+    const toolOutputBtn = dom.window.document.querySelector('[data-action="toggle-tool-output"]');
+
+    syncToggleButtons(dom.window.document, {
+      thinkingExpanded: true,
+      toolsVisible: false,
+      toolOutputsExpanded: false,
+    });
+    expect(toolOutputBtn.disabled).toBe(true);
+
+    syncToggleButtons(dom.window.document, {
+      thinkingExpanded: true,
+      toolsVisible: true,
+      toolOutputsExpanded: false,
+    });
+    expect(toolOutputBtn.disabled).toBe(false);
+  });
+
+  it('toggleToolOutputs is a no-op while tools are hidden so the P shortcut stays quiet', () => {
+    const dom = new JSDOM(
+      `<button data-action="toggle-thinking"></button><button data-action="toggle-tools"></button><button data-action="toggle-tool-output"></button>`,
+    );
+    const storage = makeStorage();
+    const controller = createToggleController({
+      documentImpl: dom.window.document,
+      storage,
+      sessionId: 'sess-a',
+      initialState: {
+        thinkingExpanded: true,
+        toolsVisible: false,
+        toolOutputsExpanded: false,
+      },
+    });
+    controller.toggleToolOutputs();
+    expect(controller.toolOutputsExpanded).toBe(false);
+    // Nothing was persisted, since no state change happened.
+    expect(storage.getItem(TOGGLE_STATE_STORAGE_KEY)).toBeNull();
+
+    // Re-enable tools, then the toggle works normally.
+    controller.toggleToolsVisibility();
+    controller.toggleToolOutputs();
+    expect(controller.toolOutputsExpanded).toBe(true);
+  });
+
   it('hides the tool-call placeholder when tools are visible', () => {
     const dom = new JSDOM(
       `<div><div class="tool-call-collapsed"></div><div class="tool-execution"></div></div>`,

@@ -61,7 +61,11 @@ func TestToolsVisibilityAndOutputExpansionAreSeparateStates(t *testing.T) {
 		"node.querySelectorAll('.tool-output.expandable').forEach((el) => {",
 		"el.classList.toggle('expanded', state.toolOutputsExpanded);",
 		"toggleToolsVisibility: () => toggle('toolsVisible'),",
-		"toggleToolOutputs: () => toggle('toolOutputsExpanded'),",
+		// toggleToolOutputs no-ops when tools are hidden so the P shortcut and a
+		// disabled-button click stay quiet (output blocks are inside the hidden
+		// .tool-execution wrapper, so there's nothing to expand or collapse).
+		"if (!state.toolsVisible) return;",
+		"toggle('toolOutputsExpanded');",
 	}
 	for _, check := range checks {
 		if !strings.Contains(src, check) {

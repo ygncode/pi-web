@@ -1583,6 +1583,17 @@
       color: var(--body-bg);
     }
 
+    /* Set on the "Tool output" button by syncToggleButtons when tool calls are
+       hidden — its setting has no visible effect until tools are visible
+       again. */
+    .header-toggle-btn:disabled,
+    .header-toggle-btn:disabled:hover {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: var(--container-bg);
+      border-color: var(--border);
+    }
+
     .model-search {
       display: block;
       width: calc(100% - 16px);

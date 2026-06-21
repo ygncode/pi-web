@@ -54,7 +54,7 @@
       >
     </div>
   </div>
-  <div class="settings-row">
+  <div class="settings-row" class:settings-row-disabled={!toolsVisible}>
     <div class="settings-row-label">
       <span class="name">{t('settings.toolOutputsExpanded')}</span><span class="hint"
         >{t('settings.toolOutputsExpandedHint')}</span
@@ -66,6 +66,7 @@
           type="checkbox"
           data-setting={toolOutputsKey}
           checked={toolOutputsExpanded}
+          disabled={!toolsVisible}
           onchange={(e) => save(toolOutputsKey, e.currentTarget.checked)}
         /><span class="slider"></span></label
       >

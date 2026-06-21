@@ -231,6 +231,16 @@
   background: #fff;
 }
 
+/* Row dim/disabled state: used when one toggle gates another (e.g.
+   "Expand tool outputs by default" has no effect when "Show tool calls by
+   default" is off). */
+.settings-row-disabled {
+  opacity: 0.5;
+}
+.settings-row-disabled .settings-toggle .slider {
+  cursor: not-allowed;
+}
+
 .settings-link {
   display: inline-flex;
   align-items: center;

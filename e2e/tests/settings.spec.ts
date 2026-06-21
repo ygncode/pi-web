@@ -395,6 +395,52 @@ test.describe("settings page", () => {
       ).toHaveAttribute("aria-pressed", "false");
     });
 
+    // Gating: while tool calls are hidden, the "Tool output" header button and
+    // its matching settings toggle have no visible effect, so both must
+    // surface as disabled. The state itself is preserved so re-enabling tools
+    // restores the prior tool-output choice.
+    test("tool-output toggle is disabled while tools are hidden", async ({
+      page,
+    }) => {
+      // Session header: open demo, hide tools, assert the Tool output button is
+      // disabled; show tools again, assert it's re-enabled.
+      await page.goto("/");
+      await page
+        .locator(".session-card", { hasText: "add deepseek-v4-pro" })
+        .click();
+      await expect(page).toHaveURL(/\/session\?id=/);
+      const toolOutputBtn = page.locator(
+        '[data-action="toggle-tool-output"]',
+      );
+      await expect(toolOutputBtn).toBeEnabled();
+      await page.locator('[data-action="toggle-tools"]').click();
+      await expect(toolOutputBtn).toBeDisabled();
+      await page.locator('[data-action="toggle-tools"]').click();
+      await expect(toolOutputBtn).toBeEnabled();
+
+      // Settings page: same gating on the "Expand tool outputs by default"
+      // input — disabled when "Show tool calls by default" is off.
+      await page.goto("/settings");
+      await openSection(page, "sessionDisplay");
+      const toolsInput = page.locator(
+        '[data-setting="pi-web:v1:toggle:tools"]',
+      );
+      const toolOutputsInput = page.locator(
+        '[data-setting="pi-web:v1:toggle:tool-outputs"]',
+      );
+      const toolsLabel = `label.settings-toggle:has([data-setting="pi-web:v1:toggle:tools"])`;
+      await expect(toolsInput).toBeChecked();
+      await expect(toolOutputsInput).toBeEnabled();
+      const offSaved = page.waitForResponse(
+        (r) =>
+          r.url().includes("/api/settings") &&
+          r.request().method() === "POST",
+      );
+      await page.locator(toolsLabel).click();
+      await offSaved;
+      await expect(toolOutputsInput).toBeDisabled();
+    });
+
     // Hiding tools must leave a visible marker next to each tool call, not a
     // stranded timestamp. Mirrors the .thinking-collapsed "Thinking ..."
     // placeholder pattern.
