@@ -93,6 +93,14 @@ export function applyToggleStateToNode(node, state) {
   node.querySelectorAll('.tool-execution, .compaction').forEach((el) => {
     el.style.display = state.toolsVisible ? '' : 'none';
   });
+  // Mirrors the .thinking-text / .thinking-collapsed pair: show a "Tool: <name>
+  // ..." placeholder so a hidden tool call still has a visible marker (and an
+  // assistant message whose only content is a tool call isn't a stranded
+  // timestamp). The placeholder lives next to each .tool-execution in
+  // ToolCall.svelte.
+  node.querySelectorAll('.tool-call-collapsed').forEach((el) => {
+    el.style.display = state.toolsVisible ? 'none' : 'block';
+  });
   node.querySelectorAll('.tool-output.expandable').forEach((el) => {
     el.classList.toggle('expanded', state.toolOutputsExpanded);
   });

@@ -43,6 +43,13 @@
 
 <!-- eslint-disable svelte/no-at-html-tags -- trusted: Lucide icon SVG and rendered session markdown -->
 
+<!--
+  The .tool-call-collapsed sibling mirrors the .thinking-collapsed pattern:
+  applyToggleStateToNode (web/src/session/ui/toggle-state.js) shows it whenever
+  state.toolsVisible is false so an assistant message whose only content is a
+  tool call doesn't render as a stranded timestamp.
+-->
+<div class="tool-call-collapsed">Tool: {call.name} ...</div>
 <div class="tool-execution {statusClass}" id={resultEntry ? `entry-${resultEntry.id}` : undefined}>
   {#if call.name === 'bash'}
     {@const command = str(args.command)}

@@ -128,7 +128,7 @@ describe('toggle state helpers', () => {
   it('applies state to rendered nodes and buttons', () => {
     const dom = new JSDOM(`<div>
       <div class="thinking-text"></div><div class="thinking-collapsed"></div>
-      <div class="tool-execution"></div><div class="tool-output expandable"></div><div class="compaction"></div>
+      <div class="tool-call-collapsed"></div><div class="tool-execution"></div><div class="tool-output expandable"></div><div class="compaction"></div>
       <button data-action="toggle-thinking"></button><button data-action="toggle-tools"></button><button data-action="toggle-tool-output"></button>
     </div>`);
     const state = { thinkingExpanded: false, toolsVisible: false, toolOutputsExpanded: true };
@@ -138,6 +138,9 @@ describe('toggle state helpers', () => {
     expect(dom.window.document.querySelector('.thinking-text').style.display).toBe('none');
     expect(dom.window.document.querySelector('.thinking-collapsed').style.display).toBe('block');
     expect(dom.window.document.querySelector('.tool-execution').style.display).toBe('none');
+    // Mirror placeholder appears when tools are hidden so a tool-only assistant
+    // message keeps a visible marker instead of just a stranded timestamp.
+    expect(dom.window.document.querySelector('.tool-call-collapsed').style.display).toBe('block');
     expect(dom.window.document.querySelector('.tool-output').classList.contains('expanded')).toBe(
       true,
     );
@@ -151,6 +154,19 @@ describe('toggle state helpers', () => {
         .querySelector('[data-action="toggle-tool-output"]')
         .getAttribute('aria-pressed'),
     ).toBe('true');
+  });
+
+  it('hides the tool-call placeholder when tools are visible', () => {
+    const dom = new JSDOM(
+      `<div><div class="tool-call-collapsed"></div><div class="tool-execution"></div></div>`,
+    );
+    applyToggleStateToNode(dom.window.document, {
+      thinkingExpanded: true,
+      toolsVisible: true,
+      toolOutputsExpanded: false,
+    });
+    expect(dom.window.document.querySelector('.tool-call-collapsed').style.display).toBe('none');
+    expect(dom.window.document.querySelector('.tool-execution').style.display).toBe('');
   });
 
   it('controller persists toggles under its session id and other sessions are unaffected', () => {

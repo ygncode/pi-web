@@ -394,6 +394,35 @@ test.describe("settings page", () => {
         page.locator('[data-action="toggle-tool-output"]'),
       ).toHaveAttribute("aria-pressed", "false");
     });
+
+    // Hiding tools must leave a visible marker next to each tool call, not a
+    // stranded timestamp. Mirrors the .thinking-collapsed "Thinking ..."
+    // placeholder pattern.
+    test("hiding tools surfaces the 'Tool: <name> ...' collapsed marker", async ({
+      page,
+    }) => {
+      await page.goto("/");
+      await page
+        .locator(".session-card", { hasText: "add deepseek-v4-pro" })
+        .click();
+      await expect(page).toHaveURL(/\/session\?id=/);
+
+      // Default state: tools visible, placeholder hidden.
+      await expect(
+        page.locator('[data-action="toggle-tools"]'),
+      ).toHaveAttribute("aria-pressed", "true");
+      const placeholders = page.locator(".tool-call-collapsed");
+      await expect(placeholders.first()).toBeAttached();
+      await expect(placeholders.first()).toBeHidden();
+      await expect(page.locator(".tool-execution").first()).toBeVisible();
+
+      // Toggle tools off and assert the swap — placeholder becomes visible,
+      // tool-execution is hidden.
+      await page.locator('[data-action="toggle-tools"]').click();
+      await expect(placeholders.first()).toBeVisible();
+      await expect(placeholders.first()).toContainText(/^Tool: \S+ \.\.\./);
+      await expect(page.locator(".tool-execution").first()).toBeHidden();
+    });
   });
 
   // Mobile drill-in: at narrow widths the sidebar fills the viewport and the

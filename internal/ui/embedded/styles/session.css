@@ -2207,6 +2207,19 @@
       border-radius: 4px;
     }
 
+    /* Placeholder shown in place of a tool call when the "show tool calls"
+       toggle is off — mirrors .thinking-collapsed so users still see a marker
+       instead of a stranded timestamp. */
+    .tool-call-collapsed {
+      display: none;
+      padding: var(--line-height);
+      color: var(--thinkingText);
+      font-style: italic;
+    }
+    .message-timestamp + .tool-call-collapsed {
+      padding-top: 0;
+    }
+
     .tool-execution + .tool-execution {
       margin-top: var(--line-height);
     }
