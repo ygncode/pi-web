@@ -120,9 +120,14 @@
 </script>
 
 {#if loading}
-  {#if showLoading}<div class="session-loading">{t('session.loading')}</div>{/if}
+  {#if showLoading}
+    <div class="session-loading" role="status" aria-live="polite">
+      <span class="session-loading-spinner" aria-hidden="true"></span>
+      <span class="session-loading-text">{t('session.loading')}</span>
+    </div>
+  {/if}
 {:else if error}
-  <div class="session-loading">
+  <div class="session-loading session-loading--error">
     <h1>{error}</h1>
     <p><a href="/">{t('session.backToSessions')}</a></p>
   </div>

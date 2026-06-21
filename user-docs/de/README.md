@@ -86,9 +86,9 @@ Du willst mehr als nur Coden? Verwandle es in einen dedizierten [persönlichen A
 
 ## Screenshots
 
-| Desktop — dunkler Modus | Desktop — heller Modus | Mobile PWA |
-|---|---|---|
-| ![Desktop dunkel](../assets/desktop-dark-mode.png) | ![Desktop weiß](../assets/desktop-white-mode.png) | ![Mobile PWA](../assets/mobile-pwa.png) |
+| Desktop | Mobile PWA |
+|---|---|
+| ![Desktop](../assets/pi-web-desktop-screenshot.png) | ![Mobile PWA](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

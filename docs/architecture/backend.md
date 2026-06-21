@@ -56,6 +56,7 @@ pi-web/
 │   │   ├── chat.go             # Chat, set-model, set-thinking, worker-status, commands handlers
 │   │   ├── new_session.go      # New-session creation logic
 │   │   ├── git.go              # /api/git/info, /api/git/rename-branch handlers
+│   │   ├── diff.go             # /api/git/diff, /api/diff/reviews handlers
 │   │   ├── files.go            # /api/files handler + per-cwd file-walk cache
 │   │   ├── settings.go         # Server-backed user settings (/api/settings) + SPA shell helpers
 │   │   ├── btw.go              # btw scratch-chat registry: get/new + legacy migration (SQLite)
@@ -66,7 +67,9 @@ pi-web/
 │   │   ├── annotations.go      # Per-session review annotations: list/create/delete + SSE snapshot (SQLite)
 │   │   ├── projects.go         # Project visibility prefs: list/toggle/register + index filtering (SQLite)
 │   │   ├── sound.go            # /api/sounds + /sounds/ asset serving
-│   │   ├── push.go             # PushManager: VAPID, subscribe/unsubscribe, NotifyDone
+│   │   ├── push.go             # PushManager: VAPID, subscribe/unsubscribe, NotifyDone, NotifyScheduleDone
+│   │   ├── scheduler.go        # Cron tick loop + fireSchedule runner (creates a session, sends instructions)
+│   │   ├── schedules_api.go    # /api/schedules + /api/schedule(/run|/runs) handlers
 │   │   ├── update.go           # /api/version, check-update, update, restart handlers
 │   │   ├── events.go           # SSE endpoint (/events)
 │   │   ├── sse_format.go       # SSE event framing helper
@@ -80,6 +83,8 @@ pi-web/
 │   │   ├── title.go            # ReadTitleInputs: extract auto-title source text from a session
 │   │   ├── cache.go            # Modtime-aware session cache
 │   │   └── lookup.go           # Resolve session by ID
+│   ├── schedules/
+│   │   └── schedule.go         # Schedule/Run structs, SQLite store, cron next-fire (robfig/cron)
 │   ├── share/
 │   │   └── share.go            # GitHub Gist creation logic
 │   └── workers/
@@ -266,6 +271,8 @@ type piRPCWorker struct {
 | `/api/files` | GET | `handleApiFiles` | Bounded file listing for @mention autocomplete |
 | `/api/git/info` | GET | `handleGitInfo` | Branch / dirty / PR-URL info for a project |
 | `/api/git/rename-branch` | POST | `handleGitRenameBranch` | Rename the current git branch |
+| `/api/git/diff` | GET | `handleGitDiff` | Uncommitted working-tree diff (tracked + untracked) for the session cwd |
+| `/api/diff/reviews` | GET/POST/DELETE | `handleReviewComments` | Per-session diff review comments for the diff modal (SQLite) |
 | `/api/scratchpad` | GET/POST | `handleGetScratchpad` / `handleSaveScratchpad` | Per-project scratchpad (SQLite) |
 | `/api/annotations` | GET/POST/DELETE | `handleAnnotations` | Per-session review annotations; mutations broadcast an `annotations` SSE snapshot (SQLite) |
 | `/api/settings` | GET/POST | `handleGetSettings` / `handleSaveSettings` | Server-backed user settings (SQLite) |
@@ -278,6 +285,10 @@ type piRPCWorker struct {
 | `/api/push/vapid` | GET | `handleVapid` | VAPID public key (when push enabled) |
 | `/api/push/subscribe` | POST | `handleSubscribe` | Register a web-push subscription |
 | `/api/push/unsubscribe` | POST | `handleUnsubscribe` | Remove a web-push subscription |
+| `/api/schedules` | GET/POST | `handleApiSchedules` | List schedules (with `nextRunAt`) / create (SQLite) |
+| `/api/schedule` | GET/POST/PUT/DELETE | `handleApiSchedule` | Read/update/delete one schedule (`?id=`) |
+| `/api/schedule/run` | POST | `handleApiScheduleRun` | Fire a schedule now (`?id=`); returns created `sessionId` |
+| `/api/schedule/runs` | GET | `handleApiScheduleRuns` | Run log for a schedule (`?id=`) |
 | `/api/version` | GET | `handleVersion` | Current/latest version (when updater set) |
 | `/api/check-update` | POST | `handleCheckUpdate` | Force a version check |
 | `/api/update` | POST | `handleUpdate` | Install the latest pi-web |

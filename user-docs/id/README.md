@@ -86,9 +86,9 @@ Ingin lebih dari sekadar coding? Ubah menjadi [asisten pribadi](personal-assista
 
 ## Tangkapan Layar
 
-| Desktop — mode gelap | Desktop — mode terang | PWA Seluler |
-|---|---|---|
-| ![Desktop gelap](../assets/desktop-dark-mode.png) | ![Desktop putih](../assets/desktop-white-mode.png) | ![PWA Seluler](../assets/mobile-pwa.png) |
+| Desktop | PWA Seluler |
+|---|---|
+| ![Desktop](../assets/pi-web-desktop-screenshot.png) | ![PWA Seluler](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

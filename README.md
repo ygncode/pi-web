@@ -2,9 +2,9 @@
 
 <div align="center">
 
-[![GitHub stars](https://img.shields.io/github/stars/ygncode/pi-web?style=flat&logo=github&label=stars&cacheSeconds=21600)](https://github.com/ygncode/pi-web/stargazers)
-[![npm downloads](https://img.shields.io/npm/dt/@ygncode/pi-web?label=downloads&color=2ea043)](https://www.npmjs.com/package/@ygncode/pi-web)
-[![license MIT](https://img.shields.io/npm/l/@ygncode/pi-web?label=license&color=0a7bbb)](LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/ygncode/pi-web?style=flat&logo=github&label=stars&cacheSeconds=86400)](https://github.com/ygncode/pi-web/stargazers)
+[![npm downloads](https://img.shields.io/npm/dw/@ygncode/pi-web?label=downloads/wk&color=2ea043&cacheSeconds=86400)](https://www.npmjs.com/package/@ygncode/pi-web)
+[![license MIT](https://img.shields.io/npm/l/@ygncode/pi-web?label=license&color=0a7bbb&cacheSeconds=86400)](LICENSE)
 [![Telegram](https://img.shields.io/badge/Telegram-Join-26A5E4?logo=telegram&logoColor=white)](https://t.me/+NJvFOTTa0wNjNTc9)
 ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-555)
 
@@ -12,11 +12,15 @@
 
 </div>
 
+<div align="center">
+
 Drive your [pi](https://pi.dev) coding agent from your phone, tablet, or laptop — anywhere on your network, or remotely over Tailscale.
 
 It's a full PWA, so you can install it and use it like a native app on any device. Think of it as your own personal AI workspace — like Claude's Cowork, but with different models — chat across models, code from your phone, or turn it into a [personal assistant](user-docs/en/personal-assistant.md) that lives on your machine.
 
 Make it yours: switch themes and fonts, and use it in your own language — pi-web ships with multiple languages and you can add your own. More features are on the way, but it won't get bloated: anything you don't need can be turned off in settings.
+
+</div>
 
 > [!WARNING]
 > pi-web is currently in **beta**. Things will change and break!
@@ -27,14 +31,11 @@ Make it yours: switch themes and fonts, and use it in your own language — pi-w
 ## Screenshots
 
 <div align="center">
-  <img src="user-docs/assets/desktop-dark-mode.png" alt="Desktop — dark mode" width="90%" /><br />
-  <em>Desktop — dark mode</em>
+  <img src="user-docs/assets/pi-web-desktop-screenshot.png" alt="Desktop" width="90%" /><br />
+  <em>Desktop</em>
   <br /><br />
-  <img src="user-docs/assets/desktop-white-mode.png" alt="Desktop — light mode" width="90%" /><br />
-  <em>Desktop — light mode</em>
-  <br /><br />
-  <img src="user-docs/assets/mobile-pwa.png" alt="Mobile PWA" width="90%" /><br />
-  <em>Mobile PWA</em>
+  <img src="user-docs/assets/pi-web-mobile-screenshot.png" alt="Mobile" width="90%" /><br />
+  <em>Mobile</em>
 </div>
 
 ## How It Fits Together

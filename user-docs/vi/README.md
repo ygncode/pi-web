@@ -86,9 +86,9 @@ Muốn nhiều hơn là lập trình? Biến nó thành một [trợ lý cá nh�
 
 ## Ảnh chụp màn hình
 
-| Desktop — chế độ tối | Desktop — chế độ sáng | PWA trên điện thoại |
-|---|---|---|
-| ![Desktop chế độ tối](../assets/desktop-dark-mode.png) | ![Desktop chế độ sáng](../assets/desktop-white-mode.png) | ![PWA trên điện thoại](../assets/mobile-pwa.png) |
+| Desktop | PWA trên điện thoại |
+|---|---|
+| ![Desktop](../assets/pi-web-desktop-screenshot.png) | ![PWA trên điện thoại](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

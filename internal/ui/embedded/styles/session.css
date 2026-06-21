@@ -406,6 +406,44 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { animation: spin 1s linear infinite; }
 
+    .session-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      min-height: var(--viewport-height, 100vh);
+      padding: 24px;
+      text-align: center;
+      color: var(--text-soft);
+      animation: session-loading-fade 0.25s ease both;
+    }
+    @keyframes session-loading-fade { from { opacity: 0; } to { opacity: 1; } }
+    .session-loading-spinner {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid var(--dim);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    .session-loading-text {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.01em;
+    }
+    .session-loading--error h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .session-loading--error p { margin-top: 4px; }
+    .session-loading--error a { color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) {
+      .session-loading { animation: none; }
+      .session-loading-spinner { animation-duration: 1.6s; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       ::view-transition-old(root),
       ::view-transition-new(root) {
@@ -1583,6 +1621,20 @@
       color: var(--body-bg);
     }
 
+    /* Set on the "Tool output" button by syncToggleButtons when tool calls are
+       hidden — its setting has no visible effect until tools are visible
+       again. opacity alone collapsed the 10px text into the surface in dark
+       themes; the explicit text-soft + dimmed background keep it readable
+       across every theme while still reading as inactive. */
+    .header-toggle-btn:disabled,
+    .header-toggle-btn:disabled:hover {
+      cursor: not-allowed;
+      color: var(--text-soft);
+      background: var(--container-bg);
+      border-color: var(--border);
+      opacity: 0.7;
+    }
+
     .model-search {
       display: block;
       width: calc(100% - 16px);
@@ -1715,8 +1767,16 @@
       gap: 4px;
       color: var(--text);
       text-decoration: none;
+      font: inherit;
       font-size: 12px;
       flex-shrink: 0;
+    }
+
+    button.session-header-back {
+      background: transparent;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
     }
 
     .session-header-tree-toggle[aria-pressed="false"] {
@@ -2197,6 +2257,19 @@
     .tool-execution {
       padding: var(--line-height);
       border-radius: 4px;
+    }
+
+    /* Placeholder shown in place of a tool call when the "show tool calls"
+       toggle is off — mirrors .thinking-collapsed so users still see a marker
+       instead of a stranded timestamp. */
+    .tool-call-collapsed {
+      display: none;
+      padding: var(--line-height);
+      color: var(--thinkingText);
+      font-style: italic;
+    }
+    .message-timestamp + .tool-call-collapsed {
+      padding-top: 0;
     }
 
     .tool-execution + .tool-execution {
@@ -4382,6 +4455,41 @@
       flex-shrink: 0;
       gap: 12px;
     }
+    /* On an installed PWA running with window-controls-overlay (macOS shows
+       the traffic lights at the top-left), the back button at padding-left
+       16px sits behind the OS controls and looks missing — and any clicks
+       inside the title-bar strip get swallowed by the OS as window-drag
+       attempts unless we mark interactive children no-drag. Mirror the
+       drag/no-drag pattern from .session-header-bar. */
+    :root.wco .pi-sheet-header {
+      padding-left: calc(env(titlebar-area-x, 0px) + 18px);
+      padding-right: calc(100% - env(titlebar-area-x, 0px) - env(titlebar-area-width, 100%) + 18px);
+      -webkit-app-region: drag;
+      app-region: drag;
+    }
+    :root.wco .pi-sheet-header a,
+    :root.wco .pi-sheet-header button {
+      -webkit-app-region: no-drag;
+      app-region: no-drag;
+    }
+    /* Diff sheet packs Split/Unified, Collapse all, and Submit review into
+       the header on desktop — never let the back button get crushed to 0 by
+       a slightly narrow window (PWA, split screen). */
+    .pi-sheet-panel.diff-sheet-panel .pi-sheet-back {
+      flex-shrink: 0;
+    }
+    /* Optional inline controls rendered between back/close inside the sheet
+       header (FullScreenSheet's `headerExtra` snippet). Takes the spare
+       middle space so its children get pushed to the right of the back
+       button without forcing the back button to wrap. */
+    .pi-sheet-header-extra {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      min-width: 0;
+      justify-content: flex-end;
+      gap: 12px;
+    }
 
     .pi-sheet-back {
       display: inline-flex;
@@ -4480,6 +4588,115 @@
 
     .pi-sheet-panel.pi-sheet-mobile .pi-sheet-close-x {
       display: none;
+    }
+
+    /* Diff review modal — full-page sheet hosting the @pierre/diffs viewer.
+       Overrides the default centered-dialog sheet sizing. */
+    .pi-sheet-panel.diff-sheet-panel {
+      max-width: none;
+      width: 100vw;
+      height: 100vh;
+      max-height: 100vh;
+      border-radius: 0;
+      border: none;
+      background: var(--container-bg);
+    }
+    .pi-sheet-body.diff-sheet-body {
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: var(--container-bg);
+    }
+    /* On desktop the diff toolbar lives inside the sheet header (via
+       FullScreenSheet's headerExtra snippet), so it inherits the header's
+       padding and border. On mobile it's rendered as a second row inside the
+       sheet body — the mobile override below re-adds the row chrome. */
+    .diff-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .pi-sheet-panel.pi-sheet-mobile .diff-sheet-body > .diff-toolbar {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--dim);
+      background: var(--container-bg);
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .diff-toggle {
+      display: inline-flex;
+      border: 1px solid var(--dim);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .diff-toggle-btn {
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+      color: var(--text-soft);
+      padding: 4px 12px;
+      font-size: 13px;
+    }
+    .diff-toggle-btn.active {
+      background: var(--accent);
+      color: var(--body-bg);
+    }
+    .diff-submit {
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid var(--accent);
+      background: var(--accent);
+      color: var(--body-bg);
+      padding: 5px 14px;
+      font-size: 13px;
+    }
+    .diff-submit:disabled {
+      cursor: default;
+      opacity: 0.5;
+      background: transparent;
+      color: var(--muted);
+      border-color: var(--dim);
+    }
+    /* Secondary header action (Collapse all / Expand all). Sits between the
+       Split/Unified toggle and the primary Submit-review button. Without an
+       explicit rule the <button> falls back to the OS button chrome (light
+       grey background, black text) and looks broken in the dark theme. */
+    .diff-toolbar-btn {
+      cursor: pointer;
+      border-radius: 6px;
+      border: 1px solid var(--dim);
+      background: transparent;
+      color: var(--text-soft);
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+    .diff-toolbar-btn:hover {
+      background: var(--hover);
+      color: var(--text);
+    }
+    .diff-toolbar-btn:disabled {
+      cursor: default;
+      opacity: 0.5;
+    }
+    .diff-status {
+      padding: 32px 8px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .diff-status-error {
+      color: var(--error, #cc6666);
+    }
+    .diff-codeview {
+      flex: 1;
+      min-height: 0;
+      /* @pierre/diffs CodeView treats this node as its scroll viewport
+         (reads root.scrollTop, listens for scroll on root), so it must
+         scroll — overflow: hidden traps the diff at the visible region. */
+      overflow: auto;
+      background: var(--body-bg);
     }
 
     /* Model Usage — card-based, premium density (works inside any sheet) */

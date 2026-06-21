@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { icon, PanelLeft, Plus, SquarePen, MoreHorizontal } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
-  import { navigate } from '../../shared/navigation.js';
+  import { navigate, handleNavClick } from '../../shared/navigation.js';
   import { showToast } from '../../shared/toast.js';
   import { copyToClipboard } from '../../shared/clipboard.js';
   import { sessionTitle, setSessionTitle } from '../../session/session-title.svelte.js';
@@ -95,7 +95,9 @@
 
 <div class="session-header-bar">
   <div class="session-header-left">
-    <a href="/" class="session-header-back"><span>←</span> {t('session.back')}</a>
+    <a href="/" class="session-header-back" onclick={(event) => handleNavClick(event, '/')}
+      ><span>←</span> {t('session.back')}</a
+    >
     <button
       id="tree-toggle"
       class="session-header-actions session-header-tree-toggle"

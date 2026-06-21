@@ -86,9 +86,9 @@ pi-web គឺជា PWA (កម្មវិធីបណ្ដាញជឿនល�
 
 ## រូបថតអេក្រង់
 
-| កុំព្យូទ័រលើតុ — របៀបងងឹត | កុំព្យូទ័រលើតុ — របៀបពន្លឺ | PWA ទូរស័ព្ទ |
-|---|---|---|
-| ![កុំព្យូទ័រលើតុងងឹត](../assets/desktop-dark-mode.png) | ![កុំព្យូទ័រលើតុពណ៌ស](../assets/desktop-white-mode.png) | ![PWA ទូរស័ព្ទ](../assets/mobile-pwa.png) |
+| កុំព្យូទ័រលើតុ | PWA ទូរស័ព្ទ |
+|---|---|
+| ![កុំព្យូទ័រលើតុ](../assets/pi-web-desktop-screenshot.png) | ![PWA ទូរស័ព្ទ](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

@@ -1,9 +1,13 @@
 package git
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
+	"time"
 )
 
 func initTestRepo(t *testing.T) string {
@@ -75,6 +79,91 @@ func TestDescribeNonRepo(t *testing.T) {
 	}
 	if info.IsRepo {
 		t.Fatalf("expected IsRepo false for non-repo dir")
+	}
+}
+
+func TestWorkingTreeDiff(t *testing.T) {
+	dir := initTestRepo(t)
+	mustGit := func(args ...string) {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v (%s)", args, err, out)
+		}
+	}
+	write := func(name, content string) {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0644); err != nil {
+			t.Fatalf("write %s: %v", name, err)
+		}
+	}
+
+	// Clean tree: empty diff.
+	if out, err := WorkingTreeDiff(dir); err != nil || out != "" {
+		t.Fatalf("clean tree: got %q, %v; want empty", out, err)
+	}
+
+	// Tracked modification.
+	write("tracked.txt", "line1\nline2\n")
+	mustGit("add", "tracked.txt")
+	mustGit("commit", "-m", "add tracked")
+	write("tracked.txt", "line1\nCHANGED\n")
+	// Untracked new file.
+	write("untracked.txt", "brand new\n")
+
+	out, err := WorkingTreeDiff(dir)
+	if err != nil {
+		t.Fatalf("WorkingTreeDiff: %v", err)
+	}
+	for _, want := range []string{
+		"b/tracked.txt", "-line2", "+CHANGED",
+		"b/untracked.txt", "new file mode", "+brand new",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("diff missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestWorkingTreeDiffNonRepo(t *testing.T) {
+	if _, err := WorkingTreeDiff(filepath.Join(t.TempDir(), "nope")); err != ErrNotRepo {
+		t.Fatalf("got %v, want ErrNotRepo", err)
+	}
+}
+
+func TestWorkingTreeDiffBinaryUntracked(t *testing.T) {
+	dir := initTestRepo(t)
+	if err := os.WriteFile(filepath.Join(dir, "blob.bin"), []byte{0x00, 0x01, 0x02, 0x00}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	out, err := WorkingTreeDiff(dir)
+	if err != nil {
+		t.Fatalf("WorkingTreeDiff: %v", err)
+	}
+	if !strings.Contains(out, "b/blob.bin") || !strings.Contains(out, "Binary files") {
+		t.Fatalf("expected a binary marker for blob.bin:\n%s", out)
+	}
+}
+
+// Many untracked files must stay bounded and fast (the previous implementation
+// spawned one `git` process per untracked file and stalled on large trees).
+func TestWorkingTreeDiffBoundedOnManyUntracked(t *testing.T) {
+	dir := initTestRepo(t)
+	big := strings.Repeat("a line of content that is reasonably long\n", 400) // ~17 KiB each
+	for i := 0; i < 1000; i++ {
+		if err := os.WriteFile(filepath.Join(dir, fmt.Sprintf("u%04d.txt", i)), []byte(big), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	start := time.Now()
+	out, err := WorkingTreeDiff(dir)
+	if err != nil {
+		t.Fatalf("WorkingTreeDiff: %v", err)
+	}
+	if elapsed := time.Since(start); elapsed > 5*time.Second {
+		t.Fatalf("WorkingTreeDiff took %v on 1000 untracked files; expected it to be fast", elapsed)
+	}
+	if len(out) > maxDiffBytes+(64<<10) {
+		t.Fatalf("output %d bytes exceeds the cap %d", len(out), maxDiffBytes)
 	}
 }
 

@@ -86,9 +86,9 @@ pi-web เป็น PWA (Progressive Web App) คุณจึงสามาร�
 
 ## ภาพหน้าจอ
 
-| เดสก์ท็อป — โหมดมืด | เดสก์ท็อป — โหมดสว่าง | PWA บนมือถือ |
-|---|---|---|
-| ![เดสก์ท็อปโหมดมืด](../assets/desktop-dark-mode.png) | ![เดสก์ท็อปโหมดสว่าง](../assets/desktop-white-mode.png) | ![PWA บนมือถือ](../assets/mobile-pwa.png) |
+| เดสก์ท็อป | PWA บนมือถือ |
+|---|---|
+| ![เดสก์ท็อป](../assets/pi-web-desktop-screenshot.png) | ![PWA บนมือถือ](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

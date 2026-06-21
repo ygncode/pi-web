@@ -13,3 +13,4 @@ This directory documents the key runtime sequences in pi-web.
 | [mention-autocomplete.md](./mention-autocomplete.md) | `@`-triggered file/folder path autocomplete in the chat composer |
 | [btw.md](./btw.md) | Throwaway "btw" floating scratch-chats attached to a session page |
 | [share.md](./share.md) | Exporting a session to a private GitHub Gist |
+| [schedules.md](./schedules.md) | Cron/preset schedules that auto-create pi sessions and push on completion |

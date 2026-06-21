@@ -86,9 +86,9 @@ pi-web は PWA（プログレッシブ Web アプリ）なので、デスクト�
 
 ## スクリーンショット
 
-| デスクトップ — ダークモード | デスクトップ — ライトモード | モバイル PWA |
-|---|---|---|
-| ![デスクトップ ダーク](../assets/desktop-dark-mode.png) | ![デスクトップ ホワイト](../assets/desktop-white-mode.png) | ![モバイル PWA](../assets/mobile-pwa.png) |
+| デスクトップ | モバイル PWA |
+|---|---|
+| ![デスクトップ](../assets/pi-web-desktop-screenshot.png) | ![モバイル PWA](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

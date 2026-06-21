@@ -2,9 +2,9 @@
 
 <div align="center">
 
-[![GitHub stars](https://img.shields.io/github/stars/ygncode/pi-web?style=flat&logo=github&label=stars&cacheSeconds=21600)](https://github.com/ygncode/pi-web/stargazers)
-[![npm downloads](https://img.shields.io/npm/dt/@ygncode/pi-web?label=downloads&color=2ea043)](https://www.npmjs.com/package/@ygncode/pi-web)
-[![license MIT](https://img.shields.io/npm/l/@ygncode/pi-web?label=license&color=0a7bbb)](../../LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/ygncode/pi-web?style=flat&logo=github&label=stars&cacheSeconds=86400)](https://github.com/ygncode/pi-web/stargazers)
+[![npm downloads](https://img.shields.io/npm/dw/@ygncode/pi-web?label=downloads/wk&color=2ea043&cacheSeconds=86400)](https://www.npmjs.com/package/@ygncode/pi-web)
+[![license MIT](https://img.shields.io/npm/l/@ygncode/pi-web?label=license&color=0a7bbb&cacheSeconds=86400)](../../LICENSE)
 [![Telegram](https://img.shields.io/badge/Telegram-Join-26A5E4?logo=telegram&logoColor=white)](https://t.me/+NJvFOTTa0wNjNTc9)
 ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-555)
 
@@ -12,34 +12,33 @@
 
 </div>
 
----
+<div align="center">
 
-သင့် [pi](https://pi.dev) coding agent ကို သင့်ဖုန်း၊ တက်ဘလက် သို့မဟုတ် လက်ပ်တော့မှ မောင်းနှင်ပါ — သင့်ကွန်ရက်အတွင်း မည်သည့်နေရာမှမဆို၊ သို့မဟုတ် Tailscale မှတစ်ဆင့် အဝေးမှ။
+သင့် [pi](https://pi.dev) coding agent ကို သင့်ဖုန်း၊ တက်ဘလက် သို့မဟုတ် လက်ပ်တော့မှ မောင်းနှင်ပါ — သင့်ကွန်ရက်ပေါ်ရှိ မည်သည့်နေရာမှမဆို သို့မဟုတ် Tailscale မှတစ်ဆင့် အဝေးမှ။
 
-၎င်းသည် full PWA ဖြစ်သောကြောင့် မည်သည့်စက်ပစ္စည်းတွင်မဆို install လုပ်၍ native app တစ်ခုကဲ့သို့ အသုံးပြုနိုင်သည်။ ၎င်းကို သင့်ကိုယ်ပိုင် AI workspace အဖြစ် တွေးကြည့်ပါ — Claude ၏ Cowork ကဲ့သို့သော်လည်း မတူညီသော model များဖြင့် — model များကြားတွင် chat လုပ်ခြင်း၊ သင့်ဖုန်းမှ code ရေးခြင်း၊ သို့မဟုတ် သင့်စက်ပေါ်တွင် ရှင်သန်နေသည့် [personal assistant](../my/personal-assistant.md) အဖြစ် ပြောင်းလဲအသုံးပြုပါ။
+၎င်းသည် PWA အပြည့်အစုံဖြစ်သောကြောင့် မည်သည့်စက်ပစ္စည်းတွင်မဆို native app တစ်ခုကဲ့သို့ ထည့်သွင်းအသုံးပြုနိုင်ပါသည်။ ၎င်းကို သင့်ကိုယ်ပိုင် AI workspace အဖြစ် မြင်ပါ — Claude ၏ Cowork ကဲ့သို့သော်လည်း မတူညီသော model များဖြင့် — model များကြားတွင် chat လုပ်ခြင်း၊ သင့်ဖုန်းမှ code ရေးခြင်း၊ သို့မဟုတ် သင့်စက်ပေါ်တွင် တည်ရှိသော [personal assistant](user-docs/en/personal-assistant.md) အဖြစ် ပြောင်းလဲခြင်း။
 
-သင့်စိတ်ကြိုက်ပြုလုပ်ပါ- theme များနှင့် font များ ပြောင်းပါ၊ သင့်ကိုယ်ပိုင်ဘာသာစကားဖြင့် အသုံးပြုပါ — pi-web တွင် ဘာသာစကားများစွာ ပါဝင်ပြီး သင့်ကိုယ်ပိုင်ဘာသာစကားကိုလည်း ထည့်သွင်းနိုင်သည်။ နောက်ထပ် features များ လာနေဆဲဖြစ်သော်လည်း bloated ဖြစ်လာမည်မဟုတ်ပါ- သင်မလိုအပ်သည့်အရာများကို settings တွင် ပိတ်ထားနိုင်သည်။
+သင့်ကိုယ်ပိုင်ပြုလုပ်ပါ- theme များနှင့် font များကို ပြောင်းလဲခြင်း၊ သင့်ကိုယ်ပိုင်ဘာသာစကားဖြင့် အသုံးပြုခြင်း — pi-web သည် ဘာသာစကားမျိုးစုံဖြင့် ပါရှိပြီး သင့်ကိုယ်ပိုင်ကိုလည်း ထည့်သွင်းနိုင်ပါသည်။ နောက်ထပ် feature များ လာနေဆဲဖြစ်သော်လည်း bloated ဖြစ်မည်မဟုတ်ပါ- သင်မလိုအပ်သောအရာမှန်သမျှကို settings တွင် ပိတ်ထားနိုင်ပါသည်။
+
+</div>
 
 > [!WARNING]
-> pi-web သည် လက်ရှိတွင် **beta** အဆင့်တွင်ရှိသည်။ အရာများ ပြောင်းလဲမည်၊ ပျက်စီးနိုင်သည်။
+> pi-web သည် လက်ရှိတွင် **beta** အဆင့်ဖြစ်သည်။ အရာများ ပြောင်းလဲပြီး ပျက်စီးနိုင်ပါသည်။
 
 > [!TIP]
-> အသစ်ရောက်ရှိလာပါသလား။ **[အသုံးပြုသူလမ်းညွှန်ကို ဖတ်ရှုပါ →](../my/README.md)** features များ၊ install ပြုလုပ်နည်းအဆင့်များနှင့် အကြံပြုချက်များ အပြည့်အစုံအတွက်။
+> အသစ်ဖြစ်ပါသလား။ feature များ၏ အပြည့်အစုံလမ်းညွှန်၊ ထည့်သွင်းနည်းအဆင့်ဆင့်နှင့် အကြံပြုချက်များအတွက် **[အသုံးပြုသူလမ်းညွှန်ကို ဖတ်ပါ →](user-docs/en/README.md)** ([အခြားဘာသာစကားများ →](../README.md))
 
 ## Screenshots
 
 <div align="center">
-  <img src="../assets/desktop-dark-mode.png" alt="Desktop — dark mode" width="90%" /><br />
-  <em>Desktop — dark mode</em>
+  <img src="../assets/pi-web-desktop-screenshot.png" alt="Desktop" width="90%" /><br />
+  <em>Desktop</em>
   <br /><br />
-  <img src="../assets/desktop-white-mode.png" alt="Desktop — light mode" width="90%" /><br />
-  <em>Desktop — light mode</em>
-  <br /><br />
-  <img src="../assets/mobile-pwa.png" alt="Mobile PWA" width="90%" /><br />
-  <em>Mobile PWA</em>
+  <img src="../assets/pi-web-mobile-screenshot.png" alt="မိုဘိုင်း PWA" width="90%" /><br />
+  <em>မိုဘိုင်း PWA</em>
 </div>
 
-## ၎င်းတို့ မည်သို့ ချိတ်ဆက်အလုပ်လုပ်ပုံ
+## မည်သို့ချိတ်ဆက်အလုပ်လုပ်ပုံ
 
 ```
  pi (terminal)                 Browser (phone / tablet / laptop)
@@ -56,62 +55,62 @@
 ```
 
 - **pi** သည် အလုပ်လုပ်နေစဉ် conversation JSONL ကို `~/.pi/agent/sessions/` သို့ ရေးသားသည်။
-- **pi-web** သည် ထိုဖိုင်များကို ဖတ်ရှုကာ browser တွင် render လုပ်ပြီး SSE မှတစ်ဆင့် live update များ stream လုပ်သည့် Go server တစ်ခုဖြစ်သည်။
-- **pi --mode rpc** worker များသည် browser မှစတင်သော chat ကို ကိုင်တွယ်သည် — session တစ်ခုလျှင် တစ်ခု၊ ၁၀ မိနစ် idle ပြီးနောက် ရပ်ဆိုင်းခံရသည်။
-- **fsnotify** သည် sessions directory ကို စောင့်ကြည့်နေသောကြောင့် output အသစ်ထွက်ပြီး မီလီစက္ကန့်အတွင်း browser က reload လုပ်သည်။
-- **Tailscale Serve** သည် localhost server ကို သင့် tailnet ပေါ်တွင် HTTPS endpoint အဖြစ် ထုတ်ဝေပေးသည်။
+- **pi-web** သည် ထိုဖိုင်များကို ဖတ်ရှုကာ browser တွင် render လုပ်ပြီး SSE မှတစ်ဆင့် live update များ stream လုပ်ပေးသည့် Go server တစ်ခုဖြစ်သည်။
+- **pi --mode rpc** worker များသည် browser မှစတင်သော chat ကို ကိုင်တွယ်သည် — session တစ်ခုလျှင် တစ်ခု၊ ၁၀ မိနစ် idle ပြီးနောက် ဖယ်ရှားခံရသည်။
+- **fsnotify** သည် sessions directory ကို စောင့်ကြည့်သောကြောင့် output အသစ်ရောက်ပြီး မီလီစက္ကန့်အတွင်း browser က reload လုပ်သည်။
+- **Tailscale Serve** သည် localhost server ကို သင့် tailnet ပေါ်တွင် HTTPS endpoint အဖြစ် ထုတ်ပြန်ပေးသည်။
 
-## Install
+## ထည့်သွင်းနည်း
 
 ```bash
 pi install npm:@ygncode/pi-web@beta
 ```
 
-ဒါပါပဲ — ၎င်းသည် သင့်လျော်သော binary ကို download လုပ်ကာ auto‑start ကို ပြင်ဆင်ပေးပြီး `/web`, `/pi-web`, `/remote`, နှင့် `/refresh` commands များကို register လုပ်ပေးသည်။
+ဒါပါပဲ — ၎င်းသည် သင့်လျော်သော binary ကို download လုပ်ကာ auto‑start ပြင်ဆင်သတ်မှတ်ပြီး `/web`၊ `/pi-web`၊ `/remote` နှင့် `/refresh` command များကို register လုပ်ပေးပါသည်။
 
-Install လုပ်ပြီးပါက သင့် browser တွင် `http://127.0.0.1:31415` ကိုဖွင့်ပါ။ pi မှ `/web` ကိုသုံး၍ လက်ရှိ session ကို သင့် browser တွင် ချက်ချင်းဖွင့်ပါ။ သင့်စက်ပေါ်တွင် Tailscale လည်ပတ်နေပါက pi-web သည် သင့် tailnet ပေါ်တွင် HTTPS endpoint တစ်ခုကို အလိုအလျောက် ထုတ်ဝေပေးသည် — pi မှ `/remote` ကိုသုံး၍ သင့် tailnet ပေါ်ရှိ မည်သည့်စက်အတွက်မဆို QR code နှင့် URL ကို ရယူပါ။
+ထည့်သွင်းပြီးသည်နှင့် သင့် browser တွင် `http://127.0.0.1:31415` ကိုဖွင့်ပါ။ pi မှ၊ လက်ရှိ session ကို သင့် browser တွင် ချက်ချင်းဖွင့်ရန် `/web` ကို အသုံးပြုပါ။ သင့်စက်တွင် Tailscale ကို run ထားပါက pi-web သည် သင့် tailnet ပေါ်တွင် HTTPS endpoint တစ်ခုကို အလိုအလျောက် ထုတ်ပြန်ပေးသည် — သင့် tailnet ပေါ်ရှိ မည်သည့်စက်အတွက်မဆို QR code နှင့် URL ရယူရန် pi မှ `/remote` ကို အသုံးပြုပါ။
 
-Manual install များ၊ binary download များ၊ သို့မဟုတ် source မှ build လုပ်ခြင်းအတွက် [user-docs/install.md](../my/install.md) တွင် ကြည့်ရှုပါ။
+Manual ထည့်သွင်းခြင်း၊ binary download များ သို့မဟုတ် source မှ build လုပ်ခြင်းအတွက် [user-docs/install.md](user-docs/en/install.md) ကို ကြည့်ပါ။
 
-## Pi Integration
+## Pi နှင့်ပေါင်းစပ်မှု
 
-`pi install npm:@ygncode/pi-web@beta` ပြီးနောက် သင်ရရှိမည့်အရာများ-
+`pi install npm:@ygncode/pi-web@beta` ပြီးနောက်၊ သင်ရရှိသည်များ-
 
-| Command | ၎င်းလုပ်ဆောင်ချက် |
+| Command | လုပ်ဆောင်ချက် |
 |---------|--------------|
-| `/web` | လက်ရှိ session ကို သင့် browser တွင်ဖွင့်ပါ (SSH-aware- browser ကိုကျော်၍ URL ကိုသာပြသသည်) |
-| `/pi-web` | Status၊ version၊ server ကို start/stop/restart၊ သို့မဟုတ် update ပြသပါ |
-| `/remote` | Tailscale မှတစ်ဆင့် အဝေးမှ အသုံးပြုရန်အတွက် QR code နှင့် URL ကိုပြသပါ |
-| `/refresh` | အဝေး browser များမှ ရေးသားထားသော message အသစ်များကို terminal session သို့ ပြန်လည်ဆွဲယူပါ |
+| `/web` | လက်ရှိ session ကို browser တွင်ဖွင့်ပါ (SSH-သိရှိနိုင်သည်- browser ကိုကျော်ပြီး URL သာပြသသည်) |
+| `/pi-web` | status၊ version ပြသခြင်း၊ server ကို start/stop/restart လုပ်ခြင်း သို့မဟုတ် update လုပ်ခြင်း |
+| `/remote` | Tailscale မှတစ်ဆင့် အဝေးမှအသုံးပြုရန် QR code နှင့် URL ကိုပြသခြင်း |
+| `/refresh` | အဝေးမှ browser များမှ ရေးသားထားသော မက်ဆေ့ချ်အသစ်များကို terminal session ထဲသို့ ပြန်လည်ဆွဲယူခြင်း |
 
-Session **auto-titling** ကို pi-web တွင် တည်ဆောက်ထားပြီး `/settings` စာမျက်နှာတွင် configure ပြုလုပ်နိုင်သည်။ ၎င်းသည် **default အားဖြင့် on** ဖြစ်ပြီး session များကို အလိုအလျောက် အမည်ပေးသည်။ သင်ရွေးချယ်နိုင်သည်များ-
+Session **auto-titling** ကို pi-web တွင်ယှဉ်တွဲပါရှိပြီး `/settings` စာမျက်နှာတွင် configure လုပ်နိုင်ပါသည်။ ၎င်းသည် **မူလအားဖြင့် ဖွင့်ထားသည်** ဖြစ်ပြီး session များကို အလိုအလျောက် အမည်ပေးပါသည်။ သင်ရွေးချယ်နိုင်သည်များ-
 
-- **အမည်ပေးချိန်** — session တစ်ခုလျှင် တစ်ကြိမ်၊ သို့မဟုတ် message အသစ်တိုင်းတွင် (default)။
-- **ခေါင်းစဉ်ပေး model** — default အားဖြင့် အခမဲ့၊ ချက်ချင်းရလဒ်ထွက်သည့် **built-in word heuristic (AI မဟုတ်)**၊ သို့မဟုတ် model တစ်ခုကို ရွေးချယ်ပါ (ဥပမာ သေးငယ်/မြန်ဆန်သော model) ပိုမိုထက်မြက်သော model ရေးသားသည့် ခေါင်းစဉ်များအတွက်။
+- **မည်သည့်အချိန်တွင် အမည်ပေးမည်နည်း** — session တစ်ခုလျှင် တစ်ကြိမ်၊ သို့မဟုတ် မက်ဆေ့ချ်အသစ်တိုင်းတွင် (မူလသတ်မှတ်ချက်)။
+- **ခေါင်းစဉ်ပေး model** — မူလအားဖြင့် အခမဲ့၊ ချက်ချင်းလက်ငင်း **built-in word heuristic (AI မပါ)** သို့မဟုတ် ပိုမိုထက်မြက်သော model ရေးသားသည့် ခေါင်းစဉ်များအတွက် model တစ်ခု (ဥပမာ သေးငယ်/မြန်ဆန်သော) ကို ရွေးချယ်ပါ။
 
-ထို package သည် pi-web binary ကို `~/.pi/agent/bin/pi-web` တွင် install လုပ်ပြီး login တွင် auto-start ကိုလည်း ပြင်ဆင်ပေးသည်။
+ထို package သည် pi-web binary ကို `~/.pi/agent/bin/pi-web` သို့လည်း ထည့်သွင်းပြီး login ဝင်သည့်အခါ auto-start ပြင်ဆင်ပေးပါသည်။
 
-## Login တွင် Auto-Start
+## Login ဝင်သည့်အခါ Auto-Start
 
-`pi install npm:@ygncode/pi-web@beta` command က ၎င်းကို အလိုအလျောက် ပြင်ဆင်ပေးသည်-
+`pi install npm:@ygncode/pi-web@beta` command က ၎င်းကို အလိုအလျောက် ပြင်ဆင်ပေးပါသည်-
 
-| OS | ယန္တရား |
+| OS | လုပ်ဆောင်ပုံ |
 |----|-----------|
 | macOS | `~/Library/LaunchAgents/com.pi-web.plist` တွင် launchd plist |
 | Linux | `~/.config/systemd/user/pi-web.service` တွင် systemd user service |
 
-အဝေးမှ အသုံးပြုရန်အတွက် token သတ်မှတ်ရန် `~/.config/pi-web/env` တွင် ဖန်တီးပါ-
+အဝေးမှအသုံးပြုခွင့်အတွက် token တစ်ခုသတ်မှတ်ရန် `~/.config/pi-web/env` ကို ဖန်တီးပါ-
 
 ```
 PI_WEB_TOKEN=your-token-here
 ```
 
-အသေးစိတ်အချက်အလက်များအတွက် (manual setup၊ custom ports၊ non-loopback binds) [user-docs/install.md](../my/install.md) တွင် ကြည့်ရှုပါ။
+အသေးစိတ်အတွက် (manual ပြင်ဆင်သတ်မှတ်ခြင်း၊ custom port များ၊ non-loopback bind များ) [user-docs/install.md](user-docs/en/install.md) ကို ကြည့်ပါ။
 
 ## Development
 
 ```bash
-make setup   # frontend deps များ install လုပ်ပြီး Go modules download လုပ်ပါ
+make setup   # frontend deps ထည့်သွင်းပြီး Go module များ download လုပ်ပါ
 make check   # frontend test/build + Go test/vet
-make build   # လိုအပ်ပါက setup လုပ်၊ frontend build လုပ်၊ ထို့နောက် ./pi-web build လုပ်ပါ
+make build   # လိုအပ်ပါက setup၊ frontend build၊ ထို့နောက် ./pi-web build
 ```

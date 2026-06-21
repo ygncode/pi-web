@@ -32,19 +32,24 @@ test.describe("i18n", () => {
     await setLocale(page, "es");
     await page.goto("/settings");
 
-    // Header title + first section title come straight from t().
-    await expect(page.locator(".settings-header h1")).toHaveText("Ajustes");
+    // Header title + first section title come straight from t(). Appearance is
+    // the default active pane, so its section title renders without clicking.
+    await expect(page.locator(".session-header-title")).toHaveText("Ajustes");
     await expect(page.locator(".settings-section-title").first()).toHaveText(
       "Apariencia",
     );
-    // A label deeper in the form proves the extracted section components
+    // The Language section only renders after its sidebar entry is clicked.
+    // A label deeper in that form proves the extracted section components
     // (not just the page shell) resolve through t().
+    await page.locator('[data-settings-nav="language"]').click();
     await expect(
       page.locator(".settings-row-label .name", { hasText: "Idioma" }).first(),
     ).toBeVisible();
   });
 
-  test("renders the sessions index in the selected locale", async ({ page }) => {
+  test("renders the sessions index in the selected locale", async ({
+    page,
+  }) => {
     await setLocale(page, "fr");
     await page.goto("/");
 
@@ -64,7 +69,7 @@ test.describe("i18n", () => {
     await setLocale(page, "vi");
     await page.goto("/settings");
 
-    await expect(page.locator(".settings-header h1")).toHaveText("Cài đặt");
+    await expect(page.locator(".session-header-title")).toHaveText("Cài đặt");
     await expect(page.locator(".settings-section-title").first()).toHaveText(
       "Giao diện",
     );
@@ -72,16 +77,27 @@ test.describe("i18n", () => {
 
   test("language picker lists every built-in locale", async ({ page }) => {
     await page.goto("/settings");
+    await page.locator('[data-settings-nav="language"]').click();
 
     // 6 original + 8 ASEAN built-ins must all be selectable.
     const codes = await page
       .locator("[data-setting-locale] option")
-      .evaluateAll((opts) =>
-        opts.map((o) => (o as HTMLOptionElement).value),
-      );
+      .evaluateAll((opts) => opts.map((o) => (o as HTMLOptionElement).value));
     for (const code of [
-      "en", "es", "fr", "de", "zh", "ja",
-      "id", "ms", "vi", "th", "fil", "my", "km", "lo",
+      "en",
+      "es",
+      "fr",
+      "de",
+      "zh",
+      "ja",
+      "id",
+      "ms",
+      "vi",
+      "th",
+      "fil",
+      "my",
+      "km",
+      "lo",
     ]) {
       expect(codes).toContain(code);
     }
@@ -91,7 +107,7 @@ test.describe("i18n", () => {
     // No init script: default locale is English.
     await page.goto("/settings");
 
-    await expect(page.locator(".settings-header h1")).toHaveText("Settings");
+    await expect(page.locator(".session-header-title")).toHaveText("Settings");
     await expect(page.locator(".settings-section-title").first()).toHaveText(
       "Appearance",
     );

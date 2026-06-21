@@ -3,6 +3,9 @@ import { defineConfig } from 'vite';
 import { resolve } from 'node:path';
 
 export default defineConfig({
+  // The Go server serves built assets under /static/. Without this, the chunk
+  // loader resolves dynamic imports against /assets/ and they 404.
+  base: '/static/',
   plugins: [svelte()],
   build: {
     manifest: true,
@@ -16,6 +19,11 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('highlight.js')) return 'hljs';
+          // NOTE: do NOT force @pierre/diffs / shiki into a single manual chunk.
+          // The dynamic import('@pierre/diffs') already splits it off, and shiki
+          // lazy-loads individual language grammars as separate chunks. Grouping
+          // them all here inlines every grammar into one ~10 MB blob that stalls
+          // the diff modal on slow/remote links.
         },
       },
     },

@@ -1,5 +1,5 @@
 <script>
-  import { icon, MoreHorizontal } from '../../shared/icons.js';
+  import { icon, MoreHorizontal, CalendarClock } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
 
   let {
@@ -10,6 +10,7 @@
     onSearch = () => {},
     onToggleMenu = () => {},
     onLayoutChange = () => {},
+    onSchedules = () => {},
   } = $props();
 </script>
 
@@ -51,18 +52,32 @@
           ><span class="stat-running-label"> {t('index.active')}</span></span
         >
       </div>
-      <div class="layout-toggle" aria-label={t('index.sessionLayout')}>
+      <div class="workspace-views">
+        <div class="layout-toggle" aria-label={t('index.sessionLayout')}>
+          <button
+            type="button"
+            data-layout-btn="timeline"
+            aria-pressed={String(layout === 'timeline')}
+            onclick={() => onLayoutChange('timeline')}>{t('index.layoutTimeline')}</button
+          >
+          <button
+            type="button"
+            data-layout-btn="projects"
+            aria-pressed={String(layout === 'projects')}
+            onclick={() => onLayoutChange('projects')}>{t('index.layoutProjects')}</button
+          >
+        </div>
         <button
           type="button"
-          data-layout-btn="timeline"
-          aria-pressed={String(layout === 'timeline')}
-          onclick={() => onLayoutChange('timeline')}>{t('index.layoutTimeline')}</button
-        >
-        <button
-          type="button"
-          data-layout-btn="projects"
-          aria-pressed={String(layout === 'projects')}
-          onclick={() => onLayoutChange('projects')}>{t('index.layoutProjects')}</button
+          class="schedules-nav-btn"
+          data-schedules-btn
+          title={t('schedules.navTitle')}
+          onclick={onSchedules}
+          ><span class="schedules-nav-icon" aria-hidden="true"
+            >{@html icon(CalendarClock, {
+              size: 15,
+            })}</span
+          ><span>{t('schedules.navTitle')}</span></button
         >
       </div>
     </div>

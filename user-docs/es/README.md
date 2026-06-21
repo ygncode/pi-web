@@ -86,9 +86,9 @@ Piénsalo como **tu propio Claude Cowork** — un espacio de trabajo personal de
 
 ## Capturas de pantalla
 
-| Escritorio — modo oscuro | Escritorio — modo claro | PWA móvil |
-|---|---|---|
-| ![Escritorio oscuro](../assets/desktop-dark-mode.png) | ![Escritorio claro](../assets/desktop-white-mode.png) | ![PWA móvil](../assets/mobile-pwa.png) |
+| Escritorio | PWA móvil |
+|---|---|
+| ![Escritorio](../assets/pi-web-desktop-screenshot.png) | ![PWA móvil](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

@@ -1,0 +1,437 @@
+/* Schedules page + editor. The live SPA shell inlines this via appStylesheets()
+   (spa_page.go); Svelte component <style> blocks are NOT loaded in the live app,
+   so all schedules styling lives here. Selectors are namespaced under
+   .schedules-page / .schedule-editor to avoid colliding with global classes
+   such as the chat model picker's .model-item. */
+
+.schedules-page {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: calc(52px + env(safe-area-inset-top) + 24px) 20px 80px;
+}
+
+.sched-ico {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ── Buttons (shared by page + editor) ── */
+.schedules-page .sched-btn,
+.schedule-editor .sched-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--dim) 76%, transparent);
+  background: color-mix(in srgb, var(--surface) 54%, transparent);
+  color: var(--muted);
+  border-radius: 7px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.schedules-page .sched-btn:hover,
+.schedule-editor .sched-btn:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--dim);
+}
+.schedules-page .sched-btn.active {
+  color: var(--text);
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+.schedules-page .sched-btn-primary,
+.schedule-editor .sched-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--body-bg);
+  font-weight: 600;
+}
+.schedules-page .sched-btn-primary:hover,
+.schedule-editor .sched-btn-primary:hover {
+  background: color-mix(in srgb, var(--accent) 88%, #fff);
+  border-color: color-mix(in srgb, var(--accent) 88%, #fff);
+  color: var(--body-bg);
+}
+.schedules-page .sched-btn-accent {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.schedules-page .sched-btn-accent:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: var(--accent);
+}
+.schedules-page .sched-btn-danger:hover {
+  color: var(--danger, var(--red));
+  background: color-mix(in srgb, var(--danger, #c0392b) 16%, transparent);
+  border-color: color-mix(in srgb, var(--danger, #c0392b) 55%, transparent);
+}
+.schedules-page .sched-btn:disabled,
+.schedule-editor .sched-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ── Helpers ── */
+.schedules-page .sched-muted,
+.schedule-editor .sched-muted {
+  color: var(--muted);
+  font-size: 13px;
+}
+.schedules-page .sched-error,
+.schedule-editor .sched-error {
+  color: var(--danger, var(--red, #c0392b));
+  font-size: 13px;
+  margin: 0 0 14px;
+}
+
+/* ── Empty state ── */
+.schedules-page .sched-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 64px 0;
+  border: 1px dashed color-mix(in srgb, var(--dim) 70%, transparent);
+  border-radius: 14px;
+}
+.schedules-page .sched-empty-icon {
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+  margin-bottom: 4px;
+}
+.schedules-page .sched-empty-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.schedules-page .sched-empty .sched-btn {
+  margin-top: 12px;
+}
+
+/* ── Cards ── */
+.schedules-page .schedule-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.schedules-page .schedule-card {
+  border: 1px solid color-mix(in srgb, var(--dim) 72%, transparent);
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: color-mix(in srgb, var(--surface) 40%, transparent);
+  transition: border-color 0.12s, background 0.12s;
+}
+.schedules-page .schedule-card:hover {
+  border-color: color-mix(in srgb, var(--dim) 100%, transparent);
+  background: color-mix(in srgb, var(--surface) 58%, transparent);
+}
+.schedules-page .schedule-card.disabled {
+  opacity: 0.62;
+}
+.schedules-page .schedule-card-head {
+  margin-bottom: 14px;
+}
+.schedules-page .schedule-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.schedules-page .schedule-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.schedules-page .schedule-pill {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  line-height: 1.4;
+}
+.schedules-page .schedule-pill[data-state='active'] {
+  color: var(--success, var(--green, #2e9e5b));
+  background: color-mix(in srgb, var(--success, #2e9e5b) 16%, transparent);
+}
+.schedules-page .schedule-pill[data-state='paused'] {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 16%, transparent);
+}
+.schedules-page .schedule-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text-soft);
+}
+.schedules-page .schedule-cadence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+}
+.schedules-page .schedule-cadence .sched-ico {
+  color: var(--accent);
+}
+.schedules-page .schedule-tz {
+  color: var(--muted);
+  font-weight: normal;
+}
+.schedules-page .schedule-tag {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dim) 60%, transparent);
+  font-size: 12px;
+  color: var(--muted);
+}
+.schedules-page .schedule-path {
+  margin-top: 8px;
+  font-family: var(--font-code, monospace);
+  font-size: 12px;
+  color: var(--muted);
+  word-break: break-all;
+}
+.schedules-page .schedule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── Run log ── */
+.schedules-page .run-log {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid color-mix(in srgb, var(--dim) 60%, transparent);
+}
+.schedules-page .run-log ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.schedules-page .run-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+}
+.schedules-page .run-time {
+  min-width: 168px;
+  font-family: var(--font-code, monospace);
+  font-size: 12px;
+  color: var(--text-soft);
+}
+.schedules-page .run-status.error {
+  color: var(--danger, var(--red, #c0392b));
+}
+.schedules-page .sched-link,
+.schedule-editor .sched-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  padding: 0;
+}
+.schedules-page .sched-link:hover {
+  text-decoration: underline;
+}
+
+/* ── Editor modal ── */
+/* Editor hosted in a FullScreenSheet: centered dialog on desktop, fullscreen
+   bottom-sheet on mobile. Only widen the desktop panel; the sheet owns the rest
+   (backdrop, header, close, mobile layout). */
+.pi-sheet-panel.schedule-editor-panel {
+  max-width: 560px;
+}
+.schedule-editor .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.schedule-editor .field-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.schedule-editor .field-row .field {
+  flex: 1;
+  min-width: 140px;
+}
+.schedule-editor .field > span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+}
+.schedule-editor .field input[type='text'],
+.schedule-editor .field input[type='number'],
+.schedule-editor .field input[type='time'],
+.schedule-editor .field textarea,
+.schedule-editor .field select {
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--dim) 80%, transparent);
+  border-radius: 8px;
+  background: var(--input-bg, color-mix(in srgb, var(--bg) 60%, #000 10%));
+  color: var(--text);
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+.schedule-editor .field input:focus,
+.schedule-editor .field textarea:focus,
+.schedule-editor .field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+.schedule-editor .field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+.schedule-editor .field.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+}
+.schedule-editor .field.checkbox input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+.schedule-editor .field.checkbox span {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* model picker */
+.schedule-editor .model-select {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.schedule-editor .model-trigger {
+  flex: 1;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--dim) 80%, transparent);
+  border-radius: 8px;
+  background: var(--input-bg, transparent);
+  color: var(--text);
+  cursor: pointer;
+}
+.schedule-editor .model-trigger:hover {
+  border-color: var(--dim);
+}
+.schedule-editor .model-popup {
+  margin-top: 8px;
+  border: 1px solid color-mix(in srgb, var(--dim) 80%, transparent);
+  border-radius: 8px;
+  padding: 8px;
+  background: color-mix(in srgb, var(--surface) 50%, transparent);
+}
+.schedule-editor .model-search {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 8px;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--dim) 80%, transparent);
+  border-radius: 6px;
+  background: var(--input-bg, transparent);
+  color: var(--text);
+}
+.schedule-editor .model-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+.schedule-editor .model-provider {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 8px 0 2px;
+}
+.schedule-editor .model-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 9px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.schedule-editor .model-item:hover {
+  background: var(--hover, color-mix(in srgb, var(--accent) 14%, transparent));
+}
+.schedule-editor .project-item {
+  font-family: var(--font-code, monospace);
+  font-size: 12px;
+  word-break: break-all;
+  white-space: normal;
+}
+.schedule-editor .field small.sched-muted {
+  font-size: 12px;
+}
+.schedule-editor-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* Floating "+" action. Hidden on desktop (the header button is used there);
+   shown on mobile, mirroring the sessions index. */
+.sched-fab {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .schedules-page {
+    padding: calc(52px + env(safe-area-inset-top) + 16px) 14px 96px;
+  }
+  .schedules-page .run-time {
+    min-width: 0;
+  }
+  .schedules-page .schedule-actions .sched-btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .sched-fab {
+    display: flex;
+  }
+  .schedules-header-new {
+    display: none;
+  }
+}

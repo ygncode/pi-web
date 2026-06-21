@@ -24,6 +24,10 @@ func (s *Server) handleAppShell(w http.ResponseWriter, r *http.Request, bootstra
 		return
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	// The shell references content-hashed asset paths, so it must never be
+	// cached: a stale shell would point at old (now-404) chunks and pin the
+	// browser to an outdated bundle after a rebuild.
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
 	if err := s.renderAppShell(w, bootstrap); err != nil {
 		if !isBrokenPipe(err) {
 			fmt.Fprintf(os.Stderr, "app shell template error: %v\n", err)
@@ -62,6 +66,9 @@ var settingDefaults = map[string]string{
 	settingAutoTitleModel:         "",
 	"pi-web:v1:artifacts:enabled": "true",
 	"pi-web:v1:artifacts:include": "*.md, *.html",
+	"pi-web:v1:toggle:thinking":      "true",
+	"pi-web:v1:toggle:tools":         "true",
+	"pi-web:v1:toggle:tool-outputs":  "false",
 }
 
 // getSettings returns every server-backed setting: defaults overlaid with any

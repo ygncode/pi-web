@@ -86,9 +86,9 @@ Mahukan lebih daripada pengekodan? Jadikannya sebagai [pembantu peribadi](person
 
 ## Tangkapan skrin
 
-| Desktop — mod gelap | Desktop — mod cerah | PWA Mudah Alih |
-|---|---|---|
-| ![Desktop gelap](../assets/desktop-dark-mode.png) | ![Desktop putih](../assets/desktop-white-mode.png) | ![PWA Mudah Alih](../assets/mobile-pwa.png) |
+| Desktop | PWA Mudah Alih |
+|---|---|
+| ![Desktop](../assets/pi-web-desktop-screenshot.png) | ![PWA Mudah Alih](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

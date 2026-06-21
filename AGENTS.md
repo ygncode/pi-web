@@ -40,7 +40,7 @@ make e2e    # Playwright E2E; needs `make e2e-setup` once. Not in test/check
 2. **Existing session files are append-only for `session_info`** (browser rename + auto-titling). Conversation entries come from the `pi --mode rpc` worker, not pi-web.
 3. **One worker per session.** Reused; crashed = evicted + replaced; idle reaped after 10 min.
 4. **Icons:** Lucide only, via `web/src/shared/icons.js` — no hand-drawn SVG or unicode glyphs.
-5. **i18n:** user-facing strings go through `t()` from `web/src/shared/i18n.js`; add keys to `web/src/shared/locales/en.js` first. Session content is never translated.
+5. **i18n:** user-facing strings go through `t()` from `web/src/shared/i18n.js`. Edit **only** `web/src/shared/locales/en.js` — it is the source of truth; add/change keys there. Never hand-write the other locale files (`de.js`, `es.js`, …); they are machine-drafted by translating `en.js` via `pi`, the same English-source-only approach as the localized docs (see [Localized docs](#localized-docs)). Session content is never translated.
 6. **Default port `31415`.** State: `~/.pi/agent/pi-web/pi-web-state.json`. SSE topics: `__all__` for index-wide, session ID per-session.
 7. **Never start pi-web yourself** (`make dev`, `./pi-web`, etc.). The user runs it. Build/test with `make build` / `make test` / `make check`, but leave running the server to the user.
 

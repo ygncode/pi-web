@@ -14,6 +14,10 @@ export function openVersionModal() {
   active?.openModal?.();
 }
 
+export function applyVersionStatus() {
+  active?.applyStatus?.();
+}
+
 export function renderChangelog(markdown) {
   if (!markdown)
     return `<p class="version-changelog-empty">${escapeHtml(t('version.noReleaseNotes'))}</p>`;

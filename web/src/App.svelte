@@ -3,6 +3,7 @@
   import SessionsPage from './routes/SessionsPage.svelte';
   import SessionPage from './routes/SessionPage.svelte';
   import SettingsPage from './routes/SettingsPage.svelte';
+  import SchedulesPage from './routes/SchedulesPage.svelte';
   import NotFoundPage from './routes/NotFoundPage.svelte';
   import VersionController from './components/shared/VersionController.svelte';
 
@@ -71,6 +72,8 @@
   {/key}
 {:else if path === '/settings'}
   <SettingsPage />
+{:else if path === '/schedules'}
+  <SchedulesPage />
 {:else}
   <NotFoundPage />
 {/if}

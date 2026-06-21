@@ -86,9 +86,9 @@ Gusto ng higit pa sa coding? Gawin itong dedikadong [personal assistant](persona
 
 ## Mga Screenshot
 
-| Desktop — dark mode | Desktop — light mode | Mobile PWA |
-|---|---|---|
-| ![Desktop dark](../assets/desktop-dark-mode.png) | ![Desktop white](../assets/desktop-white-mode.png) | ![Mobile PWA](../assets/mobile-pwa.png) |
+| Desktop | Mobile PWA |
+|---|---|
+| ![Desktop](../assets/pi-web-desktop-screenshot.png) | ![Mobile PWA](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

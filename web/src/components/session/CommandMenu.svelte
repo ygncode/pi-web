@@ -26,7 +26,7 @@
   import { openVersionModal } from '../../shared/version.js';
   import { navigate } from '../../shared/navigation.js';
   import { openSessionPalette } from '../../shared/command-palette-runtime.js';
-  import { openModelUsage, openFork } from '../../session/session-modals.svelte.js';
+  import { openModelUsage, openFork, openDiff } from '../../session/session-modals.svelte.js';
   import { showToast } from '../../shared/toast.js';
   import { sessionTitle, setSessionTitle } from '../../session/session-title.svelte.js';
   import { USER_DOCS_URL, TELEGRAM_INVITE_URL } from '../../shared/links.js';
@@ -210,8 +210,8 @@
           window.open(USER_DOCS_URL, '_blank', 'noreferrer');
           break;
         case 'diff':
-          toast(t('menu.notImplemented'));
           closeMenu();
+          openDiff({ sessionId });
           break;
         default:
           break;

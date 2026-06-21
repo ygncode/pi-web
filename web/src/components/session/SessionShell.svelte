@@ -14,10 +14,15 @@
   import CatGatekeeper from './CatGatekeeper.svelte';
   import BtwPopup from './BtwPopup.svelte';
   import LabelModal from './LabelModal.svelte';
+  import DiffModal from './DiffModal.svelte';
   import LoadEarlier from './LoadEarlier.svelte';
   import SessionTree from './SessionTree.svelte';
   import ShareDialog from './ShareDialog.svelte';
-  import { sessionModals } from '../../session/session-modals.svelte.js';
+  import {
+    sessionModals,
+    hasDiffUrlParam,
+    syncDiffUrlParam,
+  } from '../../session/session-modals.svelte.js';
   import { getSessionRuntime } from '../../session/session-runtime-context.js';
   import { onMount } from 'svelte';
   import { createAnnotationApi } from '../../session/annotations/annotation-api.js';
@@ -84,6 +89,29 @@
     window.addEventListener('pi-session-reload', onReload);
     return () => window.removeEventListener('pi-session-reload', onReload);
   });
+
+  // Restore the diff sheet from `?diff=open` on first load. Must seed
+  // sessionModals.diff before the sync $effect runs, or that effect would see
+  // open=false on first tick and strip the param before we read it. sessionId
+  // is a $state prop in <SessionPage> set inside its own onMount, so we wait
+  // for it (and only restore once).
+  let diffRestored = false;
+  $effect(() => {
+    if (diffRestored || !sessionId) return;
+    diffRestored = true;
+    if (hasDiffUrlParam()) {
+      sessionModals.diff.sessionId = sessionId;
+      sessionModals.diff.open = true;
+    }
+  });
+
+  // Mirror the modal's open state into the URL so a refresh restores the
+  // sheet. Covers every close path (Escape, backdrop, mobile back-button,
+  // Submit review), since they all flip sessionModals.diff.open.
+  $effect(() => {
+    if (!diffRestored) return;
+    syncDiffUrlParam(sessionModals.diff.open);
+  });
 </script>
 
 <SessionHeader {title} {cwd} {sessionId} />
@@ -129,6 +157,7 @@
   currentLabel={sessionModals.label.currentLabel}
   onSave={sessionModals.label.onSave}
 />
+<DiffModal bind:open={sessionModals.diff.open} sessionId={sessionModals.diff.sessionId} />
 
 <ShareDialog {sessionId} />
 <CatGatekeeper />

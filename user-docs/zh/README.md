@@ -86,9 +86,9 @@ pi-web 是一个 PWA（渐进式 Web 应用），因此你可以**像安装原�
 
 ## 截图
 
-| 桌面——暗色模式 | 桌面——亮色模式 | 手机 PWA |
-|---|---|---|
-| ![桌面暗色](../assets/desktop-dark-mode.png) | ![桌面白色](../assets/desktop-white-mode.png) | ![手机 PWA](../assets/mobile-pwa.png) |
+| 桌面 | 手机 PWA |
+|---|---|
+| ![桌面](../assets/pi-web-desktop-screenshot.png) | ![手机 PWA](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

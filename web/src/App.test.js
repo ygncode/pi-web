@@ -43,7 +43,7 @@ describe('App', () => {
 
     mounted = mountApp({ props: { path: '/settings' } });
 
-    expect(document.querySelector('.settings-page h1')?.textContent).toBe('Settings');
+    expect(document.querySelector('.session-header-title')?.textContent).toBe('Settings');
     expect(document.querySelector('[data-setting="pi-web-theme"]')).toBeTruthy();
   });
 
@@ -66,7 +66,7 @@ describe('App', () => {
     window.history.pushState({}, '', '/settings');
     flushSync();
 
-    expect(document.querySelector('.settings-page h1')?.textContent).toBe('Settings');
+    expect(document.querySelector('.session-header-title')?.textContent).toBe('Settings');
   });
 
   it('swaps views on browser back/forward (popstate)', async () => {

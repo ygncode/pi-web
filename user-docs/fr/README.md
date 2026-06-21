@@ -86,9 +86,9 @@ Vous voulez plus que du codage ? Transformez-le en un [assistant personnel](pers
 
 ## Captures d'écran
 
-| Bureau — mode sombre | Bureau — mode clair | PWA mobile |
-|---|---|---|
-| ![Bureau sombre](../assets/desktop-dark-mode.png) | ![Bureau clair](../assets/desktop-white-mode.png) | ![PWA mobile](../assets/mobile-pwa.png) |
+| Bureau | PWA mobile |
+|---|---|
+| ![Bureau](../assets/pi-web-desktop-screenshot.png) | ![PWA mobile](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 

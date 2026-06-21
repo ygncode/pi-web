@@ -2,9 +2,9 @@
 
 <div align="center">
 
-[![GitHub stars](https://img.shields.io/github/stars/ygncode/pi-web?style=flat&logo=github&label=stars&cacheSeconds=21600)](https://github.com/ygncode/pi-web/stargazers)
-[![npm downloads](https://img.shields.io/npm/dt/@ygncode/pi-web?label=downloads&color=2ea043)](https://www.npmjs.com/package/@ygncode/pi-web)
-[![license MIT](https://img.shields.io/npm/l/@ygncode/pi-web?label=license&color=0a7bbb)](../../LICENSE)
+[![GitHub stars](https://img.shields.io/github/stars/ygncode/pi-web?style=flat&logo=github&label=stars&cacheSeconds=86400)](https://github.com/ygncode/pi-web/stargazers)
+[![npm downloads](https://img.shields.io/npm/dw/@ygncode/pi-web?label=downloads/wk&color=2ea043&cacheSeconds=86400)](https://www.npmjs.com/package/@ygncode/pi-web)
+[![license MIT](https://img.shields.io/npm/l/@ygncode/pi-web?label=license&color=0a7bbb&cacheSeconds=86400)](../../LICENSE)
 [![Telegram](https://img.shields.io/badge/Telegram-Join-26A5E4?logo=telegram&logoColor=white)](https://t.me/+NJvFOTTa0wNjNTc9)
 ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-555)
 
@@ -12,52 +12,53 @@
 
 </div>
 
-あなたの [pi](https://pi.dev) コーディングエージェントを、スマートフォン、タブレット、ノートパソコンから操作できます — ネットワーク内のどこからでも、あるいは Tailscale 経由でリモートからも。
+<div align="center">
 
-完全な PWA なので、インストールすればどんなデバイスでもネイティブアプリのように使えます。自分専用の AI ワークスペースと考えてください — Claude の Cowork のようなものですが、さまざまなモデルを使えます — モデルを切り替えてチャットしたり、スマートフォンからコードを書いたり、あるいはあなたのマシン上で動作する[パーソナルアシスタント](../ja/personal-assistant.md)に仕立てたりできます。
+お使いの[pi](https://pi.dev)コーディングエージェントを、スマートフォン、タブレット、ノートパソコンから操作できます — ネットワーク内のどこからでも、あるいはTailscale経由でリモートからでも。
 
-自分好みにカスタマイズ: テーマやフォントを切り替え、自分の言語で使えます — pi-web は複数言語を同梱しており、独自の言語を追加することも可能です。さらに多くの機能が開発中ですが、肥大化することはありません: 不要な機能は設定でオフにできます。
+完全なPWAなので、任意のデバイスにインストールしてネイティブアプリのように使えます。自分専用のAIワークスペースと考えてください — ClaudeのCoworkのようなものですが、異なるモデルを使えます — モデルを切り替えてチャットしたり、スマホからコードを書いたり、あるいはあなたのマシン上で動く[パーソナルアシスタント](user-docs/en/personal-assistant.md)にすることもできます。
+
+自分好みに：テーマやフォントを切り替え、自分の言語で使えます — pi-webは複数言語に対応しており、独自の言語を追加することもできます。さらに多くの機能が開発中ですが、肥大化はしません：不要な機能は設定でオフにできます。
+
+</div>
 
 > [!WARNING]
-> pi-web は現在 **beta** 段階です。今後変更や破壊的変更が発生します！
+> pi-webは現在**ベータ版**です。仕様の変更や互換性の破壊が発生します！
 
 > [!TIP]
-> 初めての方ですか？ **[ユーザーガイドを読む →](../ja/README.md)** 機能の全体像、インストール手順、ヒントを網羅しています。
+> 初めての方へ：機能の完全なツアー、インストール手順、ヒントについては **[ユーザーガイドを読む →](user-docs/en/README.md)** を参照してください。（[他の言語 →](../README.md)）
 
 ## スクリーンショット
 
 <div align="center">
-  <img src="../assets/desktop-dark-mode.png" alt="Desktop — dark mode" width="90%" /><br />
-  <em>デスクトップ — ダークモード</em>
+  <img src="../assets/pi-web-desktop-screenshot.png" alt="Desktop" width="90%" /><br />
+  <em>デスクトップ</em>
   <br /><br />
-  <img src="../assets/desktop-white-mode.png" alt="Desktop — light mode" width="90%" /><br />
-  <em>デスクトップ — ライトモード</em>
-  <br /><br />
-  <img src="../assets/mobile-pwa.png" alt="Mobile PWA" width="90%" /><br />
-  <em>モバイル PWA</em>
+  <img src="../assets/pi-web-mobile-screenshot.png" alt="Mobile PWA" width="90%" /><br />
+  <em>モバイルPWA</em>
 </div>
 
-## 全体の仕組み
+## 全体の構成
 
 ```
- pi (ターミナル)                 ブラウザ (スマートフォン / タブレット / ノートPC)
+ pi (ターミナル)                 ブラウザ (スマホ / タブレット / ノートPC)
       │                                │
-      │  JSONL を書き込み              │  HTTP + SSE
+      │  JSONLを書き込み               │  HTTP + SSE
       ▼                                ▼
- ~/.pi/agent/sessions/  ←───  pi-web (Go HTTP サーバー)
+ ~/.pi/agent/sessions/  ←───  pi-web (Go HTTPサーバー)
                                       │
                     ┌─────────────────┼─────────────────┐
                     │                 │                 │
               pi --mode rpc      fsnotify         tailscale serve
-            (セッションごと    (ライブリロード)    (MagicDNS 経由の
-             のチャットワーカー)                    リモート HTTPS)
+            (セッションごと     (ライブ再読み込み)   (MagicDNS経由の
+             のチャットワーカー)                      リモートHTTPS)
 ```
 
-- **pi** は作業中、会話の JSONL を `~/.pi/agent/sessions/` に書き込みます。
-- **pi-web** は Go 製サーバーで、それらのファイルを読み取り、ブラウザで描画し、SSE 経由でライブ更新をストリーミングします。
-- **pi --mode rpc** ワーカーがブラウザからのチャットを処理します — セッションごとに 1 つずつ、アイドル状態が 10 分続くと終了します。
-- **fsnotify** がセッションディレクトリを監視し、新しい出力があればミリ秒単位でブラウザが再読み込みされます。
-- **Tailscale Serve** が localhost サーバーをあなたの tailnet 上の HTTPS エンドポイントとして公開します。
+- **pi**は作業中に会話のJSONLを`~/.pi/agent/sessions/`に書き込みます。
+- **pi-web**はGo製サーバーで、それらのファイルを読み取り、ブラウザでレンダリングし、SSE経由でライブ更新をストリーミングします。
+- **pi --mode rpc**ワーカーがブラウザからのチャットを処理します — セッションごとに1つ、10分間アイドルで終了します。
+- **fsnotify**がセッションディレクトリを監視し、新しい出力があれば数ミリ秒以内にブラウザが再読み込みされます。
+- **Tailscale Serve**がローカルホストのサーバーをtailnet上のHTTPSエンドポイントとして公開します。
 
 ## インストール
 
@@ -65,51 +66,51 @@
 pi install npm:@ygncode/pi-web@beta
 ```
 
-これだけです — 対応するバイナリをダウンロードし、自動起動を設定し、`/web`、`/pi-web`、`/remote`、`/refresh` コマンドを登録します。
+以上です — 対応するバイナリをダウンロードし、自動起動を設定し、`/web`、`/pi-web`、`/remote`、`/refresh`コマンドを登録します。
 
-インストール後、ブラウザで `http://127.0.0.1:31415` を開いてください。pi からは `/web` を使うと現在のセッションをブラウザですぐに開けます。お使いのマシンで Tailscale が動作している場合、pi-web は自動的にあなたの tailnet 上に HTTPS エンドポイントを公開します — pi から `/remote` を使うと、tailnet 上の任意のデバイス向けの QR コードと URL を表示します。
+インストール後、ブラウザで`http://127.0.0.1:31415`を開いてください。piからは`/web`を使って現在のセッションをブラウザで瞬時に開けます。Tailscaleがマシン上で動作している場合、pi-webは自動的にtailnet上のHTTPSエンドポイントを公開します — piから`/remote`を使うと、tailnet上の任意のデバイス向けのQRコードとURLを取得できます。
 
-手動インストール、バイナリダウンロード、ソースからのビルドについては、[user-docs/install.md](../ja/install.md) を参照してください。
+手動インストール、バイナリダウンロード、ソースからのビルドについては、[user-docs/install.md](user-docs/en/install.md)を参照してください。
 
-## Pi 連携
+## Pi連携
 
-`pi install npm:@ygncode/pi-web@beta` を実行すると、以下が利用可能になります:
+`pi install npm:@ygncode/pi-web@beta`を実行すると、以下が利用可能になります：
 
 | コマンド | 機能 |
 |---------|--------------|
-| `/web` | 現在のセッションをブラウザで開く（SSH 対応: SSH 接続時はブラウザを開かず URL のみ表示） |
+| `/web` | 現在のセッションをブラウザで開く（SSH対応：ブラウザをスキップしてURLのみ表示） |
 | `/pi-web` | ステータス、バージョンの表示、サーバーの起動/停止/再起動、または更新 |
-| `/remote` | Tailscale 経由のリモートアクセス用 QR コードと URL を表示 |
+| `/remote` | Tailscale経由のリモートアクセス用のQRコードとURLを表示 |
 | `/refresh` | リモートブラウザから書き込まれた新しいメッセージをターミナルセッションに取り込む |
 
-セッションの**自動タイトル付け**は pi-web 自体に組み込まれており、`/settings` ページで設定します。**デフォルトでオン**になっており、セッションに自動的に名前を付けます。以下の選択が可能です:
+セッションの**自動タイトル付け**はpi-web自体に組み込まれており、`/settings`ページで設定できます。**デフォルトでオン**になっており、セッションに自動的に名前を付けます。選択できるオプション：
 
-- **タイトル付けのタイミング** — セッションごとに 1 回、または新しいメッセージごと（デフォルト）。
-- **タイトル付けモデル** — デフォルトは無料で高速な**組み込み単語ヒューリスティック（AI 不使用）**、またはモデル（小型/高速なものなど）を選択して、より賢いモデル生成タイトルを使用できます。
+- **タイトルを付けるタイミング** — セッションごとに1回、または新しいメッセージごと（デフォルト）。
+- **タイトルモデル** — デフォルトは無料で高速な**組み込み単語ヒューリスティック（AI不使用）**、またはモデル（例：小さくて高速なもの）を選んで、より賢いモデル生成タイトルを利用できます。
 
-このパッケージは pi-web バイナリを `~/.pi/agent/bin/pi-web` にインストールし、ログイン時の自動起動も設定します。
+このパッケージはpi-webバイナリを`~/.pi/agent/bin/pi-web`にインストールし、ログイン時の自動起動も設定します。
 
 ## ログイン時の自動起動
 
-`pi install npm:@ygncode/pi-web@beta` コマンドが自動的に設定します:
+`pi install npm:@ygncode/pi-web@beta`コマンドが自動的に設定します：
 
 | OS | 仕組み |
 |----|-----------|
-| macOS | `~/Library/LaunchAgents/com.pi-web.plist` の launchd plist |
-| Linux | `~/.config/systemd/user/pi-web.service` の systemd ユーザーサービス |
+| macOS | `~/Library/LaunchAgents/com.pi-web.plist`のlaunchd plist |
+| Linux | `~/.config/systemd/user/pi-web.service`のsystemdユーザーサービス |
 
-リモートアクセス用のトークンを設定するには、`~/.config/pi-web/env` を作成します:
+リモートアクセス用のトークンを設定するには、`~/.config/pi-web/env`を作成します：
 
 ```
 PI_WEB_TOKEN=your-token-here
 ```
 
-詳細（手動設定、カスタムポート、非ループバックバインド）については、[user-docs/install.md](../ja/install.md) を参照してください。
+詳細（手動セットアップ、カスタムポート、非ループバックバインド）については、[user-docs/install.md](user-docs/en/install.md)を参照してください。
 
 ## 開発
 
 ```bash
-make setup   # フロントエンド依存関係のインストールと Go モジュールのダウンロード
-make check   # フロントエンドのテスト/ビルド + Go のテスト/vet
-make build   # 必要に応じて setup、フロントエンドをビルド、その後 ./pi-web をビルド
+make setup   # フロントエンド依存関係のインストールとGoモジュールのダウンロード
+make check   # フロントエンドのテスト/ビルド + Goのテスト/vet
+make build   # 必要に応じてsetupを実行し、フロントエンドをビルドし、その後./pi-webをビルド
 ```

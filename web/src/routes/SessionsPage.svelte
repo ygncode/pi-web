@@ -296,6 +296,7 @@
   onSearch={openPalette}
   onToggleMenu={toggleMenu}
   onLayoutChange={setLayout}
+  onSchedules={() => navigate('/schedules')}
 />
 
 <HomeMenu

@@ -1,41 +1,114 @@
 .settings-page {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 24px 20px 80px;
+  padding: calc(52px + env(safe-area-inset-top)) 0 0 240px;
   /* Base the page on the interface font size so it reflects the setting and
      previews changes live (child text sizes are em-relative to this). */
   font-size: var(--font-size-ui);
 }
 
-.settings-header {
+.settings-sidebar {
+  position: fixed;
+  top: calc(52px + env(safe-area-inset-top));
+  left: 0;
+  bottom: 0;
+  width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 18px 12px;
+  border-right: 1px solid var(--dim);
+  background: var(--chrome-bg);
+  overflow-y: auto;
+}
+
+.settings-sidebar-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 28px;
-}
-
-.settings-back {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-size: 0.95em;
   color: var(--text-soft);
-  text-decoration: none;
-  font-size: 1em;
-  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: 8px;
-  border: 1px solid var(--dim);
-  background: var(--surface);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
 }
 
-.settings-back:hover {
+.settings-sidebar-chev {
+  display: none;
+  color: var(--muted);
+  font-size: 1.2em;
+  line-height: 1;
+}
+
+.settings-sidebar-item:hover {
   color: var(--text);
   background: var(--hover);
 }
 
-.settings-header h1 {
-  font-size: 1.6em;
-  margin: 0;
+.settings-sidebar-item.active {
   color: var(--text);
+  background: var(--surface);
+  border-color: var(--dim);
+  font-weight: 600;
+}
+
+.settings-pane {
+  padding: 20px 32px 80px;
+  min-width: 0;
+}
+
+.settings-pane .settings-section {
+  margin-bottom: 28px;
+}
+
+@media (max-width: 760px) {
+  .settings-page {
+    padding: calc(52px + env(safe-area-inset-top)) 0 0;
+  }
+  .settings-sidebar {
+    position: static;
+    width: auto;
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 0;
+    border-right: 0;
+    background: transparent;
+  }
+  .settings-sidebar-item {
+    border-radius: 0;
+    border-top: 0;
+    border-bottom: 1px solid var(--dim);
+    border-left: 0;
+    border-right: 0;
+    padding: 14px 18px;
+    font-size: 1em;
+    color: var(--text);
+  }
+  .settings-sidebar-item.active {
+    background: transparent;
+    border-color: var(--dim);
+    font-weight: inherit;
+  }
+  .settings-sidebar-item:hover {
+    background: var(--hover);
+  }
+  .settings-sidebar-chev {
+    display: inline;
+  }
+  .settings-pane {
+    padding: 16px 14px 80px;
+  }
+  .settings-page-mobile-list .settings-pane {
+    display: none;
+  }
+  .settings-page-mobile-pane .settings-sidebar {
+    display: none;
+  }
 }
 
 .settings-section {
@@ -158,6 +231,16 @@
   background: #fff;
 }
 
+/* Row dim/disabled state: used when one toggle gates another (e.g.
+   "Expand tool outputs by default" has no effect when "Show tool calls by
+   default" is off). */
+.settings-row-disabled {
+  opacity: 0.5;
+}
+.settings-row-disabled .settings-toggle .slider {
+  cursor: not-allowed;
+}
+
 .settings-link {
   display: inline-flex;
   align-items: center;
@@ -169,6 +252,7 @@
   border: 1px solid var(--dim);
   background: var(--input-bg, var(--surface-2));
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .settings-link:hover {

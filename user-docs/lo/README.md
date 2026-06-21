@@ -86,9 +86,9 @@ pi-web ແມ່ນ PWA (Progressive Web App), ດັ່ງນັ້ນເຈົ
 
 ## ພາບໜ້າຈໍ
 
-| Desktop — ໂໝດມືດ | Desktop — ໂໝດສະຫວ່າງ | PWA ມືຖື |
-|---|---|---|
-| ![Desktop ມືດ](../assets/desktop-dark-mode.png) | ![Desktop ສະຫວ່າງ](../assets/desktop-white-mode.png) | ![PWA ມືຖື](../assets/mobile-pwa.png) |
+| Desktop | PWA ມືຖື |
+|---|---|
+| ![Desktop](../assets/pi-web-desktop-screenshot.png) | ![PWA ມືຖື](../assets/pi-web-mobile-screenshot.png) |
 
 ---
 
