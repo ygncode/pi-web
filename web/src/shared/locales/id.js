@@ -133,6 +133,11 @@ export default {
 
   'composer.placeholder': 'Lanjutkan sesi pi ini…',
   'composer.send': 'Kirim',
+  'composer.steer': 'Arahkan',
+  'composer.queue': 'Antrekan',
+  'composer.queueHint': 'Antrekan pesan ini untuk setelah respons saat ini',
+  'composer.steering': 'Mengarahkan respons saat ini',
+  'composer.removeQueued': 'Hapus pesan dalam antrean',
   'composer.cancel': 'Batal',
   'composer.idle': 'menganggur',
   'composer.unavailable': 'tidak tersedia',

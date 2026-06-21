@@ -133,6 +133,11 @@ export default {
 
   'composer.placeholder': 'បន្តវគ្គ pi នេះ…',
   'composer.send': 'ផ្ញើ',
+  'composer.steer': 'ដឹកនាំ',
+  'composer.queue': 'ជួរ',
+  'composer.queueHint': 'ដាក់សារនេះក្នុងជួរសម្រាប់ក្រោយការឆ្លើយតបបច្ចុប្បន្ន',
+  'composer.steering': 'កំពុងដឹកនាំការឆ្លើយតបបច្ចុប្បន្ន',
+  'composer.removeQueued': 'លុបសារក្នុងជួរ',
   'composer.cancel': 'បោះបង់',
   'composer.idle': 'ទំនេរ',
   'composer.unavailable': 'មិនអាចប្រើបាន',

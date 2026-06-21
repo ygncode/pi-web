@@ -3732,7 +3732,7 @@
       margin-left: auto;
     }
 
-    .pi-chat-icon-button, .pi-chat-send, .pi-chat-remove, .pi-chat-cancel {
+    .pi-chat-icon-button, .pi-chat-send, .pi-chat-remove, .pi-chat-cancel, .pi-chat-queue {
       height: 25px;
       font-family: inherit;
       font-size: 11px;
@@ -3763,18 +3763,68 @@
     }
     .pi-chat-send:active:not(:disabled) { transform: translateY(1px); }
     .pi-chat-cancel { padding: 3px 9px; flex-shrink: 0; color: var(--warning); border-color: color-mix(in srgb, var(--warning) 55%, var(--dim)); }
+    .pi-chat-queue { padding: 3px 9px; flex-shrink: 0; }
 
 
 
-    .pi-chat-icon-button:hover, .pi-chat-remove:hover, .pi-chat-cancel:hover {
+    .pi-chat-icon-button:hover, .pi-chat-remove:hover, .pi-chat-cancel:hover, .pi-chat-queue:hover:not(:disabled) {
       color: var(--text);
       border-color: var(--borderMuted);
       background: var(--selectedBg);
     }
 
-    .pi-chat-icon-button:disabled, .pi-chat-send:disabled, .pi-chat-cancel:disabled {
+    .pi-chat-icon-button:disabled, .pi-chat-send:disabled, .pi-chat-cancel:disabled, .pi-chat-queue:disabled {
       opacity: 0.4;
       cursor: not-allowed;
+    }
+
+    .pi-chat-pending {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 8px;
+      max-width: 100%;
+      overflow-x: clip;
+      padding: 8px 8px 0;
+    }
+
+    .pi-chat-pending:empty { display: none; }
+
+    .pi-chat-pending-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      max-width: min(280px, 100%);
+      background: var(--container-bg);
+      border: 1px solid var(--dim);
+      border-radius: 5px;
+      padding: 4px 6px 4px 8px;
+      font-size: 11px;
+    }
+
+    .pi-chat-pending-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .pi-chat-pending-label > span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pi-chat-pending-label svg { flex-shrink: 0; }
+
+    .pi-chat-pending-steer {
+      color: var(--accent, #8abeb7);
+      border-color: color-mix(in srgb, var(--accent, #8abeb7) 55%, var(--dim));
+      font-style: italic;
+    }
+
+    .pi-chat-pending-queued {
+      color: var(--muted);
     }
     .pi-chat-send:disabled {
       color: var(--muted);

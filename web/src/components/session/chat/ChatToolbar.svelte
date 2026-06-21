@@ -56,8 +56,16 @@
       disabled={toolbar.statusText === 'cancelling' || !chatAvailable}
       >{t('composer.cancel')}</button
     >
+    <button
+      type="button"
+      id="pi-chat-queue"
+      class="pi-chat-queue"
+      style:display={toolbar.isRunning ? '' : 'none'}
+      title={t('composer.queueHint')}
+      disabled>{t('composer.queue')}</button
+    >
     <button type="submit" id="pi-chat-send" class="pi-chat-send" disabled
-      >{t('composer.send')}</button
+      >{toolbar.isRunning ? t('composer.steer') : t('composer.send')}</button
     >
   </div>
 </div>

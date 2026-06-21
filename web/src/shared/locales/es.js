@@ -134,6 +134,11 @@ export default {
 
   'composer.placeholder': 'Continúa esta sesión de pi…',
   'composer.send': 'Enviar',
+  'composer.steer': 'Dirigir',
+  'composer.queue': 'En cola',
+  'composer.queueHint': 'Poner este mensaje en cola para después de la respuesta actual',
+  'composer.steering': 'Dirigiendo la respuesta actual',
+  'composer.removeQueued': 'Eliminar mensaje en cola',
   'composer.cancel': 'Cancelar',
   'composer.idle': 'inactivo',
   'composer.unavailable': 'no disponible',

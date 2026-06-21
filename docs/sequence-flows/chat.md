@@ -213,6 +213,27 @@ After 10 minutes of idle time (no user-initiated actions), the reaper goroutine 
 
 `handleSetModel` updates the worker model via RPC. On success, the worker automatically refreshes its thinking level (`refreshThinkingLevel`) so the UI stays consistent.
 
+### 11. Steering and Queuing
+
+While a response is running the composer stays enabled and the toolbar swaps the
+**Send** button for **Steer** plus a **Queue** button (`ChatToolbar.svelte`).
+
+- **Steer** sends the message immediately through the same `POST /api/chat` path.
+  Because the worker is already `running`, `piRPCWorker.Prompt` tags the command
+  `streamingBehavior:"steer"` (step 4) so pi folds it into the active turn. The
+  message shows as a transient chip above the input until the run completes.
+- **Queue** holds the message in the browser as a deletable chip. There is no
+  backend queue: when the worker transitions `running → idle` the composer fires
+  `pi-worker-done` and the next queued message is sent as a fresh turn (one per
+  completed run, in order).
+
+The logic lives in `web/src/components/session/chat/steer-queue.js`. An
+`activeRun` flag — driven solely by the `pi-chat-message-sent` (→ true) and
+`pi-worker-done` (→ false) events — distinguishes the run-starting message from
+later steers, so the first message of a run and auto-dequeued messages are never
+mistaken for steers. Queued (not-yet-sent) chips are browser-local and are
+dropped on reload.
+
 ---
 
-**E2E coverage:** `e2e/tests/chat.spec.ts` drives this flow end-to-end with a stub `pi` worker (`e2e/lib/stub-pi/pi`). See [docs/dev/e2e-testing.md](../dev/e2e-testing.md).
+**E2E coverage:** `e2e/tests/chat.spec.ts` drives this flow end-to-end with a stub `pi` worker (`e2e/lib/stub-pi/pi`); `e2e/tests/steer-queue.spec.ts` covers the steer/queue flow. See [docs/dev/e2e-testing.md](../dev/e2e-testing.md).

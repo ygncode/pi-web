@@ -134,6 +134,11 @@ export default {
 
   'composer.placeholder': 'Continuer cette session pi…',
   'composer.send': 'Envoyer',
+  'composer.steer': 'Orienter',
+  'composer.queue': 'Mettre en file',
+  'composer.queueHint': 'Mettre ce message en file pour après la réponse en cours',
+  'composer.steering': 'Orientation de la réponse en cours',
+  'composer.removeQueued': 'Supprimer le message en file',
   'composer.cancel': 'Annuler',
   'composer.idle': 'inactif',
   'composer.unavailable': 'indisponible',

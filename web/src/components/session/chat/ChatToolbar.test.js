@@ -20,10 +20,12 @@ describe('ChatToolbar', () => {
     expect(document.getElementById('pi-chat-thinking-label').disabled).toBe(false);
     expect(document.getElementById('pi-chat-model-label').textContent).toBe('gpt-test');
     expect(document.getElementById('pi-chat-model-label').style.display).toBe('');
-    // Cancel surfaces only while a response is running.
+    // Cancel + Queue surface only while a response is running; Send becomes Steer.
     expect(document.getElementById('pi-chat-cancel').style.display).toBe('');
     expect(document.getElementById('pi-chat-cancel').textContent).toBe('Cancel');
-    expect(document.getElementById('pi-chat-send').textContent).toBe('Send');
+    expect(document.getElementById('pi-chat-queue').style.display).toBe('');
+    expect(document.getElementById('pi-chat-queue').textContent).toBe('Queue');
+    expect(document.getElementById('pi-chat-send').textContent).toBe('Steer');
   });
 
   it('falls back to defaults and hides controls when unavailable', () => {
@@ -46,5 +48,7 @@ describe('ChatToolbar', () => {
 
     expect(document.getElementById('pi-chat-status').textContent).toBe('idle');
     expect(document.getElementById('pi-chat-cancel').style.display).toBe('none');
+    expect(document.getElementById('pi-chat-queue').style.display).toBe('none');
+    expect(document.getElementById('pi-chat-send').textContent).toBe('Send');
   });
 });

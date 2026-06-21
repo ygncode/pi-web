@@ -134,6 +134,11 @@ export default {
 
   'composer.placeholder': 'Ipagpatuloy ang pi session na ito…',
   'composer.send': 'Ipadala',
+  'composer.steer': 'Patnubayan',
+  'composer.queue': 'Pila',
+  'composer.queueHint': 'Ipila ang mensaheng ito para sa pagkatapos ng kasalukuyang tugon',
+  'composer.steering': 'Pinapatnubayan ang kasalukuyang tugon',
+  'composer.removeQueued': 'Alisin ang nakapilang mensahe',
   'composer.cancel': 'Kanselahin',
   'composer.idle': 'idle',
   'composer.unavailable': 'hindi available',

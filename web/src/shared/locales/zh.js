@@ -133,6 +133,11 @@ export default {
 
   'composer.placeholder': '继续此 pi 会话…',
   'composer.send': '发送',
+  'composer.steer': '引导',
+  'composer.queue': '排队',
+  'composer.queueHint': '将此消息排队，在当前回复之后发送',
+  'composer.steering': '正在引导当前回复',
+  'composer.removeQueued': '移除排队的消息',
   'composer.cancel': '取消',
   'composer.idle': '空闲',
   'composer.unavailable': '不可用',

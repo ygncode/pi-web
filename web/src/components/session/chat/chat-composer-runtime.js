@@ -22,6 +22,7 @@ import { getComposerStorage } from './composer-storage.js';
 import { navigateInitialChatLeaf } from './initial-navigation.js';
 import { ChatToolbarState } from './chat-toolbar-state.svelte.js';
 import { setupChatSubmission } from './chat-submit.js';
+import { setupSteerQueue } from './steer-queue.js';
 import { createChatSelectorLoaders } from './selector-loaders.js';
 
 export function runChatComposer({
@@ -122,6 +123,8 @@ export function runChatComposer({
       attachmentList,
       sendButton,
       cancelButton,
+      queueButton,
+      pendingList,
       shell,
       expandButton,
     } = getComposerElements({ documentImpl: document, form });
@@ -199,6 +202,18 @@ export function runChatComposer({
     setupAskQuestionHandlers({
       documentImpl: document,
       sendChatMessage: submission.sendChatMessage,
+    });
+
+    setupSteerQueue({
+      documentImpl: document,
+      windowImpl: window,
+      pendingList,
+      queueButton,
+      textarea,
+      attachments,
+      sendChatMessage: submission.sendChatMessage,
+      autoResizeTextarea,
+      updateSendEnabled,
     });
 
     const workerStatus = setupWorkerStatusPolling({

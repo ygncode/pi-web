@@ -70,21 +70,58 @@ function messageEntry(role, text, parentId) {
   };
 }
 
+// A "[[slow:NNNN]]" marker in a prompt keeps the worker in the running state for
+// NNNN ms before emitting agent_end, giving steer/queue e2e tests a window to
+// interact while a response is in flight. The marker is stripped from the text
+// written to the session.
+let activeSlowRun = false;
+
+function parseDelay(raw) {
+  const m = /\s*\[\[slow:(\d+)\]\]\s*/.exec(raw);
+  if (!m) return { text: raw, delay: 0 };
+  return { text: (raw.slice(0, m.index) + raw.slice(m.index + m[0].length)).trim(), delay: Number(m[1]) };
+}
+
+function writeTurn(userText, reply) {
+  if (!sessionPath) return;
+  const user = messageEntry("user", userText, lastEntryId());
+  appendEntry(user.entry);
+  appendEntry(messageEntry("assistant", reply, user.id).entry);
+}
+
 function handlePrompt(cmd) {
   // Ack the prompt command first so POST /api/chat returns promptly.
   respond(cmd.id, "prompt", {});
 
-  const userText = typeof cmd.message === "string" ? cmd.message : JSON.stringify(cmd.message ?? "");
+  const raw = typeof cmd.message === "string" ? cmd.message : JSON.stringify(cmd.message ?? "");
+  const { text: userText, delay } = parseDelay(raw);
   const reply = `Stub reply: ${userText}`;
+
+  // A prompt that lands while a slow run is in flight is a steer: real pi folds
+  // it into the active turn rather than starting a new one, so write the turn
+  // but let the original run own the agent_end / completion signal.
+  if (activeSlowRun) {
+    writeTurn(userText, reply);
+    send({ type: "message_update", assistantMessageEvent: { type: "text_delta", text: reply } });
+    return;
+  }
+
+  if (delay > 0) {
+    activeSlowRun = true;
+    send({ type: "message_update", assistantMessageEvent: { type: "text_delta", text: "working…" } });
+    setTimeout(() => {
+      writeTurn(userText, reply);
+      send({ type: "message_end" });
+      send({ type: "turn_end" });
+      send({ type: "agent_end" });
+      activeSlowRun = false;
+    }, delay);
+    return;
+  }
 
   // Mimic real pi taking ownership of the session file.
   setTimeout(() => {
-    if (sessionPath) {
-      const user = messageEntry("user", userText, lastEntryId());
-      appendEntry(user.entry);
-      const asst = messageEntry("assistant", reply, user.id);
-      appendEntry(asst.entry);
-    }
+    writeTurn(userText, reply);
     // Best-effort stream signals; shape mismatch is harmless to the worker.
     send({ type: "message_update", assistantMessageEvent: { type: "text_delta", text: reply } });
     send({ type: "message_end" });

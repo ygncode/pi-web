@@ -134,6 +134,11 @@ export default {
 
   'composer.placeholder': 'ဤ pi ဆက်ရှင်ကို ဆက်လုပ်…',
   'composer.send': 'ပို့',
+  'composer.steer': 'ဦးတည်ပို့',
+  'composer.queue': 'တန်းစီ',
+  'composer.queueHint': 'ဤစာကို လက်ရှိတုံ့ပြန်မှုပြီးနောက် ပို့ရန် တန်းစီထားပါ',
+  'composer.steering': 'လက်ရှိတုံ့ပြန်မှုကို ဦးတည်ညွှန်ကြားနေသည်',
+  'composer.removeQueued': 'တန်းစီထားသော စာကို ဖယ်ရှားရန်',
   'composer.cancel': 'ပယ်ဖျက်',
   'composer.idle': 'အလုပ်မရှိ',
   'composer.unavailable': 'မရရှိနိုင်',

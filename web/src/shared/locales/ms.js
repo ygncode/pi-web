@@ -133,6 +133,11 @@ export default {
 
   'composer.placeholder': 'Sambung sesi pi ini…',
   'composer.send': 'Hantar',
+  'composer.steer': 'Pandu',
+  'composer.queue': 'Baris gilir',
+  'composer.queueHint': 'Beratur mesej ini untuk selepas respons semasa',
+  'composer.steering': 'Memandu respons semasa',
+  'composer.removeQueued': 'Buang mesej dalam baris gilir',
   'composer.cancel': 'Batal',
   'composer.idle': 'melahu',
   'composer.unavailable': 'tidak tersedia',

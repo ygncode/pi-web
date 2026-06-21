@@ -146,6 +146,11 @@ export default {
   // ── Chat composer ──
   'composer.placeholder': 'Continue this pi session…',
   'composer.send': 'Send',
+  'composer.steer': 'Steer',
+  'composer.queue': 'Queue',
+  'composer.queueHint': 'Queue this message for after the current response',
+  'composer.steering': 'Steering the current response',
+  'composer.removeQueued': 'Remove queued message',
   'composer.cancel': 'Cancel',
   'composer.idle': 'idle',
   'composer.unavailable': 'unavailable',

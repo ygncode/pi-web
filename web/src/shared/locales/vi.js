@@ -133,6 +133,11 @@ export default {
 
   'composer.placeholder': 'Tiếp tục phiên pi này…',
   'composer.send': 'Gửi',
+  'composer.steer': 'Định hướng',
+  'composer.queue': 'Xếp hàng',
+  'composer.queueHint': 'Xếp tin nhắn này vào hàng đợi cho sau phản hồi hiện tại',
+  'composer.steering': 'Đang định hướng phản hồi hiện tại',
+  'composer.removeQueued': 'Xóa tin nhắn trong hàng đợi',
   'composer.cancel': 'Hủy',
   'composer.idle': 'rảnh',
   'composer.unavailable': 'không khả dụng',

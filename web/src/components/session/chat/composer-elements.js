@@ -7,6 +7,8 @@ export function getComposerElements({ documentImpl = document, form } = {}) {
     attachmentList: documentImpl.getElementById('pi-chat-attachments'),
     sendButton: documentImpl.getElementById('pi-chat-send'),
     cancelButton: documentImpl.getElementById('pi-chat-cancel'),
+    queueButton: documentImpl.getElementById('pi-chat-queue'),
+    pendingList: documentImpl.getElementById('pi-chat-pending'),
     shell: form?.querySelector('.pi-chat-shell') || null,
     expandButton: documentImpl.getElementById('pi-chat-expand'),
   };

@@ -134,6 +134,11 @@ export default {
 
   'composer.placeholder': 'Diese pi-Sitzung fortsetzen…',
   'composer.send': 'Senden',
+  'composer.steer': 'Lenken',
+  'composer.queue': 'Einreihen',
+  'composer.queueHint': 'Diese Nachricht für nach der aktuellen Antwort einreihen',
+  'composer.steering': 'Aktuelle Antwort wird gelenkt',
+  'composer.removeQueued': 'Eingereihte Nachricht entfernen',
   'composer.cancel': 'Abbrechen',
   'composer.idle': 'inaktiv',
   'composer.unavailable': 'nicht verfügbar',

@@ -133,6 +133,11 @@ export default {
 
   'composer.placeholder': 'ສືບຕໍ່ເຊດຊັນ pi ນີ້…',
   'composer.send': 'ສົ່ງ',
+  'composer.steer': 'ນຳພາ',
+  'composer.queue': 'ຄິວ',
+  'composer.queueHint': 'ເພີ່ມຂໍ້ຄວາມນີ້ເຂົ້າຄິວສຳລັບຫຼັງຈາກການຕອບກັບປັດຈຸບັນ',
+  'composer.steering': 'ກຳລັງນຳພາການຕอบກັບປັດຈຸບັນ',
+  'composer.removeQueued': 'ລຶບຂໍ້ຄວາມໃນຄິວ',
   'composer.cancel': 'ຍົກເລີກ',
   'composer.idle': 'ຫວ່າງ',
   'composer.unavailable': 'ບໍ່ສາມາດໃຊ້ໄດ້',

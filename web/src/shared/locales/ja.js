@@ -134,6 +134,11 @@ export default {
 
   'composer.placeholder': 'この pi セッションを続ける…',
   'composer.send': '送信',
+  'composer.steer': '誘導',
+  'composer.queue': 'キュー',
+  'composer.queueHint': '現在の応答の後に送るようこのメッセージをキューに入れる',
+  'composer.steering': '現在の応答を誘導中',
+  'composer.removeQueued': 'キュー内のメッセージを削除',
   'composer.cancel': 'キャンセル',
   'composer.idle': '待機中',
   'composer.unavailable': '利用不可',
