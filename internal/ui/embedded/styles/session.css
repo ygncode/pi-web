@@ -3851,21 +3851,25 @@
       cursor: not-allowed;
     }
 
+    /* Floating card above the composer. .pi-chat-composer is a wide flex column
+       (it spans the full reading area to anchor the cwd bar / footer), so the
+       panel needs to mirror .pi-chat-shell's own centering + max-width or it
+       sprawls when the sidebars are collapsed and the column is wider. */
     .pi-queue-panel {
       display: flex;
       flex-direction: column;
       gap: 8px;
-      margin: 6px 6px 4px;
-      padding: 8px 10px 6px;
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto 10px;
+      box-sizing: border-box;
+      padding: 10px 12px 8px;
       border: 1px solid var(--dim);
       border-radius: 8px;
       background: var(--container-bg);
       font-size: 12px;
       outline: none;
-    }
-
-    .pi-queue-panel:focus-within {
-      border-color: color-mix(in srgb, var(--accent) 60%, var(--dim));
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
     }
 
     .pi-queue-header {

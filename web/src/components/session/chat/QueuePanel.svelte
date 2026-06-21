@@ -1,4 +1,5 @@
 <script>
+  import { onMount } from 'svelte';
   import { icon, Play, Pause, X, CornerDownRight, Layers } from '../../../shared/icons.js';
   import { t } from '../../../shared/i18n.js';
 
@@ -48,45 +49,106 @@
     store.removeById(item.id);
   }
 
-  // Standard ARIA listbox pattern: keyboard events live on the listbox
-  // container; the user moves through options via aria-activedescendant.
-  function onListKeydown(event) {
+  // Document-level keyboard routing so the shortcuts work from anywhere on the
+  // page, without forcing the user to first click the panel.
+  //
+  // Rule: shortcuts only fire when the textarea is empty (or the focus is not
+  // inside any editable field). Once the user starts typing, every key — arrows,
+  // backspace, enter, the letter "E" — goes to the textarea unmolested.
+  function isEditableTarget(target) {
+    if (!target) return false;
+    const tag = target.tagName;
+    if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return true;
+    return !!target.isContentEditable;
+  }
+
+  function shouldHandleShortcut(target, key) {
+    if (key === 'Escape') return true;
+    const composer = document.getElementById('pi-chat-composer');
+    if (target && composer?.contains(target) && target.id === 'pi-chat-message') {
+      // Inside the textarea: allow navigation/action keys only when empty.
+      return target.value === '';
+    }
+    // Other focusable inputs (e.g. search) — don't hijack.
+    return !isEditableTarget(target);
+  }
+
+  function onDocumentKeydown(event) {
     if (!visible) return;
+    if (event.metaKey || event.ctrlKey || event.altKey) return;
     const key = event.key;
+    const known =
+      key === 'ArrowUp' ||
+      key === 'ArrowDown' ||
+      key === 'Backspace' ||
+      key === 'Delete' ||
+      key === 'Enter' ||
+      key === 'Escape' ||
+      key === 'e' ||
+      key === 'E';
+    if (!known) return;
+    if (!shouldHandleShortcut(event.target, key)) return;
+
     if (key === 'ArrowDown') {
       event.preventDefault();
+      event.stopImmediatePropagation();
       store.focusDown();
       return;
     }
     if (key === 'ArrowUp') {
       event.preventDefault();
+      event.stopImmediatePropagation();
       store.focusUp();
       return;
     }
     if (key === 'Escape') {
       event.preventDefault();
-      listEl?.blur();
+      event.stopImmediatePropagation();
+      store.setFocusIndex(-1);
+      const textarea = document.getElementById('pi-chat-message');
+      textarea?.focus?.();
       return;
     }
     const focused = store.focusedItem();
     if (!focused) return;
     if (key === 'Backspace' || key === 'Delete') {
       event.preventDefault();
+      event.stopImmediatePropagation();
       store.removeById(focused.id);
       return;
     }
     if (key === 'Enter') {
       event.preventDefault();
+      event.stopImmediatePropagation();
       if (focused.kind === 'queued') store.actions.sendNow?.(focused.id);
       return;
     }
     if (key === 'e' || key === 'E') {
       event.preventDefault();
+      event.stopImmediatePropagation();
       if (focused.kind === 'queued') store.actions.edit?.(focused.id);
     }
   }
 
-  let listEl = $state(null);
+  // Auto-focus the head row only on the 0 → N transition so the user can hit
+  // ↑↓⌫↩E immediately without an arrow press first. After Esc clears the
+  // focus (sets focusIndex to -1) we don't snap back to 0 — the user
+  // explicitly left the panel.
+  let lastItemCount = 0;
+  $effect(() => {
+    const count = store.items.length;
+    if (count > 0 && lastItemCount === 0 && store.focusIndex < 0) {
+      store.setFocusIndex(0);
+    }
+    lastItemCount = count;
+  });
+
+  onMount(() => {
+    // capture: true beats textarea-controls.js's own keydown handler, which
+    // would otherwise turn Enter into a form-submit before we see it.
+    document.addEventListener('keydown', onDocumentKeydown, true);
+    return () => document.removeEventListener('keydown', onDocumentKeydown, true);
+  });
 </script>
 
 <!-- eslint-disable svelte/no-at-html-tags -- trusted: Lucide icon SVG -->
@@ -125,17 +187,15 @@
     </header>
 
     <ul
-      bind:this={listEl}
       class="pi-queue-list"
       role="listbox"
-      tabindex="0"
+      tabindex="-1"
       aria-label={t('composer.queueAria')}
       aria-activedescendant={activeDescendantId || undefined}
-      onkeydown={onListKeydown}
     >
       {#each store.items as item, i (item.id)}
         <!-- svelte-ignore a11y_click_events_have_key_events -->
-        <!-- Listbox parent handles keyboard navigation; the <li> is a click-to-select target only. -->
+        <!-- Keyboard navigation is handled at the document level. -->
         <li
           id={`pi-queue-item-${item.id}`}
           class="pi-queue-item"

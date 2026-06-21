@@ -87,11 +87,13 @@ export class QueueStore {
 
   setFocusIndex = (index) => {
     if (!Number.isInteger(index)) return;
-    if (this.items.length === 0) {
+    // -1 (or any negative) explicitly means "no row focused" — used by Esc to
+    // exit the panel without dropping items.
+    if (index < 0 || this.items.length === 0) {
       this.focusIndex = -1;
       return;
     }
-    this.focusIndex = Math.max(0, Math.min(this.items.length - 1, index));
+    this.focusIndex = Math.min(this.items.length - 1, index);
   };
 
   focusUp = () => {

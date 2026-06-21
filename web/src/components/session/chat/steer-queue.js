@@ -25,7 +25,6 @@ export function setupSteerQueue({
   if (!store) throw new Error('setupSteerQueue: store is required');
 
   let activeRun = false;
-  let suppressSteerChip = false;
   let seq = 0;
   const nextId = () => 'sq-' + Date.now().toString(36) + '-' + seq++;
 
@@ -54,11 +53,12 @@ export function setupSteerQueue({
   }
 
   function dispatch(item) {
-    suppressSteerChip = true;
-    // sendChatMessage dispatches `pi-chat-message-sent` synchronously before its
-    // first await, so the suppress flag is observed by that handler.
+    // Auto-dequeue is gated by pi-worker-done which sets activeRun=false first,
+    // so onMessageSent naturally won't tag it as a steer. sendNow (the Enter
+    // shortcut) fires while activeRun=true, so the dispatched message *will*
+    // be added as a steer row — that's intentional: the user can see their
+    // skip-ahead message in flight, and dismiss the chip if they want.
     void sendChatMessage(item.text, item.files);
-    suppressSteerChip = false;
   }
 
   function dequeueNext() {
@@ -93,7 +93,7 @@ export function setupSteerQueue({
 
   const onMessageSent = (event) => {
     const message = event?.detail?.message;
-    if (activeRun && !suppressSteerChip) {
+    if (activeRun) {
       store.pushSteer({ id: nextId(), kind: 'steer', text: message });
     }
     activeRun = true;

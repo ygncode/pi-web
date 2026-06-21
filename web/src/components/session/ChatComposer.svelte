@@ -83,6 +83,7 @@
     hidden
     disabled={!chatAvailable}
   />
+  <QueuePanel store={queueStore} />
   <div class="pi-chat-shell">
     <ChatExpandButton {chatAvailable} />
     {#if cwd}<div class="pi-chat-toolbar pi-chat-cwd-bar">
@@ -90,7 +91,6 @@
         ><span class="pi-chat-focus-shortcut">{t('composer.focusShortcut')}</span>
       </div>{/if}
     {#if !chatAvailable}<div class="pi-chat-disabled-notice">{chatDisabledReason}</div>{/if}
-    <QueuePanel store={queueStore} />
     <textarea
       id="pi-chat-message"
       name="message"
