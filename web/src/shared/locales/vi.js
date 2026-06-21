@@ -174,6 +174,8 @@ export default {
   'composer.queueDelete': 'xóa',
   'composer.queueSendNow': 'gửi ngay',
   'composer.queueExit': 'thoát',
+  'composer.queueSavedLocally': 'đã lưu cục bộ',
+  'composer.queueSavedLocallyHint': 'Tin nhắn trong hàng đợi được lưu trong trình duyệt này theo phiên và không bị mất khi tải lại trang',
   'composer.cancel': 'Hủy',
   'composer.idle': 'rảnh',
   'composer.unavailable': 'không khả dụng',

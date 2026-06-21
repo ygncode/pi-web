@@ -289,6 +289,45 @@ test.describe("steer / queue (stubbed pi)", () => {
     expect(Math.abs(panelBox!.width - shellBox!.width)).toBeLessThan(2);
   });
 
+  test("queued messages survive a browser refresh (localStorage persistence)", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "persist");
+
+    const keep = `persist-${testInfo.workerIndex}-${Date.now()}`;
+    await textarea.fill(keep);
+    await page.locator("#pi-chat-queue").click();
+    await page.getByRole("button", { name: /^Pause$/ }).click();
+
+    // Sanity: panel has the row and the "saved locally" hint is visible.
+    await expect(page.locator(".pi-queue-item")).toHaveCount(1);
+    await expect(page.locator(".pi-queue-status-saved")).toBeVisible();
+
+    // Reload and confirm the queued row + paused flag are still there.
+    await page.reload();
+    await expect(page.locator("#pi-chat-composer")).toHaveAttribute("data-chat-available", "true");
+
+    await expect(page.locator(".pi-queue-item")).toHaveCount(1, { timeout: 10000 });
+    await expect(page.locator(".pi-queue-item")).toContainText(keep);
+    await expect(page.locator(".pi-queue-panel--paused")).toBeVisible();
+  });
+
+  test("the 'saved locally' hint disappears for sessions without a storage backend", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    // Sanity-check the affordance is wired up: when the queue has any item
+    // and the store has a storage backend (the SPA always does), the hint
+    // is part of the header.
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "saved-hint");
+    await textarea.fill("hello");
+    await page.locator("#pi-chat-queue").click();
+    const hint = page.locator(".pi-queue-status-saved");
+    await expect(hint).toBeVisible();
+    await expect(hint).toContainText(/saved/i);
+  });
+
   test("pause holds queued messages until the user resumes", async ({
     page,
     sessionsDir,

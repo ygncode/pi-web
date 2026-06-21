@@ -3885,6 +3885,12 @@
       font-weight: 500;
     }
 
+    .pi-queue-status-saved {
+      color: var(--muted);
+      font-style: italic;
+      cursor: help;
+    }
+
     .pi-queue-panel--paused .pi-queue-status-label {
       color: var(--mdHeading);
     }

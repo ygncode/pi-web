@@ -34,8 +34,13 @@
   // <ChatToolbar> renders from it.
   const toolbar = new ChatToolbarState();
   // Reactive queue panel state — shared with chat-composer-runtime so its
-  // steer/queue glue mutates the same items <QueuePanel> renders.
-  const queueStore = new QueueStore();
+  // steer/queue glue mutates the same items <QueuePanel> renders. Persists
+  // queued items + paused flag to localStorage per session so a browser
+  // refresh doesn't drop the user's pending work.
+  const queueStore = new QueueStore({
+    sessionId,
+    storage: typeof window !== 'undefined' ? window.localStorage : null,
+  });
 
   // The composer runtime lives in <script module> (runChatComposer). It reads the
   // shared model + navigateTo (owned by SessionPage runtime context) at mount —

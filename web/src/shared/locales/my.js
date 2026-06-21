@@ -176,6 +176,8 @@ export default {
   'composer.queueDelete': 'ဖျက်',
   'composer.queueSendNow': 'ချက်ချင်းပို့',
   'composer.queueExit': 'ထွက်',
+  'composer.queueSavedLocally': 'စက်တွင်းသိမ်း',
+  'composer.queueSavedLocallyHint': 'တန်းစီထားသောစာများကို ဤဘရောင်ဇာတွင် ဆက်ရှင်အလိုက် သိမ်းထားပြီး စာမျက်နှာပြန်တင်လျှင်လည်း ပျောက်မသွားပါ',
   'composer.cancel': 'ပယ်ဖျက်',
   'composer.idle': 'အလုပ်မရှိ',
   'composer.unavailable': 'မရရှိနိုင်',

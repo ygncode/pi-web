@@ -40,21 +40,11 @@ LANGS = [
 
 # Keys to translate (order matters — preserved when patching the file).
 NEW_KEYS = [
-    ("composer.queueActive", "Queue"),
-    ("composer.queuePaused", "Queue paused"),
-    ("composer.queueQueuedCount", "queued"),
-    ("composer.queueSteeringCount", "steering"),
-    ("composer.pause", "Pause"),
-    ("composer.resume", "Resume"),
-    ("composer.queuePauseHint", "Hold queued messages until you resume"),
-    ("composer.queueResumeHint", "Auto-send queued messages when the current run ends"),
-    ("composer.queueAria", "Pending messages"),
-    ("composer.steerTag", "steering"),
-    ("composer.queueNavigate", "navigate"),
-    ("composer.queueEdit", "edit"),
-    ("composer.queueDelete", "delete"),
-    ("composer.queueSendNow", "send now"),
-    ("composer.queueExit", "exit"),
+    ("composer.queueSavedLocally", "saved locally"),
+    (
+        "composer.queueSavedLocallyHint",
+        "Queued messages are saved in this browser per session and will survive a refresh",
+    ),
 ]
 
 # Style-reference keys: existing composer.* entries the locale already has
@@ -69,7 +59,7 @@ REFERENCE_KEYS = [
     "composer.idle",
 ]
 
-ANCHOR_KEY = "composer.removeQueued"
+ANCHOR_KEY = "composer.queueExit"
 
 KEY_LINE_RE = re.compile(r"^\s*'([^']+)':\s*'((?:[^'\\]|\\.)*)'\s*,?\s*$")
 

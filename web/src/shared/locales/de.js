@@ -176,6 +176,8 @@ export default {
   'composer.queueDelete': 'löschen',
   'composer.queueSendNow': 'jetzt senden',
   'composer.queueExit': 'beenden',
+  'composer.queueSavedLocally': 'lokal gespeichert',
+  'composer.queueSavedLocallyHint': 'Eingereihte Nachrichten werden sitzungsbezogen im Browser gespeichert und bleiben bei einem Neuladen erhalten.',
   'composer.cancel': 'Abbrechen',
   'composer.idle': 'inaktiv',
   'composer.unavailable': 'nicht verfügbar',

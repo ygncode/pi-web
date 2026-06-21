@@ -176,6 +176,8 @@ export default {
   'composer.queueDelete': 'eliminar',
   'composer.queueSendNow': 'enviar ahora',
   'composer.queueExit': 'salir',
+  'composer.queueSavedLocally': 'guardado localmente',
+  'composer.queueSavedLocallyHint': 'Los mensajes en cola se guardan en este navegador por sesión y se mantienen tras recargar la página',
   'composer.cancel': 'Cancelar',
   'composer.idle': 'inactivo',
   'composer.unavailable': 'no disponible',

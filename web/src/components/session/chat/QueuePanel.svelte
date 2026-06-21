@@ -162,6 +162,15 @@
       <div class="pi-queue-status">
         <span class="pi-queue-status-label">{statusLabel}</span>
         {#if countLabel}<span class="pi-queue-status-count"> · {countLabel}</span>{/if}
+        {#if store.persistsLocally}
+          <span
+            class="pi-queue-status-saved"
+            title={t('composer.queueSavedLocallyHint')}
+            aria-label={t('composer.queueSavedLocallyHint')}
+          >
+            · {t('composer.queueSavedLocally')}</span
+          >
+        {/if}
       </div>
       <div class="pi-queue-header-actions">
         {#if store.paused}
