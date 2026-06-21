@@ -23,7 +23,12 @@ export function startSessionPageRuntime({
   configureSettingsSync({
     fetchImpl: windowImpl.fetch ? windowImpl.fetch.bind(windowImpl) : undefined,
   });
-  hydrateSettings({ storage: windowImpl.localStorage });
+  // Kick off settings hydration in the background. The toggle controller and
+  // SessionContent render before this resolves on a cold cache (no localStorage
+  // yet), so they'd otherwise be stuck on toggleStateDefaults; once hydration
+  // lands we call toggleController.reload() to pick up the user's configured
+  // defaults and re-apply them to the already-rendered DOM.
+  const hydrated = hydrateSettings({ storage: windowImpl.localStorage });
   windowImpl.marked = windowImpl.marked || marked;
 
   const contentWiring = wireSessionContentRuntime({
@@ -61,6 +66,11 @@ export function startSessionPageRuntime({
 
   sessionRuntime.layout = { isMobileLayout: ui.isMobileLayout, closeSidebar: ui.closeSidebar };
   ui.attachHeaderHandlers();
+  // Catch up the toggle state to whatever the server returned, once it lands.
+  // hydrated may be null when fetch isn't configured (export bundle / tests).
+  hydrated?.then?.((settings) => {
+    if (settings) ui.toggleController.reload();
+  });
   navigateTo(
     model.currentLeafId,
     model.urlTargetId ? 'target' : 'bottom',

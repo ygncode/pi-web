@@ -216,6 +216,51 @@ describe('toggle state helpers', () => {
     expect(dom.window.document.querySelector('.tool-execution').style.display).toBe('');
   });
 
+  it('controller reload picks up settings written after creation (cold-cache first paint)', () => {
+    // Simulate the cold-cache case: the controller is created before
+    // hydrateSettings() has populated localStorage with the server-backed
+    // defaults, so loadToggleState falls back to the hardcoded defaults. Once
+    // hydration completes and the keys appear, reload() must re-read storage
+    // and re-apply to the rendered DOM + buttons.
+    const dom = new JSDOM(
+      `<div class="thinking-text"></div><div class="thinking-collapsed"></div>` +
+        `<button data-action="toggle-thinking"></button>` +
+        `<button data-action="toggle-tools"></button>` +
+        `<button data-action="toggle-tool-output"></button>`,
+    );
+    const storage = makeStorage();
+    const controller = createToggleController({
+      documentImpl: dom.window.document,
+      storage,
+      sessionId: 'sess-a',
+    });
+    controller.attachHeaderHandlers();
+    // Initial state matches hardcoded defaults (true/true/false).
+    expect(controller.thinkingExpanded).toBe(true);
+    expect(
+      dom.window.document
+        .querySelector('[data-action="toggle-thinking"]')
+        .getAttribute('aria-pressed'),
+    ).toBe('true');
+
+    // Hydration writes the server defaults under the user-setting keys.
+    storage.setItem(TOGGLE_DEFAULT_SETTING_KEYS.thinkingExpanded, 'false');
+    storage.setItem(TOGGLE_DEFAULT_SETTING_KEYS.toolsVisible, 'false');
+
+    controller.reload();
+    expect(controller.thinkingExpanded).toBe(false);
+    expect(controller.toolsVisible).toBe(false);
+    // Re-applied to the DOM: thinking text hidden, collapsed placeholder shown.
+    expect(dom.window.document.querySelector('.thinking-text').style.display).toBe('none');
+    expect(dom.window.document.querySelector('.thinking-collapsed').style.display).toBe('block');
+    // Header button reflects the new state.
+    expect(
+      dom.window.document
+        .querySelector('[data-action="toggle-thinking"]')
+        .getAttribute('aria-pressed'),
+    ).toBe('false');
+  });
+
   it('controller persists toggles under its session id and other sessions are unaffected', () => {
     const dom = new JSDOM(
       `<button data-action="toggle-thinking"></button><div class="thinking-text"></div><div class="thinking-collapsed"></div>`,

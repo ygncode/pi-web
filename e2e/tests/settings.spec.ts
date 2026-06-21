@@ -395,6 +395,39 @@ test.describe("settings page", () => {
       ).toHaveAttribute("aria-pressed", "false");
     });
 
+    // Cold-cache first paint: before this fix, the toggle controller was
+    // created from an empty localStorage and never re-read after
+    // hydrateSettings() resolved, so a fresh browser would render hardcoded
+    // defaults instead of the user's configured ones. After the fix, the
+    // controller's reload() runs once hydration lands, catching the rendered
+    // header up to the configured default.
+    test("first paint with empty localStorage picks up configured defaults after hydrate", async ({
+      page,
+    }) => {
+      // Configure the server-side default to a non-hardcoded value so we can
+      // distinguish "hydrate worked and reload() ran" from "hardcoded fallback".
+      const seeded = await page.request.post("/api/settings", {
+        data: { settings: { "pi-web:v1:toggle:thinking": "false" } },
+      });
+      expect(seeded.ok()).toBeTruthy();
+
+      // Land on the index, wipe the localStorage cache so the session page's
+      // synchronous loadToggleState() runs against an empty store. The fresh
+      // context means there's no per-session blob either.
+      await page.goto("/");
+      await page.evaluate(() => window.localStorage.clear());
+      await page
+        .locator(".session-card", { hasText: "add deepseek-v4-pro" })
+        .click();
+      await expect(page).toHaveURL(/\/session\?id=/);
+
+      // Without reload-after-hydrate, this stayed at "true" indefinitely because
+      // the controller was constructed before localStorage was populated.
+      await expect(
+        page.locator('[data-action="toggle-thinking"]'),
+      ).toHaveAttribute("aria-pressed", "false");
+    });
+
     // Gating: while tool calls are hidden, the "Tool output" header button and
     // its matching settings toggle have no visible effect, so both must
     // surface as disabled. The state itself is preserved so re-enabling tools

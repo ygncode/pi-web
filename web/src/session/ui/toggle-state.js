@@ -169,6 +169,18 @@ export function createToggleController({
       if (!state.toolsVisible) return;
       toggle('toolOutputsExpanded');
     },
+    // Re-read storage and re-apply. Used by the session runtime once
+    // hydrateSettings() resolves so a cold-cache first paint (no server-backed
+    // toggle keys in localStorage yet) catches up to the user's configured
+    // defaults instead of being stuck on toggleStateDefaults.
+    reload() {
+      const next = loadToggleState({ sessionId, storage });
+      state.thinkingExpanded = next.thinkingExpanded;
+      state.toolsVisible = next.toolsVisible;
+      state.toolOutputsExpanded = next.toolOutputsExpanded;
+      applyToNode(documentImpl);
+      syncButtons();
+    },
     attachHeaderHandlers() {
       documentImpl
         .querySelector('[data-action="toggle-thinking"]')
