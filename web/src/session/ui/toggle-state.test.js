@@ -1,8 +1,7 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { JSDOM } from 'jsdom';
 import {
   applyToggleStateToNode,
-  clearPersistedToggleOverride,
   createToggleController,
   loadToggleState,
   saveToggleState,
@@ -26,29 +25,104 @@ function makeStorage(initial = {}) {
 }
 
 describe('toggle state helpers', () => {
-  it('loads defaults and saved booleans defensively', () => {
-    expect(loadToggleState({ storage: { getItem: () => null } })).toEqual({
+  it('returns the hardcoded defaults when nothing is stored', () => {
+    expect(loadToggleState({ storage: makeStorage() })).toEqual({
       thinkingExpanded: true,
       toolsVisible: true,
       toolOutputsExpanded: false,
     });
-    expect(
-      loadToggleState({
-        storage: {
-          getItem: () =>
-            '{"thinkingExpanded":false,"toolsVisible":false,"toolOutputsExpanded":true}',
-        },
-      }),
-    ).toEqual({ thinkingExpanded: false, toolsVisible: false, toolOutputsExpanded: true });
   });
 
-  it('saves state', () => {
-    const storage = { setItem: vi.fn() };
-    saveToggleState({ thinkingExpanded: false }, { storage });
-    expect(storage.setItem).toHaveBeenCalledWith(
-      TOGGLE_STATE_STORAGE_KEY,
-      JSON.stringify({ thinkingExpanded: false }),
+  it('reads configured defaults from settings storage before falling back to hardcoded defaults', () => {
+    const storage = makeStorage({
+      [TOGGLE_DEFAULT_SETTING_KEYS.thinkingExpanded]: 'false',
+      [TOGGLE_DEFAULT_SETTING_KEYS.toolOutputsExpanded]: 'true',
+      // toolsVisible left unset → falls back to hardcoded default (true).
+    });
+    expect(loadToggleState({ storage })).toEqual({
+      thinkingExpanded: false,
+      toolsVisible: true,
+      toolOutputsExpanded: true,
+    });
+  });
+
+  it('per-session override wins over configured setting defaults, scoped to that session id', () => {
+    const storage = makeStorage({
+      [TOGGLE_DEFAULT_SETTING_KEYS.thinkingExpanded]: 'false',
+      [TOGGLE_STATE_STORAGE_KEY]: JSON.stringify({
+        'sess-a': { thinkingExpanded: true },
+      }),
+    });
+    expect(loadToggleState({ sessionId: 'sess-a', storage })).toEqual({
+      thinkingExpanded: true,
+      toolsVisible: true,
+      toolOutputsExpanded: false,
+    });
+    // Another session has no override, so the configured default applies.
+    expect(loadToggleState({ sessionId: 'sess-b', storage })).toEqual({
+      thinkingExpanded: false,
+      toolsVisible: true,
+      toolOutputsExpanded: false,
+    });
+  });
+
+  it('discards the old global flat-state blob so the configured default applies', () => {
+    // Simulate the pre-migration shape: a single flat state object at the key.
+    // Without the migration, this would have shadowed every session.
+    const storage = makeStorage({
+      [TOGGLE_DEFAULT_SETTING_KEYS.toolOutputsExpanded]: 'false',
+      [TOGGLE_STATE_STORAGE_KEY]: JSON.stringify({
+        thinkingExpanded: true,
+        toolsVisible: true,
+        toolOutputsExpanded: true,
+      }),
+    });
+    expect(loadToggleState({ sessionId: 'sess-a', storage })).toEqual({
+      thinkingExpanded: true,
+      toolsVisible: true,
+      toolOutputsExpanded: false,
+    });
+  });
+
+  it('saves state under the session id; no-ops without one', () => {
+    const storage = makeStorage();
+    saveToggleState(
+      { thinkingExpanded: false, toolsVisible: true, toolOutputsExpanded: true },
+      { sessionId: 'sess-a', storage },
     );
+    expect(JSON.parse(storage.getItem(TOGGLE_STATE_STORAGE_KEY))).toEqual({
+      'sess-a': {
+        thinkingExpanded: false,
+        toolsVisible: true,
+        toolOutputsExpanded: true,
+      },
+    });
+
+    // Saving for a different session preserves the first one's entry.
+    saveToggleState(
+      { thinkingExpanded: true, toolsVisible: false, toolOutputsExpanded: false },
+      { sessionId: 'sess-b', storage },
+    );
+    expect(JSON.parse(storage.getItem(TOGGLE_STATE_STORAGE_KEY))).toEqual({
+      'sess-a': {
+        thinkingExpanded: false,
+        toolsVisible: true,
+        toolOutputsExpanded: true,
+      },
+      'sess-b': {
+        thinkingExpanded: true,
+        toolsVisible: false,
+        toolOutputsExpanded: false,
+      },
+    });
+
+    // Missing sessionId → no write (export view has no useful id).
+    const empty = makeStorage();
+    saveToggleState(
+      { thinkingExpanded: false, toolsVisible: false, toolOutputsExpanded: true },
+      { storage: empty },
+    );
+    expect(empty.getItem(TOGGLE_STATE_STORAGE_KEY)).toBeNull();
   });
 
   it('applies state to rendered nodes and buttons', () => {
@@ -79,61 +153,34 @@ describe('toggle state helpers', () => {
     ).toBe('true');
   });
 
-  it('reads configured defaults from settings storage before falling back to hardcoded defaults', () => {
-    const storage = makeStorage({
-      [TOGGLE_DEFAULT_SETTING_KEYS.thinkingExpanded]: 'false',
-      [TOGGLE_DEFAULT_SETTING_KEYS.toolOutputsExpanded]: 'true',
-      // toolsVisible left unset → falls back to hardcoded default (true).
-    });
-    expect(loadToggleState({ storage })).toEqual({
-      thinkingExpanded: false,
-      toolsVisible: true,
-      toolOutputsExpanded: true,
-    });
-  });
-
-  it('per-session blob wins over configured setting defaults', () => {
-    const storage = makeStorage({
-      [TOGGLE_DEFAULT_SETTING_KEYS.thinkingExpanded]: 'false',
-      [TOGGLE_STATE_STORAGE_KEY]: JSON.stringify({ thinkingExpanded: true }),
-    });
-    expect(loadToggleState({ storage })).toEqual({
-      thinkingExpanded: true,
-      toolsVisible: true,
-      toolOutputsExpanded: false,
-    });
-  });
-
-  it('clearPersistedToggleOverride drops a single key, keeps others, removes the blob when empty', () => {
-    const storage = makeStorage({
-      [TOGGLE_STATE_STORAGE_KEY]: JSON.stringify({
-        thinkingExpanded: false,
-        toolsVisible: false,
-      }),
-    });
-    clearPersistedToggleOverride('thinkingExpanded', { storage });
-    expect(JSON.parse(storage.getItem(TOGGLE_STATE_STORAGE_KEY))).toEqual({
-      toolsVisible: false,
-    });
-    clearPersistedToggleOverride('toolsVisible', { storage });
-    expect(storage.getItem(TOGGLE_STATE_STORAGE_KEY)).toBeNull();
-    // No-op when the key isn't present — must not throw or write garbage.
-    clearPersistedToggleOverride('toolOutputsExpanded', { storage });
-    expect(storage.getItem(TOGGLE_STATE_STORAGE_KEY)).toBeNull();
-  });
-
-  it('creates a controller for header toggles', () => {
+  it('controller persists toggles under its session id and other sessions are unaffected', () => {
     const dom = new JSDOM(
       `<button data-action="toggle-thinking"></button><div class="thinking-text"></div><div class="thinking-collapsed"></div>`,
     );
-    const storage = { setItem: vi.fn(), getItem: () => null };
-    const controller = createToggleController({ documentImpl: dom.window.document, storage });
+    const storage = makeStorage();
+    const controller = createToggleController({
+      documentImpl: dom.window.document,
+      storage,
+      sessionId: 'sess-a',
+    });
     controller.attachHeaderHandlers();
 
     dom.window.document.querySelector('[data-action="toggle-thinking"]').click();
 
     expect(controller.thinkingExpanded).toBe(false);
-    expect(dom.window.document.querySelector('.thinking-text').style.display).toBe('none');
-    expect(storage.setItem).toHaveBeenCalled();
+    expect(JSON.parse(storage.getItem(TOGGLE_STATE_STORAGE_KEY))).toEqual({
+      'sess-a': {
+        thinkingExpanded: false,
+        toolsVisible: true,
+        toolOutputsExpanded: false,
+      },
+    });
+
+    // A fresh load for a different session ignores sess-a's override.
+    expect(loadToggleState({ sessionId: 'sess-b', storage })).toEqual({
+      thinkingExpanded: true,
+      toolsVisible: true,
+      toolOutputsExpanded: false,
+    });
   });
 });

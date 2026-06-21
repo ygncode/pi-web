@@ -31,7 +31,10 @@ func TestSessionToggleButtonsReflectPersistedActiveState(t *testing.T) {
 			"toolsVisible: true",
 			"toolOutputsExpanded: false",
 			"storage?.getItem(TOGGLE_STATE_STORAGE_KEY)",
-			"storage?.setItem(TOGGLE_STATE_STORAGE_KEY, JSON.stringify(state));",
+			// Toggle state persists under TOGGLE_STATE_STORAGE_KEY, but as a
+			// { [sessionId]: state } map so changing the configured default in
+			// /settings affects every session the user hasn't explicitly toggled.
+			"storage?.setItem(TOGGLE_STATE_STORAGE_KEY, JSON.stringify(map));",
 			"btn.classList.toggle('active', isActive);",
 			"btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');",
 		},

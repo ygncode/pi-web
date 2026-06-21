@@ -40,6 +40,7 @@ export function startSessionPageRuntime({
     documentImpl,
     windowImpl,
     storage: windowImpl.localStorage,
+    sessionId,
     marked,
     hljs: null,
     escapeHtml: sessionFormat.escapeHtml,

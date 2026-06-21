@@ -228,69 +228,172 @@ test.describe("settings page", () => {
     await expect(page.locator('[data-setting="pi-web-theme"]')).toHaveCount(0);
   });
 
-  // Session Display defaults (issue #48): the three header toggles
-  // (thinking, tools, tool outputs) have configurable initial visibility. The
-  // /settings page writes through to /api/settings, and the next session load
-  // picks the new value up via loadToggleState before the user has touched the
-  // header buttons. Verified by checking the buttons' aria-pressed state, which
-  // syncToggleButtons sets on attachHeaderHandlers.
-  test("session display defaults persist and apply to new session loads", async ({
-    page,
-  }, testInfo) => {
-    test.skip(
-      testInfo.project.name !== "Desktop Chrome",
-      "server-side persistence is browser-independent; run once",
-    );
+  // Session Display defaults (issue #48). Three tests cover the feature end
+  // to end: the /settings page round-trip, the bug-fix invariant that an
+  // in-session toggle is scoped to that session id, and the migration that
+  // discards the pre-PR global blob. They share a key (toggle:thinking) and
+  // assume specific server-side starting state, so they run serially in the
+  // same worker (the file is fullyParallel by default — see playwright.config).
+  test.describe.serial("session display defaults", () => {
+    // POST the toggle defaults back to the server-side defaults before each
+    // test in this group so a partial earlier run can't make the next test
+    // depend on stale state.
+    test.beforeEach(async ({ page }, testInfo) => {
+      test.skip(
+        testInfo.project.name !== "Desktop Chrome",
+        "shared server-side settings store; run once",
+      );
+      const r = await page.request.post("/api/settings", {
+        data: {
+          settings: {
+            "pi-web:v1:toggle:thinking": "true",
+            "pi-web:v1:toggle:tools": "true",
+            "pi-web:v1:toggle:tool-outputs": "false",
+          },
+        },
+      });
+      expect(r.ok()).toBeTruthy();
+    });
 
-    const thinkingInput = '[data-setting="pi-web:v1:toggle:thinking"]';
-    // The <input> is visually hidden by .settings-toggle CSS; the wrapping
-    // <label> is what the user actually clicks. Target the label for interactions
-    // and the input for state assertions.
-    const thinkingLabel = `label.settings-toggle:has(${thinkingInput})`;
+    // /settings round-trip: the three header toggles (thinking, tools, tool
+    // outputs) have configurable initial visibility. The /settings page writes
+    // through to /api/settings, and the next session load picks the new value
+    // up via loadToggleState before the user has touched the header buttons.
+    // Verified by checking the buttons' aria-pressed state, which
+    // syncToggleButtons sets on attachHeaderHandlers.
+    test("defaults persist and apply to new session loads", async ({
+      page,
+    }) => {
+      const thinkingInput = '[data-setting="pi-web:v1:toggle:thinking"]';
+      // The <input> is visually hidden by .settings-toggle CSS; the wrapping
+      // <label> is what the user actually clicks. Target the label for
+      // interactions and the input for state assertions.
+      const thinkingLabel = `label.settings-toggle:has(${thinkingInput})`;
 
-    await page.goto("/settings");
-    await openSection(page, "sessionDisplay");
-    await expect(page.locator(thinkingLabel)).toBeVisible();
-    await expect(page.locator(thinkingInput)).toBeChecked();
+      await page.goto("/settings");
+      await openSection(page, "sessionDisplay");
+      await expect(page.locator(thinkingLabel)).toBeVisible();
+      await expect(page.locator(thinkingInput)).toBeChecked();
 
-    // Default is "true" (matches the previous hardcoded behavior); flip to off
-    // and assert the change is POSTed.
-    const saved = page.waitForResponse(
-      (r) =>
-        r.url().includes("/api/settings") && r.request().method() === "POST",
-    );
-    await page.locator(thinkingLabel).click();
-    await saved;
-    await expect(page.locator(thinkingInput)).not.toBeChecked();
+      // Default is "true" (matches the previous hardcoded behavior); flip to
+      // off and assert the change is POSTed.
+      const saved = page.waitForResponse(
+        (r) =>
+          r.url().includes("/api/settings") &&
+          r.request().method() === "POST",
+      );
+      await page.locator(thinkingLabel).click();
+      await saved;
+      await expect(page.locator(thinkingInput)).not.toBeChecked();
 
-    // Drop the localStorage cache so the next page load can only get the
-    // setting back from the server, then reload to confirm the toggle stays off.
-    await page.evaluate(() => window.localStorage.clear());
-    await page.reload();
-    await openSection(page, "sessionDisplay");
-    await expect(page.locator(thinkingInput)).not.toBeChecked();
+      // Drop the localStorage cache so the next page load can only get the
+      // setting back from the server, then reload to confirm it stays off.
+      await page.evaluate(() => window.localStorage.clear());
+      await page.reload();
+      await openSection(page, "sessionDisplay");
+      await expect(page.locator(thinkingInput)).not.toBeChecked();
 
-    // Open the demo session and assert the header toggle reflects the new
-    // default. aria-pressed is set by syncToggleButtons during
-    // attachHeaderHandlers, so it captures the state loadToggleState computed.
-    await page.goto("/");
-    await page.locator(".session-card", { hasText: "add deepseek-v4-pro" }).click();
-    await expect(page).toHaveURL(/\/session\?id=/);
-    await expect(
-      page.locator('[data-action="toggle-thinking"]'),
-    ).toHaveAttribute("aria-pressed", "false");
+      // Open the demo session and assert the header toggle reflects the new
+      // default. aria-pressed is set by syncToggleButtons during
+      // attachHeaderHandlers, so it captures the state loadToggleState
+      // computed.
+      await page.goto("/");
+      await page
+        .locator(".session-card", { hasText: "add deepseek-v4-pro" })
+        .click();
+      await expect(page).toHaveURL(/\/session\?id=/);
+      await expect(
+        page.locator('[data-action="toggle-thinking"]'),
+      ).toHaveAttribute("aria-pressed", "false");
+    });
 
-    // Restore the default so this test doesn't bleed into the rest of the
-    // suite (settings persist server-side in a single shared store).
-    await page.goto("/settings");
-    await openSection(page, "sessionDisplay");
-    const restored = page.waitForResponse(
-      (r) =>
-        r.url().includes("/api/settings") && r.request().method() === "POST",
-    );
-    await page.locator(thinkingLabel).click();
-    await restored;
-    await expect(page.locator(thinkingInput)).toBeChecked();
+    // Per-session override (issue #48 follow-up): when the user toggles a
+    // header button inside a session, the override is scoped to that session.
+    // Other sessions still follow the configured /settings default. Regression
+    // guard for the bug where a single global blob shadowed the setting across
+    // every session.
+    test("in-session header toggle override is scoped to that session", async ({
+      page,
+    }) => {
+      // Clean any blob a previous test in this group might have left on this
+      // browser context. The beforeEach has reset server-side defaults.
+      await page.goto("/");
+      await page.evaluate(() =>
+        window.localStorage.removeItem("pi.sessionDetail.toggleState"),
+      );
+
+      // Open the demo session and toggle thinking off via the header button —
+      // this is the "in-session override" the bug used to leak to every other
+      // session.
+      await page
+        .locator(".session-card", { hasText: "add deepseek-v4-pro" })
+        .click();
+      await expect(page).toHaveURL(/\/session\?id=/);
+      const demoUrl = page.url();
+      await expect(
+        page.locator('[data-action="toggle-thinking"]'),
+      ).toHaveAttribute("aria-pressed", "true");
+      await page.locator('[data-action="toggle-thinking"]').click();
+      await expect(
+        page.locator('[data-action="toggle-thinking"]'),
+      ).toHaveAttribute("aria-pressed", "false");
+
+      // Navigate to a different session; the configured default (thinking on)
+      // must apply — the demo override must not leak.
+      await page.goto("/");
+      await page
+        .locator(".session-card", { hasText: "Fix the failing unit test" })
+        .click();
+      await expect(page).toHaveURL(/\/session\?id=/);
+      await expect(
+        page.locator('[data-action="toggle-thinking"]'),
+      ).toHaveAttribute("aria-pressed", "true");
+
+      // Re-open the demo session; the per-session override must still apply
+      // there (the blob remembers it specifically for that session id).
+      await page.goto(demoUrl);
+      await expect(
+        page.locator('[data-action="toggle-thinking"]'),
+      ).toHaveAttribute("aria-pressed", "false");
+    });
+
+    // Migration: a pre-existing flat-state blob (one shared override for every
+    // session) must be ignored after this PR so the configured default
+    // applies. Regression guard for the exact bug surfaced in the screenshot
+    // review.
+    test("stale flat-shape toggle blob is ignored by loadToggleState", async ({
+      page,
+    }) => {
+      // Seed localStorage with the old flat shape before any session loads,
+      // matching what users from before this PR have on their machines.
+      await page.goto("/");
+      await page.evaluate(() => {
+        window.localStorage.setItem(
+          "pi.sessionDetail.toggleState",
+          JSON.stringify({
+            thinkingExpanded: false,
+            toolsVisible: false,
+            toolOutputsExpanded: true,
+          }),
+        );
+      });
+      await page
+        .locator(".session-card", { hasText: "add deepseek-v4-pro" })
+        .click();
+      await expect(page).toHaveURL(/\/session\?id=/);
+
+      // The configured defaults (thinking on, tools on, tool outputs off) must
+      // win — the flat blob is treated as no overrides.
+      await expect(
+        page.locator('[data-action="toggle-thinking"]'),
+      ).toHaveAttribute("aria-pressed", "true");
+      await expect(
+        page.locator('[data-action="toggle-tools"]'),
+      ).toHaveAttribute("aria-pressed", "true");
+      await expect(
+        page.locator('[data-action="toggle-tool-output"]'),
+      ).toHaveAttribute("aria-pressed", "false");
+    });
   });
 
   // Mobile drill-in: at narrow widths the sidebar fills the viewport and the

@@ -19,50 +19,66 @@ function readBoolSetting(storage, key, fallback) {
   return fallback;
 }
 
+// Read the persisted per-session map. Older builds stored a single flat state
+// object at this key (one shared override for every session); that shape is
+// discarded here so the configured Session Display defaults apply going
+// forward instead of being shadowed by a stale global toggle.
+function readSessionMap(storage) {
+  try {
+    const raw = storage?.getItem(TOGGLE_STATE_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return {};
+    if (
+      'thinkingExpanded' in parsed ||
+      'toolsVisible' in parsed ||
+      'toolOutputsExpanded' in parsed
+    ) {
+      // Old flat-state shape — treat as no overrides.
+      return {};
+    }
+    return parsed;
+  } catch (_) {
+    return {};
+  }
+}
+
 // loadToggleState builds the initial header-toggle state in three layers:
 // 1. Hardcoded defaults (toggleStateDefaults).
 // 2. Server-backed per-user defaults (TOGGLE_DEFAULT_SETTING_KEYS), already
 //    mirrored into localStorage by the settings hydration on page load.
-// 3. The per-session JSON blob (TOGGLE_STATE_STORAGE_KEY), which remembers the
-//    user's most recent in-session toggle and wins over the configured default.
-//    The settings UI clears the relevant blob entry on save (see
-//    clearPersistedToggleOverride) so changing a default takes effect on next
-//    session load instead of being shadowed by a stale runtime override.
-export function loadToggleState({ storage = globalThis.localStorage } = {}) {
+// 3. The per-session override for `sessionId`, if any — set when the user
+//    toggled a header button in that specific session, so the next time they
+//    open the SAME session it remembers their last choice. Other sessions are
+//    not affected, so changing a default in /settings takes effect everywhere
+//    the user hasn't explicitly overridden it.
+export function loadToggleState({ sessionId = '', storage = globalThis.localStorage } = {}) {
   const state = { ...toggleStateDefaults };
   for (const [stateKey, settingKey] of Object.entries(TOGGLE_DEFAULT_SETTING_KEYS)) {
     state[stateKey] = readBoolSetting(storage, settingKey, state[stateKey]);
   }
-  try {
-    const saved = JSON.parse(storage?.getItem(TOGGLE_STATE_STORAGE_KEY) || '{}');
+  if (!sessionId) return state;
+  const saved = readSessionMap(storage)[sessionId];
+  if (saved && typeof saved === 'object') {
     if (typeof saved.thinkingExpanded === 'boolean')
       state.thinkingExpanded = saved.thinkingExpanded;
     if (typeof saved.toolsVisible === 'boolean') state.toolsVisible = saved.toolsVisible;
     if (typeof saved.toolOutputsExpanded === 'boolean')
       state.toolOutputsExpanded = saved.toolOutputsExpanded;
-  } catch (_) {}
+  }
   return state;
 }
 
-// Drop one key from the persisted per-session blob so the next loadToggleState
-// falls back to the (just-changed) configured default. Other keys in the blob
-// are preserved.
-export function clearPersistedToggleOverride(stateKey, { storage = globalThis.localStorage } = {}) {
+export function saveToggleState(state, { sessionId = '', storage = globalThis.localStorage } = {}) {
+  if (!sessionId) return;
   try {
-    const saved = JSON.parse(storage?.getItem(TOGGLE_STATE_STORAGE_KEY) || '{}');
-    if (!(stateKey in saved)) return;
-    delete saved[stateKey];
-    if (Object.keys(saved).length === 0) {
-      storage?.removeItem(TOGGLE_STATE_STORAGE_KEY);
-    } else {
-      storage?.setItem(TOGGLE_STATE_STORAGE_KEY, JSON.stringify(saved));
-    }
-  } catch (_) {}
-}
-
-export function saveToggleState(state, { storage = globalThis.localStorage } = {}) {
-  try {
-    storage?.setItem(TOGGLE_STATE_STORAGE_KEY, JSON.stringify(state));
+    const map = readSessionMap(storage);
+    map[sessionId] = {
+      thinkingExpanded: state.thinkingExpanded,
+      toolsVisible: state.toolsVisible,
+      toolOutputsExpanded: state.toolOutputsExpanded,
+    };
+    storage?.setItem(TOGGLE_STATE_STORAGE_KEY, JSON.stringify(map));
   } catch (_) {}
 }
 
@@ -101,12 +117,13 @@ export function syncToggleButtons(documentImpl, state) {
 export function createToggleController({
   documentImpl = document,
   storage = globalThis.localStorage,
-  initialState = loadToggleState({ storage }),
+  sessionId = '',
+  initialState = loadToggleState({ sessionId, storage }),
 } = {}) {
   const state = initialState;
   const applyToNode = (node) => applyToggleStateToNode(node, state);
   const syncButtons = () => syncToggleButtons(documentImpl, state);
-  const save = () => saveToggleState(state, { storage });
+  const save = () => saveToggleState(state, { sessionId, storage });
   const toggle = (key) => {
     state[key] = !state[key];
     save();

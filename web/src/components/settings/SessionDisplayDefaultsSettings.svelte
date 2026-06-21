@@ -1,10 +1,7 @@
 <script>
   import { t } from '../../shared/i18n.js';
   import { boolFor } from '../../settings/settings-support.js';
-  import {
-    TOGGLE_DEFAULT_SETTING_KEYS,
-    clearPersistedToggleOverride,
-  } from '../../session/ui/toggle-state.js';
+  import { TOGGLE_DEFAULT_SETTING_KEYS } from '../../session/ui/toggle-state.js';
 
   let { settings = {}, onSave = () => {} } = $props();
 
@@ -16,12 +13,8 @@
   let toolsVisible = $derived(boolFor(settings, toolsKey, true));
   let toolOutputsExpanded = $derived(boolFor(settings, toolOutputsKey, false));
 
-  function save(settingKey, stateKey, checked) {
+  function save(settingKey, checked) {
     onSave(settingKey, checked ? 'true' : 'false');
-    // Drop the runtime override so the new default takes effect on the next
-    // session load instead of being shadowed by the user's last in-session
-    // toggle (see loadToggleState in session/ui/toggle-state.js).
-    clearPersistedToggleOverride(stateKey);
   }
 </script>
 
@@ -39,7 +32,7 @@
           type="checkbox"
           data-setting={thinkingKey}
           checked={thinkingExpanded}
-          onchange={(e) => save(thinkingKey, 'thinkingExpanded', e.currentTarget.checked)}
+          onchange={(e) => save(thinkingKey, e.currentTarget.checked)}
         /><span class="slider"></span></label
       >
     </div>
@@ -56,7 +49,7 @@
           type="checkbox"
           data-setting={toolsKey}
           checked={toolsVisible}
-          onchange={(e) => save(toolsKey, 'toolsVisible', e.currentTarget.checked)}
+          onchange={(e) => save(toolsKey, e.currentTarget.checked)}
         /><span class="slider"></span></label
       >
     </div>
@@ -73,7 +66,7 @@
           type="checkbox"
           data-setting={toolOutputsKey}
           checked={toolOutputsExpanded}
-          onchange={(e) => save(toolOutputsKey, 'toolOutputsExpanded', e.currentTarget.checked)}
+          onchange={(e) => save(toolOutputsKey, e.currentTarget.checked)}
         /><span class="slider"></span></label
       >
     </div>
