@@ -228,6 +228,71 @@ test.describe("settings page", () => {
     await expect(page.locator('[data-setting="pi-web-theme"]')).toHaveCount(0);
   });
 
+  // Session Display defaults (issue #48): the three header toggles
+  // (thinking, tools, tool outputs) have configurable initial visibility. The
+  // /settings page writes through to /api/settings, and the next session load
+  // picks the new value up via loadToggleState before the user has touched the
+  // header buttons. Verified by checking the buttons' aria-pressed state, which
+  // syncToggleButtons sets on attachHeaderHandlers.
+  test("session display defaults persist and apply to new session loads", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "Desktop Chrome",
+      "server-side persistence is browser-independent; run once",
+    );
+
+    const thinkingInput = '[data-setting="pi-web:v1:toggle:thinking"]';
+    // The <input> is visually hidden by .settings-toggle CSS; the wrapping
+    // <label> is what the user actually clicks. Target the label for interactions
+    // and the input for state assertions.
+    const thinkingLabel = `label.settings-toggle:has(${thinkingInput})`;
+
+    await page.goto("/settings");
+    await openSection(page, "sessionDisplay");
+    await expect(page.locator(thinkingLabel)).toBeVisible();
+    await expect(page.locator(thinkingInput)).toBeChecked();
+
+    // Default is "true" (matches the previous hardcoded behavior); flip to off
+    // and assert the change is POSTed.
+    const saved = page.waitForResponse(
+      (r) =>
+        r.url().includes("/api/settings") && r.request().method() === "POST",
+    );
+    await page.locator(thinkingLabel).click();
+    await saved;
+    await expect(page.locator(thinkingInput)).not.toBeChecked();
+
+    // Drop the localStorage cache so the next page load can only get the
+    // setting back from the server, then reload to confirm the toggle stays off.
+    await page.evaluate(() => window.localStorage.clear());
+    await page.reload();
+    await openSection(page, "sessionDisplay");
+    await expect(page.locator(thinkingInput)).not.toBeChecked();
+
+    // Open the demo session and assert the header toggle reflects the new
+    // default. aria-pressed is set by syncToggleButtons during
+    // attachHeaderHandlers, so it captures the state loadToggleState computed.
+    await page.goto("/");
+    await page.locator(".session-card", { hasText: "add deepseek-v4-pro" }).click();
+    await expect(page).toHaveURL(/\/session\?id=/);
+    await expect(
+      page.locator('[data-action="toggle-thinking"]'),
+    ).toHaveAttribute("aria-pressed", "false");
+
+    // Restore the default so this test doesn't bleed into the rest of the
+    // suite (settings persist server-side in a single shared store).
+    await page.goto("/settings");
+    await openSection(page, "sessionDisplay");
+    const restored = page.waitForResponse(
+      (r) =>
+        r.url().includes("/api/settings") && r.request().method() === "POST",
+    );
+    await page.locator(thinkingLabel).click();
+    await restored;
+    await expect(page.locator(thinkingInput)).toBeChecked();
+  });
+
   // Mobile drill-in: at narrow widths the sidebar fills the viewport and the
   // pane is hidden until a section is tapped; the header back arrow returns to
   // the list. Mirrors the iOS Settings pattern.
