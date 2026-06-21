@@ -18,6 +18,7 @@ import (
 
 	"pi-web/internal/agentdir"
 	"pi-web/internal/auth"
+	"pi-web/internal/chatqueue"
 	"pi-web/internal/render"
 	"pi-web/internal/rpc"
 	"pi-web/internal/schedules"
@@ -82,6 +83,8 @@ type Server struct {
 	wg                  sync.WaitGroup
 	db                  *sql.DB
 	schedules           *schedules.Store
+	chatQueue           *chatqueue.Store
+	queueDrainer        *queueDrainer
 	updater             *updater.Checker
 	runInstall          func(ctx context.Context) error
 	runRestart          func() error
@@ -153,6 +156,7 @@ func New(deps Deps) (*Server, error) {
 		stopCh:              make(chan struct{}),
 		db:                  db,
 		schedules:           schedules.NewStore(db),
+		chatQueue:           chatqueue.NewStore(db),
 		updater:             deps.Updater,
 		runInstall:          deps.RunInstall,
 		runRestart:          deps.RunRestart,
@@ -168,6 +172,7 @@ func New(deps Deps) (*Server, error) {
 		},
 	}
 	s.schedules.Now = now
+	s.chatQueue.Now = now
 	if pm, err := NewPushManager(agentDir); err != nil {
 		fmt.Fprintf(os.Stderr, "push notifications unavailable: %v\n", err)
 	} else {
@@ -187,6 +192,10 @@ func New(deps Deps) (*Server, error) {
 		defer s.wg.Done()
 		s.runScheduler(s.stopCh, scheduleTickInterval)
 	}()
+	// Autonomous queue drainer: drains chat_queue items into the worker even
+	// when nobody has the session open in a browser. Stop in Shutdown.
+	s.queueDrainer = newQueueDrainer(s)
+	s.queueDrainer.start()
 	return s, nil
 }
 
@@ -204,6 +213,18 @@ func initDB(agentDir string) (*sql.DB, error) {
 	// annotation writes). Serialize on a single connection so writes queue
 	// instead of failing.
 	db.SetMaxOpenConns(1)
+	// WAL mode lets readers and the (single) writer make progress concurrently,
+	// which keeps GET /api/chat/queue snappy when the autonomous drainer is
+	// holding the write half. busy_timeout is the small safety net for the rare
+	// schema/migration-time write contention.
+	if _, err := db.Exec(`PRAGMA journal_mode=WAL`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("enable WAL: %w", err)
+	}
+	if _, err := db.Exec(`PRAGMA busy_timeout=5000`); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("set busy_timeout: %w", err)
+	}
 
 	schema := []struct {
 		name string
@@ -230,6 +251,9 @@ func initDB(agentDir string) (*sql.DB, error) {
 		{"schedule_runs session index", schedules.RunsSessionIndexDDL},
 		{"review_comments table", reviewCommentsSchema},
 		{"review_comments index", reviewCommentsIndex},
+		{"chat_queue_items table", chatqueue.ItemsTableDDL},
+		{"chat_queue_items index", chatqueue.ItemsSessionIndexDDL},
+		{"chat_queue_state table", chatqueue.StateTableDDL},
 	}
 	for _, s := range schema {
 		if _, err := db.Exec(s.stmt); err != nil {
@@ -246,6 +270,9 @@ func initDB(agentDir string) (*sql.DB, error) {
 func (s *Server) Shutdown() {
 	s.stopOnce.Do(func() {
 		close(s.stopCh)
+		if s.queueDrainer != nil {
+			s.queueDrainer.stop()
+		}
 		if s.db != nil {
 			s.db.Close()
 		}
@@ -287,6 +314,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 	// variables only.
 	mux.HandleFunc("/custom-themes.css", s.handleCustomThemes)
 	mux.HandleFunc("/api/scratchpad", s.getPostHandler(s.handleGetScratchpad, s.handleSaveScratchpad))
+	mux.HandleFunc("/api/chat/queue", s.auth.Wrap(s.handleChatQueue))
 	mux.HandleFunc("/api/annotations", s.auth.Wrap(s.handleAnnotations))
 	mux.HandleFunc("/api/settings", s.getPostHandler(s.handleGetSettings, s.handleSaveSettings))
 	mux.HandleFunc("/api/btw", s.auth.Wrap(s.handleGetBtw))

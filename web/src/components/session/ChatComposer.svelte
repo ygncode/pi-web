@@ -21,6 +21,7 @@
   import TextAttachmentModal from './chat/TextAttachmentModal.svelte';
   import { ChatToolbarState } from './chat/chat-toolbar-state.svelte.js';
   import { QueueStore } from './chat/queue-store.svelte.js';
+  import { createQueueApi } from './chat/queue-api.js';
 
   let {
     sessionId = '',
@@ -34,13 +35,17 @@
   // <ChatToolbar> renders from it.
   const toolbar = new ChatToolbarState();
   // Reactive queue panel state — shared with chat-composer-runtime so its
-  // steer/queue glue mutates the same items <QueuePanel> renders. Persists
-  // queued items + paused flag to localStorage per session so a browser
-  // refresh doesn't drop the user's pending work.
-  const queueStore = new QueueStore({
-    sessionId,
-    storage: typeof window !== 'undefined' ? window.localStorage : null,
-  });
+  // steer/queue glue mutates the same items <QueuePanel> renders. The queued
+  // items live on the server (chat_queue table); we hydrate on mount and
+  // re-fetch on SSE 'queue' events so other tabs (and the autonomous
+  // backend drainer) stay in sync.
+  const queueApi = sessionId
+    ? createQueueApi({
+        sessionId,
+        fetchImpl: typeof window !== 'undefined' ? window.fetch.bind(window) : undefined,
+      })
+    : null;
+  const queueStore = new QueueStore({ api: queueApi });
 
   // The composer runtime lives in <script module> (runChatComposer). It reads the
   // shared model + navigateTo (owned by SessionPage runtime context) at mount —
@@ -68,7 +73,17 @@
       setIntervalImpl: target.setInterval.bind(target),
       toolbar,
       queueStore,
+      queueApi,
     });
+
+    // Initial hydration from the server-side queue + subscribe to SSE 'queue'
+    // events so changes from the autonomous drainer (or another tab) show up
+    // immediately. The EventSource is shared with <LiveReload> — both attach
+    // their own listeners.
+    void queueStore.refresh?.();
+    const onQueueEvent = () => queueStore.refresh?.();
+    target.addEventListener('pi-queue-event', onQueueEvent);
+    return () => target.removeEventListener('pi-queue-event', onQueueEvent);
   });
 </script>
 

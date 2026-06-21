@@ -174,8 +174,9 @@ export default {
   'composer.queueDelete': 'លុប',
   'composer.queueSendNow': 'ផ្ញើឥឡូវ',
   'composer.queueExit': 'ចេញ',
-  'composer.queueSavedLocally': 'ទុកក្នុងតំបន់',
-  'composer.queueSavedLocallyHint': 'សារក្នុងជួរត្រូវបានរក្សាទុកក្នុងកម្មវិធីរុករកនេះតាមសម័យ ហើយមិនបាត់នៅពេលផ្ទុកឡើងវិញ',
+  'composer.queueSavedLocally': 'ផ្ញើស្វ័យប្រវត្តិ',
+  'composer.queueSavedLocallyHint':
+    'សារក្នុងជួរត្រូវបានរក្សាទុកនៅលើម៉ាស៊ីនមេ ហើយនឹងផ្ញើដោយស្វ័យប្រវត្តិនៅពេលកម្មករទំនេរ — ទោះបីអ្នកបិទកម្មវិធីរុករកក៏ដោយ',
   'composer.cancel': 'បោះបង់',
   'composer.idle': 'ទំនេរ',
   'composer.unavailable': 'មិនអាចប្រើបាន',

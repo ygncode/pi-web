@@ -176,8 +176,9 @@ export default {
   'composer.queueDelete': 'ဖျက်',
   'composer.queueSendNow': 'ချက်ချင်းပို့',
   'composer.queueExit': 'ထွက်',
-  'composer.queueSavedLocally': 'စက်တွင်းသိမ်း',
-  'composer.queueSavedLocallyHint': 'တန်းစီထားသောစာများကို ဤဘရောင်ဇာတွင် ဆက်ရှင်အလိုက် သိမ်းထားပြီး စာမျက်နှာပြန်တင်လျှင်လည်း ပျောက်မသွားပါ',
+  'composer.queueSavedLocally': 'အလိုအလျောက်ပို့',
+  'composer.queueSavedLocallyHint':
+    'တန်းစီစာများကို ဆာဗာတွင် သိမ်းဆည်းထားပြီး၊ ဘရောက်ဆာပိတ်လိုက်သည့်တိုင် အားလပ်ချိန်ရောက်ပါက အလိုအလျောက် ပို့ပေးပါမည်',
   'composer.cancel': 'ပယ်ဖျက်',
   'composer.idle': 'အလုပ်မရှိ',
   'composer.unavailable': 'မရရှိနိုင်',

@@ -174,8 +174,9 @@ export default {
   'composer.queueDelete': 'hapus',
   'composer.queueSendNow': 'kirim sekarang',
   'composer.queueExit': 'keluar',
-  'composer.queueSavedLocally': 'tersimpan lokal',
-  'composer.queueSavedLocallyHint': 'Pesan dalam antrean disimpan di browser ini per sesi dan akan bertahan setelah penyegaran',
+  'composer.queueSavedLocally': 'mengirim otomatis',
+  'composer.queueSavedLocallyHint':
+    'Pesan dalam antrean disimpan di server dan akan dikirim otomatis saat worker menganggur — bahkan jika Anda menutup peramban',
   'composer.cancel': 'Batal',
   'composer.idle': 'menganggur',
   'composer.unavailable': 'tidak tersedia',

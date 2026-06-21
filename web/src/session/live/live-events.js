@@ -139,6 +139,16 @@ export function wireSessionEvents({
       }
     });
   }
+  // 'queue' is fired by the backend whenever the per-session chat_queue
+  // changes — autonomous drainer, another tab, etc. ChatComposer listens for
+  // pi-queue-event on the window and refetches /api/chat/queue.
+  eventSource.addEventListener('queue', () => {
+    if (windowImpl && CustomEventImpl) {
+      try {
+        windowImpl.dispatchEvent(new CustomEventImpl('pi-queue-event'));
+      } catch (_) {}
+    }
+  });
   eventSource.onerror = onError;
   return eventSource;
 }

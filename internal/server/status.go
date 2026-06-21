@@ -101,4 +101,11 @@ func (s *Server) recomputeAndBroadcastStatus(sessionID string) {
 			go s.push.NotifyDone(sessionID)
 		}
 	}
+
+	// Transition running → idle is also the cue for the autonomous queue
+	// drainer: if items are waiting, dispatch the next one now instead of
+	// waiting for the 5-second tick.
+	if was && !now {
+		s.queueDrainer.kick(sessionID)
+	}
 }

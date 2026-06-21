@@ -257,9 +257,9 @@ export default {
   'composer.queueDelete': 'delete',
   'composer.queueSendNow': 'send now',
   'composer.queueExit': 'exit',
-  'composer.queueSavedLocally': 'saved locally',
+  'composer.queueSavedLocally': 'auto-sending',
   'composer.queueSavedLocallyHint':
-    'Queued messages are saved in this browser per session and will survive a refresh',
+    'Queued messages are saved on the server and will be sent automatically when the worker is idle — even if you close the browser',
   'composer.cancel': 'Cancel',
   'composer.idle': 'idle',
   'composer.unavailable': 'unavailable',

@@ -13,6 +13,31 @@ function makeDom() {
   };
 }
 
+function makeApi(initial = { items: [], paused: false }) {
+  let next = 1;
+  const items = [...initial.items];
+  let paused = !!initial.paused;
+  return {
+    list: vi.fn(async () => ({ items: [...items], paused })),
+    add: vi.fn(async (message, displayText) => {
+      const item = { sessionId: 'mock', position: next++, message, displayText };
+      items.push(item);
+      return item;
+    }),
+    remove: vi.fn(async (position) => {
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].position === position) {
+          items.splice(i, 1);
+          return;
+        }
+      }
+    }),
+    setPaused: vi.fn(async (value) => {
+      paused = !!value;
+    }),
+  };
+}
+
 function type(textarea, value) {
   textarea.value = value;
   textarea.dispatchEvent(new Event('input'));
@@ -26,7 +51,7 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
-describe('setupSteerQueue', () => {
+describe('setupSteerQueue (server-backed)', () => {
   it('queue button is disabled until the textarea has content', () => {
     const { queueButton, textarea } = makeDom();
     const store = new QueueStore();
@@ -37,76 +62,24 @@ describe('setupSteerQueue', () => {
     expect(queueButton.disabled).toBe(false);
   });
 
-  it('clicking queue enqueues the textarea content into the store and clears the textarea', () => {
+  it('clicking queue POSTs to the api and adds the new row to the store', async () => {
     const { queueButton, textarea } = makeDom();
-    const store = new QueueStore();
-    setupSteerQueue({ store, queueButton, textarea });
+    const api = makeApi();
+    const store = new QueueStore({ api });
+    setupSteerQueue({ store, queueButton, textarea, queueApi: api });
 
     type(textarea, 'hello');
     queueButton.click();
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
 
+    expect(api.add).toHaveBeenCalledWith('hello', 'hello');
     expect(store.items).toHaveLength(1);
-    expect(store.items[0].kind).toBe('queued');
-    expect(store.items[0].displayText).toBe('hello');
+    expect(store.items[0]).toMatchObject({ kind: 'queued', text: 'hello' });
     expect(textarea.value).toBe('');
   });
 
-  it('removing a queued item via the store works', () => {
-    const { queueButton, textarea } = makeDom();
-    const store = new QueueStore();
-    setupSteerQueue({ store, queueButton, textarea });
-
-    type(textarea, 'one');
-    queueButton.click();
-    type(textarea, 'two');
-    queueButton.click();
-    expect(store.items.map((i) => i.displayText)).toEqual(['one', 'two']);
-
-    store.removeById(store.items[0].id);
-    expect(store.items.map((i) => i.displayText)).toEqual(['two']);
-  });
-
-  it('auto-dequeues the next item on pi-worker-done when not paused', () => {
-    const { queueButton, textarea } = makeDom();
-    const store = new QueueStore();
-    const sendChatMessage = vi.fn(async () => true);
-    setupSteerQueue({ store, queueButton, textarea, sendChatMessage });
-
-    // Simulate a run starting via the optimistic send event.
-    window.dispatchEvent(new CustomEvent('pi-chat-message-sent', { detail: { message: 'task' } }));
-
-    type(textarea, 'queued');
-    queueButton.click();
-
-    window.dispatchEvent(new Event('pi-worker-done'));
-
-    expect(sendChatMessage).toHaveBeenCalledWith('queued', []);
-    expect(store.items).toHaveLength(0);
-  });
-
-  it('does NOT auto-dequeue when paused; resume sends immediately when idle', () => {
-    const { queueButton, textarea } = makeDom();
-    const store = new QueueStore();
-    const sendChatMessage = vi.fn(async () => true);
-    const handle = setupSteerQueue({ store, queueButton, textarea, sendChatMessage });
-
-    // Pre-load queue while idle.
-    type(textarea, 'queued');
-    queueButton.click();
-    store.setPaused(true);
-
-    // A run completes — paused means no auto-send.
-    window.dispatchEvent(new Event('pi-worker-done'));
-    expect(sendChatMessage).not.toHaveBeenCalled();
-    expect(store.items).toHaveLength(1);
-
-    // Resume from idle should kick off the next item.
-    handle.resume();
-    expect(sendChatMessage).toHaveBeenCalledWith('queued', []);
-    expect(store.items).toHaveLength(0);
-  });
-
-  it('treats subsequent sends during an active run as steers, tracked by the store', () => {
+  it('subsequent sends during an active run produce steer rows in the store', () => {
     const { queueButton, textarea } = makeDom();
     const store = new QueueStore();
     setupSteerQueue({ store, queueButton, textarea });
@@ -122,65 +95,83 @@ describe('setupSteerQueue', () => {
     expect(store.steerCount).toBe(1);
     expect(store.items[0].text).toBe('steer-msg');
 
-    // Steer is removable while pending.
+    // Steer is removable without touching the api.
     store.removeById(store.items[0].id);
     expect(store.steerCount).toBe(0);
   });
 
-  it('clears steer rows on pi-worker-done; dequeues do not add new steer rows', () => {
+  it('worker-done clears steer rows but does not auto-dispatch (server drainer handles that)', () => {
     const { queueButton, textarea } = makeDom();
-    const store = new QueueStore();
+    const api = makeApi();
+    const store = new QueueStore({ api });
     const sendChatMessage = vi.fn(async () => true);
-    setupSteerQueue({ store, queueButton, textarea, sendChatMessage });
+    setupSteerQueue({ store, queueButton, textarea, sendChatMessage, queueApi: api });
 
-    // Start a run, add a steer, queue a follow-up.
     window.dispatchEvent(new CustomEvent('pi-chat-message-sent', { detail: { message: 'first' } }));
     window.dispatchEvent(new CustomEvent('pi-chat-message-sent', { detail: { message: 'steer' } }));
-    type(textarea, 'queued');
-    queueButton.click();
-
     expect(store.steerCount).toBe(1);
+
+    window.dispatchEvent(new Event('pi-worker-done'));
+    expect(store.steerCount).toBe(0);
+    // Frontend does NOT dispatch on its own — the server drainer is responsible.
+    expect(sendChatMessage).not.toHaveBeenCalled();
+  });
+
+  it('sendNow DELETEs the row server-side, then dispatches via sendChatMessage', async () => {
+    const { queueButton, textarea } = makeDom();
+    const api = makeApi();
+    const store = new QueueStore({ api });
+    const sendChatMessage = vi.fn(async () => true);
+    const handle = setupSteerQueue({
+      store,
+      queueButton,
+      textarea,
+      sendChatMessage,
+      queueApi: api,
+    });
+
+    type(textarea, 'queue-me');
+    queueButton.click();
+    // Wait for enqueue Promise + store update.
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
     expect(store.queuedCount).toBe(1);
 
-    // Complete the run.
-    window.dispatchEvent(new Event('pi-worker-done'));
+    const id = store.items[0].id;
+    await handle.sendNow(id);
 
-    // Steer cleared; queued item was auto-sent (and removed from the store);
-    // the send event from sendChatMessage is suppressed, so no new steer row.
-    expect(store.steerCount).toBe(0);
+    expect(api.remove).toHaveBeenCalledWith(store.items[0]?.position ?? 1);
+    expect(sendChatMessage).toHaveBeenCalledWith('queue-me', []);
     expect(store.queuedCount).toBe(0);
-    expect(sendChatMessage).toHaveBeenCalledWith('queued', []);
   });
 
-  it('sendNow removes the focused queued item and dispatches it immediately', () => {
+  it('edit DELETEs the row server-side and pops the text back into the textarea', async () => {
     const { queueButton, textarea } = makeDom();
-    const store = new QueueStore();
-    const sendChatMessage = vi.fn(async () => true);
-    const handle = setupSteerQueue({ store, queueButton, textarea, sendChatMessage });
-
-    type(textarea, 'one');
-    queueButton.click();
-    type(textarea, 'two');
-    queueButton.click();
-
-    const secondId = store.items[1].id;
-    handle.sendNow(secondId);
-
-    expect(sendChatMessage).toHaveBeenCalledWith('two', []);
-    expect(store.items.map((i) => i.displayText)).toEqual(['one']);
-  });
-
-  it('edit pulls the queued item back into the textarea and removes it', () => {
-    const { queueButton, textarea } = makeDom();
-    const store = new QueueStore();
-    const handle = setupSteerQueue({ store, queueButton, textarea });
+    const api = makeApi();
+    const store = new QueueStore({ api });
+    const handle = setupSteerQueue({ store, queueButton, textarea, queueApi: api });
 
     type(textarea, 'draft');
     queueButton.click();
-    expect(store.items).toHaveLength(1);
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(store.queuedCount).toBe(1);
 
-    handle.edit(store.items[0].id);
+    await handle.edit(store.items[0].id);
+    expect(api.remove).toHaveBeenCalled();
     expect(textarea.value).toBe('draft');
-    expect(store.items).toHaveLength(0);
+    expect(store.queuedCount).toBe(0);
+  });
+
+  it('resume PATCHes paused=false through the api', async () => {
+    const { queueButton, textarea } = makeDom();
+    const api = makeApi();
+    const store = new QueueStore({ api });
+    const handle = setupSteerQueue({ store, queueButton, textarea, queueApi: api });
+    await store.setPaused(true);
+    api.setPaused.mockClear();
+    await handle.resume();
+    expect(api.setPaused).toHaveBeenCalledWith(false);
+    expect(store.paused).toBe(false);
   });
 });

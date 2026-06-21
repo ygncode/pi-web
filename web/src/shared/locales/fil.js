@@ -176,8 +176,9 @@ export default {
   'composer.queueDelete': 'burahin',
   'composer.queueSendNow': 'ipadala ngayon',
   'composer.queueExit': 'lumabas',
-  'composer.queueSavedLocally': 'naka-save nang lokal',
-  'composer.queueSavedLocallyHint': 'Ang mga nakapilang mensahe ay naka-save sa browser na ito bawat sesyon at hindi mawawala kapag nag-refresh',
+  'composer.queueSavedLocally': 'awtomatiko',
+  'composer.queueSavedLocallyHint':
+    'Ang mga nakapilang mensahe ay naka-save sa server at awtomatikong ipapadala kapag idle ang worker — kahit isara mo ang browser',
   'composer.cancel': 'Kanselahin',
   'composer.idle': 'idle',
   'composer.unavailable': 'hindi available',

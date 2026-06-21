@@ -1,138 +1,139 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QueueStore } from './queue-store.svelte.js';
 
-function makeStorage(initial = {}) {
-  const map = new Map(Object.entries(initial));
-  return {
-    getItem: (key) => (map.has(key) ? map.get(key) : null),
-    setItem: (key, value) => map.set(key, String(value)),
-    removeItem: (key) => map.delete(key),
-    _dump: () => Object.fromEntries(map.entries()),
+function makeApi(initial = { items: [], paused: false }) {
+  let snapshot = { items: [...initial.items], paused: !!initial.paused };
+  let nextPosition = (snapshot.items.reduce((m, i) => Math.max(m, i.position), 0) || 0) + 1;
+  const api = {
+    list: vi.fn(async () => ({
+      items: snapshot.items.map((i) => ({ ...i })),
+      paused: snapshot.paused,
+    })),
+    add: vi.fn(async (message, displayText) => {
+      const item = {
+        sessionId: 'mock',
+        position: nextPosition++,
+        message,
+        displayText: displayText || message,
+      };
+      snapshot.items.push(item);
+      return item;
+    }),
+    remove: vi.fn(async (position) => {
+      snapshot.items = snapshot.items.filter((i) => i.position !== position);
+    }),
+    setPaused: vi.fn(async (paused) => {
+      snapshot.paused = !!paused;
+    }),
+    _snapshot: () => ({ items: [...snapshot.items], paused: snapshot.paused }),
   };
+  return api;
 }
 
-const KEY = 'pi-web:v1:queue:session-abc';
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
-describe('QueueStore persistence', () => {
-  it('returns persistsLocally=false without sessionId or storage', () => {
+describe('QueueStore (server-backed)', () => {
+  it('persistsLocally reports false without an api', () => {
     expect(new QueueStore().persistsLocally).toBe(false);
-    expect(new QueueStore({ sessionId: 'x' }).persistsLocally).toBe(false);
-    expect(new QueueStore({ storage: makeStorage() }).persistsLocally).toBe(false);
+    expect(new QueueStore({ api: makeApi() }).persistsLocally).toBe(true);
   });
 
-  it('writes queued items + paused flag to localStorage on enqueue', () => {
-    const storage = makeStorage();
-    const store = new QueueStore({ sessionId: 'session-abc', storage });
-    store.enqueue({ id: 'q1', kind: 'queued', text: 'hello', files: [], displayText: 'hello' });
-    store.enqueue({ id: 'q2', kind: 'queued', text: 'world', files: [], displayText: 'world' });
-    store.setPaused(true);
-
-    const raw = storage.getItem(KEY);
-    expect(raw).toBeTruthy();
-    const parsed = JSON.parse(raw);
-    expect(parsed.paused).toBe(true);
-    expect(parsed.items).toEqual([
-      { id: 'q1', kind: 'queued', text: 'hello', displayText: 'hello' },
-      { id: 'q2', kind: 'queued', text: 'world', displayText: 'world' },
-    ]);
-  });
-
-  it('rehydrates queued items + paused on construction', () => {
-    const storage = makeStorage({
-      [KEY]: JSON.stringify({
-        paused: true,
-        items: [
-          { id: 'q1', kind: 'queued', text: 'restored', displayText: 'restored' },
-          { id: 'q2', kind: 'queued', text: 'second', displayText: 'second' },
-        ],
-      }),
+  it('refresh hydrates queued items from the api and preserves steers', async () => {
+    const api = makeApi({
+      items: [
+        { position: 5, message: 'hello', displayText: 'hello' },
+        { position: 6, message: 'world', displayText: 'world' },
+      ],
+      paused: true,
     });
-
-    const store = new QueueStore({ sessionId: 'session-abc', storage });
-    expect(store.items).toHaveLength(2);
-    expect(store.items[0]).toMatchObject({ id: 'q1', text: 'restored', files: [] });
-    expect(store.items[1]).toMatchObject({ id: 'q2', text: 'second', files: [] });
+    const store = new QueueStore({ api });
+    // Add a transient steer before refresh.
+    store.pushSteer({ text: 'mid-flight' });
+    await store.refresh();
+    expect(store.queuedCount).toBe(2);
+    expect(store.steerCount).toBe(1);
     expect(store.paused).toBe(true);
+    expect(store.items[0]).toMatchObject({ kind: 'queued', position: 5, text: 'hello' });
+    expect(store.items[1]).toMatchObject({ kind: 'queued', position: 6, text: 'world' });
+    expect(store.items[2]).toMatchObject({ kind: 'steer', text: 'mid-flight' });
   });
 
-  it('does not persist steer rows (they belong to the active run)', () => {
-    const storage = makeStorage();
-    const store = new QueueStore({ sessionId: 'session-abc', storage });
-    store.pushSteer({ id: 's1', kind: 'steer', text: 'steering' });
-    expect(storage.getItem(KEY)).toBeNull();
-
-    store.enqueue({ id: 'q1', kind: 'queued', text: 'kept', files: [], displayText: 'kept' });
-    const parsed = JSON.parse(storage.getItem(KEY));
-    // Only the queued item, not the steer.
-    expect(parsed.items.map((i) => i.id)).toEqual(['q1']);
+  it('enqueueQueued POSTs to the api and appends the new row before any steer', async () => {
+    const api = makeApi();
+    const store = new QueueStore({ api });
+    store.pushSteer({ text: 'first-steer' });
+    const added = await store.enqueueQueued({ message: 'hi', displayText: 'hi' });
+    expect(added).toMatchObject({ kind: 'queued', text: 'hi' });
+    expect(api.add).toHaveBeenCalledWith('hi', 'hi');
+    // The queued row is inserted before the steer.
+    expect(store.items.map((i) => i.kind)).toEqual(['queued', 'steer']);
   });
 
-  it('drops file attachments on persist (Files are not serializable)', () => {
-    const storage = makeStorage();
-    const store = new QueueStore({ sessionId: 'session-abc', storage });
-    const fakeFile = { name: 'cat.png', size: 9 };
-    store.enqueue({
-      id: 'q1',
-      kind: 'queued',
-      text: 'image attached',
-      displayText: 'image attached',
-      files: [fakeFile],
+  it('removeById on a queued row calls api.remove and updates the store', async () => {
+    const api = makeApi({
+      items: [{ position: 7, message: 'gone', displayText: 'gone' }],
     });
+    const store = new QueueStore({ api });
+    await store.refresh();
+    expect(store.queuedCount).toBe(1);
 
-    const parsed = JSON.parse(storage.getItem(KEY));
-    expect(parsed.items[0]).not.toHaveProperty('files');
+    await store.removeById(store.items[0].id);
+    expect(api.remove).toHaveBeenCalledWith(7);
+    expect(store.queuedCount).toBe(0);
   });
 
-  it('clears the storage entry when the queue empties and pause is off', () => {
-    const storage = makeStorage();
-    const store = new QueueStore({ sessionId: 'session-abc', storage });
-    store.enqueue({ id: 'q1', kind: 'queued', text: 'x', files: [], displayText: 'x' });
-    expect(storage.getItem(KEY)).toBeTruthy();
-
-    store.removeById('q1');
-    expect(storage.getItem(KEY)).toBeNull();
+  it('removeById on a steer row does not call the api', async () => {
+    const api = makeApi();
+    const store = new QueueStore({ api });
+    store.pushSteer({ text: 's' });
+    await store.removeById(store.items[0].id);
+    expect(api.remove).not.toHaveBeenCalled();
+    expect(store.steerCount).toBe(0);
   });
 
-  it('keeps the storage entry around when paused is still true after items drain', () => {
-    const storage = makeStorage();
-    const store = new QueueStore({ sessionId: 'session-abc', storage });
-    store.setPaused(true);
-    store.enqueue({ id: 'q1', kind: 'queued', text: 'x', files: [], displayText: 'x' });
-    store.removeById('q1');
-    // Paused stays true so the entry stays around to preserve that setting.
-    const raw = storage.getItem(KEY);
-    expect(raw).toBeTruthy();
-    expect(JSON.parse(raw)).toEqual({ items: [], paused: true });
+  it('takeLocalById removes without touching the api (sendNow/edit path)', async () => {
+    const api = makeApi({ items: [{ position: 1, message: 'm', displayText: 'm' }] });
+    const store = new QueueStore({ api });
+    await store.refresh();
+    const item = store.takeLocalById(store.items[0].id);
+    expect(item).toMatchObject({ kind: 'queued', position: 1, text: 'm' });
+    expect(api.remove).not.toHaveBeenCalled();
+    expect(store.queuedCount).toBe(0);
   });
 
-  it('takeQueuedHead writes the new shorter list', () => {
-    const storage = makeStorage();
-    const store = new QueueStore({ sessionId: 'session-abc', storage });
-    store.enqueue({ id: 'q1', kind: 'queued', text: 'one', files: [], displayText: 'one' });
-    store.enqueue({ id: 'q2', kind: 'queued', text: 'two', files: [], displayText: 'two' });
-
-    const head = store.takeQueuedHead();
-    expect(head.id).toBe('q1');
-    expect(JSON.parse(storage.getItem(KEY)).items.map((i) => i.id)).toEqual(['q2']);
+  it('setPaused PATCHes the api and updates the flag', async () => {
+    const api = makeApi();
+    const store = new QueueStore({ api });
+    await store.setPaused(true);
+    expect(api.setPaused).toHaveBeenCalledWith(true);
+    expect(store.paused).toBe(true);
+    // Same value is a no-op.
+    api.setPaused.mockClear();
+    await store.setPaused(true);
+    expect(api.setPaused).not.toHaveBeenCalled();
   });
 
-  it('shrugs off corrupt JSON in localStorage', () => {
-    const storage = makeStorage({ [KEY]: '{not json' });
-    const store = new QueueStore({ sessionId: 'session-abc', storage });
-    expect(store.items).toEqual([]);
-    expect(store.paused).toBe(false);
+  it('clearSteers leaves queued rows alone', async () => {
+    const api = makeApi({ items: [{ position: 1, message: 'q', displayText: 'q' }] });
+    const store = new QueueStore({ api });
+    await store.refresh();
+    store.pushSteer({ text: 'a' });
+    store.pushSteer({ text: 'b' });
+    store.clearSteers();
+    expect(store.steerCount).toBe(0);
+    expect(store.queuedCount).toBe(1);
   });
 
-  it('different sessions keep their own queues', () => {
-    const storage = makeStorage();
-    const a = new QueueStore({ sessionId: 'A', storage });
-    const b = new QueueStore({ sessionId: 'B', storage });
-    a.enqueue({ id: 'qa', kind: 'queued', text: 'A', files: [], displayText: 'A' });
-    b.enqueue({ id: 'qb', kind: 'queued', text: 'B', files: [], displayText: 'B' });
-
-    const reloadA = new QueueStore({ sessionId: 'A', storage });
-    const reloadB = new QueueStore({ sessionId: 'B', storage });
-    expect(reloadA.items.map((i) => i.id)).toEqual(['qa']);
-    expect(reloadB.items.map((i) => i.id)).toEqual(['qb']);
+  it('refresh tolerates an api failure', async () => {
+    const api = {
+      list: vi.fn(async () => {
+        throw new Error('network');
+      }),
+    };
+    const store = new QueueStore({ api });
+    await expect(store.refresh()).resolves.toBeUndefined();
+    expect(store.isEmpty).toBe(true);
   });
 });

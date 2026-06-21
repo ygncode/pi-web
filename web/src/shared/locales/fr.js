@@ -176,8 +176,9 @@ export default {
   'composer.queueDelete': 'supprimer',
   'composer.queueSendNow': 'envoyer maintenant',
   'composer.queueExit': 'quitter',
-  'composer.queueSavedLocally': 'enregistré localement',
-  'composer.queueSavedLocallyHint': 'Les messages en file sont enregistrés dans ce navigateur par session et persistent après un rafraîchissement',
+  'composer.queueSavedLocally': 'envoi automatique',
+  'composer.queueSavedLocallyHint':
+    'Les messages en file sont sauvegardés sur le serveur et envoyés automatiquement quand le worker est inactif, même si vous fermez le navigateur.',
   'composer.cancel': 'Annuler',
   'composer.idle': 'inactif',
   'composer.unavailable': 'indisponible',

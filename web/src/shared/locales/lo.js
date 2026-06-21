@@ -174,8 +174,9 @@ export default {
   'composer.queueDelete': 'ລຶບ',
   'composer.queueSendNow': 'ສົ່ງດຽວນີ້',
   'composer.queueExit': 'ອອກ',
-  'composer.queueSavedLocally': 'ບັນທຶກທ້ອງຖິ່ນ',
-  'composer.queueSavedLocallyHint': 'ຂໍ້ຄວາມໃນຄິວຖືກບັນທຶກໄວ້ໃນເບຣົາເຊີນີ້ຕໍ່ເຊດຊັນ ແລະຍັງຄົງຢູ່ຫຼັງຣີເຟຣດ',
+  'composer.queueSavedLocally': 'ສົ່ງອັດຕະໂນມັດ',
+  'composer.queueSavedLocallyHint':
+    'ຂໍ້ຄວາມໃນຄິວຖືກບັນທຶກໄວ້ໃນເຊີບເວີ ແລະຈະຖືກສົ່ງອັດຕະໂນມັດເມື່ອໂຕເຮັດວຽກຫວ່າງ — ເຖິງແມ່ນວ່າທ່ານຈະປິດບຣາວເຊີ',
   'composer.cancel': 'ຍົກເລີກ',
   'composer.idle': 'ຫວ່າງ',
   'composer.unavailable': 'ບໍ່ສາມາດໃຊ້ໄດ້',

@@ -10,8 +10,23 @@ import {
 // The stub pi (e2e/lib/stub-pi/pi) honors a "[[slow:NNNN]]" marker to hold a run
 // open, and folds any prompt that lands mid-run into the active turn (a steer).
 
+// The e2e suite runs many projects in parallel against one pi-web backend that
+// serializes SQLite writes; under that load a single POST /api/chat/queue
+// round-trip can exceed Playwright's default 5s expect window, and the
+// autonomous queue drainer racing with parallel test sessions amplifies the
+// contention. Run this file's tests serially within each project worker (cross-
+// project parallelism still gives us a healthy fan-out for browser coverage)
+// and keep a single retry for genuine flakes.
+test.describe.configure({ mode: "serial", retries: 1 });
+
 test.describe("steer / queue (stubbed pi)", () => {
-  async function openRunningSession(page, sessionsDir, testInfo, prefix) {
+  async function openRunningSession(
+    page,
+    sessionsDir,
+    testInfo,
+    prefix,
+    { slowMs = 5000 } = {},
+  ) {
     const cwd = realWorkingDir();
     const { entries } = buildSession({ cwd });
     const name = uniqueSessionName(testInfo, prefix);
@@ -24,8 +39,10 @@ test.describe("steer / queue (stubbed pi)", () => {
     await expect(composer).toHaveAttribute("data-chat-available", "true");
 
     const textarea = page.locator("#pi-chat-message");
-    // Hold the run open for a few seconds so we can interact while running.
-    await textarea.fill("task A [[slow:5000]]");
+    // Hold the run open so we can interact while running. Pass slowMs to
+    // extend this for tests that need the worker to stay busy through pause
+    // setup so the autonomous backend drainer can't dispatch items first.
+    await textarea.fill(`task A [[slow:${slowMs}]]`);
     await page.locator("#pi-chat-send").click();
 
     // While running, the Steer (send) and Queue buttons are available.
@@ -121,14 +138,20 @@ test.describe("steer / queue (stubbed pi)", () => {
       `${prefix}-2-${testInfo.workerIndex}-${Date.now()}`,
       `${prefix}-3-${testInfo.workerIndex}-${Date.now()}`,
     ];
-    for (const text of items) {
-      await textarea.fill(text);
+    // Serialize the queue button clicks so each POST /api/chat/queue lands
+    // (and the panel updates) before the next item is added. Without this
+    // wait the three POSTs race and items may arrive out of input order.
+    // Use a generous timeout: the e2e suite runs many tests in parallel
+    // against one pi-web backend that serializes SQLite writes, so a single
+    // POST round-trip can take longer than the default 5s expect window.
+    for (let i = 0; i < items.length; i++) {
+      await textarea.fill(items[i]);
       await page.locator("#pi-chat-queue").click();
+      await expect(page.locator(".pi-queue-item")).toHaveCount(i + 1, { timeout: 15000 });
     }
-    await expect(page.locator(".pi-queue-item")).toHaveCount(3);
     // Textarea is cleared by each Queue press; the panel auto-focuses the first
     // row (focusIndex = 0), so the shortcut listener targets that row.
-    await expect(page.locator(".pi-queue-item--focused")).toHaveCount(1);
+    await expect(page.locator(".pi-queue-item--focused")).toHaveCount(1, { timeout: 5000 });
     return items;
   }
 
@@ -136,7 +159,11 @@ test.describe("steer / queue (stubbed pi)", () => {
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-nav");
+    // 30s slow-hold so the backend drainer never gets to dispatch items
+    // mid-test (which would yank rows out from under the keyboard cursor).
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-nav", {
+      slowMs: 30000,
+    });
     const items = await queueThree(page, textarea, testInfo, "nav");
 
     const rows = page.locator(".pi-queue-item");
@@ -166,7 +193,9 @@ test.describe("steer / queue (stubbed pi)", () => {
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-del");
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-del", {
+      slowMs: 30000,
+    });
     const items = await queueThree(page, textarea, testInfo, "del");
 
     // Focus moves to index 1, then delete; row containing items[1] should go.
@@ -184,7 +213,9 @@ test.describe("steer / queue (stubbed pi)", () => {
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-enter");
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-enter", {
+      slowMs: 30000,
+    });
     const items = await queueThree(page, textarea, testInfo, "enter");
 
     // Skip ahead to the third item.
@@ -210,7 +241,9 @@ test.describe("steer / queue (stubbed pi)", () => {
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-edit");
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-edit", {
+      slowMs: 30000,
+    });
     const items = await queueThree(page, textarea, testInfo, "edit");
 
     await page.keyboard.press("ArrowDown"); // focus items[1]
@@ -225,7 +258,9 @@ test.describe("steer / queue (stubbed pi)", () => {
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-esc");
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-esc", {
+      slowMs: 30000,
+    });
     await queueThree(page, textarea, testInfo, "esc");
 
     await page.keyboard.press("Escape");
@@ -238,7 +273,9 @@ test.describe("steer / queue (stubbed pi)", () => {
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-suppress");
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "kb-suppress", {
+      slowMs: 30000,
+    });
     await queueThree(page, textarea, testInfo, "sup");
 
     // Start typing into the textarea; the panel listener must not hijack keys.
@@ -265,14 +302,16 @@ test.describe("steer / queue (stubbed pi)", () => {
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "above-shell");
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "above-shell", {
+      slowMs: 30000,
+    });
     await textarea.fill("anywhere");
     await page.locator("#pi-chat-queue").click();
 
     // The panel must render as a sibling outside .pi-chat-shell so it floats
     // above the composer card instead of being nested inside it.
     const panel = page.locator(".pi-queue-panel");
-    await expect(panel).toBeVisible();
+    await expect(panel).toBeVisible({ timeout: 15000 });
     const isOutsideShell = await panel.evaluate(
       (el) => !el.closest(".pi-chat-shell"),
     );
@@ -289,22 +328,27 @@ test.describe("steer / queue (stubbed pi)", () => {
     expect(Math.abs(panelBox!.width - shellBox!.width)).toBeLessThan(2);
   });
 
-  test("queued messages survive a browser refresh (localStorage persistence)", async ({
+  test("queued messages survive a browser refresh (server-backed queue)", async ({
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "persist");
+    // 30s slow-hold so the autonomous drainer never gets a window to dispatch
+    // the queued item before we manage to pause the panel.
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "persist", {
+      slowMs: 30000,
+    });
 
     const keep = `persist-${testInfo.workerIndex}-${Date.now()}`;
     await textarea.fill(keep);
     await page.locator("#pi-chat-queue").click();
-    await page.getByRole("button", { name: /^Pause$/ }).click();
-
-    // Sanity: panel has the row and the "saved locally" hint is visible.
-    await expect(page.locator(".pi-queue-item")).toHaveCount(1);
+    // Wait for the POST round-trip to land the item before reaching for the
+    // Pause button (which lives inside the now-visible panel header).
+    await expect(page.locator(".pi-queue-item")).toHaveCount(1, { timeout: 15000 });
     await expect(page.locator(".pi-queue-status-saved")).toBeVisible();
+    await page.getByRole("button", { name: /^Pause$/ }).click();
+    await expect(page.locator(".pi-queue-panel--paused")).toBeVisible();
 
-    // Reload and confirm the queued row + paused flag are still there.
+    // Reload and confirm the queued row + paused flag came back from the server.
     await page.reload();
     await expect(page.locator("#pi-chat-composer")).toHaveAttribute("data-chat-available", "true");
 
@@ -313,19 +357,61 @@ test.describe("steer / queue (stubbed pi)", () => {
     await expect(page.locator(".pi-queue-panel--paused")).toBeVisible();
   });
 
-  test("the 'saved locally' hint disappears for sessions without a storage backend", async ({
+  test("queue survives a full browser close + new context (server-backed, all storage cleared)", async ({
+    browser,
+    sessionsDir,
+  }, testInfo) => {
+    const context1 = await browser.newContext();
+    const page1 = await context1.newPage();
+    await collapseScratchpad(page1);
+
+    const cwd = realWorkingDir();
+    const { entries } = buildSession({ cwd });
+    const name = uniqueSessionName(testInfo, "close");
+    const id = writeSession(sessionsDir, name, entries);
+
+    await page1.goto(`/session?id=${encodeURIComponent(id)}`);
+    await expect(page1.locator("#pi-chat-composer")).toHaveAttribute("data-chat-available", "true");
+
+    // Pause first so the autonomous drainer doesn't snap the message into pi
+    // before we get a chance to see it from the second context.
+    const msg = `close-${testInfo.workerIndex}-${Date.now()}`;
+    await page1.locator("#pi-chat-message").fill(msg);
+    // Need a running state for the Queue button to appear — but we want the
+    // queue to outlive a full browser close, so pause as soon as it's there.
+    await page1.locator("#pi-chat-message").fill("task A [[slow:30000]]");
+    await page1.locator("#pi-chat-send").click();
+    await expect(page1.locator("#pi-chat-queue")).toBeVisible();
+    await page1.locator("#pi-chat-message").fill(msg);
+    await page1.locator("#pi-chat-queue").click();
+    await expect(page1.locator(".pi-queue-item")).toContainText(msg);
+    await page1.getByRole("button", { name: /^Pause$/ }).click();
+    await expect(page1.locator(".pi-queue-panel--paused")).toBeVisible();
+    await context1.close();
+
+    // Brand-new browser context: cookies, localStorage, IndexedDB all gone.
+    const context2 = await browser.newContext();
+    const page2 = await context2.newPage();
+    await collapseScratchpad(page2);
+    await page2.goto(`/session?id=${encodeURIComponent(id)}`);
+    await expect(page2.locator("#pi-chat-composer")).toHaveAttribute("data-chat-available", "true");
+    await expect(page2.locator(".pi-queue-item")).toHaveCount(1, { timeout: 10000 });
+    await expect(page2.locator(".pi-queue-item")).toContainText(msg);
+    await expect(page2.locator(".pi-queue-panel--paused")).toBeVisible();
+    await context2.close();
+  });
+
+  test("the 'auto-sending' hint shows when the panel is server-backed", async ({
     page,
     sessionsDir,
   }, testInfo) => {
-    // Sanity-check the affordance is wired up: when the queue has any item
-    // and the store has a storage backend (the SPA always does), the hint
-    // is part of the header.
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "saved-hint");
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "saved-hint", {
+      slowMs: 30000,
+    });
     await textarea.fill("hello");
     await page.locator("#pi-chat-queue").click();
     const hint = page.locator(".pi-queue-status-saved");
     await expect(hint).toBeVisible();
-    await expect(hint).toContainText(/saved/i);
   });
 
   test("pause holds queued messages until the user resumes", async ({

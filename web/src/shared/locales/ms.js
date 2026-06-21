@@ -174,8 +174,9 @@ export default {
   'composer.queueDelete': 'padam',
   'composer.queueSendNow': 'hantar sekarang',
   'composer.queueExit': 'keluar',
-  'composer.queueSavedLocally': 'disimpan setempat',
-  'composer.queueSavedLocallyHint': 'Mesej baris gilir disimpan dalam pelayar ini mengikut sesi dan kekal selepas muat semula',
+  'composer.queueSavedLocally': 'hantar auto',
+  'composer.queueSavedLocallyHint':
+    'Mesej dalam baris gilir disimpan pada pelayan dan akan dihantar secara automatik apabila pekerja melahu — walaupun anda menutup pelayar',
   'composer.cancel': 'Batal',
   'composer.idle': 'melahu',
   'composer.unavailable': 'tidak tersedia',

@@ -174,8 +174,9 @@ export default {
   'composer.queueDelete': 'ลบ',
   'composer.queueSendNow': 'ส่งตอนนี้',
   'composer.queueExit': 'ออก',
-  'composer.queueSavedLocally': 'บันทึกในเครื่อง',
-  'composer.queueSavedLocallyHint': 'ข้อความในคิวถูกบันทึกในเบราว์เซอร์นี้ต่อเซสชันและยังคงอยู่หลังรีเฟรช',
+  'composer.queueSavedLocally': 'ส่งอัตโนมัติ',
+  'composer.queueSavedLocallyHint':
+    'ข้อความในคิวถูกบันทึกไว้บนเซิร์ฟเวอร์และจะถูกส่งโดยอัตโนมัติเมื่อระบบว่าง — แม้ว่าคุณจะปิดเบราว์เซอร์ก็ตาม',
   'composer.cancel': 'ยกเลิก',
   'composer.idle': 'ว่าง',
   'composer.unavailable': 'ไม่พร้อมใช้งาน',

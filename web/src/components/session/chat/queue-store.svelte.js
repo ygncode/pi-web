@@ -1,72 +1,18 @@
-// Reactive state behind the docked queue panel above the composer. Holds two
-// kinds of items in a single list — `queued` (waiting to send once the run
-// completes) and `steer` (already sent to pi as a steer; we hold the chip so
-// the user knows it's mid-flight, and let them dismiss it). Pause keeps the
-// auto-dequeue from firing on pi-worker-done; Resume kicks the next item out
-// immediately if no run is in flight.
+// Reactive state behind the docked queue panel above the composer.
 //
-// `actions` is filled in by the runtime (setupSteerQueue): the store stays
-// presentation/state-only, while sending, editing, and resume orchestration
-// stay in the runtime where the chat-submit + textarea live.
+// Two kinds of items share one ordered list:
 //
-// Persistence: queued items (and the paused flag) are mirrored to
-// localStorage per-session so a browser refresh doesn't drop the user's
-// pending messages. Steer rows are NOT persisted — they belong to a specific
-// in-flight run, and the worker that owns it is gone after a refresh. File
-// attachments are dropped on persist (File objects can't be serialized); the
-// text portion survives.
-
-const STORAGE_PREFIX = 'pi-web:v1:queue:';
-
-function storageKey(sessionId) {
-  return sessionId ? STORAGE_PREFIX + sessionId : '';
-}
-
-function loadFromStorage(storage, key) {
-  if (!storage || !key) return null;
-  try {
-    const raw = storage.getItem(key);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data || typeof data !== 'object') return null;
-    const items = Array.isArray(data.items)
-      ? data.items
-          .filter((entry) => entry && entry.kind === 'queued' && typeof entry.text === 'string')
-          .map((entry) => ({
-            id: String(entry.id || ''),
-            kind: 'queued',
-            text: entry.text,
-            displayText: typeof entry.displayText === 'string' ? entry.displayText : entry.text,
-            files: [],
-          }))
-          .filter((entry) => entry.id)
-      : [];
-    return { items, paused: !!data.paused };
-  } catch {
-    return null;
-  }
-}
-
-function writeToStorage(storage, key, items, paused) {
-  if (!storage || !key) return;
-  try {
-    const persisted = items
-      .filter((item) => item.kind === 'queued')
-      .map((item) => ({
-        id: item.id,
-        kind: 'queued',
-        text: item.text,
-        displayText: item.displayText,
-      }));
-    if (persisted.length === 0 && !paused) {
-      storage.removeItem(key);
-      return;
-    }
-    storage.setItem(key, JSON.stringify({ items: persisted, paused }));
-  } catch {
-    /* quota errors, etc. — silently drop the write */
-  }
-}
+//   - queued — pending messages owned by the *server* (chat_queue table). The
+//     autonomous drainer runs them when the worker becomes idle, even when no
+//     browser is connected. We hydrate from GET /api/chat/queue on mount and
+//     re-fetch when an SSE 'queue' event lands so other tabs stay in sync.
+//   - steer  — in-flight prompts the worker is folding into the active run.
+//     These belong to a specific stream that has no meaning after the page
+//     goes away, so they live only in browser memory.
+//
+// All queued-side mutations go through the QueueApi (queue-api.js); the
+// runtime glue (steer-queue.js) wraps these for the user-facing actions
+// (enqueue, sendNow, edit, resume, remove).
 
 export class QueueStore {
   items = $state([]);
@@ -79,22 +25,13 @@ export class QueueStore {
     resume: () => {},
   };
 
-  #storage = null;
-  #storageKey = '';
-  // Suppresses writes while #load is rehydrating, so we don't overwrite the
-  // restored state with itself before paused/items settle.
-  #loading = false;
+  #api = null;
+  #steerSeq = 0;
+  #pendingRefresh = false;
 
-  constructor({ sessionId = '', storage = null } = {}) {
-    this.#storage = storage;
-    this.#storageKey = storageKey(sessionId);
-    const restored = loadFromStorage(this.#storage, this.#storageKey);
-    if (restored) {
-      this.#loading = true;
-      this.items = restored.items;
-      this.paused = restored.paused;
-      this.#loading = false;
-    }
+  /** @param {{ api?: { list, add, remove, setPaused }|null }} [opts] */
+  constructor({ api = null } = {}) {
+    this.#api = api;
   }
 
   get isEmpty() {
@@ -114,72 +51,144 @@ export class QueueStore {
   }
 
   get persistsLocally() {
-    return !!this.#storage && !!this.#storageKey;
+    // The panel header uses this to render the "saved on server" hint when
+    // there's a real API backing the store.
+    return !!this.#api;
   }
 
-  enqueue = (item) => {
-    this.items.push(item);
-    this.#clampFocus();
-    this.#persist();
+  // ── Server-backed loading ─────────────────────────────────────────────────
+
+  /** Pull the latest snapshot from the server, replacing the queued portion
+   *  of `items` and the paused flag. Steers (browser-only) are preserved.
+   *  Concurrent callers share the in-flight Promise so they all see the same
+   *  resolved state without firing duplicate GETs. */
+  refresh = () => {
+    if (!this.#api) return Promise.resolve();
+    if (this.#pendingRefresh) return this.#pendingRefresh;
+    this.#pendingRefresh = (async () => {
+      try {
+        const snapshot = await this.#api.list();
+        this.#mergeServerSnapshot(snapshot);
+      } catch {
+        /* network errors are non-fatal — next refresh tries again. */
+      } finally {
+        this.#pendingRefresh = false;
+      }
+    })();
+    return this.#pendingRefresh;
   };
 
-  pushSteer = (item) => {
-    this.items.push(item);
+  #mergeServerSnapshot(snapshot) {
+    const serverItems = Array.isArray(snapshot?.items) ? snapshot.items : [];
+    const steers = this.items.filter((item) => item.kind === 'steer');
+    const queued = serverItems.map((entry) => ({
+      id: `q-${entry.position}`,
+      kind: 'queued',
+      position: entry.position,
+      text: String(entry.message ?? ''),
+      displayText: String(entry.displayText ?? entry.message ?? ''),
+      files: [],
+    }));
+    this.items = [...queued, ...steers];
+    this.paused = !!snapshot?.paused;
     this.#clampFocus();
-    // No persist — steers aren't saved.
+  }
+
+  // ── Mutations (queued items go through the API) ───────────────────────────
+
+  /** Append a server-side queued item. Returns the canonical item or null on
+   *  failure. We do a fresh list() after POST instead of awaiting `refresh()`
+   *  — refresh's in-flight-promise coalescing would otherwise hand us back a
+   *  snapshot taken *before* our insert if another refresh was already
+   *  in-flight (very easy to hit during rapid double-queue clicks). */
+  enqueueQueued = async ({ message, displayText } = {}) => {
+    if (!this.#api) return null;
+    try {
+      const item = await this.#api.add(message, displayText);
+      const snapshot = await this.#api.list();
+      this.#mergeServerSnapshot(snapshot);
+      return {
+        id: `q-${item.position}`,
+        kind: 'queued',
+        position: item.position,
+        text: String(item.message ?? message ?? ''),
+        displayText: String(item.displayText ?? displayText ?? message ?? ''),
+      };
+    } catch {
+      return null;
+    }
+  };
+
+  /** Push a transient steer chip (browser-only, never persisted). */
+  pushSteer = (item) => {
+    this.items.push({
+      id: `s-${++this.#steerSeq}-${Date.now().toString(36)}`,
+      kind: 'steer',
+      text: String(item.text ?? ''),
+      displayText: String(item.displayText ?? item.text ?? ''),
+    });
+    this.#clampFocus();
   };
 
   clearSteers = () => {
     if (this.steerCount === 0) return;
     this.items = this.items.filter((item) => item.kind !== 'steer');
     this.#clampFocus();
-    // No persist — only steers changed.
   };
 
-  removeById = (id) => {
-    const next = this.items.filter((item) => item.id !== id);
-    if (next.length === this.items.length) return null;
-    const removedIndex = this.items.findIndex((item) => item.id === id);
-    const removedKind = this.items[removedIndex]?.kind;
+  /** Remove an item by id. Queued items are also removed on the server. */
+  removeById = async (id) => {
+    const idx = this.items.findIndex((item) => item.id === id);
+    if (idx < 0) return false;
+    const item = this.items[idx];
+    const next = this.items.slice();
+    next.splice(idx, 1);
     this.items = next;
     if (this.focusIndex >= this.items.length) this.focusIndex = this.items.length - 1;
-    else if (removedIndex >= 0 && removedIndex < this.focusIndex) this.focusIndex -= 1;
-    if (removedKind === 'queued') this.#persist();
+    else if (idx < this.focusIndex) this.focusIndex -= 1;
+    if (item.kind === 'queued' && this.#api && Number.isInteger(item.position)) {
+      try {
+        await this.#api.remove(item.position);
+      } catch {
+        /* Treat the server failure as best-effort: the SSE refresh will
+         * reconcile if the row actually still exists server-side. */
+      }
+    }
     return true;
   };
 
-  takeById = (id) => {
-    const item = this.items.find((entry) => entry.id === id);
-    if (!item) return null;
-    this.removeById(id);
+  /** Remove and return an item by id without touching the server. The runtime
+   *  uses this when it has already removed the row server-side (e.g., sendNow
+   *  is implemented as "remove + send via /api/chat"). */
+  takeLocalById = (id) => {
+    const idx = this.items.findIndex((item) => item.id === id);
+    if (idx < 0) return null;
+    const item = this.items[idx];
+    const next = this.items.slice();
+    next.splice(idx, 1);
+    this.items = next;
+    if (this.focusIndex >= this.items.length) this.focusIndex = this.items.length - 1;
+    else if (idx < this.focusIndex) this.focusIndex -= 1;
     return item;
   };
 
-  takeQueuedHead = () => {
-    const idx = this.items.findIndex((item) => item.kind === 'queued');
-    if (idx === -1) return null;
-    const [item] = this.items.splice(idx, 1);
-    this.#clampFocus();
-    this.#persist();
-    return item;
-  };
-
-  setPaused = (value) => {
+  setPaused = async (value) => {
     const next = !!value;
     if (this.paused === next) return;
     this.paused = next;
-    this.#persist();
+    if (this.#api) {
+      try {
+        await this.#api.setPaused(next);
+      } catch {
+        /* network failure: SSE refresh will reconcile. */
+      }
+    }
   };
 
-  togglePaused = () => {
-    this.paused = !this.paused;
-    this.#persist();
-  };
+  togglePaused = () => this.setPaused(!this.paused);
 
   setFocusIndex = (index) => {
     if (!Number.isInteger(index)) return;
-    // -1 (or any negative) explicitly means "no row focused" — used by Esc to
-    // exit the panel without dropping items.
     if (index < 0 || this.items.length === 0) {
       this.focusIndex = -1;
       return;
@@ -210,10 +219,5 @@ export class QueueStore {
       return;
     }
     if (this.focusIndex >= this.items.length) this.focusIndex = this.items.length - 1;
-  }
-
-  #persist() {
-    if (this.#loading) return;
-    writeToStorage(this.#storage, this.#storageKey, this.items, this.paused);
   }
 }

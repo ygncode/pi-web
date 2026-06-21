@@ -39,11 +39,13 @@ LANGS = [
 ]
 
 # Keys to translate (order matters — preserved when patching the file).
+# Re-translates the two queue-panel hint keys after the localStorage → server
+# rewrite (autonomous backend drainer).
 NEW_KEYS = [
-    ("composer.queueSavedLocally", "saved locally"),
+    ("composer.queueSavedLocally", "auto-sending"),
     (
         "composer.queueSavedLocallyHint",
-        "Queued messages are saved in this browser per session and will survive a refresh",
+        "Queued messages are saved on the server and will be sent automatically when the worker is idle — even if you close the browser",
     ),
 ]
 
@@ -155,10 +157,16 @@ def parse_translations(raw: str) -> dict[str, str]:
 def patch_locale(locale_path: Path, translations: dict[str, str]) -> bool:
     lines = locale_path.read_text(encoding="utf-8").splitlines(keepends=True)
 
-    # Skip if any new key is already present (idempotency).
-    existing_text = "".join(lines)
-    if any(f"'{key}':" in existing_text for key, _ in NEW_KEYS):
-        return False
+    # Strip any existing rows for the keys we're about to (re-)write. Lets us
+    # re-translate without manual cleanup when the English source changes.
+    new_keys_set = {key for key, _ in NEW_KEYS}
+    filtered: list[str] = []
+    for line in lines:
+        m = KEY_LINE_RE.match(line)
+        if m and m.group(1) in new_keys_set:
+            continue
+        filtered.append(line)
+    lines = filtered
 
     anchor_idx = None
     indent = "  "
@@ -198,9 +206,6 @@ def main(argv: list[str]) -> int:
             print(f"[{code}] missing {locale_path}, skipping", file=sys.stderr)
             continue
         existing = read_existing_strings(locale_path)
-        if any(key in existing for key, _ in NEW_KEYS):
-            print(f"[{code}] new keys already present, skipping")
-            continue
         prompt = build_prompt(code, native, existing)
         print(f"[{code}] asking pi for translations…", flush=True)
         raw = call_pi(prompt)

@@ -48,6 +48,7 @@ export function runChatComposer({
   setIntervalImpl = setInterval,
   toolbar = new ChatToolbarState(),
   queueStore = new QueueStore(),
+  queueApi = null,
 } = {}) {
   const document = documentImpl;
   const window = windowImpl;
@@ -214,6 +215,7 @@ export function runChatComposer({
       sendChatMessage: submission.sendChatMessage,
       autoResizeTextarea,
       updateSendEnabled,
+      queueApi,
     });
 
     const workerStatus = setupWorkerStatusPolling({

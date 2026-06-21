@@ -175,8 +175,9 @@ export default {
   'composer.queueDelete': '削除',
   'composer.queueSendNow': '今すぐ送信',
   'composer.queueExit': '終了',
-  'composer.queueSavedLocally': 'ローカル保存',
-  'composer.queueSavedLocallyHint': 'キューに入れたメッセージは、セッションごとにこのブラウザに保存され、ページを更新しても維持されます',
+  'composer.queueSavedLocally': '自動送信',
+  'composer.queueSavedLocallyHint':
+    'キュー内のメッセージはサーバーに保存され、ワーカーが待機中になると自動的に送信されます — ブラウザを閉じても',
   'composer.cancel': 'キャンセル',
   'composer.idle': '待機中',
   'composer.unavailable': '利用不可',
