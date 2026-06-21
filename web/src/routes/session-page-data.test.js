@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   buildSessionPageState,
   firstMessageStub,
   loadSessionPageState,
   newestLeaf,
 } from './session-page-data.js';
+import { prefetchSession, resetSessionPrefetch } from './session-prefetch.js';
+
+afterEach(() => resetSessionPrefetch());
 
 const btoaImpl = (value) => Buffer.from(value, 'binary').toString('base64');
 const decodePayload = (encoded) => JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'));
@@ -61,7 +64,7 @@ describe('session-page-data', () => {
     });
   });
 
-  it('loads session and scratchpad data via fetch', async () => {
+  it('only fetches the session on the network path; the scratchpad is the sidebar’s job', async () => {
     const seen = [];
     const fetchImpl = async (url) => {
       seen.push(url);
@@ -71,10 +74,7 @@ describe('session-page-data', () => {
           json: async () => ({ name: 'Loaded', header: { cwd: '/tmp/space path' }, entries: [] }),
         };
       }
-      if (url.startsWith('/api/scratchpad')) {
-        return { ok: true, json: async () => ({ content: 'pad' }) };
-      }
-      throw new Error('unexpected url');
+      throw new Error(`unexpected url: ${url}`);
     };
 
     const state = await loadSessionPageState({
@@ -84,11 +84,8 @@ describe('session-page-data', () => {
     });
 
     expect(state.title).toBe('Loaded');
-    expect(state.scratchpad).toBe('pad');
-    expect(seen).toEqual([
-      '/api/session?id=s.jsonl&paginate=1',
-      '/api/scratchpad?project=%2Ftmp%2Fspace%20path',
-    ]);
+    expect(state.scratchpad).toBe('');
+    expect(seen).toEqual(['/api/session?id=s.jsonl&paginate=1']);
   });
 
   it('uses the embedded bootstrap payload without fetching', async () => {
@@ -127,6 +124,50 @@ describe('session-page-data', () => {
     expect(state.title).toBe('Embedded');
     expect(state.scratchpad).toBe('notes');
     expect(state.modelLabel).toBe('haiku @ anthropic');
+  });
+
+  it('reuses a prefetched /api/session payload instead of fetching again', async () => {
+    const calls = [];
+    const fetchImpl = async (url) => {
+      calls.push(url);
+      return {
+        ok: true,
+        json: async () => ({ name: 'Prefetched', header: { cwd: '/p' }, entries: [] }),
+      };
+    };
+
+    prefetchSession('s.jsonl', { fetchImpl });
+    const state = await loadSessionPageState({
+      locationSearch: '?id=s.jsonl',
+      fetchImpl,
+      btoaImpl,
+    });
+
+    expect(state.title).toBe('Prefetched');
+    // Only one /api/session call total, the one started by prefetchSession.
+    expect(calls).toEqual(['/api/session?id=s.jsonl&paginate=1']);
+  });
+
+  it('falls back to a fresh fetch when the prefetch rejects', async () => {
+    let attempt = 0;
+    const fetchImpl = async () => {
+      attempt++;
+      if (attempt === 1) return { ok: false, status: 500 };
+      return {
+        ok: true,
+        json: async () => ({ name: 'Recovered', header: {}, entries: [] }),
+      };
+    };
+
+    prefetchSession('s.jsonl', { fetchImpl });
+    const state = await loadSessionPageState({
+      locationSearch: '?id=s.jsonl',
+      fetchImpl,
+      btoaImpl,
+    });
+
+    expect(state.title).toBe('Recovered');
+    expect(attempt).toBe(2);
   });
 
   it('falls back to fetch when the bootstrap is for a different session', async () => {

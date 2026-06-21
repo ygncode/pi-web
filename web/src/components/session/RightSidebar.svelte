@@ -220,11 +220,17 @@
       cleanups.push(() => windowImpl.removeEventListener('resize', onWindowResize));
     }
 
-    // Scratchpad content is server/prop-rendered into the textarea, so adopt it
-    // as the baseline instead of re-fetching (which would blank then refill it).
+    // Bootstrap path: scratchpad arrives in the prop and is server-rendered into
+    // the textarea, so adopt it as the baseline. SPA-nav path: the prop is empty
+    // (loadSessionPageState skips the scratchpad fetch to keep it off the
+    // critical path), so fetch it here instead.
     const savedWidth = loadWidth();
     if (savedWidth !== null) applyWidth(savedWidth);
-    scratchpadController.adoptCurrentValue();
+    if (textarea && !textarea.value && projectPath) {
+      scratchpadController.load();
+    } else {
+      scratchpadController.adoptCurrentValue();
+    }
 
     // ── Artifacts help (?) modal ─────────────────────────────────────────────
     // Shown only on the Artifacts tab via CSS; toggled by the help button.

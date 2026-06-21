@@ -1,5 +1,6 @@
 import { decodeBase64JSON } from '../session/data/session-data.js';
 import { t } from '../shared/i18n.js';
+import { consumeSessionPrefetch } from './session-prefetch.js';
 
 // The session route's HTML shell embeds the session payload (and scratchpad) in
 // a <script id="pi-session-bootstrap"> so the first paint needs no round-trip to
@@ -138,12 +139,28 @@ export async function loadSessionPageState({
     });
   }
 
-  const resp = await fetchImpl(`/api/session?id=${encodeURIComponent(sessionId)}&paginate=1`, {
-    headers: { Accept: 'application/json' },
-  });
-  if (!resp.ok)
-    throw new Error(resp.status === 404 ? t('session.notFound') : t('session.loadFailed'));
-  const data = await resp.json();
-  const scratchpad = await loadScratchpad(data?.header?.cwd || '', { fetchImpl });
-  return buildSessionPageState({ sessionId, data, scratchpad, btoaImpl, TextEncoderImpl });
+  // If SessionCard prefetched on hover, the response is already in-flight; reuse
+  // it instead of starting a duplicate request. A rejected prefetch falls
+  // through to a fresh fetch so a transient failure doesn't poison the view.
+  const prefetched = consumeSessionPrefetch(sessionId);
+  let data;
+  if (prefetched) {
+    try {
+      data = await prefetched;
+    } catch {
+      data = null;
+    }
+  }
+  if (!data) {
+    const resp = await fetchImpl(`/api/session?id=${encodeURIComponent(sessionId)}&paginate=1`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!resp.ok)
+      throw new Error(resp.status === 404 ? t('session.notFound') : t('session.loadFailed'));
+    data = await resp.json();
+  }
+  // Scratchpad is sidebar content, not on the first-paint path: returning ''
+  // here lets the session render as soon as /api/session resolves, and
+  // RightSidebar fetches the scratchpad itself when the prop is empty.
+  return buildSessionPageState({ sessionId, data, scratchpad: '', btoaImpl, TextEncoderImpl });
 }

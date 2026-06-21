@@ -1,6 +1,7 @@
 <script>
   import { t } from '../../shared/i18n.js';
   import { handleNavClick } from '../../shared/navigation.js';
+  import { prefetchSession } from '../../routes/session-prefetch.js';
   import {
     formatRelativeTime,
     formatRunningModel,
@@ -15,6 +16,13 @@
   const modelLabel = $derived(formatRunningModel(runningStatus) || sessionModelLabel(session));
   const runningModel = $derived(running ? formatRunningModel(runningStatus) : '');
   const search = $derived(sessionSearchText(session));
+
+  // Start /api/session as soon as the user signals intent (hover or press), so
+  // the response is usually back by the time SessionPage mounts. All three
+  // events route through prefetchSession, which dedupes on session id.
+  function startPrefetch() {
+    if (session?.id) prefetchSession(session.id);
+  }
 </script>
 
 <a
@@ -22,6 +30,9 @@
   class:session-card--running={running}
   {href}
   onclick={(event) => handleNavClick(event, href)}
+  onpointerenter={startPrefetch}
+  onmousedown={startPrefetch}
+  ontouchstart={startPrefetch}
   data-id={session.id}
   data-session-id={session.id}
   data-search={search}

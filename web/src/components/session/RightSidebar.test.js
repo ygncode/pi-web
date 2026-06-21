@@ -94,12 +94,32 @@ describe('RightSidebar visibility controls', () => {
 });
 
 describe('RightSidebar scratchpad', () => {
+  it('auto-loads /api/scratchpad when the prop is empty (SPA-nav path)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ content: 'fetched notes' }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(RightSidebar, { props: { projectPath: '/proj' } });
+    // Microtask flush so the async load() resolves before assertions.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/scratchpad?project=%2Fproj');
+    expect(document.getElementById('scratchpad-textarea').value).toBe('fetched notes');
+
+    vi.unstubAllGlobals();
+  });
+
   it('debounce-saves edits to /api/scratchpad', async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) });
     vi.stubGlobal('fetch', fetchMock);
 
-    render(RightSidebar, { props: { projectPath: '/proj' } });
+    // Non-empty `scratchpad` keeps RightSidebar on the adopt-baseline path so
+    // this test focuses on debounce-save, not the network-path auto-load.
+    render(RightSidebar, { props: { projectPath: '/proj', scratchpad: 'seed' } });
     const textarea = document.getElementById('scratchpad-textarea');
     textarea.value = 'hello notes';
     textarea.dispatchEvent(new Event('input'));
