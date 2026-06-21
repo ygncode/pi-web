@@ -406,6 +406,44 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .spinner { animation: spin 1s linear infinite; }
 
+    .session-loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      min-height: var(--viewport-height, 100vh);
+      padding: 24px;
+      text-align: center;
+      color: var(--text-soft);
+      animation: session-loading-fade 0.25s ease both;
+    }
+    @keyframes session-loading-fade { from { opacity: 0; } to { opacity: 1; } }
+    .session-loading-spinner {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 2.5px solid var(--dim);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
+    }
+    .session-loading-text {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.01em;
+    }
+    .session-loading--error h1 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .session-loading--error p { margin-top: 4px; }
+    .session-loading--error a { color: var(--accent); }
+    @media (prefers-reduced-motion: reduce) {
+      .session-loading { animation: none; }
+      .session-loading-spinner { animation-duration: 1.6s; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       ::view-transition-old(root),
       ::view-transition-new(root) {
