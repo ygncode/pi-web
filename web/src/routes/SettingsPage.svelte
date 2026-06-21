@@ -28,6 +28,8 @@
     { id: 'catGatekeeper', labelKey: 'settings.catGatekeeper' },
     { id: 'about', labelKey: 'settings.about' },
   ];
+  const sectionIds = new Set(sections.map((s) => s.id));
+
   let activeSection = $state('appearance');
   let isMobile = $state(false);
   let mobileShowingPane = $state(false);
@@ -37,9 +39,25 @@
     t(sections.find((s) => s.id === activeSection)?.labelKey || 'settings.title'),
   );
 
+  function sectionFromUrl(win) {
+    try {
+      const id = new URLSearchParams(win.location.search).get('section');
+      return id && sectionIds.has(id) ? id : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function syncSectionUrl(win, id) {
+    try {
+      win.history.replaceState(win.history.state, '', `${win.location.pathname}?section=${id}`);
+    } catch {}
+  }
+
   function selectSection(id) {
     activeSection = id;
     if (isMobile) mobileShowingPane = true;
+    syncSectionUrl(window, id);
   }
 
   function backToList() {
@@ -93,6 +111,12 @@
     };
     updateMobile();
     mq?.addEventListener('change', updateMobile);
+
+    const initialSection = sectionFromUrl(window);
+    if (initialSection) {
+      activeSection = initialSection;
+      if (isMobile) mobileShowingPane = true;
+    }
 
     loadSettings({ windowImpl: window })
       .then((loaded) => {

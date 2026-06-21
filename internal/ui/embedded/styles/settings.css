@@ -252,6 +252,7 @@
   border: 1px solid var(--dim);
   background: var(--input-bg, var(--surface-2));
   white-space: nowrap;
+  cursor: pointer;
 }
 
 .settings-link:hover {
