@@ -237,6 +237,17 @@ export default {
     'အတွင်းပါသည် အခမဲ့၊ ချက်ချင်း စကားလုံး heuristic (AI မပါ)။ ပိုမိုဉာဏ်ရှိသော ခေါင်းစဉ်များအတွက် မော်ဒယ်တစ်ခု ရွေးပါ — သေးငယ်၍ မြန်သည်က အကောင်းဆုံး။',
   'settings.titleBuiltin': 'အတွင်းပါ heuristic (AI မပါ)',
 
+  'settings.sessionDisplay': 'Session ပြသမှု',
+  'settings.thinkingExpanded': 'တွေးခေါ်မှုကို မူရင်းအဖြစ် ပြ',
+  'settings.thinkingExpandedHint':
+    'ဖွင့်ထားလျှင် session များ ဖွင့်စဉ် မော်ဒယ်၏ တွေးခေါ်မှုကို ချဲ့ပြထား။ Header မှ session တစ်ခုခြင်းအတွက် ပြောင်းနိုင်ပါသေး။',
+  'settings.toolsVisible': 'Tool call များကို မူရင်းအဖြစ် ပြ',
+  'settings.toolsVisibleHint':
+    'ပိတ်ထားလျှင် tool ခေါ်ဆိုမှုနှင့် compaction များကို session ဖွင့်စဉ် ဖျောက်ထား — မျက်နှာပြင်သေးတွင် အသုံးဝင်။',
+  'settings.toolOutputsExpanded': 'Tool output များကို မူရင်းအဖြစ် ချဲ့ပြ',
+  'settings.toolOutputsExpandedHint':
+    'ဖွင့်ထားလျှင် tool output block များကို ခေါက်ထားသည့်အစား ချဲ့ထားသည့်အနေဖြင့် ပြ။',
+
   'settings.artifacts': 'အာတိဖက်များ',
   'settings.showArtifacts': 'အာတိဖက် အကန့် ပြ',
   'settings.showArtifactsHint':

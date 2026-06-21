@@ -6,6 +6,7 @@
   import CatGatekeeperSettings from '../components/settings/CatGatekeeperSettings.svelte';
   import LanguageSettings from '../components/settings/LanguageSettings.svelte';
   import NotificationSettings from '../components/settings/NotificationSettings.svelte';
+  import SessionDisplayDefaultsSettings from '../components/settings/SessionDisplayDefaultsSettings.svelte';
   import SessionsListSettings from '../components/settings/SessionsListSettings.svelte';
   import SessionTitleSettings from '../components/settings/SessionTitleSettings.svelte';
   import { t } from '../shared/i18n.js';
@@ -21,6 +22,7 @@
     { id: 'language', labelKey: 'settings.language' },
     { id: 'sessionsList', labelKey: 'settings.sessionsList' },
     { id: 'sessionTitles', labelKey: 'settings.sessionTitles' },
+    { id: 'sessionDisplay', labelKey: 'settings.sessionDisplay' },
     { id: 'artifacts', labelKey: 'settings.artifacts' },
     { id: 'notifications', labelKey: 'settings.notifications' },
     { id: 'catGatekeeper', labelKey: 'settings.catGatekeeper' },
@@ -155,6 +157,8 @@
       <SessionsListSettings {settings} onSave={saveSetting} />
     {:else if activeSection === 'sessionTitles'}
       <SessionTitleSettings {settings} onSave={saveSetting} />
+    {:else if activeSection === 'sessionDisplay'}
+      <SessionDisplayDefaultsSettings {settings} onSave={saveSetting} />
     {:else if activeSection === 'artifacts'}
       <ArtifactSettings {settings} onSave={saveSetting} />
     {:else if activeSection === 'notifications'}

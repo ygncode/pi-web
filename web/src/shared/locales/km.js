@@ -232,6 +232,17 @@ export default {
     'មានស្រាប់គឺជា heuristic ពាក្យឥតគិតថ្លៃ ភ្លាមៗ (គ្មាន AI)។ ជ្រើសម៉ូដែលសម្រាប់ចំណងជើងឆ្លាតវៃជាងមុន — តូច និងលឿនគឺល្អបំផុត។',
   'settings.titleBuiltin': 'Heuristic មានស្រាប់ (គ្មាន AI)',
 
+  'settings.sessionDisplay': 'ការបង្ហាញ session',
+  'settings.thinkingExpanded': 'បង្ហាញការគិតតាមលំនាំដើម',
+  'settings.thinkingExpandedHint':
+    'ពេលបើក ការគិតរបស់ម៉ូដែលត្រូវបានបង្ហាញពេលផ្ទុក session។ អ្នកនៅតែអាចបិទបើកវាក្នុង session នីមួយៗពីបឋមកថា។',
+  'settings.toolsVisible': 'បង្ហាញការហៅឧបករណ៍តាមលំនាំដើម',
+  'settings.toolsVisibleHint':
+    'ពេលបិទ ការហៅឧបករណ៍ និងការបង្ហាប់ត្រូវបានលាក់ពេលផ្ទុក — មានប្រយោជន៍លើអេក្រង់តូច។',
+  'settings.toolOutputsExpanded': 'ពន្លាលទ្ធផលឧបករណ៍តាមលំនាំដើម',
+  'settings.toolOutputsExpandedHint':
+    'ពេលបើក ប្លុកលទ្ធផលឧបករណ៍ផ្ទុកក្នុងស្ថានភាពពន្លាជំនួសឱ្យបង្រួម។',
+
   'settings.artifacts': 'អាទីហ្វាក់',
   'settings.showArtifacts': 'បង្ហាញផ្ទាំងអាទីហ្វាក់',
   'settings.showArtifactsHint':

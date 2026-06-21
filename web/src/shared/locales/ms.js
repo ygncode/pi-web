@@ -235,6 +235,17 @@ export default {
     'Terbina dalam ialah heuristik perkataan percuma dan segera (tanpa AI). Pilih model untuk tajuk yang lebih bijak — yang kecil dan pantas adalah ideal.',
   'settings.titleBuiltin': 'Heuristik terbina dalam (tanpa AI)',
 
+  'settings.sessionDisplay': 'Paparan sesi',
+  'settings.thinkingExpanded': 'Tunjukkan pemikiran secara lalai',
+  'settings.thinkingExpandedHint':
+    'Apabila dihidupkan, pemikiran model dikembangkan semasa sesi dimuat. Anda masih boleh menukarnya setiap sesi dari pengepala.',
+  'settings.toolsVisible': 'Tunjukkan panggilan alat secara lalai',
+  'settings.toolsVisibleHint':
+    'Apabila dimatikan, panggilan alat dan pemampatan disembunyikan semasa dimuat — berguna untuk skrin kecil.',
+  'settings.toolOutputsExpanded': 'Kembangkan hasil alat secara lalai',
+  'settings.toolOutputsExpandedHint':
+    'Apabila dihidupkan, blok hasil alat dimuat dalam keadaan dikembangkan dan bukan dilipat.',
+
   'settings.artifacts': 'Artifak',
   'settings.showArtifacts': 'Tunjukkan panel Artifak',
   'settings.showArtifactsHint':

@@ -2,12 +2,28 @@ import { describe, expect, it, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
 import {
   applyToggleStateToNode,
+  clearPersistedToggleOverride,
   createToggleController,
   loadToggleState,
   saveToggleState,
   syncToggleButtons,
+  TOGGLE_DEFAULT_SETTING_KEYS,
   TOGGLE_STATE_STORAGE_KEY,
 } from './toggle-state.js';
+
+function makeStorage(initial = {}) {
+  const data = { ...initial };
+  return {
+    getItem: (k) => (k in data ? data[k] : null),
+    setItem: (k, v) => {
+      data[k] = String(v);
+    },
+    removeItem: (k) => {
+      delete data[k];
+    },
+    _data: data,
+  };
+}
 
 describe('toggle state helpers', () => {
   it('loads defaults and saved booleans defensively', () => {
@@ -61,6 +77,49 @@ describe('toggle state helpers', () => {
         .querySelector('[data-action="toggle-tool-output"]')
         .getAttribute('aria-pressed'),
     ).toBe('true');
+  });
+
+  it('reads configured defaults from settings storage before falling back to hardcoded defaults', () => {
+    const storage = makeStorage({
+      [TOGGLE_DEFAULT_SETTING_KEYS.thinkingExpanded]: 'false',
+      [TOGGLE_DEFAULT_SETTING_KEYS.toolOutputsExpanded]: 'true',
+      // toolsVisible left unset → falls back to hardcoded default (true).
+    });
+    expect(loadToggleState({ storage })).toEqual({
+      thinkingExpanded: false,
+      toolsVisible: true,
+      toolOutputsExpanded: true,
+    });
+  });
+
+  it('per-session blob wins over configured setting defaults', () => {
+    const storage = makeStorage({
+      [TOGGLE_DEFAULT_SETTING_KEYS.thinkingExpanded]: 'false',
+      [TOGGLE_STATE_STORAGE_KEY]: JSON.stringify({ thinkingExpanded: true }),
+    });
+    expect(loadToggleState({ storage })).toEqual({
+      thinkingExpanded: true,
+      toolsVisible: true,
+      toolOutputsExpanded: false,
+    });
+  });
+
+  it('clearPersistedToggleOverride drops a single key, keeps others, removes the blob when empty', () => {
+    const storage = makeStorage({
+      [TOGGLE_STATE_STORAGE_KEY]: JSON.stringify({
+        thinkingExpanded: false,
+        toolsVisible: false,
+      }),
+    });
+    clearPersistedToggleOverride('thinkingExpanded', { storage });
+    expect(JSON.parse(storage.getItem(TOGGLE_STATE_STORAGE_KEY))).toEqual({
+      toolsVisible: false,
+    });
+    clearPersistedToggleOverride('toolsVisible', { storage });
+    expect(storage.getItem(TOGGLE_STATE_STORAGE_KEY)).toBeNull();
+    // No-op when the key isn't present — must not throw or write garbage.
+    clearPersistedToggleOverride('toolOutputsExpanded', { storage });
+    expect(storage.getItem(TOGGLE_STATE_STORAGE_KEY)).toBeNull();
   });
 
   it('creates a controller for header toggles', () => {

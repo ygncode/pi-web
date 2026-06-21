@@ -238,6 +238,17 @@ export default {
     'L’intégré est une heuristique de mots gratuite et instantanée (sans IA). Choisissez un modèle pour des titres plus pertinents — un petit modèle rapide est idéal.',
   'settings.titleBuiltin': 'Heuristique intégrée (sans IA)',
 
+  'settings.sessionDisplay': 'Affichage de session',
+  'settings.thinkingExpanded': 'Afficher la réflexion par défaut',
+  'settings.thinkingExpandedHint':
+    'Lorsque activé, la réflexion du modèle est dépliée au chargement des sessions. Vous pouvez toujours la basculer par session depuis l’en-tête.',
+  'settings.toolsVisible': 'Afficher les appels d’outils par défaut',
+  'settings.toolsVisibleHint':
+    'Lorsque désactivé, les appels d’outils et compactions sont masqués au chargement — pratique sur petits écrans.',
+  'settings.toolOutputsExpanded': 'Déplier les sorties d’outils par défaut',
+  'settings.toolOutputsExpandedHint':
+    'Lorsque activé, les blocs de sortie d’outils sont chargés dépliés au lieu de repliés.',
+
   'settings.artifacts': 'Artefacts',
   'settings.showArtifacts': 'Afficher le panneau Artefacts',
   'settings.showArtifactsHint':

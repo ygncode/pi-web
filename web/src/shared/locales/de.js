@@ -235,6 +235,17 @@ export default {
     'Integriert ist eine kostenlose, sofortige Wort-Heuristik (keine KI). Wähle ein Modell für bessere Titel — ein kleines, schnelles ist ideal.',
   'settings.titleBuiltin': 'Integrierte Heuristik (keine KI)',
 
+  'settings.sessionDisplay': 'Sitzungsanzeige',
+  'settings.thinkingExpanded': 'Denken standardmäßig anzeigen',
+  'settings.thinkingExpandedHint':
+    'Wenn aktiv, ist das Modell-Denken beim Laden ausgeklappt. Du kannst es weiterhin pro Sitzung in der Kopfzeile umschalten.',
+  'settings.toolsVisible': 'Tool-Aufrufe standardmäßig zeigen',
+  'settings.toolsVisibleHint':
+    'Wenn aus, werden Tool-Aufrufe und Komprimierungen beim Laden ausgeblendet — praktisch auf kleinen Bildschirmen.',
+  'settings.toolOutputsExpanded': 'Tool-Ausgaben standardmäßig ausklappen',
+  'settings.toolOutputsExpandedHint':
+    'Wenn aktiv, werden Tool-Ausgabeblöcke ausgeklappt statt eingeklappt geladen.',
+
   'settings.artifacts': 'Artefakte',
   'settings.showArtifacts': 'Artefakte-Panel anzeigen',
   'settings.showArtifactsHint':

@@ -233,6 +233,17 @@ export default {
     'ມີໃນຕົວແມ່ນ heuristic ຄຳສັບຟຣີ ທັນທີ (ບໍ່ມີ AI). ເລືອກໂມເດວເພື່ອຫົວຂໍ້ທີ່ສະຫຼາດກວ່າ — ໂມເດວນ້ອຍ ແລະ ໄວແມ່ນເໝາະສົມ.',
   'settings.titleBuiltin': 'Heuristic ມີໃນຕົວ (ບໍ່ມີ AI)',
 
+  'settings.sessionDisplay': 'ການສະແດງ session',
+  'settings.thinkingExpanded': 'ສະແດງການຄິດເປັນຄ່າເລີ່ມຕົ້ນ',
+  'settings.thinkingExpandedHint':
+    'ເມື່ອເປີດ ການຄິດຂອງໂມເດວຈະຖືກຂະຫຍາຍເມື່ອໂຫລດ session. ທ່ານສາມາດສະຫຼັບໄດ້ຕໍ່ session ຈາກສ່ວນຫົວ.',
+  'settings.toolsVisible': 'ສະແດງການເອີ້ນເຄື່ອງມືເປັນຄ່າເລີ່ມຕົ້ນ',
+  'settings.toolsVisibleHint':
+    'ເມື່ອປິດ ການເອີ້ນເຄື່ອງມືແລະການບີບອັດຖືກເຊື່ອງເມື່ອໂຫລດ — ມີປະໂຫຍດໃນຈໍຂະໜາດນ້ອຍ.',
+  'settings.toolOutputsExpanded': 'ຂະຫຍາຍຜົນຮັບເຄື່ອງມືເປັນຄ່າເລີ່ມຕົ້ນ',
+  'settings.toolOutputsExpandedHint':
+    'ເມື່ອເປີດ ບລັອກຜົນຮັບເຄື່ອງມືໂຫລດໃນສະຖານະຂະຫຍາຍແທນທີ່ຈະຫຍໍ້.',
+
   'settings.artifacts': 'ອາທິແຟັກ',
   'settings.showArtifacts': 'ສະແດງແຜງອາທິແຟັກ',
   'settings.showArtifactsHint':

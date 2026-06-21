@@ -332,6 +332,17 @@ export default {
     'Built-in is a free, instant word heuristic (no AI). Pick a model for smarter titles — a small, fast one is ideal.',
   'settings.titleBuiltin': 'Built-in heuristic (no AI)',
 
+  'settings.sessionDisplay': 'Session Display',
+  'settings.thinkingExpanded': 'Show thinking by default',
+  'settings.thinkingExpandedHint':
+    'When on, model reasoning is expanded as sessions load. You can still toggle it per session from the header.',
+  'settings.toolsVisible': 'Show tool calls by default',
+  'settings.toolsVisibleHint':
+    'When off, tool invocations and compactions are hidden as sessions load — handy on small screens.',
+  'settings.toolOutputsExpanded': 'Expand tool outputs by default',
+  'settings.toolOutputsExpandedHint':
+    'When on, tool output blocks load expanded instead of collapsed.',
+
   'settings.artifacts': 'Artifacts',
   'settings.showArtifacts': 'Show Artifacts panel',
   'settings.showArtifactsHint':

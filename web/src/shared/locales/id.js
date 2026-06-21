@@ -234,6 +234,17 @@ export default {
     'Bawaan adalah heuristik kata gratis dan instan (tanpa AI). Pilih model untuk judul yang lebih cerdas — yang kecil dan cepat ideal.',
   'settings.titleBuiltin': 'Heuristik bawaan (tanpa AI)',
 
+  'settings.sessionDisplay': 'Tampilan sesi',
+  'settings.thinkingExpanded': 'Tampilkan berpikir secara bawaan',
+  'settings.thinkingExpandedHint':
+    'Saat aktif, penalaran model terbuka ketika sesi dimuat. Anda tetap bisa mengaturnya per sesi dari header.',
+  'settings.toolsVisible': 'Tampilkan pemanggilan alat secara bawaan',
+  'settings.toolsVisibleHint':
+    'Saat nonaktif, pemanggilan alat dan kompaksi disembunyikan saat dimuat — berguna di layar kecil.',
+  'settings.toolOutputsExpanded': 'Buka hasil alat secara bawaan',
+  'settings.toolOutputsExpandedHint':
+    'Saat aktif, blok hasil alat dimuat dalam keadaan terbuka alih-alih terlipat.',
+
   'settings.artifacts': 'Artefak',
   'settings.showArtifacts': 'Tampilkan panel Artefak',
   'settings.showArtifactsHint':

@@ -238,6 +238,17 @@ export default {
     'Ang built-in ay libre, instant na heuristic ng salita (walang AI). Pumili ng model para sa mas matalinong pamagat — mainam ang maliit at mabilis.',
   'settings.titleBuiltin': 'Built-in na heuristic (walang AI)',
 
+  'settings.sessionDisplay': 'Display ng session',
+  'settings.thinkingExpanded': 'Ipakita ang thinking bilang default',
+  'settings.thinkingExpandedHint':
+    'Kapag naka-on, naka-expand ang reasoning ng model habang naglo-load ang mga session. Pwede mo pa rin i-toggle ito per session mula sa header.',
+  'settings.toolsVisible': 'Ipakita ang tool calls bilang default',
+  'settings.toolsVisibleHint':
+    'Kapag naka-off, naka-hide ang mga tool invocation at compaction habang naglo-load — kapaki-pakinabang sa maliit na screen.',
+  'settings.toolOutputsExpanded': 'I-expand ang tool outputs bilang default',
+  'settings.toolOutputsExpandedHint':
+    'Kapag naka-on, naglo-load ang mga tool output block na naka-expand sa halip na naka-collapse.',
+
   'settings.artifacts': 'Mga Artifact',
   'settings.showArtifacts': 'Ipakita ang panel ng Artifact',
   'settings.showArtifactsHint':

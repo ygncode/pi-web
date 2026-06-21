@@ -233,6 +233,17 @@ export default {
     'Tích hợp là heuristic từ ngữ miễn phí, tức thời (không AI). Chọn một mô hình để có tiêu đề thông minh hơn — loại nhỏ, nhanh là lý tưởng.',
   'settings.titleBuiltin': 'Heuristic tích hợp (không AI)',
 
+  'settings.sessionDisplay': 'Hiển thị phiên',
+  'settings.thinkingExpanded': 'Hiển thị suy nghĩ theo mặc định',
+  'settings.thinkingExpandedHint':
+    'Khi bật, suy nghĩ của mô hình được mở rộng khi tải phiên. Bạn vẫn có thể bật/tắt mỗi phiên từ tiêu đề.',
+  'settings.toolsVisible': 'Hiển thị lệnh gọi công cụ theo mặc định',
+  'settings.toolsVisibleHint':
+    'Khi tắt, các lệnh gọi công cụ và phần nén được ẩn khi tải — tiện cho màn hình nhỏ.',
+  'settings.toolOutputsExpanded': 'Mở rộng kết quả công cụ theo mặc định',
+  'settings.toolOutputsExpandedHint':
+    'Khi bật, các khối kết quả công cụ tải ở trạng thái mở rộng thay vì thu gọn.',
+
   'settings.artifacts': 'Tạo phẩm',
   'settings.showArtifacts': 'Hiện bảng Tạo phẩm',
   'settings.showArtifactsHint':

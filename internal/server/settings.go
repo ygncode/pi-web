@@ -66,6 +66,9 @@ var settingDefaults = map[string]string{
 	settingAutoTitleModel:         "",
 	"pi-web:v1:artifacts:enabled": "true",
 	"pi-web:v1:artifacts:include": "*.md, *.html",
+	"pi-web:v1:toggle:thinking":      "true",
+	"pi-web:v1:toggle:tools":         "true",
+	"pi-web:v1:toggle:tool-outputs":  "false",
 }
 
 // getSettings returns every server-backed setting: defaults overlaid with any

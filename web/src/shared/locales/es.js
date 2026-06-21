@@ -237,6 +237,17 @@ export default {
     'El integrado es una heurística de palabras gratuita e instantánea (sin IA). Elige un modelo para títulos más inteligentes: uno pequeño y rápido es lo ideal.',
   'settings.titleBuiltin': 'Heurística integrada (sin IA)',
 
+  'settings.sessionDisplay': 'Vista de sesión',
+  'settings.thinkingExpanded': 'Mostrar pensamiento por defecto',
+  'settings.thinkingExpandedHint':
+    'Cuando está activo, el razonamiento del modelo aparece expandido al cargar las sesiones. Aún puedes alternarlo por sesión desde el encabezado.',
+  'settings.toolsVisible': 'Mostrar llamadas a herramientas por defecto',
+  'settings.toolsVisibleHint':
+    'Cuando está desactivado, las llamadas a herramientas y compactaciones se ocultan al cargar — útil en pantallas pequeñas.',
+  'settings.toolOutputsExpanded': 'Expandir salidas de herramientas por defecto',
+  'settings.toolOutputsExpandedHint':
+    'Cuando está activo, los bloques de salida de herramientas cargan expandidos en vez de colapsados.',
+
   'settings.artifacts': 'Artefactos',
   'settings.showArtifacts': 'Mostrar el panel de artefactos',
   'settings.showArtifactsHint':

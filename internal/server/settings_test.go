@@ -120,6 +120,40 @@ func TestAutoTitleSettingsDefaultsAndRoundTrip(t *testing.T) {
 	}
 }
 
+func TestToggleDefaultSettingsRoundTrip(t *testing.T) {
+	s := &Server{db: newSettingsTestDB(t)}
+
+	all := s.getSettings()
+	if all["pi-web:v1:toggle:thinking"] != "true" {
+		t.Errorf("expected toggle:thinking default 'true', got %q", all["pi-web:v1:toggle:thinking"])
+	}
+	if all["pi-web:v1:toggle:tools"] != "true" {
+		t.Errorf("expected toggle:tools default 'true', got %q", all["pi-web:v1:toggle:tools"])
+	}
+	if all["pi-web:v1:toggle:tool-outputs"] != "false" {
+		t.Errorf("expected toggle:tool-outputs default 'false', got %q", all["pi-web:v1:toggle:tool-outputs"])
+	}
+
+	body := bytes.NewBufferString(`{"settings":{"pi-web:v1:toggle:thinking":"false","pi-web:v1:toggle:tool-outputs":"true"}}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/settings", body)
+	w := httptest.NewRecorder()
+	s.handleSaveSettings(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	if got := s.getSetting("pi-web:v1:toggle:thinking", "true"); got != "false" {
+		t.Errorf("expected stored toggle:thinking 'false', got %q", got)
+	}
+	if got := s.getSetting("pi-web:v1:toggle:tool-outputs", "false"); got != "true" {
+		t.Errorf("expected stored toggle:tool-outputs 'true', got %q", got)
+	}
+	// Untouched key keeps its default.
+	if got := s.getSetting("pi-web:v1:toggle:tools", "true"); got != "true" {
+		t.Errorf("expected toggle:tools to keep default 'true', got %q", got)
+	}
+}
+
 func TestHandleSaveSettingsIgnoresUnknownKeys(t *testing.T) {
 	s := &Server{db: newSettingsTestDB(t)}
 

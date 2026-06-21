@@ -233,6 +233,16 @@ export default {
     'ในตัวเป็นฮิวริสติกคำที่ฟรีและทันที (ไม่มี AI) เลือกโมเดลเพื่อชื่อที่ฉลาดขึ้น — โมเดลเล็กและเร็วเหมาะที่สุด',
   'settings.titleBuiltin': 'ฮิวริสติกในตัว (ไม่มี AI)',
 
+  'settings.sessionDisplay': 'การแสดงผลเซสชัน',
+  'settings.thinkingExpanded': 'แสดงการคิดเป็นค่าเริ่มต้น',
+  'settings.thinkingExpandedHint':
+    'เมื่อเปิด การคิดของโมเดลจะถูกขยายเมื่อโหลดเซสชัน คุณยังสลับได้ต่อเซสชันจากส่วนหัว',
+  'settings.toolsVisible': 'แสดงการเรียกเครื่องมือเป็นค่าเริ่มต้น',
+  'settings.toolsVisibleHint':
+    'เมื่อปิด การเรียกเครื่องมือและการบีบอัดจะถูกซ่อนเมื่อโหลด — มีประโยชน์บนหน้าจอเล็ก',
+  'settings.toolOutputsExpanded': 'ขยายผลลัพธ์เครื่องมือเป็นค่าเริ่มต้น',
+  'settings.toolOutputsExpandedHint': 'เมื่อเปิด บล็อกผลลัพธ์เครื่องมือจะโหลดในสถานะขยายแทนการพับ',
+
   'settings.artifacts': 'อาร์ติแฟกต์',
   'settings.showArtifacts': 'แสดงแผงอาร์ติแฟกต์',
   'settings.showArtifactsHint':

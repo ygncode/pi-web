@@ -229,6 +229,15 @@ export default {
     '内置是免费、即时的词语启发式（无 AI）。选择一个模型以获得更智能的标题——小而快的模型最为理想。',
   'settings.titleBuiltin': '内置启发式（无 AI）',
 
+  'settings.sessionDisplay': '会话显示',
+  'settings.thinkingExpanded': '默认展示思考',
+  'settings.thinkingExpandedHint':
+    '开启后，加载会话时模型思考默认展开。仍可在每个会话的头部进行切换。',
+  'settings.toolsVisible': '默认显示工具调用',
+  'settings.toolsVisibleHint': '关闭后，加载时隐藏工具调用与折叠摘要 — 适用于小屏幕。',
+  'settings.toolOutputsExpanded': '默认展开工具输出',
+  'settings.toolOutputsExpandedHint': '开启后，工具输出块以展开状态而非折叠状态加载。',
+
   'settings.artifacts': '产物',
   'settings.showArtifacts': '显示产物面板',
   'settings.showArtifactsHint':

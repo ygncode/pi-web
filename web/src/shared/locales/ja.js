@@ -235,6 +235,17 @@ export default {
     '組み込みは無料で即時の単語ヒューリスティック（AI なし）です。より賢いタイトルにはモデルを選択してください — 小さく高速なものが理想的です。',
   'settings.titleBuiltin': '組み込みヒューリスティック（AI なし）',
 
+  'settings.sessionDisplay': 'セッション表示',
+  'settings.thinkingExpanded': '思考をデフォルトで表示',
+  'settings.thinkingExpandedHint':
+    '有効にすると、セッション読み込み時にモデルの思考が展開されます。ヘッダーからセッションごとに切り替えることもできます。',
+  'settings.toolsVisible': 'ツール呼び出しをデフォルトで表示',
+  'settings.toolsVisibleHint':
+    '無効にすると、ツール呼び出しと圧縮表示がセッション読み込み時に非表示になります — 小さな画面で便利です。',
+  'settings.toolOutputsExpanded': 'ツール出力をデフォルトで展開',
+  'settings.toolOutputsExpandedHint':
+    '有効にすると、ツール出力ブロックが折りたたみではなく展開された状態で読み込まれます。',
+
   'settings.artifacts': 'アーティファクト',
   'settings.showArtifacts': 'アーティファクトパネルを表示',
   'settings.showArtifactsHint':
