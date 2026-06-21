@@ -1585,13 +1585,16 @@
 
     /* Set on the "Tool output" button by syncToggleButtons when tool calls are
        hidden — its setting has no visible effect until tools are visible
-       again. */
+       again. opacity alone collapsed the 10px text into the surface in dark
+       themes; the explicit text-soft + dimmed background keep it readable
+       across every theme while still reading as inactive. */
     .header-toggle-btn:disabled,
     .header-toggle-btn:disabled:hover {
-      opacity: 0.4;
       cursor: not-allowed;
+      color: var(--text-soft);
       background: var(--container-bg);
       border-color: var(--border);
+      opacity: 0.7;
     }
 
     .model-search {
