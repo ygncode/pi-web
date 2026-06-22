@@ -51,13 +51,66 @@ test.describe("steer / queue (stubbed pi)", () => {
     return { textarea };
   }
 
+  // Blocks the chip auto-clear pipeline until released. steer-queue.js wires
+  // its cleanup off `pi-session-reload` (FIFO pop on new user entries) and
+  // `pi-worker-done` (full sweep at run-end). For events fired at the
+  // window target, listeners fire in registration order regardless of the
+  // capture flag, so an add-on capture listener can't reliably preempt the
+  // already-installed steer-queue listener.
+  //
+  // Instead we monkey-patch `window.dispatchEvent` to swallow the cleanup
+  // events while suspended. The SPA's emitter (live-events.js) calls
+  // `windowImpl.dispatchEvent(...)` which goes through our patched function,
+  // so no listeners ever see the event. Release flips the flag and replays
+  // a fresh `pi-session-reload` so the chip's normal downstream cleanup can
+  // still run.
+  async function suspendChipCleanup(page) {
+    await page.evaluate(() => {
+      const w = window as Window & {
+        __piSuspendChipCleanup?: boolean;
+        __piOriginalDispatch?: typeof window.dispatchEvent;
+      };
+      if (w.__piOriginalDispatch) {
+        w.__piSuspendChipCleanup = true;
+        return;
+      }
+      w.__piSuspendChipCleanup = true;
+      const original = window.dispatchEvent.bind(window);
+      w.__piOriginalDispatch = original;
+      window.dispatchEvent = function (event: Event) {
+        if (
+          w.__piSuspendChipCleanup &&
+          (event.type === "pi-session-reload" || event.type === "pi-worker-done")
+        ) {
+          return true;
+        }
+        return original(event);
+      };
+    });
+    return async () => {
+      await page.evaluate(() => {
+        const w = window as Window & { __piSuspendChipCleanup?: boolean };
+        w.__piSuspendChipCleanup = false;
+        window.dispatchEvent(new Event("pi-session-reload"));
+      });
+    };
+  }
+
   test("steering shows a panel row and delivers the message", async ({
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "steer");
+    // Long slow-hold so the original run is unambiguously still in flight when
+    // the steer lands — otherwise on a slow CI runner the worker can flip to
+    // idle (pi-worker-done) between openRunningSession and our click,
+    // dropping activeRun=false so the next send becomes a fresh turn instead
+    // of a steer.
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "steer", {
+      slowMs: 30000,
+    });
 
     const steerMsg = `steer-${testInfo.workerIndex}-${Date.now()}`;
+    const release = await suspendChipCleanup(page);
     await textarea.fill(steerMsg);
     await page.locator("#pi-chat-send").click();
 
@@ -65,12 +118,15 @@ test.describe("steer / queue (stubbed pi)", () => {
     const steerRow = page.locator(".pi-queue-item.pi-queue-item--steer");
     await expect(steerRow).toContainText(steerMsg);
 
+    // Release the refetch stall so the auto-clear can fire on the next event.
+    await release();
+
     // The steered message is delivered and answered.
     await expect(page.locator("#messages")).toContainText(`Stub reply: ${steerMsg}`, {
       timeout: 20000,
     });
 
-    // Once the run completes, the steer row clears.
+    // Once the run completes (and the user message lands), the steer row clears.
     await expect(steerRow).toHaveCount(0, { timeout: 20000 });
   });
 
@@ -86,11 +142,15 @@ test.describe("steer / queue (stubbed pi)", () => {
     });
 
     const steerMsg = `fast-steer-${testInfo.workerIndex}-${Date.now()}`;
+    const release = await suspendChipCleanup(page);
     await textarea.fill(steerMsg);
     await page.locator("#pi-chat-send").click();
 
     const steerRow = page.locator(".pi-queue-item.pi-queue-item--steer");
     await expect(steerRow).toContainText(steerMsg);
+
+    // Release the refetch stall — that's the event the cleanup hangs on.
+    await release();
 
     // The stub pi writes the steer's user turn to the JSONL immediately
     // (e2e/lib/stub-pi/pi#handlePrompt, the `activeSlowRun` branch); the file
@@ -105,9 +165,15 @@ test.describe("steer / queue (stubbed pi)", () => {
     page,
     sessionsDir,
   }, testInfo) => {
-    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "steer-cancel");
+    // Long slow-hold so activeRun stays true through the click — see the
+    // matching note on "steering shows a panel row". Plus a refetch stall so
+    // the auto-clear doesn't beat us to the X button.
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "steer-cancel", {
+      slowMs: 30000,
+    });
 
     const steerMsg = `dismiss-${testInfo.workerIndex}-${Date.now()}`;
+    const release = await suspendChipCleanup(page);
     await textarea.fill(steerMsg);
     await page.locator("#pi-chat-send").click();
 
@@ -119,6 +185,7 @@ test.describe("steer / queue (stubbed pi)", () => {
     // conversation), but the in-flight indicator goes away.
     await steerRow.locator(".pi-queue-item-remove").click();
     await expect(steerRow).toHaveCount(0);
+    await release();
   });
 
   test("queued messages stack, are deletable, and auto-send after the run", async ({
