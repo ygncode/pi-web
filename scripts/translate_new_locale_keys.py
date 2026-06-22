@@ -82,16 +82,11 @@ def js_escape(value: str) -> str:
 
 
 def build_prompt(code: str, native: str, references: dict[str, str]) -> str:
-    ref_lines = "\n".join(
-        f"  {key}: {references[key]!r} (en) -> {references.get(key + '__local', '?')}"
-        for key in REFERENCE_KEYS
-        if key in references
-    )
-    # Easier shape: send reference EN -> LOCAL pairs deepseek can pattern-match.
-    pairs = []
-    for key in REFERENCE_KEYS:
-        if key in references:
-            pairs.append({"key": key, "local": references[key]})
+    # Send reference EN -> LOCAL pairs as JSON so deepseek can pattern-match
+    # the locale's existing register against the new English source.
+    pairs = [
+        {"key": key, "local": references[key]} for key in REFERENCE_KEYS if key in references
+    ]
 
     new_payload = [{"key": key, "english": english} for key, english in NEW_KEYS]
 
