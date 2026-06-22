@@ -49,6 +49,7 @@ export function runChatComposer({
   toolbar = new ChatToolbarState(),
   queueStore = new QueueStore(),
   queueApi = null,
+  getLiveEntries = null,
 } = {}) {
   const document = documentImpl;
   const window = windowImpl;
@@ -216,6 +217,7 @@ export function runChatComposer({
       autoResizeTextarea,
       updateSendEnabled,
       queueApi,
+      getLiveEntries,
     });
 
     const workerStatus = setupWorkerStatusPolling({

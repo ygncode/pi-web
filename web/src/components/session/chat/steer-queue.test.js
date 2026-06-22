@@ -163,6 +163,55 @@ describe('setupSteerQueue (server-backed)', () => {
     expect(store.queuedCount).toBe(0);
   });
 
+  it('clears a steer chip when a matching user entry appears on session reload', () => {
+    const { queueButton, textarea } = makeDom();
+    const store = new QueueStore();
+    const entries = [];
+    setupSteerQueue({
+      store,
+      queueButton,
+      textarea,
+      getLiveEntries: () => entries,
+    });
+
+    // Start an active run, then a steer.
+    window.dispatchEvent(new CustomEvent('pi-chat-message-sent', { detail: { message: 'first' } }));
+    window.dispatchEvent(
+      new CustomEvent('pi-chat-message-sent', { detail: { message: 'sorry, continue' } }),
+    );
+    expect(store.steerCount).toBe(1);
+
+    // pi has now folded the steer in and the session JSONL has a user entry.
+    entries.push({
+      id: 'u1',
+      type: 'message',
+      message: { role: 'user', content: 'sorry, continue' },
+    });
+    window.dispatchEvent(new Event('pi-session-reload'));
+
+    expect(store.steerCount).toBe(0);
+  });
+
+  it('leaves the steer chip alone while no matching user entry has landed', () => {
+    const { queueButton, textarea } = makeDom();
+    const store = new QueueStore();
+    const entries = [];
+    setupSteerQueue({
+      store,
+      queueButton,
+      textarea,
+      getLiveEntries: () => entries,
+    });
+
+    window.dispatchEvent(new CustomEvent('pi-chat-message-sent', { detail: { message: 'task' } }));
+    window.dispatchEvent(new CustomEvent('pi-chat-message-sent', { detail: { message: 'steer' } }));
+    expect(store.steerCount).toBe(1);
+
+    // Reload fires but the steer hasn't been picked up yet (no matching user entry).
+    window.dispatchEvent(new Event('pi-session-reload'));
+    expect(store.steerCount).toBe(1);
+  });
+
   it('resume PATCHes paused=false through the api', async () => {
     const { queueButton, textarea } = makeDom();
     const api = makeApi();

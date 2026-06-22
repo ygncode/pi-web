@@ -64,6 +64,10 @@
       leafId: model?.leafId || '',
       urlTargetId: model?.urlTargetId || '',
       byId: model?.byId || new Map(),
+      // Live getter: steer-queue uses this on every pi-session-reload to look
+      // for a matching user entry and clear the corresponding steer chip once
+      // pi has folded the steer into the conversation.
+      getLiveEntries: () => (model ? model.entries : []),
       navigateTo: runtime.navigateTo,
       escapeHtml: (text) => escapeHtml(text, { documentImpl: document }),
       chatApi,
