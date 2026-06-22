@@ -104,15 +104,25 @@ export function wireSessionEvents({
   windowImpl = typeof window !== 'undefined' ? window : null,
   CustomEventImpl = typeof CustomEvent !== 'undefined' ? CustomEvent : null,
 } = {}) {
+  const dispatchReloadedEvent = () => {
+    if (!windowImpl || !CustomEventImpl) return;
+    try {
+      windowImpl.dispatchEvent(new CustomEventImpl('pi-session-reload'));
+    } catch (_) {}
+  };
+
   eventSource.onmessage = (event) => {
     if (event.data !== 'reload') return;
-    onReload(event);
-    // Broadcast so other modules (e.g. chat composer status) can react
-    // immediately instead of waiting for their next poll tick.
-    if (windowImpl && CustomEventImpl) {
-      try {
-        windowImpl.dispatchEvent(new CustomEventImpl('pi-session-reload'));
-      } catch (_) {}
+    // `onReload` returns a Promise once handleSessionReload starts; await it so
+    // the broadcast fires *after* the model has the new entries. Otherwise
+    // listeners that read the model on this event (e.g. steer-queue reconciling
+    // its chips against newly-arrived user messages) race the fetch and see a
+    // stale snapshot.
+    const result = onReload(event);
+    if (result && typeof result.then === 'function') {
+      result.then(dispatchReloadedEvent, dispatchReloadedEvent);
+    } else {
+      dispatchReloadedEvent();
     }
   };
   eventSource.addEventListener('chat-preview', (event) => {
@@ -124,7 +134,14 @@ export function wireSessionEvents({
       // the canonical entries would never reconcile until a manual refresh. The
       // chat-preview stream is worker-driven and independent of the watcher, so
       // its 'done' signal is a reliable trigger to pull the written entries.
-      if (payload && payload.done) onReload(event);
+      if (payload && payload.done) {
+        const result = onReload(event);
+        if (result && typeof result.then === 'function') {
+          result.then(dispatchReloadedEvent, dispatchReloadedEvent);
+        } else {
+          dispatchReloadedEvent();
+        }
+      }
     } catch (error) {
       onError(error);
     }
