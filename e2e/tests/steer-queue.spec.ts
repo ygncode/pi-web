@@ -74,6 +74,33 @@ test.describe("steer / queue (stubbed pi)", () => {
     await expect(steerRow).toHaveCount(0, { timeout: 20000 });
   });
 
+  test("steer chip clears as soon as pi echoes the user message (not waiting for run-end)", async ({
+    page,
+    sessionsDir,
+  }, testInfo) => {
+    // 30s slow-hold so the original run is still in flight when the steer
+    // lands. The chip must clear well before agent_end fires (we'd be done
+    // long before this test's 30s timeout if we waited for the run instead).
+    const { textarea } = await openRunningSession(page, sessionsDir, testInfo, "steer-fast", {
+      slowMs: 30000,
+    });
+
+    const steerMsg = `fast-steer-${testInfo.workerIndex}-${Date.now()}`;
+    await textarea.fill(steerMsg);
+    await page.locator("#pi-chat-send").click();
+
+    const steerRow = page.locator(".pi-queue-item.pi-queue-item--steer");
+    await expect(steerRow).toContainText(steerMsg);
+
+    // The stub pi writes the steer's user turn to the JSONL immediately
+    // (e2e/lib/stub-pi/pi#handlePrompt, the `activeSlowRun` branch); the file
+    // watcher → SSE 'reload' → /api/session refetch → reconcile pipeline puts
+    // the entry into the model. The steer chip must disappear within a few
+    // seconds of that — well before the 30s slow run ends.
+    await expect(page.locator("#messages")).toContainText(steerMsg, { timeout: 10000 });
+    await expect(steerRow).toHaveCount(0, { timeout: 5000 });
+  });
+
   test("user can dismiss a pending steer row before pickup", async ({
     page,
     sessionsDir,

@@ -117,11 +117,17 @@ export function setupSteerQueue({
     // will refresh the panel so the head item disappears from the list.
   };
 
-  // When pi has folded a steer into the active turn it appends a user entry
-  // to the session JSONL. The live reload fires `pi-session-reload`; we then
-  // look at the most recent user messages and clear any steer chip whose text
-  // matches — that way the chip disappears as soon as the steer is observably
+  // When pi folds a steer into the active turn it appends a user entry to the
+  // session JSONL. The live reload fires `pi-session-reload`; we then drop the
+  // matching steer chip so it disappears as soon as the steer is observably
   // picked up, instead of waiting until the whole run completes.
+  //
+  // Strategy: first try a text match (most precise). If we can't match by
+  // text — pi could decorate the stored content in ways we don't recognise —
+  // fall back to a FIFO clear keyed on "did the count of user messages grow
+  // since the previous reload?". Either path is safe because steer chips are
+  // only ever added while `activeRun` is true; the next run begins via
+  // pi-worker-done's clearSteers().
   function extractUserText(content) {
     if (typeof content === 'string') return content;
     if (Array.isArray(content)) {
@@ -130,26 +136,60 @@ export function setupSteerQueue({
     return '';
   }
 
+  function countUserMessages(entries) {
+    let n = 0;
+    for (const entry of entries) {
+      if (entry?.type === 'message' && entry.message?.role === 'user') n += 1;
+    }
+    return n;
+  }
+
+  // Seed at attach time with the current historical user-message count so we
+  // don't treat existing entries as fresh steer pickups on the first reload.
+  let lastUserMessageCount = getLiveEntries ? countUserMessages(getLiveEntries() || []) : 0;
+
   function reconcileSteersAgainstEntries() {
     if (!getLiveEntries) return;
-    if (store.steerCount === 0) return;
     const entries = getLiveEntries() || [];
-    // Scan from the tail; we only care about the most recent user messages.
-    const recent = new Set();
-    let scanned = 0;
-    for (let i = entries.length - 1; i >= 0 && scanned < 25; i -= 1) {
-      const entry = entries[i];
-      if (!entry || entry.type !== 'message') continue;
-      if (entry.message?.role !== 'user') continue;
-      const text = extractUserText(entry.message.content).trim();
-      if (text) recent.add(text);
-      scanned += 1;
+    const userCount = countUserMessages(entries);
+    if (store.steerCount === 0) {
+      lastUserMessageCount = userCount;
+      return;
     }
-    if (recent.size === 0) return;
-    const stale = store.items.filter(
-      (item) => item.kind === 'steer' && recent.has(String(item.text || '').trim()),
-    );
-    for (const item of stale) store.removeById(item.id);
+    let newUserMessages = Math.max(0, userCount - lastUserMessageCount);
+    lastUserMessageCount = userCount;
+
+    // 1) Precise text match.
+    if (newUserMessages > 0) {
+      const recent = new Set();
+      let scanned = 0;
+      for (let i = entries.length - 1; i >= 0 && scanned < 25; i -= 1) {
+        const entry = entries[i];
+        if (!entry || entry.type !== 'message') continue;
+        if (entry.message?.role !== 'user') continue;
+        const text = extractUserText(entry.message.content).trim();
+        if (text) recent.add(text);
+        scanned += 1;
+      }
+      const matched = store.items.filter(
+        (item) => item.kind === 'steer' && recent.has(String(item.text || '').trim()),
+      );
+      for (const item of matched) {
+        store.removeById(item.id);
+        newUserMessages -= 1;
+        if (newUserMessages <= 0) return;
+      }
+    }
+
+    // 2) FIFO fallback. If pi's stored content doesn't match our captured chip
+    // text exactly (decorated user entries, etc.) we still pop one steer chip
+    // per newly arrived user message, oldest first.
+    while (newUserMessages > 0 && store.steerCount > 0) {
+      const head = store.items.find((item) => item.kind === 'steer');
+      if (!head) break;
+      store.removeById(head.id);
+      newUserMessages -= 1;
+    }
   }
 
   store.actions.sendNow = sendNow;

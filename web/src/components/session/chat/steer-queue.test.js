@@ -192,6 +192,37 @@ describe('setupSteerQueue (server-backed)', () => {
     expect(store.steerCount).toBe(0);
   });
 
+  it('FIFO-clears a steer chip when a new user entry lands but its text does not match', () => {
+    const { queueButton, textarea } = makeDom();
+    const store = new QueueStore();
+    const entries = [];
+    setupSteerQueue({
+      store,
+      queueButton,
+      textarea,
+      getLiveEntries: () => entries,
+    });
+
+    // Seed initial user-count baseline (so the listener doesn't fire on the
+    // first reload thinking historical messages are fresh).
+    window.dispatchEvent(new Event('pi-session-reload'));
+
+    window.dispatchEvent(new CustomEvent('pi-chat-message-sent', { detail: { message: 'first' } }));
+    window.dispatchEvent(new CustomEvent('pi-chat-message-sent', { detail: { message: 'steer' } }));
+    expect(store.steerCount).toBe(1);
+
+    // pi has folded the steer in but its stored content is decorated, so the
+    // exact-text matcher misses. The FIFO fallback still pops the head steer.
+    entries.push({
+      id: 'u1',
+      type: 'message',
+      message: { role: 'user', content: '[steer] steer (with cwd context)' },
+    });
+    window.dispatchEvent(new Event('pi-session-reload'));
+
+    expect(store.steerCount).toBe(0);
+  });
+
   it('leaves the steer chip alone while no matching user entry has landed', () => {
     const { queueButton, textarea } = makeDom();
     const store = new QueueStore();
