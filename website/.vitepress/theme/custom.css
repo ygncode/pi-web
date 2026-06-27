@@ -1,0 +1,142 @@
+/* pi-web docs theme — maps the app's four palettes (internal/ui/embedded/styles/
+   theme.css) onto VitePress variables. Selected via html[data-theme="…"] by the
+   nav ThemeSwitcher; dark-family themes also carry the .dark class so VitePress's
+   own dark component styles apply. Default (dracula) is set pre-paint in config.js. */
+
+/* ── Dark (Obsidian / Carbon) ── */
+html[data-theme='dark'] {
+  --vp-c-bg: #111116;
+  --vp-c-bg-alt: #0f0f14;
+  --vp-c-bg-soft: #191920;
+  --vp-c-bg-elv: #15151b;
+  --vp-c-text-1: #e6e7eb;
+  --vp-c-text-2: #b7bbc4;
+  --vp-c-text-3: #858a96;
+  --vp-c-divider: #292a33;
+  --vp-c-border: #292a33;
+  --vp-c-gutter: #20212a;
+  --accent: #9cc7c0;
+  --accent-2: #8abeb7;
+  --brand-text: #111116;
+  --vp-code-block-bg: #0d0d12;
+}
+
+/* ── Light (Warm Linen) ── */
+html[data-theme='light'] {
+  --vp-c-bg: #f6f5f2;
+  --vp-c-bg-alt: #eceae4;
+  --vp-c-bg-soft: #f1f0ec;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-text-1: #1f2328;
+  --vp-c-text-2: #3f4650;
+  --vp-c-text-3: #747b85;
+  --vp-c-divider: #d8d5cc;
+  --vp-c-border: #d8d5cc;
+  --vp-c-gutter: #e8e5dc;
+  --accent: #496f69;
+  --accent-2: #5a8080;
+  --brand-text: #ffffff;
+  --vp-code-block-bg: #f1f0ec;
+}
+
+/* ── Nord (Arctic Frost) ── */
+html[data-theme='nord'] {
+  --vp-c-bg: #2e3440;
+  --vp-c-bg-alt: #292f3a;
+  --vp-c-bg-soft: #434c5e;
+  --vp-c-bg-elv: #3b4252;
+  --vp-c-text-1: #d8dee9;
+  --vp-c-text-2: #e5e9f0;
+  --vp-c-text-3: #88c0d0;
+  --vp-c-divider: #4c566a;
+  --vp-c-border: #4c566a;
+  --vp-c-gutter: #3b4252;
+  --accent: #88c0d0;
+  --accent-2: #81a1c1;
+  --brand-text: #2e3440;
+  --vp-code-block-bg: #2b313c;
+}
+
+/* ── Dracula (Cyberpunk) ── */
+html[data-theme='dracula'],
+:root {
+  --vp-c-bg: #282a36;
+  --vp-c-bg-alt: #21222d;
+  --vp-c-bg-soft: #343746;
+  --vp-c-bg-elv: #1e1f29;
+  --vp-c-text-1: #f8f8f2;
+  --vp-c-text-2: #eaeaea;
+  --vp-c-text-3: #6272a4;
+  --vp-c-divider: #44475a;
+  --vp-c-border: #44475a;
+  --vp-c-gutter: #1d1f27;
+  --accent: #ff79c6;
+  --accent-2: #bd93f9;
+  --brand-text: #282a36;
+  --vp-code-block-bg: #1e1f29;
+}
+
+/* ── Shared brand + hero wiring (driven by per-theme --accent / --accent-2) ── */
+html[data-theme] {
+  --vp-c-brand-1: var(--accent);
+  --vp-c-brand-2: var(--accent);
+  --vp-c-brand-3: var(--accent);
+  --vp-c-brand-soft: color-mix(in srgb, var(--accent) 16%, transparent);
+  --vp-c-brand-softer: color-mix(in srgb, var(--accent) 8%, transparent);
+
+  --vp-button-brand-bg: var(--accent);
+  --vp-button-brand-border: var(--accent);
+  --vp-button-brand-text: var(--brand-text);
+  --vp-button-brand-hover-bg: color-mix(in srgb, var(--accent) 88%, #fff);
+  --vp-button-brand-hover-border: var(--vp-button-brand-hover-bg);
+  --vp-button-brand-hover-text: var(--brand-text);
+  --vp-button-brand-active-bg: color-mix(in srgb, var(--accent) 88%, #000);
+
+  /* Gradient hero title + a soft accent glow behind the demo (dimmed so it
+     reads as a halo rather than washing out the GIF in front of it). */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, var(--accent) 20%, var(--accent-2));
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--accent) 55%, transparent) 30%,
+    color-mix(in srgb, var(--accent-2) 55%, transparent) 70%
+  );
+  --vp-home-hero-image-filter: blur(76px);
+}
+
+/* Native widgets (scrollbars, form controls) follow each theme. */
+html[data-theme='dark'],
+html[data-theme='nord'],
+html[data-theme='dracula'] {
+  color-scheme: dark;
+}
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+/* ── Southeast-Asian scripts (Burmese/Khmer/Lao/Thai) stack diacritics
+   vertically and need looser leading than Latin, or glyphs collide. The big
+   hero text is the worst offender because VitePress sets a very tight px
+   line-height there. Scoped by :lang() so Latin locales are unaffected. ── */
+:is(:lang(my), :lang(km), :lang(lo), :lang(th)) {
+  line-height: 1.7;
+}
+:is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .name,
+:is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .text {
+  line-height: 1.5;
+  padding-bottom: 0.12em;
+}
+:is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .tagline {
+  line-height: 1.7;
+}
+:is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPFeature .title {
+  line-height: 1.5;
+}
+:is(:lang(my), :lang(km), :lang(lo), :lang(th)) .vp-doc :is(p, li, h1, h2, h3, h4) {
+  line-height: 1.9;
+}
+
+/* Feature cards pick up a subtle accent border on hover. */
+.VPFeature:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--vp-c-border));
+}

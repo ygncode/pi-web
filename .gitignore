@@ -13,5 +13,12 @@ internal/ui/embedded/export/export.js
 
 node_modules/
 tmp/
+__pycache__/
 
 .requirements/
+
+# VitePress docs site: generated srcDir, build output, cache, and locale config.
+website/src/
+website/dist/
+website/.vitepress/cache/
+website/.vitepress/locales.generated.json

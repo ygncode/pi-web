@@ -1,0 +1,41 @@
+{
+  "text": "Remote-control your pi coding agent",
+  "tagline": "A beautiful web UI and PWA for pi — browse, read, and continue your AI coding sessions from any browser, on any device.",
+  "actions": [
+    { "theme": "brand", "text": "Get Started", "to": "guide" },
+    { "theme": "alt", "text": "Install", "to": "install" },
+    { "theme": "alt", "text": "View on GitHub", "link": "https://github.com/ygncode/pi-web" }
+  ],
+  "features": [
+    {
+      "icon": "📱",
+      "title": "Resume from anywhere",
+      "details": "Continue a session from your phone, tablet, or another computer. No SSH, no Termius — just open your browser."
+    },
+    {
+      "icon": "🗂️",
+      "title": "Multi-session dashboard",
+      "details": "Kick off work in one session while watching another stream. Search across projects, filter by branch, find what you need fast."
+    },
+    {
+      "icon": "🔓",
+      "title": "Open-source & model-agnostic",
+      "details": "pi is fully open source and provider-agnostic. Pick any model, switch whenever you like — you're not locked to a vendor."
+    },
+    {
+      "icon": "🔒",
+      "title": "Safe remote access",
+      "details": "Built-in token auth so you can expose it on your LAN or over Tailscale without worry."
+    },
+    {
+      "icon": "📤",
+      "title": "Share your work",
+      "details": "Export sessions as static snapshots or secret GitHub Gists in one click."
+    },
+    {
+      "icon": "🏠",
+      "title": "Your personal AI workspace",
+      "details": "Install it like a native PWA and turn it into a personal assistant that lives on your machine."
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-.PHONY: build setup frontend-setup go-setup root-setup frontend-build frontend-test frontend-knip frontend-lint frontend-format-check extension-test memory-test go-test install-test vet test check clean dev release-patch release-minor release-major release-beta e2e e2e-setup
+.PHONY: build setup frontend-setup go-setup root-setup frontend-build frontend-test frontend-knip frontend-lint frontend-format-check extension-test memory-test go-test install-test vet test check clean dev docs docs-dev release-patch release-minor release-major release-beta e2e e2e-setup
 
 BINARY ?= pi-web
 WEB_DIR := web
@@ -87,6 +87,16 @@ e2e: build
 clean:
 	rm -f $(BINARY)
 	rm -rf $(WEB_DIR)/dist
+
+# Docs site (VitePress). Assemble the generated srcDir from user-docs + authored
+# pages, then build/preview. Not part of `make check` — never gates the app.
+docs:
+	python3 scripts/build_site.py
+	cd website && npm install && npm run build
+
+docs-dev:
+	python3 scripts/build_site.py
+	cd website && npm install && npm run dev
 
 # Release helpers — bump package.json, commit, tag, and push.
 # Uses npm version which auto-creates a vX.Y.Z git tag.

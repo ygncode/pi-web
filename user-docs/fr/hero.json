@@ -1,0 +1,53 @@
+{
+  "text": "Pilotez votre agent de codage pi à distance",
+  "tagline": "Une interface web et PWA magnifique pour pi — parcourez, lisez et poursuivez vos sessions de codage IA depuis n'importe quel navigateur, sur n'importe quel appareil.",
+  "actions": [
+    {
+      "theme": "brand",
+      "text": "Démarrer",
+      "to": "guide"
+    },
+    {
+      "theme": "alt",
+      "text": "Installer",
+      "to": "install"
+    },
+    {
+      "theme": "alt",
+      "text": "Voir sur GitHub",
+      "link": "https://github.com/ygncode/pi-web"
+    }
+  ],
+  "features": [
+    {
+      "icon": "📱",
+      "title": "Reprenez où que vous soyez",
+      "details": "Continuez une session depuis votre téléphone, tablette ou un autre ordinateur. Pas de SSH, pas de Termius — ouvrez simplement votre navigateur."
+    },
+    {
+      "icon": "🗂️",
+      "title": "Tableau de bord multi-sessions",
+      "details": "Lancez du travail dans une session tout en surveillant le flux d'une autre. Recherchez à travers les projets, filtrez par branche, trouvez rapidement ce dont vous avez besoin."
+    },
+    {
+      "icon": "🔓",
+      "title": "Open source et indépendant des modèles",
+      "details": "pi est entièrement open source et indépendant des fournisseurs. Choisissez n'importe quel modèle, changez quand vous le souhaitez — vous n'êtes pas enfermé chez un fournisseur."
+    },
+    {
+      "icon": "🔒",
+      "title": "Accès distant sécurisé",
+      "details": "Authentification par jeton intégrée pour pouvoir l'exposer sur votre réseau local ou via Tailscale sans inquiétude."
+    },
+    {
+      "icon": "📤",
+      "title": "Partagez votre travail",
+      "details": "Exportez vos sessions sous forme d'instantanés statiques ou de Gists GitHub secrets en un clic."
+    },
+    {
+      "icon": "🏠",
+      "title": "Votre espace de travail IA personnel",
+      "details": "Installez-le comme une PWA native et transformez-le en assistant personnel qui vit sur votre machine."
+    }
+  ]
+}

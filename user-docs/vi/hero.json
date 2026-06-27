@@ -1,0 +1,53 @@
+{
+  "text": "Điều khiển từ xa pi coding agent của bạn",
+  "tagline": "Giao diện web và PWA tuyệt đẹp cho pi — duyệt, đọc và tiếp tục các phiên lập trình AI của bạn từ bất kỳ trình duyệt nào, trên mọi thiết bị.",
+  "actions": [
+    {
+      "theme": "brand",
+      "text": "Bắt Đầu",
+      "to": "guide"
+    },
+    {
+      "theme": "alt",
+      "text": "Cài Đặt",
+      "to": "install"
+    },
+    {
+      "theme": "alt",
+      "text": "Xem trên GitHub",
+      "link": "https://github.com/ygncode/pi-web"
+    }
+  ],
+  "features": [
+    {
+      "icon": "📱",
+      "title": "Tiếp tục từ mọi nơi",
+      "details": "Tiếp tục phiên làm việc từ điện thoại, máy tính bảng hoặc máy tính khác. Không cần SSH, không cần Termius — chỉ cần mở trình duyệt."
+    },
+    {
+      "icon": "🗂️",
+      "title": "Bảng điều khiển đa phiên",
+      "details": "Khởi động công việc trong một phiên và theo dõi luồng phiên khác. Tìm kiếm xuyên suốt các dự án, lọc theo nhánh, tìm thứ bạn cần thật nhanh."
+    },
+    {
+      "icon": "🔓",
+      "title": "Mã nguồn mở & không phụ thuộc model",
+      "details": "pi hoàn toàn là mã nguồn mở và không phụ thuộc nhà cung cấp. Chọn bất kỳ model nào, chuyển đổi bất cứ lúc nào — bạn không bị khóa vào một nhà cung cấp."
+    },
+    {
+      "icon": "🔒",
+      "title": "Truy cập từ xa an toàn",
+      "details": "Tích hợp xác thực token để bạn có thể mở nó trên mạng LAN hoặc qua Tailscale mà không lo lắng."
+    },
+    {
+      "icon": "📤",
+      "title": "Chia sẻ công việc của bạn",
+      "details": "Xuất các phiên dưới dạng ảnh chụp tĩnh hoặc GitHub Gist bí mật chỉ với một cú nhấp."
+    },
+    {
+      "icon": "🏠",
+      "title": "Không gian làm việc AI cá nhân của bạn",
+      "details": "Cài đặt như một PWA gốc và biến nó thành trợ lý cá nhân sống ngay trên máy của bạn."
+    }
+  ]
+}

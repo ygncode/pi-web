@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import re
 import subprocess
 import sys
@@ -116,6 +117,66 @@ def build_doc(doc: str, code: str) -> str:
     return translate(src, code) + "\n"
 
 
+# hero.json drives the docs-site home page (see scripts/build_site.py). Only its
+# string values are translated; keys, links, icons, and structure are preserved.
+HERO_PROMPT = """Translate the string VALUES of this JSON object into {target}.
+
+Rules:
+- Output ONLY valid JSON with the exact same keys. No preamble, no commentary, no code fence.
+- Translate every value into {target}.
+- Keep these terms in English / as-is: pi, pi-web, PWA, SSE, Tailscale, GitHub, Gist, macOS, Linux, Windows, npm, Claude, Cowork, Termius.
+- Preserve emoji, punctuation, and the em dash (—).
+
+{payload}
+"""
+
+
+def hero_strings(hero: dict) -> list[tuple]:
+    paths = [("text",), ("tagline",)]
+    paths += [("actions", i, "text") for i in range(len(hero["actions"]))]
+    for i in range(len(hero["features"])):
+        paths += [("features", i, "title"), ("features", i, "details")]
+    return paths
+
+
+def build_hero(code: str) -> str:
+    hero = json.loads((EN_DIR / "hero.json").read_text())
+    if code == "en":
+        return json.dumps(hero, ensure_ascii=False, indent=2) + "\n"
+    paths = hero_strings(hero)
+    payload = json.dumps(
+        {str(i): _at(hero, p) for i, p in enumerate(paths)}, ensure_ascii=False, indent=2
+    )
+    prompt = HERO_PROMPT.format(target=TRANSLATE_TARGET[code], payload=payload)
+    result = subprocess.run(
+        ["pi", "-p", "--model", "opencode-go/deepseek-v4-pro", "--no-session", prompt],
+        capture_output=True,
+        text=True,
+        timeout=600,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"pi failed for {code} hero: {result.stderr}")
+    out = re.sub(r"\n```$", "", re.sub(r"^```[a-zA-Z]*\n", "", result.stdout.strip()))
+    data = json.loads(out)
+    if len(data) != len(paths):
+        raise RuntimeError(f"{code} hero: expected {len(paths)} strings, got {len(data)}")
+    for i, path in enumerate(paths):
+        _set(hero, path, data[str(i)])
+    return json.dumps(hero, ensure_ascii=False, indent=2) + "\n"
+
+
+def _at(obj, path):
+    for key in path:
+        obj = obj[key]
+    return obj
+
+
+def _set(obj, path, value):
+    for key in path[:-1]:
+        obj = obj[key]
+    obj[path[-1]] = value
+
+
 def main():
     only = sys.argv[1:]  # optional list of lang codes
     for code, name in LANGS:
@@ -132,7 +193,9 @@ def main():
             else:
                 content = build_doc(doc, code)
             (out_dir / f"{doc}.md").write_text(content)
-        print(f"[{code}] done ({len(DOCS)} docs)", flush=True)
+        print(f"[{code}] hero…", flush=True)
+        (out_dir / "hero.json").write_text(build_hero(code))
+        print(f"[{code}] done ({len(DOCS)} docs + hero)", flush=True)
 
 
 if __name__ == "__main__":

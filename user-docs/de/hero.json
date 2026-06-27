@@ -1,0 +1,53 @@
+{
+  "text": "Steuere deinen pi Coding Agent aus der Ferne",
+  "tagline": "Eine schöne Web-UI und PWA für pi — durchsuche, lies und setze deine KI-Coding-Sessions von jedem Browser und jedem Gerät aus fort.",
+  "actions": [
+    {
+      "theme": "brand",
+      "text": "Loslegen",
+      "to": "guide"
+    },
+    {
+      "theme": "alt",
+      "text": "Installieren",
+      "to": "install"
+    },
+    {
+      "theme": "alt",
+      "text": "Auf GitHub ansehen",
+      "link": "https://github.com/ygncode/pi-web"
+    }
+  ],
+  "features": [
+    {
+      "icon": "📱",
+      "title": "Von überall fortsetzen",
+      "details": "Setze eine Session von deinem Handy, Tablet oder einem anderen Rechner aus fort. Kein SSH, kein Termius — öffne einfach deinen Browser."
+    },
+    {
+      "icon": "🗂️",
+      "title": "Multi-Session-Dashboard",
+      "details": "Starte die Arbeit in einer Session, während du einer anderen zuschaust. Suche projektübergreifend, filtere nach Branch, finde schnell, was du brauchst."
+    },
+    {
+      "icon": "🔓",
+      "title": "Open-Source & modellunabhängig",
+      "details": "pi ist vollständig quelloffen und anbieterunabhängig. Wähle ein beliebiges Modell, wechsle wann immer du willst — du bist an keinen Anbieter gebunden."
+    },
+    {
+      "icon": "🔒",
+      "title": "Sicherer Fernzugriff",
+      "details": "Integrierte Token-Authentifizierung, damit du es sorgenfrei in deinem LAN oder über Tailscale bereitstellen kannst."
+    },
+    {
+      "icon": "📤",
+      "title": "Teile deine Arbeit",
+      "details": "Exportiere Sessions mit einem Klick als statische Snapshots oder geheime GitHub Gists."
+    },
+    {
+      "icon": "🏠",
+      "title": "Dein persönlicher KI-Arbeitsbereich",
+      "details": "Installiere es wie eine native PWA und verwandle es in einen persönlichen Assistenten, der auf deinem Rechner lebt."
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "text": "Kawal ejen pengekodan pi anda dari jauh",
+  "tagline": "UI web dan PWA yang cantik untuk pi — semak imbas, baca, dan sambung sesi pengekodan AI anda dari mana-mana pelayar, pada mana-mana peranti.",
+  "actions": [
+    {
+      "theme": "brand",
+      "text": "Mula Sekarang",
+      "to": "guide"
+    },
+    {
+      "theme": "alt",
+      "text": "Pasang",
+      "to": "install"
+    },
+    {
+      "theme": "alt",
+      "text": "Lihat di GitHub",
+      "link": "https://github.com/ygncode/pi-web"
+    }
+  ],
+  "features": [
+    {
+      "icon": "📱",
+      "title": "Sambung dari mana-mana",
+      "details": "Sambung sesi dari telefon, tablet, atau komputer lain anda. Tiada SSH, tiada Termius — hanya buka pelayar anda."
+    },
+    {
+      "icon": "🗂️",
+      "title": "Papan pemuka pelbagai sesi",
+      "details": "Mulakan kerja dalam satu sesi sambil menonton strim sesi lain. Cari merentas projek, tapis mengikut cawangan, cari apa yang anda perlukan dengan pantas."
+    },
+    {
+      "icon": "🔓",
+      "title": "Sumber terbuka & agnostik model",
+      "details": "pi adalah sumber terbuka sepenuhnya dan agnostik pembekal. Pilih mana-mana model, tukar bila-bila masa — anda tidak terikat kepada satu vendor."
+    },
+    {
+      "icon": "🔒",
+      "title": "Akses jauh yang selamat",
+      "details": "Pengesahan token terbina dalam supaya anda boleh mendedahkannya pada LAN anda atau melalui Tailscale tanpa risau."
+    },
+    {
+      "icon": "📤",
+      "title": "Kongsi kerja anda",
+      "details": "Eksport sesi sebagai syot kilat statik atau GitHub Gists rahsia dalam satu klik."
+    },
+    {
+      "icon": "🏠",
+      "title": "Ruang kerja AI peribadi anda",
+      "details": "Pasangnya seperti PWA asli dan jadikannya pembantu peribadi yang tinggal di mesin anda."
+    }
+  ]
+}

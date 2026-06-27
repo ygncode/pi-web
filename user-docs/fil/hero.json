@@ -1,0 +1,53 @@
+{
+  "text": "I-remote-control ang iyong pi coding agent",
+  "tagline": "Isang magandang web UI at PWA para sa pi — mag-browse, magbasa, at magpatuloy ng iyong AI coding sessions mula sa kahit anong browser, sa kahit anong device.",
+  "actions": [
+    {
+      "theme": "brand",
+      "text": "Magsimula",
+      "to": "guide"
+    },
+    {
+      "theme": "alt",
+      "text": "I-install",
+      "to": "install"
+    },
+    {
+      "theme": "alt",
+      "text": "Tingnan sa GitHub",
+      "link": "https://github.com/ygncode/pi-web"
+    }
+  ],
+  "features": [
+    {
+      "icon": "📱",
+      "title": "Magpatuloy mula sa kahit saan",
+      "details": "Ipagpatuloy ang isang session mula sa iyong telepono, tablet, o ibang computer. Walang SSH, walang Termius — buksan lang ang iyong browser."
+    },
+    {
+      "icon": "🗂️",
+      "title": "Multi-session dashboard",
+      "details": "Magsimula ng trabaho sa isang session habang pinapanood ang isa pang stream. Maghanap sa iba't ibang proyekto, i-filter ayon sa branch, hanapin ang kailangan mo nang mabilis."
+    },
+    {
+      "icon": "🔓",
+      "title": "Open-source at model-agnostic",
+      "details": "Ang pi ay ganap na open source at provider-agnostic. Pumili ng kahit anong modelo, magpalit kahit kailan mo gusto — hindi ka nakatali sa isang vendor."
+    },
+    {
+      "icon": "🔒",
+      "title": "Ligtas na remote access",
+      "details": "May built-in na token auth upang mailantad mo ito sa iyong LAN o sa pamamagitan ng Tailscale nang walang pag-aalala."
+    },
+    {
+      "icon": "📤",
+      "title": "Ibahagi ang iyong gawa",
+      "details": "I-export ang mga session bilang static snapshots o secret GitHub Gists sa isang click."
+    },
+    {
+      "icon": "🏠",
+      "title": "Ang iyong personal na AI workspace",
+      "details": "I-install ito tulad ng isang native PWA at gawin itong personal assistant na nakatira sa iyong machine."
+    }
+  ]
+}

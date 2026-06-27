@@ -1,0 +1,53 @@
+{
+  "text": "远程控制你的 pi 编程助手",
+  "tagline": "一个漂亮的 Web 界面和 PWA，专为 pi 打造——在任何设备、任何浏览器上浏览、阅读并继续你的 AI 编程会话。",
+  "actions": [
+    {
+      "theme": "brand",
+      "text": "快速开始",
+      "to": "guide"
+    },
+    {
+      "theme": "alt",
+      "text": "安装",
+      "to": "install"
+    },
+    {
+      "theme": "alt",
+      "text": "在 GitHub 上查看",
+      "link": "https://github.com/ygncode/pi-web"
+    }
+  ],
+  "features": [
+    {
+      "icon": "📱",
+      "title": "随时随地从上次中断处继续",
+      "details": "在手机、平板或另一台电脑上继续你的会话。无需 SSH，无需 Termius——打开浏览器即可。"
+    },
+    {
+      "icon": "🗂️",
+      "title": "多会话仪表盘",
+      "details": "在一个会话中启动工作任务，同时观察另一个会话的实时输出。跨项目搜索，按分支筛选，快速找到所需内容。"
+    },
+    {
+      "icon": "🔓",
+      "title": "开源且不绑定模型",
+      "details": "pi 完全开源，不绑定任何模型服务商。随心选择模型，随时切换——你不受任何厂商限制。"
+    },
+    {
+      "icon": "🔒",
+      "title": "安全的远程访问",
+      "details": "内置 token 认证，你可以安心地将其开放到局域网或通过 Tailscale 访问。"
+    },
+    {
+      "icon": "📤",
+      "title": "分享你的成果",
+      "details": "一键将会话导出为静态快照或私密 GitHub Gist。"
+    },
+    {
+      "icon": "🏠",
+      "title": "你的专属 AI 工作空间",
+      "details": "像原生 PWA 一样安装，把它变成常驻在你电脑上的个人助手。"
+    }
+  ]
+}

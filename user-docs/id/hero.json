@@ -1,0 +1,53 @@
+{
+  "text": "Kendalikan dari jarak jauh agen coding pi Anda",
+  "tagline": "UI web dan PWA yang indah untuk pi — jelajahi, baca, dan lanjutkan sesi coding AI Anda dari browser apa pun, di perangkat apa pun.",
+  "actions": [
+    {
+      "theme": "brand",
+      "text": "Mulai",
+      "to": "guide"
+    },
+    {
+      "theme": "alt",
+      "text": "Pasang",
+      "to": "install"
+    },
+    {
+      "theme": "alt",
+      "text": "Lihat di GitHub",
+      "link": "https://github.com/ygncode/pi-web"
+    }
+  ],
+  "features": [
+    {
+      "icon": "📱",
+      "title": "Lanjutkan dari mana saja",
+      "details": "Lanjutkan sesi dari ponsel, tablet, atau komputer lain. Tanpa SSH, tanpa Termius — cukup buka browser Anda."
+    },
+    {
+      "icon": "🗂️",
+      "title": "Dasbor multi-sesi",
+      "details": "Mulai pekerjaan di satu sesi sambil memantau sesi lain. Cari di seluruh proyek, filter berdasarkan cabang, temukan yang Anda butuhkan dengan cepat."
+    },
+    {
+      "icon": "🔓",
+      "title": "Sumber terbuka & agnostik model",
+      "details": "pi sepenuhnya sumber terbuka dan agnostik penyedia. Pilih model apa pun, ganti kapan pun Anda suka — Anda tidak terkunci pada satu vendor."
+    },
+    {
+      "icon": "🔒",
+      "title": "Akses jarak jauh yang aman",
+      "details": "Auth token bawaan sehingga Anda bisa mengeksposnya di LAN atau melalui Tailscale tanpa khawatir."
+    },
+    {
+      "icon": "📤",
+      "title": "Bagikan hasil kerja Anda",
+      "details": "Ekspor sesi sebagai snapshot statis atau GitHub Gist rahasia dalam satu klik."
+    },
+    {
+      "icon": "🏠",
+      "title": "Ruang kerja AI pribadi Anda",
+      "details": "Pasang seperti PWA native dan ubah menjadi asisten pribadi yang tinggal di mesin Anda."
+    }
+  ]
+}
