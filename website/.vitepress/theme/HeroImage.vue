@@ -38,8 +38,11 @@ import { withBase } from 'vitepress'
   text-align: center;
 }
 @media (min-width: 960px) {
+  /* Fill the image column rather than a fixed width, so it never overflows
+     into the (possibly long, e.g. Burmese) heading. */
   .hero-demo-img {
-    width: 620px;
+    width: 100%;
+    max-width: 560px;
   }
 }
 @media (max-width: 640px) {

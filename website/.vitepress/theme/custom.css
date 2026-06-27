@@ -104,6 +104,18 @@ html[data-theme] {
   --vp-home-hero-image-filter: blur(76px);
 }
 
+/* Keep the hero demo strictly in its own column so long headings (e.g. Burmese)
+   never collide with it: cap the text column and cancel VitePress's leftward
+   image shift. */
+@media (min-width: 960px) {
+  .VPHero.has-image .container .main {
+    max-width: 500px;
+  }
+  .VPHero .image-container {
+    transform: translateY(-32px);
+  }
+}
+
 /* Native widgets (scrollbars, form controls) follow each theme. */
 html[data-theme='dark'],
 html[data-theme='nord'],
