@@ -135,17 +135,17 @@ html[data-theme='light'] {
 }
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .name,
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .text {
-  line-height: 1.9;
-  padding-bottom: 0.2em;
+  line-height: 1.5;
+  padding-bottom: 0.15em;
 }
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .tagline {
-  line-height: 1.8;
+  line-height: 1.55;
 }
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPFeature .title {
-  line-height: 1.5;
+  line-height: 1.45;
 }
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .vp-doc :is(p, li, h1, h2, h3, h4) {
-  line-height: 1.9;
+  line-height: 1.7;
 }
 
 /* Feature cards pick up a subtle accent border on hover. */
