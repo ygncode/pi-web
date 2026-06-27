@@ -123,11 +123,11 @@ html[data-theme='light'] {
 }
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .name,
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .text {
-  line-height: 1.5;
-  padding-bottom: 0.12em;
+  line-height: 1.75;
+  padding-bottom: 0.2em;
 }
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPHero .tagline {
-  line-height: 1.7;
+  line-height: 1.8;
 }
 :is(:lang(my), :lang(km), :lang(lo), :lang(th)) .VPFeature .title {
   line-height: 1.5;

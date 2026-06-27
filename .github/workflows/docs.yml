@@ -28,9 +28,6 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '20'
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - name: Assemble VitePress source
         run: python3 scripts/build_site.py
       - name: Install & build
@@ -38,8 +35,8 @@ jobs:
         run: |
           npm install
           npm run build
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: website/dist
 
@@ -51,4 +48,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
