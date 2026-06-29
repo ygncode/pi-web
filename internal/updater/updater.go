@@ -20,9 +20,11 @@ import (
 )
 
 const (
-	defaultNPMURL    = "https://registry.npmjs.org/@ygncode/pi-web"
-	defaultGitHubAPI = "https://api.github.com/repos/ygncode/pi-web"
-	// npmChannel is the dist-tag pi-web installs from (see pi install command).
+	// NOTE: this fork builds the Checker via NewDisabled(), so these endpoints
+	// are never contacted; they are kept pointed at the fork for consistency.
+	defaultNPMURL    = "https://registry.npmjs.org/@gappc/pi-web"
+	defaultGitHubAPI = "https://api.github.com/repos/gappc/pi-web"
+	// npmChannel is the dist-tag the (now-disabled) updater would query.
 	npmChannel = "beta"
 	// PollInterval is how often the background goroutine refreshes the cache.
 	PollInterval = 6 * time.Hour
@@ -49,6 +51,7 @@ var devVersionRe = regexp.MustCompile(`-\d+-g[0-9a-f]{7,}|-dirty$`)
 // check. It is safe for concurrent use.
 type Checker struct {
 	current   string
+	disabled  bool
 	npmURL    string
 	githubAPI string
 	client    *http.Client
@@ -72,6 +75,17 @@ func New(version string) *Checker {
 		githubAPI: defaultGitHubAPI,
 		client:    &http.Client{Timeout: httpTimeout},
 	}
+}
+
+// NewDisabled builds a Checker that never contacts npm or GitHub. It still
+// reports the current build version (so the UI can display it) but never polls
+// in the background, never performs a manual check, and never reports an
+// available update. Forks that build their own binary use this to cut the
+// auto-update cord.
+func NewDisabled(version string) *Checker {
+	c := New(version)
+	c.disabled = true
+	return c
 }
 
 // isDev reports whether the current build is a local/dev build that should
@@ -110,7 +124,7 @@ func (c *Checker) snapshotLocked() Info {
 // resulting snapshot. For dev builds it short-circuits and only stamps
 // checkedAt so the UI can show "checked just now".
 func (c *Checker) Check(ctx context.Context) (Info, error) {
-	if c.isDev() {
+	if c.isDev() || c.disabled {
 		c.mu.Lock()
 		c.checkedAt = time.Now()
 		info := c.snapshotLocked()
@@ -143,7 +157,7 @@ func (c *Checker) Check(ctx context.Context) (Info, error) {
 // Start runs an initial check shortly after launch, then refreshes every
 // PollInterval until ctx is cancelled. Intended to be run in its own goroutine.
 func (c *Checker) Start(ctx context.Context) {
-	if c.isDev() {
+	if c.isDev() || c.disabled {
 		return
 	}
 	// Small delay so startup isn't blocked on the network.
@@ -181,7 +195,7 @@ func (c *Checker) fetchLatestVersion(ctx context.Context) (string, error) {
 	if v := doc.DistTags["latest"]; v != "" {
 		return v, nil
 	}
-	return "", fmt.Errorf("no published version found for @ygncode/pi-web")
+	return "", fmt.Errorf("no published version found for @gappc/pi-web")
 }
 
 // fetchChangelog tries the version-specific GitHub release first, then the

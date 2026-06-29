@@ -17,7 +17,7 @@ export const CAT_KEYS = {
 };
 
 export const CAT_DEFAULTS = {
-  enabled: true,
+  enabled: false,
   focusMin: 25,
   breakMin: 5,
   bedtime: '23:00',

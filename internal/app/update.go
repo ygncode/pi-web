@@ -1,76 +1,20 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"time"
 )
 
-// installChannel matches the dist-tag pi-web is published under and the
-// updater queries (see internal/updater).
-const installPackage = "npm:@ygncode/pi-web@beta"
-
-// inPlaceUpdateEnv signals install.sh (the package postinstall) that pi-web is
-// updating itself in place. install.sh then skips the service stop/restart:
-// this script runs inside the process tree that restart would kill, aborting
-// the in-flight npm install. pi-web restarts itself afterward via runRestart.
-const inPlaceUpdateEnv = "PI_WEB_INPLACE_UPDATE"
-
-// installCmd builds the `pi install` invocation used by the in-app updater.
-func installCmd(ctx context.Context) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, "pi", "install", installPackage)
-	cmd.Env = append(os.Environ(), inPlaceUpdateEnv+"=1")
-	return cmd
-}
-
-// cleanupStaleNPMTemps removes npm's hidden backup directories for pi-web.
-// Interrupted installs can leave these behind, and later npm installs may fail
-// before package scripts run with ENOTEMPTY while trying to rename the package
-// directory into one of these stale paths.
-func cleanupStaleNPMTemps() {
-	agentRoot := os.Getenv("PI_CODING_AGENT_DIR")
-	if agentRoot == "" {
-		home, err := os.UserHomeDir()
-		if err != nil || home == "" {
-			return
-		}
-		agentRoot = filepath.Join(home, ".pi", "agent")
-	}
-
-	pattern := filepath.Join(agentRoot, "npm", "node_modules", "@ygncode", ".pi-web-*")
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return
-	}
-	for _, path := range matches {
-		_ = os.RemoveAll(path)
-	}
-}
-
-// runInstall installs the latest pi-web package via the `pi` CLI. Output is
-// captured so a failure surfaces a useful message in the UI.
-func runInstall(ctx context.Context) error {
-	cleanupStaleNPMTemps()
-	cmd := installCmd(ctx)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		msg := string(out)
-		if len(msg) > 500 {
-			msg = msg[len(msg)-500:]
-		}
-		return fmt.Errorf("%v: %s", err, msg)
-	}
-	return nil
-}
-
-// runRestart restarts the pi-web service so the freshly installed binary takes
+// runRestart restarts the pi-web service so a manually-installed binary takes
 // over. The restart command is detached into its own session so it survives
 // this process being torn down by the service manager. A fallback timer exits
 // the process if the service manager does not replace us promptly.
+//
+// Note: this fork has no in-app installer (see internal/app/app.go) — restart is
+// kept as a standalone action and never pulls a new binary.
 func runRestart() error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {

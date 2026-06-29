@@ -55,7 +55,7 @@ var settingDefaults = map[string]string{
 	"pi-share:v1:done-sound":      "cat.mp3",
 	"pi-sessions:view-layout":     "timeline",
 	"pi-web:v1:show-btw-in-index": "false",
-	"pi-web:v1:cat:enabled":       "true",
+	"pi-web:v1:cat:enabled":       "false",
 	"pi-web:v1:cat:focus-min":     "25",
 	"pi-web:v1:cat:break-min":     "5",
 	"pi-web:v1:cat:bedtime":       "23:00",

@@ -46,7 +46,9 @@ function makeView() {
 // Build a harness with a controllable clock and active state.
 function harness({ hour = 10, minute = 0, settings } = {}) {
   const storage = makeStorage();
-  if (settings) saveCatSettings(settings, { storage });
+  // The gatekeeper now ships disabled by default; these tests exercise its
+  // active behavior, so enable it unless a test explicitly overrides `enabled`.
+  saveCatSettings({ enabled: true, ...settings }, { storage });
 
   const base = new Date(2026, 4, 31, hour, minute, 0).getTime();
   const clock = { ms: 0 };

@@ -65,7 +65,9 @@ func Main(version string) {
 	}
 	authMiddleware := auth.New(token)
 
-	versionChecker := updater.New(version)
+	// Fork: the updater is inert — it reports the current build version but never
+	// contacts npm/GitHub and never offers an update. See internal/updater.
+	versionChecker := updater.NewDisabled(version)
 
 	var srv *server.Server
 	manager := workers.NewManager(func(sessionID, sessionPath string) (workers.ChatWorker, error) {
@@ -87,8 +89,10 @@ func Main(version string) {
 		Models: func(ctx context.Context) (json.RawMessage, error) {
 			return defaultModelsCache.get(ctx)
 		},
-		Updater:    versionChecker,
-		RunInstall: runInstall,
+		Updater: versionChecker,
+		// RunInstall is intentionally nil in this fork: in-app self-update (which
+		// would pull and swap the binary via `pi install`) is disabled, so
+		// /api/update responds 503.
 		RunRestart: runRestart,
 	})
 	if srvErr != nil {
@@ -177,8 +181,6 @@ func Main(version string) {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
-
-	go versionChecker.Start(ctx)
 
 	go func() {
 		<-ctx.Done()

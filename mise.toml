@@ -1,0 +1,9 @@
+# Toolchain pins for this pi-web fork (used by `mise` — https://mise.jdx.dev).
+#
+# node is pinned to 20 on purpose: the frontend test suite runs under jsdom, and
+# Node 23+ ships its own experimental global `localStorage` that lacks `clear()`
+# and collides with jsdom's, breaking component tests (e.g. CatGatekeeperSettings).
+# go matches the version in go.mod.
+[tools]
+go = "1.25.5"
+node = "20"
