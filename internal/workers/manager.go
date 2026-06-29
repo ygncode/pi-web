@@ -57,6 +57,7 @@ type inspector interface {
 
 type ChatWorker interface {
 	Prompt(ctx context.Context, chat chat.Request) error
+	Compact(ctx context.Context) error
 	SetModel(ctx context.Context, provider, modelID string) error
 	SetThinkingLevel(ctx context.Context, level string) error
 	Abort(ctx context.Context) error
@@ -159,6 +160,16 @@ func (m *Manager) Send(ctx context.Context, sessionID, sessionPath string, chat 
 		return err
 	}
 	return worker.Prompt(ctx, chat)
+}
+
+// Compact ensures a worker for the session (spawning if needed) and runs pi's
+// dedicated compact command on it.
+func (m *Manager) Compact(ctx context.Context, sessionID, sessionPath string) error {
+	worker, err := m.workerFor(sessionID, sessionPath)
+	if err != nil {
+		return err
+	}
+	return worker.Compact(ctx)
 }
 
 // Snapshot returns a point-in-time view of every live worker, for the metrics

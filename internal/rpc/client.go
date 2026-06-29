@@ -61,3 +61,12 @@ func BuildSetThinkingLevelCommand(id, level string) map[string]any {
 func BuildGetCommandsCommand(id string) map[string]any {
 	return map[string]any{"id": id, "type": "get_commands"}
 }
+
+// BuildCompactCommand asks pi to compact the session context. This is the
+// dedicated rpc command that runs session.compact(); sending "/compact" as a
+// prompt does NOT compact (pi's rpc prompt path only expands extension/skill/
+// template commands, so a built-in like /compact would reach the model as
+// literal text).
+func BuildCompactCommand(id string) map[string]any {
+	return map[string]any{"id": id, "type": "compact"}
+}

@@ -10,6 +10,13 @@ export function sendChat(sessionId, body, { fetchImpl = fetch } = {}) {
   return fetchImpl(chatUrl('/api/chat', sessionId), { method: 'POST', body });
 }
 
+// Compact is its own endpoint, not a chat message: pi's rpc prompt path treats
+// "/compact" as literal text, so real compaction requires POST /api/compact
+// (which runs pi's dedicated `compact` rpc command).
+export function compact(sessionId, { fetchImpl = fetch } = {}) {
+  return fetchImpl(chatUrl('/api/compact', sessionId), { method: 'POST' });
+}
+
 export function getWorkerStatus(sessionId, { fetchImpl = fetch } = {}) {
   return fetchImpl(chatUrl('/api/worker-status', sessionId));
 }

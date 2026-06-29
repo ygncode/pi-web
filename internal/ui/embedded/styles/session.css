@@ -5695,6 +5695,93 @@
       color: var(--error, #cc6666);
     }
 
+    .pi-popover-compact {
+      width: 100%;
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 9px;
+      border-radius: 7px;
+      background: var(--surface-2);
+      color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--dim) 40%, transparent);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .pi-popover-compact:hover {
+      border-color: var(--accent);
+    }
+
+    .pi-popover-compact:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .pi-chat-context-popover.warning .pi-popover-compact {
+      border-color: color-mix(in srgb, var(--warning, #f0c674) 50%, transparent);
+      color: var(--warning, #f0c674);
+    }
+
+    .pi-chat-context-popover.danger .pi-popover-compact {
+      border-color: color-mix(in srgb, var(--error, #cc6666) 55%, transparent);
+      background: color-mix(in srgb, var(--error, #cc6666) 12%, var(--surface-2));
+      color: var(--error, #cc6666);
+    }
+
+    .pi-popover-compact .pi-compact-kbd {
+      margin-left: auto;
+      display: inline-flex;
+      gap: 2px;
+      opacity: 0.7;
+    }
+
+    .pi-popover-compact .pi-compact-kbd kbd {
+      font-size: 9px;
+      padding: 1px 3px;
+      border-radius: 3px;
+      background: color-mix(in srgb, var(--dim) 25%, transparent);
+    }
+
+    /* "Compacting…" banner shown above the composer input while /compact runs. */
+    .pi-compacting-banner {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 8px;
+      padding: 9px 12px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 12%, var(--surface-2));
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+    }
+
+    .pi-compacting-banner[hidden] {
+      display: none;
+    }
+
+    .pi-compacting-spinner {
+      width: 13px;
+      height: 13px;
+      flex: none;
+      border-radius: 50%;
+      border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+      border-top-color: var(--accent);
+      animation: pi-compacting-spin 0.7s linear infinite;
+    }
+
+    @keyframes pi-compacting-spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pi-compacting-spinner { animation: none; }
+    }
+
     /* ===================================================================
        Cat Gatekeeper — focus/break + bedtime overlay (live app only).
        The overlay DOM is created by web/src/session/cat-gatekeeper/.

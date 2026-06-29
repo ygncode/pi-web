@@ -64,14 +64,16 @@ describe('setupTextareaControls', () => {
     expect(parts.form.requestSubmit).not.toHaveBeenCalled();
   });
 
-  it('handles thinking and model shortcuts', () => {
+  it('handles thinking, model, and compact shortcuts', () => {
     const parts = createParts();
     const thinking = { cycle: vi.fn() };
     const model = { open: vi.fn() };
+    const compact = { trigger: vi.fn() };
     setupTextareaControls({
       ...parts,
       getThinkingSelector: () => thinking,
       getModelSelector: () => model,
+      getCompact: () => compact,
     });
 
     const tab = new KeyboardEvent('keydown', {
@@ -84,6 +86,18 @@ describe('setupTextareaControls', () => {
     expect(thinking.cycle).toHaveBeenCalled();
     expect(tab.defaultPrevented).toBe(true);
 
+    // Ctrl+I opens the model selector.
+    const ctrlI = new KeyboardEvent('keydown', {
+      key: 'i',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    parts.textarea.dispatchEvent(ctrlI);
+    expect(model.open).toHaveBeenCalled();
+    expect(ctrlI.defaultPrevented).toBe(true);
+
+    // Cmd/Ctrl+L triggers compaction (not the model selector).
     const ctrlL = new KeyboardEvent('keydown', {
       key: 'l',
       ctrlKey: true,
@@ -91,7 +105,8 @@ describe('setupTextareaControls', () => {
       cancelable: true,
     });
     parts.textarea.dispatchEvent(ctrlL);
-    expect(model.open).toHaveBeenCalled();
+    expect(compact.trigger).toHaveBeenCalled();
     expect(ctrlL.defaultPrevented).toBe(true);
+    expect(model.open).toHaveBeenCalledTimes(1); // Ctrl+L did not also open the model selector
   });
 });

@@ -48,6 +48,9 @@ type fakeSender struct {
 	setThinkingSessionID    string
 	setThinkingLevel        string
 	getCommandsCalls        int
+	compactSessionID        string
+	compactSessionPath      string
+	compactCh               chan struct{}
 }
 
 func (f *fakeSender) Send(ctx context.Context, sessionID, sessionPath string, chat chat.Request) error {
@@ -58,6 +61,15 @@ func (f *fakeSender) Send(ctx context.Context, sessionID, sessionPath string, ch
 	f.mu.Unlock()
 	if f.sendCh != nil {
 		f.sendCh <- struct{}{}
+	}
+	return nil
+}
+
+func (f *fakeSender) Compact(ctx context.Context, sessionID, sessionPath string) error {
+	f.compactSessionID = sessionID
+	f.compactSessionPath = sessionPath
+	if f.compactCh != nil {
+		f.compactCh <- struct{}{}
 	}
 	return nil
 }

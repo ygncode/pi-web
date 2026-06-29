@@ -17,6 +17,7 @@ import (
 
 type ChatSender interface {
 	Send(ctx context.Context, sessionID, sessionPath string, chat chat.Request) error
+	Compact(ctx context.Context, sessionID, sessionPath string) error
 	SetModel(ctx context.Context, sessionID, sessionPath, provider, modelID string) error
 	SetThinkingLevel(ctx context.Context, sessionID, sessionPath, level string) error
 	Abort(ctx context.Context, sessionID string) error
@@ -67,6 +68,49 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 	writeJSON(w, http.StatusAccepted, map[string]any{"ok": true, "status": "queued"})
+}
+
+// handleCompact runs pi's dedicated "compact" rpc command for the session.
+// Compaction is NOT a chat prompt: sending "/compact" as a message would reach
+// the model as literal text. It fires asynchronously (compaction calls the LLM
+// to summarise and can take a while) and, on completion, broadcasts a reload so
+// the viewer + context-usage ring pick up the compacted session.
+func (s *Server) handleCompact(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	resolved, err := sessions.ResolveByID(s.sessionsDir, r.URL.Query().Get("id"))
+	if err != nil {
+		if errors.Is(err, sessions.ErrInvalidSessionID) {
+			writeJSONError(w, http.StatusBadRequest, "invalid session id")
+			return
+		}
+		if errors.Is(err, sessions.ErrSessionNotFound) {
+			writeJSONError(w, http.StatusNotFound, "session not found")
+			return
+		}
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if !resolved.Session.ChatAvailable {
+		writeJSONError(w, http.StatusConflict, resolved.Session.ChatDisabledReason)
+		return
+	}
+	if s.chatSender == nil {
+		writeJSONError(w, http.StatusServiceUnavailable, "chat unavailable")
+		return
+	}
+	sessionID := resolved.Session.ID
+	sessionPath := resolved.Path
+	go func() {
+		if err := s.chatSender.Compact(context.Background(), sessionID, sessionPath); err != nil {
+			fmt.Fprintf(os.Stderr, "compact failed for %s: %v\n", sessionID, err)
+		}
+		s.recomputeAndBroadcastStatus(sessionID)
+		s.broadcast(sessionID, "reload")
+	}()
+	writeJSON(w, http.StatusAccepted, map[string]any{"ok": true, "status": "compacting"})
 }
 
 // recentSessionActivityWindow is the grace period after a JSONL write during

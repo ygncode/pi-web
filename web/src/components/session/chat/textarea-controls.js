@@ -8,6 +8,7 @@ export function setupTextareaControls({
   getMentionSelector = () => null,
   getThinkingSelector = () => null,
   getModelSelector = () => null,
+  getCompact = () => null,
   updateSendEnabled = () => {},
   updateComposerHeight = () => {},
 } = {}) {
@@ -39,7 +40,14 @@ export function setupTextareaControls({
       event.preventDefault();
       getThinkingSelector()?.cycle?.();
     }
-    if (event.ctrlKey && (event.key.toLowerCase() === 'i' || event.key.toLowerCase() === 'l')) {
+    // Cmd/Ctrl+L: compact context (/compact)
+    if ((event.metaKey || event.ctrlKey) && !event.shiftKey && event.key.toLowerCase() === 'l') {
+      event.preventDefault();
+      getCompact()?.trigger?.();
+      return;
+    }
+    // Ctrl+I: open model selector
+    if (event.ctrlKey && event.key.toLowerCase() === 'i') {
       event.preventDefault();
       getModelSelector()?.open?.();
     }

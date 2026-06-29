@@ -66,6 +66,15 @@
           <span class="pi-row-value" id="pi-popover-val-total">0</span>
         </div>
       </div>
+      <button
+        type="button"
+        id="pi-chat-compact"
+        class="pi-popover-compact"
+        title={t('composer.compact')}
+      >
+        <span class="pi-compact-label">{t('composer.compactLabel')}</span>
+        <span class="pi-compact-kbd"><kbd>⌘</kbd><kbd>L</kbd></span>
+      </button>
     </div>
   </div>
 {/if}

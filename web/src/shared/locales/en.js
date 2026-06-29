@@ -279,6 +279,9 @@ export default {
   'composer.cancelRunning': 'Cancel running response',
   'composer.contextDetails': 'Click for details',
   'composer.pathCopied': 'Path copied',
+  'composer.compact': 'Compact conversation context (/compact)',
+  'composer.compactLabel': 'Compact context',
+  'composer.compacting': 'Compacting conversation context…',
 
   // ── Share / export ──
   'share.copiedSuffix': '{label} copied',
@@ -422,6 +425,7 @@ export default {
   'shortcuts.focusInput': 'Focus chat input',
   'shortcuts.cycleThinking': 'Cycle thinking mode',
   'shortcuts.switchModel': 'Choose/switch model',
+  'shortcuts.compact': 'Compact context (/compact)',
   'shortcuts.submit': 'Submit message',
   'shortcuts.scrollDown': 'Scroll down',
   'shortcuts.scrollUp': 'Scroll up',

@@ -57,6 +57,40 @@ export function getModelContextLimit(modelId, provider = '', contextWindows = {}
   return 128000;
 }
 
+function usageTotalTokens(u) {
+  return (
+    u.totalTokens || (u.input || 0) + (u.output || 0) + (u.cacheRead || 0) + (u.cacheWrite || 0)
+  );
+}
+
+// chars/4 token estimate, matching pi's estimateTokens (compaction.js). Used to
+// estimate post-compaction context size before the next measured turn.
+function estimateTextTokens(text) {
+  return Math.ceil((text ? String(text).length : 0) / 4);
+}
+
+function estimateEntryTokens(entry) {
+  const m = entry && entry.message;
+  if (!m) return 0;
+  let chars = 0;
+  const c = m.content;
+  if (typeof c === 'string') {
+    chars = c.length;
+  } else if (Array.isArray(c)) {
+    for (const b of c) {
+      if (!b) continue;
+      if (b.type === 'text' && b.text) chars += b.text.length;
+      else if (b.type === 'thinking' && b.thinking) chars += b.thinking.length;
+      else if (b.type === 'toolCall')
+        chars += (b.name ? b.name.length : 0) + JSON.stringify(b.arguments || {}).length;
+      else if (b.type === 'toolResult')
+        chars += JSON.stringify(b.output != null ? b.output : b).length;
+      else if (b.type === 'image') chars += 4800;
+    }
+  }
+  return Math.ceil(chars / 4);
+}
+
 export function collectContextUsage(entries = []) {
   let inputTokens = 0;
   let outputTokens = 0;
@@ -74,19 +108,56 @@ export function collectContextUsage(entries = []) {
     }
   });
 
+  // Context-window pressure. Normally the last assistant's totalTokens estimates
+  // current context size — EXCEPT a `compaction` entry collapses everything
+  // before its firstKeptEntryId into a summary, so pre-compaction usage is stale.
+  // Mirrors pi's estimateContextTokens: after the last compaction, prefer a real
+  // post-compaction assistant usage (next turn → accurate); until one exists,
+  // estimate the summary + kept entries with the same chars/4 heuristic.
   let contextTokens = 0;
+  let compactionIdx = -1;
   for (let i = entries.length - 1; i >= 0; i -= 1) {
-    const entry = entries[i];
-    if (entry?.type !== 'message' || !entry.message) continue;
-    const msg = entry.message;
-    if (msg.role === 'assistant' && msg.usage) {
-      contextTokens =
-        msg.usage.totalTokens ||
-        (msg.usage.input || 0) +
-          (msg.usage.output || 0) +
-          (msg.usage.cacheRead || 0) +
-          (msg.usage.cacheWrite || 0);
+    if (entries[i]?.type === 'compaction') {
+      compactionIdx = i;
       break;
+    }
+  }
+
+  if (compactionIdx >= 0) {
+    for (let i = entries.length - 1; i > compactionIdx; i -= 1) {
+      const entry = entries[i];
+      if (entry?.type === 'message' && entry.message?.role === 'assistant' && entry.message.usage) {
+        contextTokens = usageTotalTokens(entry.message.usage);
+        break;
+      }
+    }
+    if (contextTokens <= 0) {
+      const comp = entries[compactionIdx];
+      let keptIdx = -1;
+      if (comp.firstKeptEntryId) {
+        for (let i = 0; i < entries.length; i += 1) {
+          if (entries[i]?.id === comp.firstKeptEntryId) {
+            keptIdx = i;
+            break;
+          }
+        }
+      }
+      if (keptIdx < 0) keptIdx = compactionIdx;
+      let est = estimateTextTokens(comp.summary || '');
+      for (let i = keptIdx; i < entries.length; i += 1) {
+        if (entries[i]?.type === 'message') est += estimateEntryTokens(entries[i]);
+      }
+      contextTokens = est;
+    }
+  } else {
+    for (let i = entries.length - 1; i >= 0; i -= 1) {
+      const entry = entries[i];
+      if (entry?.type !== 'message' || !entry.message) continue;
+      const msg = entry.message;
+      if (msg.role === 'assistant' && msg.usage) {
+        contextTokens = usageTotalTokens(msg.usage);
+        break;
+      }
     }
   }
 

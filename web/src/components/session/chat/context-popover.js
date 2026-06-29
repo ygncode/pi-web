@@ -2,6 +2,7 @@ export function setupContextPopover({
   documentImpl = document,
   windowImpl = window,
   updateContextUsage = () => {},
+  onCompact = () => {},
 } = {}) {
   const usageCapsule = documentImpl.getElementById('pi-chat-context-usage');
   const popover = documentImpl.getElementById('pi-chat-context-popover');
@@ -60,6 +61,7 @@ export function setupContextPopover({
 
   const onPopoverClick = (event) => {
     if (event.target.closest('.pi-popover-close')) hide();
+    else if (event.target.closest('#pi-chat-compact')) onCompact();
     event.stopPropagation();
   };
 

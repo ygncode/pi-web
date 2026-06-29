@@ -11,6 +11,7 @@ export function setupWorkerStatusPolling({
   getKnownThinkingLevel = () => '',
   setKnownThinkingLevel = () => {},
   getWorkerModelUpdate = () => null,
+  getCompact = () => null,
   setIntervalImpl = windowImpl.setInterval?.bind(windowImpl),
   CustomEventImpl = windowImpl.CustomEvent,
   intervalMs = 1500,
@@ -37,10 +38,23 @@ export function setupWorkerStatusPolling({
         : '';
       if (apiModelLabel) setKnownModelLabel(apiModelLabel);
       if (data.thinkingLevel) setKnownThinkingLevel(data.thinkingLevel);
-      if (data.state === 'running') setStatus('running', 'running');
-      if (data.state === 'idle') setStatus('idle', '');
-      if (data.state === 'error') setStatus(data.error || 'worker error', 'error');
+      const compact = getCompact?.();
+      // While compacting, pin the label to "compacting" (running cls so Cancel
+      // stays available) regardless of the polled state.
+      if (data.state === 'running')
+        setStatus(compact?.isCompacting() ? 'compacting' : 'running', 'running');
+      if (data.state === 'idle')
+        setStatus(
+          compact?.isCompacting() ? 'compacting' : 'idle',
+          compact?.isCompacting() ? 'running' : '',
+        );
+      if (data.state === 'error') {
+        compact?.setCompacting(false);
+        setStatus(data.error || 'worker error', 'error');
+      }
       if (lastWorkerState === 'running' && data.state === 'idle') {
+        // Compaction (or any run) finished — clear the compacting banner/label.
+        compact?.setCompacting(false);
         try {
           windowImpl.dispatchEvent(new CustomEventImpl('pi-worker-done'));
         } catch {
@@ -48,6 +62,7 @@ export function setupWorkerStatusPolling({
         }
       }
       if (data.state) lastWorkerState = data.state;
+      compact?.setWorkerRunning(lastWorkerState === 'running');
       setModelLabel(getKnownModelLabel());
       setThinkingLabel(getKnownThinkingLevel());
       updateContextUsage();
@@ -71,6 +86,9 @@ export function setupWorkerStatusPolling({
   updateContextUsage();
 
   const onSessionReload = () => {
+    // Compaction completes by writing the session + broadcasting reload; clear
+    // the compacting banner/label before the status poll resolves real state.
+    getCompact?.()?.setCompacting(false);
     void refresh();
     updateContextUsage();
   };

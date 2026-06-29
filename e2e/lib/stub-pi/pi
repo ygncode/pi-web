@@ -130,6 +130,20 @@ function handlePrompt(cmd) {
   }, 30);
 }
 
+// compact: the dedicated rpc command (NOT a prompt). Real pi summarises history
+// here; the stub just acks and writes a recognizable compaction marker so e2e
+// can assert the dedicated path was taken (vs. "/compact" echoed as a prompt).
+function handleCompact(cmd) {
+  respond(cmd.id, "compact", { compacted: true });
+  setTimeout(() => {
+    if (sessionPath) {
+      const asst = messageEntry("assistant", "Context compacted (stub).", lastEntryId());
+      appendEntry(asst.entry);
+    }
+    send({ type: "agent_end" });
+  }, 30);
+}
+
 function handle(cmd) {
   switch (cmd.type) {
     case "switch_session":
@@ -156,6 +170,9 @@ function handle(cmd) {
       break;
     case "prompt":
       handlePrompt(cmd);
+      break;
+    case "compact":
+      handleCompact(cmd);
       break;
     default:
       if (cmd.id) respond(cmd.id, cmd.type || "unknown", {});

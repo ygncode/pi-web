@@ -49,6 +49,12 @@
           note: t('shortcuts.noteInsideInput'),
         },
         {
+          desc: t('shortcuts.compact'),
+          keys: ['⌘', 'L'],
+          keysWin: ['Ctrl', 'L'],
+          note: t('shortcuts.noteInsideInput'),
+        },
+        {
           desc: t('shortcuts.submit'),
           keys: ['↩'],
           keysWin: ['Enter'],

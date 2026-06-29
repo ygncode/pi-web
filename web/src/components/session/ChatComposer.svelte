@@ -115,6 +115,11 @@
         ><span class="pi-chat-focus-shortcut">{t('composer.focusShortcut')}</span>
       </div>{/if}
     {#if !chatAvailable}<div class="pi-chat-disabled-notice">{chatDisabledReason}</div>{/if}
+    <div id="pi-chat-compacting-banner" class="pi-compacting-banner" hidden>
+      <span class="pi-compacting-spinner" aria-hidden="true"></span><span
+        >{t('composer.compacting')}</span
+      >
+    </div>
     <textarea
       id="pi-chat-message"
       name="message"

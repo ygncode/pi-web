@@ -402,7 +402,7 @@ describe('chat composer runner', () => {
     expect(event.defaultPrevented).toBe(true);
   });
 
-  it('Ctrl+L in the textarea opens the model selector', () => {
+  it('Ctrl+I in the textarea opens the model selector', () => {
     const dom = new JSDOM(
       '<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span></form></body>',
     );
@@ -420,7 +420,7 @@ describe('chat composer runner', () => {
     dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
 
     const event = new dom.window.KeyboardEvent('keydown', {
-      key: 'l',
+      key: 'i',
       ctrlKey: true,
       bubbles: true,
       cancelable: true,
@@ -485,6 +485,88 @@ describe('chat composer runner', () => {
 
     const fill = el.querySelector('.pi-context-fill');
     expect(fill.getAttribute('stroke-dasharray')).toBe('8, 100');
+  });
+
+  // After a `compaction` entry, pre-compaction assistant usage no longer reflects
+  // live context (it was collapsed into the summary). With no post-compaction
+  // turn yet, the ring estimates summary + kept entries (chars/4), not the stale
+  // pre-compaction usage.
+  it('uses the post-compaction estimate, not stale pre-compaction usage', () => {
+    const dom = new JSDOM(
+      '<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div></form></body>',
+    );
+    const mockEntries = [
+      { type: 'message', id: 'a1', message: { role: 'assistant', usage: { totalTokens: 64000 } } }, // pre-compaction (summarized away)
+      { type: 'message', id: 'k1', message: { role: 'user', content: 'x'.repeat(12000) } }, // kept (3000 tok)
+      { type: 'compaction', id: 'c1', firstKeptEntryId: 'k1', summary: 's'.repeat(4000) }, // summary (1000 tok)
+    ];
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      localEntries: mockEntries,
+      chatApi: {
+        getWorkerStatus: () =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ state: 'idle', model: 'gpt-4o', modelProvider: 'openai' }),
+          }),
+      },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: {
+        setupModelSelector: vi.fn((opts) => {
+          opts.setKnownModelLabel('gpt-4o @ openai');
+          return { open: vi.fn() };
+        }),
+      },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+      setIntervalImpl: () => {},
+    });
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+
+    const text = dom.window.document.querySelector('.pi-context-text');
+    // summary 4000/4=1000 + kept user 12000/4=3000 = 4000 tok; 4000/128000 ≈ 3%.
+    // (Stale pre-compaction 64000 would have shown 50%.)
+    expect(text.textContent).toBe('3%');
+  });
+
+  it('uses real post-compaction assistant usage once the next turn lands', () => {
+    const dom = new JSDOM(
+      '<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div></form></body>',
+    );
+    const mockEntries = [
+      { type: 'message', id: 'a1', message: { role: 'assistant', usage: { totalTokens: 64000 } } },
+      { type: 'message', id: 'k1', message: { role: 'user', content: 'x'.repeat(12000) } },
+      { type: 'compaction', id: 'c1', firstKeptEntryId: 'k1', summary: 's'.repeat(4000) },
+      { type: 'message', id: 'a2', message: { role: 'assistant', usage: { totalTokens: 8000 } } }, // next turn, measured
+    ];
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      localEntries: mockEntries,
+      chatApi: {
+        getWorkerStatus: () =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ state: 'idle', model: 'gpt-4o', modelProvider: 'openai' }),
+          }),
+      },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: {
+        setupModelSelector: vi.fn((opts) => {
+          opts.setKnownModelLabel('gpt-4o @ openai');
+          return { open: vi.fn() };
+        }),
+      },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn() },
+      setIntervalImpl: () => {},
+    });
+    dom.window.document.dispatchEvent(new dom.window.Event('DOMContentLoaded'));
+
+    const text = dom.window.document.querySelector('.pi-context-text');
+    // 8000 / 128000 ≈ 6% (the measured post-compaction turn wins over the estimate).
+    expect(text.textContent).toBe('6%');
   });
 
   it('toggles detailed context usage popover and formats values correctly', () => {
@@ -701,5 +783,122 @@ describe('chat composer runner', () => {
 
     const popover = dom.window.document.getElementById('pi-chat-context-popover');
     expect(popover.querySelector('.pi-popover-limit').textContent).toBe('1.2M'); // 1,234,567 formats to 1.2M
+  });
+
+  // /compact: triggered from the context popover button + Cmd/Ctrl+L. It must
+  // hit the dedicated POST /api/compact endpoint (chatApi.compact), NOT be sent
+  // as a chat message — pi's rpc prompt treats "/compact" as literal text.
+  const compactDom = () =>
+    new JSDOM(
+      '<body><form id="pi-chat-composer" data-chat-available="true" data-session-id="s1"><div class="pi-chat-shell"><div id="pi-chat-compacting-banner" hidden></div><textarea id="pi-chat-message"></textarea><input id="pi-chat-images"><button id="pi-chat-attach"></button><div id="pi-chat-attachments"></div><button id="pi-chat-cancel" style="display:none"></button><button id="pi-chat-send"></button><span id="pi-chat-status"></span><button id="pi-chat-model-label"></button><div id="pi-chat-context-usage" style="display:none"><svg class="pi-context-circle"><path class="pi-context-fill" stroke-dasharray="0, 100"></path></svg><span class="pi-context-text">0%</span></div><div id="pi-chat-context-popover" style="display:block"><button type="button" id="pi-chat-compact"><span class="pi-compact-label">Compact context</span></button></div></div></form></body>',
+    );
+
+  const runCompact = (dom, { compact, sendChat, state = 'idle' }) => {
+    runChatComposer({
+      documentImpl: dom.window.document,
+      windowImpl: dom.window,
+      chatApi: {
+        getWorkerStatus: () =>
+          Promise.resolve(new Response(JSON.stringify({ state }), { status: 200 })),
+        compact,
+        sendChat,
+      },
+      chatSelectors: { THINKING_LEVELS: [] },
+      modelSelector: { setupModelSelector: vi.fn(() => ({ open: vi.fn() })) },
+      thinkingSelector: { setupThinkingLevelSelector: vi.fn(() => ({ cycle: vi.fn() })) },
+      FormDataImpl: dom.window.FormData,
+      CustomEventImpl: dom.window.CustomEvent,
+      setIntervalImpl: () => {},
+    });
+    // No manual DOMContentLoaded dispatch: JSDOM fires it during the awaited
+    // tick below, so init runs exactly once (a manual dispatch would double it).
+  };
+
+  it('clicking the compact button calls /api/compact (not sendChat) and closes the popover', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const dom = compactDom();
+    const compact = vi.fn(() =>
+      Promise.resolve(new Response('{"status":"compacting"}', { status: 200 })),
+    );
+    const sendChat = vi.fn(() => Promise.resolve(new Response('{}', { status: 200 })));
+    runCompact(dom, { compact, sendChat });
+    await tick();
+
+    dom.window.document.getElementById('pi-chat-compact').click();
+    await tick();
+
+    expect(compact).toHaveBeenCalledTimes(1);
+    expect(compact.mock.calls[0][0]).toBe('s1');
+    expect(sendChat).not.toHaveBeenCalled();
+    expect(dom.window.document.getElementById('pi-chat-context-popover').style.display).toBe(
+      'none',
+    );
+    // Feedback: the "compacting…" banner shows. (The status label is reactive
+    // Svelte state now, not written to raw DOM, so it isn't asserted here.)
+    expect(dom.window.document.getElementById('pi-chat-compacting-banner').hidden).toBe(false);
+  });
+
+  it('hides the compacting banner when compaction completes (pi-session-reload)', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const dom = compactDom();
+    const compact = vi.fn(() =>
+      Promise.resolve(new Response('{"status":"compacting"}', { status: 200 })),
+    );
+    runCompact(dom, { compact, sendChat: vi.fn() });
+    await tick();
+
+    dom.window.document.getElementById('pi-chat-compact').click();
+    await tick();
+    expect(dom.window.document.getElementById('pi-chat-compacting-banner').hidden).toBe(false);
+
+    // Backend broadcasts pi-session-reload once session.compact() returns.
+    dom.window.dispatchEvent(new dom.window.Event('pi-session-reload'));
+    await tick();
+    expect(dom.window.document.getElementById('pi-chat-compacting-banner').hidden).toBe(true);
+  });
+
+  it('Cmd/Ctrl+L calls /api/compact without clearing the draft', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const dom = compactDom();
+    const compact = vi.fn(() =>
+      Promise.resolve(new Response('{"status":"compacting"}', { status: 200 })),
+    );
+    const sendChat = vi.fn(() => Promise.resolve(new Response('{}', { status: 200 })));
+    runCompact(dom, { compact, sendChat });
+    await tick();
+
+    const textarea = dom.window.document.getElementById('pi-chat-message');
+    textarea.value = 'my draft';
+    const event = new dom.window.KeyboardEvent('keydown', {
+      key: 'l',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    textarea.dispatchEvent(event);
+    await tick();
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(compact).toHaveBeenCalledTimes(1);
+    expect(sendChat).not.toHaveBeenCalled();
+    expect(textarea.value).toBe('my draft');
+    expect(dom.window.document.getElementById('pi-chat-compacting-banner').hidden).toBe(false);
+  });
+
+  it('does not compact while the worker is running', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 0));
+    const dom = compactDom();
+    const compact = vi.fn(() =>
+      Promise.resolve(new Response('{"status":"compacting"}', { status: 200 })),
+    );
+    runCompact(dom, { compact, sendChat: vi.fn(), state: 'running' });
+    await tick();
+
+    dom.window.document.getElementById('pi-chat-compact').click();
+    await tick();
+
+    expect(compact).not.toHaveBeenCalled();
+    expect(dom.window.document.getElementById('pi-chat-compact').disabled).toBe(true);
+    expect(dom.window.document.getElementById('pi-chat-compacting-banner').hidden).toBe(true);
   });
 });

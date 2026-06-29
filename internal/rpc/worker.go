@@ -127,6 +127,27 @@ func (w *piRPCWorker) Prompt(ctx context.Context, chat chat.Request) error {
 	return nil
 }
 
+// Compact runs pi's session.compact() via the dedicated "compact" rpc command.
+// It blocks until pi finishes summarising and persists the compacted session.
+// Marks the worker Running for the duration so the UI reflects activity and the
+// compact affordance stays disabled, mirroring Prompt.
+func (w *piRPCWorker) Compact(ctx context.Context) error {
+	w.touch()
+	w.mu.Lock()
+	w.status = workers.WorkerStatus{State: workers.WorkerStateRunning}
+	w.mu.Unlock()
+	if err := w.sendAndAwait(ctx, BuildCompactCommand(w.nextID())); err != nil {
+		w.mu.Lock()
+		w.status = workers.WorkerStatus{State: workers.WorkerStateError, Error: err.Error()}
+		w.mu.Unlock()
+		return err
+	}
+	w.mu.Lock()
+	w.status = workers.WorkerStatus{State: workers.WorkerStateIdle}
+	w.mu.Unlock()
+	return nil
+}
+
 func (w *piRPCWorker) SetModel(ctx context.Context, provider, modelID string) error {
 	w.touch()
 	id := w.nextID()

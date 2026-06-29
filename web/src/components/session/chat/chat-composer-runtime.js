@@ -25,6 +25,7 @@ import { setupChatSubmission } from './chat-submit.js';
 import { setupSteerQueue } from './steer-queue.js';
 import { QueueStore } from './queue-store.svelte.js';
 import { createChatSelectorLoaders } from './selector-loaders.js';
+import { createCompactController } from './compact-controller.js';
 
 export function runChatComposer({
   documentImpl = document,
@@ -168,6 +169,7 @@ export function runChatComposer({
       getMentionSelector: () => _mentionSelectorApi,
       getThinkingSelector: () => _thinkingSelectorApi,
       getModelSelector: () => _modelSelectorApi,
+      getCompact: () => compact,
       updateSendEnabled,
       updateComposerHeight: updateComposerHeightVar,
     });
@@ -185,6 +187,15 @@ export function runChatComposer({
     function setStatus(text, cls) {
       setChatStatus(text, cls);
     }
+
+    // Shared /compact trigger + "compacting" UI state, used by the keydown
+    // handler, the context popover button, and the worker-status poll.
+    const compact = createCompactController({
+      documentImpl: document,
+      chatApi: __piChatApi,
+      sessionId,
+      setStatus,
+    });
 
     const submission = setupChatSubmission({
       windowImpl: window,
@@ -233,6 +244,7 @@ export function runChatComposer({
       getKnownThinkingLevel: toolbar.getKnownThinkingLevel,
       setKnownThinkingLevel: toolbar.setKnownThinkingLevel,
       getWorkerModelUpdate: () => onWorkerModelUpdate,
+      getCompact: () => compact,
       setIntervalImpl: setInterval,
       CustomEventImpl: CustomEvent,
     });
@@ -247,6 +259,7 @@ export function runChatComposer({
       documentImpl: document,
       windowImpl: window,
       updateContextUsage,
+      onCompact: () => compact.trigger(),
     });
     positionPopover = contextPopover.position;
 
