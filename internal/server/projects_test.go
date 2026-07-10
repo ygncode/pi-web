@@ -155,6 +155,10 @@ func TestHandleUpdateProject_FilterToggle(t *testing.T) {
 
 func TestHandleUpdateProject(t *testing.T) {
 	s := &Server{db: newProjectPrefsDB(t), now: time.Now}
+	// Real absolute paths: register/enable normalize and reject paths like
+	// "/a", which is not absolute on Windows.
+	pathA := filepath.Join(t.TempDir(), "a")
+	pathProj := filepath.Join(t.TempDir(), "proj")
 
 	post := func(path, action string) *httptest.ResponseRecorder {
 		body, _ := json.Marshal(map[string]string{"path": path, "action": action})
@@ -164,26 +168,26 @@ func TestHandleUpdateProject(t *testing.T) {
 		return w
 	}
 
-	if w := post("/a", "enable"); w.Code != http.StatusOK {
+	if w := post(pathA, "enable"); w.Code != http.StatusOK {
 		t.Fatalf("enable status = %d", w.Code)
 	}
-	if !enabledSet(t, s)["/a"] {
-		t.Fatal("/a should be enabled")
+	if !enabledSet(t, s)[pathA] {
+		t.Fatalf("%s should be enabled", pathA)
 	}
 
-	if w := post("/a", "disable"); w.Code != http.StatusOK {
+	if w := post(pathA, "disable"); w.Code != http.StatusOK {
 		t.Fatalf("disable status = %d", w.Code)
 	}
-	if enabledSet(t, s)["/a"] {
-		t.Fatal("/a should be disabled")
+	if enabledSet(t, s)[pathA] {
+		t.Fatalf("%s should be disabled", pathA)
 	}
 
 	// register stores the path with source=registered and enabled.
-	if w := post("/home/user/proj", "register"); w.Code != http.StatusOK {
+	if w := post(pathProj, "register"); w.Code != http.StatusOK {
 		t.Fatalf("register status = %d", w.Code)
 	}
 	var source string
-	if err := s.db.QueryRow("SELECT source FROM project_prefs WHERE project_path = ?", "/home/user/proj").Scan(&source); err != nil {
+	if err := s.db.QueryRow("SELECT source FROM project_prefs WHERE project_path = ?", pathProj).Scan(&source); err != nil {
 		t.Fatal(err)
 	}
 	if source != "registered" {
@@ -191,18 +195,18 @@ func TestHandleUpdateProject(t *testing.T) {
 	}
 
 	// remove deletes the row.
-	if w := post("/home/user/proj", "remove"); w.Code != http.StatusOK {
+	if w := post(pathProj, "remove"); w.Code != http.StatusOK {
 		t.Fatalf("remove status = %d", w.Code)
 	}
 	var count int
-	if err := s.db.QueryRow("SELECT COUNT(*) FROM project_prefs WHERE project_path = ?", "/home/user/proj").Scan(&count); err != nil {
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM project_prefs WHERE project_path = ?", pathProj).Scan(&count); err != nil {
 		t.Fatal(err)
 	}
 	if count != 0 {
 		t.Fatal("removed project should be gone")
 	}
 
-	if w := post("/a", "bogus"); w.Code != http.StatusBadRequest {
+	if w := post(pathA, "bogus"); w.Code != http.StatusBadRequest {
 		t.Fatalf("unknown action status = %d, want 400", w.Code)
 	}
 }
@@ -272,15 +276,18 @@ func TestHandleApiProjects(t *testing.T) {
 
 func TestNormalizeProjectPath(t *testing.T) {
 	home, _ := os.UserHomeDir()
+	// Platform-absolute fixtures: "/abs/path" is not absolute on Windows.
+	abs := filepath.Join(t.TempDir(), "abs", "path")
+	spaced := filepath.Join(t.TempDir(), "spaced")
 	cases := []struct {
 		in      string
 		want    string
 		wantErr bool
 	}{
-		{"/abs/path", "/abs/path", false},
-		{"/abs/path/", "/abs/path", false},
+		{abs, abs, false},
+		{abs + string(filepath.Separator), abs, false},
 		{"~/proj", filepath.Join(home, "proj"), false},
-		{"  /spaced  ", "/spaced", false},
+		{"  " + spaced + "  ", spaced, false},
 		{"relative/path", "", true},
 		{"", "", true},
 	}

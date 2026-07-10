@@ -29,7 +29,7 @@ func writeSessionWithNMessages(t *testing.T, root, project, name string, n int) 
 		t.Fatal(err)
 	}
 	var b strings.Builder
-	b.WriteString(`{"type":"session","version":3,"id":"sid","timestamp":"2026-05-06T00:00:00.000Z","cwd":"` + cwd + `"}` + "\n")
+	b.WriteString(`{"type":"session","version":3,"id":"sid","timestamp":"2026-05-06T00:00:00.000Z","cwd":` + jsonString(cwd) + `}` + "\n")
 	for i := 0; i < n; i++ {
 		fmt.Fprintf(&b, `{"type":"message","id":"id%06d","parentId":null,"timestamp":"2026-05-06T00:00:%02d.000Z","message":{"role":"user","content":"m%d"}}`+"\n", i, i%60, i)
 	}

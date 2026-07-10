@@ -43,7 +43,7 @@ func writeQueueTestSession(t *testing.T, sessionsDir string) string {
 		t.Fatal(err)
 	}
 	id := "2026-06-22T01-00-00.000Z_q.jsonl"
-	body := `{"type":"session","version":3,"id":"q","cwd":"` + project + `"}` + "\n"
+	body := `{"type":"session","version":3,"id":"q","cwd":` + jsonString(project) + `}` + "\n"
 	if err := os.WriteFile(filepath.Join(project, id), []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}

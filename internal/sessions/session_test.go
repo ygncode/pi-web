@@ -27,6 +27,12 @@ func TestEncodeProjectName(t *testing.T) {
 		{"/Users/setkyar/my-project", "--Users_-setkyar_-my-project--"},
 		{"/Users/setkyar/_cache", "--Users_-setkyar_-__cache--"},
 		{"/a/_b/_c", "--a_-__b_-__c--"},
+		// Windows-shaped paths mirror pi's encoding (/, \ and : all map to -)
+		// so the result is a valid Windows directory name.
+		{`C:\Users\me\proj`, "--C--Users-me-proj--"},
+		{`c:\work`, "--c--work--"},
+		{`C:/Users/me/proj`, "--C--Users-me-proj--"},
+		{`\\server\share\proj`, "---server-share-proj--"},
 	}
 	for _, tt := range tests {
 		got := EncodeProjectName(tt.input)
@@ -51,6 +57,11 @@ func TestDecodeProjectName(t *testing.T) {
 		{"--Users-setkyar--", "/Users/setkyar"},
 		{"--home-user-project--", "/home/user/project"},
 		{"--a-b-c-d--", "/a/b/c/d"},
+		// Windows dash encoding: drive letter followed by two dashes
+		// (both : and \ became -).
+		{"--C--Users-me-proj--", `C:\Users\me\proj`},
+		{"--c--work--", `c:\work`},
+		{"--C--my_app--", `C:\my_app`},
 	}
 	for _, tt := range tests {
 		got := DecodeProjectName(tt.input)
@@ -146,7 +157,9 @@ func TestListRecentLocationsReturnsNewestBoundedLocations(t *testing.T) {
 	base := time.Date(2026, 5, 8, 12, 0, 0, 0, time.UTC)
 
 	for i := 0; i < 15; i++ {
-		project := filepath.Join("/tmp", fmt.Sprintf("project%02d", i))
+		// A plain literal, not filepath.Join: on Windows Join would produce
+		// backslash paths and the assertions below expect /tmp/projectNN.
+		project := fmt.Sprintf("/tmp/project%02d", i)
 		dir := filepath.Join(tmp, EncodeProjectName(project))
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatalf("mkdir project dir: %v", err)
@@ -203,8 +216,10 @@ func TestListRecentLocationsRecoversLegacyHyphenatedPaths(t *testing.T) {
 func TestResolveLocationReturnsDecodedPathWhenOnDisk(t *testing.T) {
 	tmp := t.TempDir()
 
-	// Create a real project directory so os.Stat succeeds.
-	realPath := filepath.Join(tmp, "my-project")
+	// Create a real project directory so os.Stat succeeds. Hyphen-free name:
+	// on Windows the dash encoding can't round-trip literal hyphens, and this
+	// test exercises the decode-only path (no session file to recover from).
+	realPath := filepath.Join(tmp, "myproject")
 	if err := os.MkdirAll(realPath, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +274,11 @@ func TestCreateSessionFile(t *testing.T) {
 	if !strings.Contains(string(data), `"type":"session"`) {
 		t.Fatalf("missing session header: %s", string(data))
 	}
-	if !strings.Contains(string(data), `"cwd":"`+projectPath+`"`) {
+	wantCwd, err := json.Marshal(projectPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), `"cwd":`+string(wantCwd)) {
 		t.Fatalf("missing cwd: %s", string(data))
 	}
 }
@@ -682,7 +701,13 @@ func TestParseFileUsesHeaderCwdAsProject(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "s.jsonl")
-	content := `{"type":"session","timestamp":"2026-05-08T10:00:00Z","cwd":"` + cwd + `"}` + "\n"
+	// json.Marshal the cwd: Windows paths contain backslashes, which are
+	// invalid JSON when concatenated raw.
+	cwdJSON, err := json.Marshal(cwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := `{"type":"session","timestamp":"2026-05-08T10:00:00Z","cwd":` + string(cwdJSON) + `}` + "\n"
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -698,7 +723,11 @@ func TestParseFileUsesHeaderCwdAsProject(t *testing.T) {
 func TestParseFileDeduplicatesRepeatedSessionHeader(t *testing.T) {
 	root := t.TempDir()
 	path := filepath.Join(root, "session.jsonl")
-	header := `{"type":"session","id":"sid","timestamp":"2026-05-08T10:00:00Z","cwd":"` + root + `"}`
+	rootJSON, err := json.Marshal(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	header := `{"type":"session","id":"sid","timestamp":"2026-05-08T10:00:00Z","cwd":` + string(rootJSON) + `}`
 	content := header + "\n" +
 		header + "\n" +
 		`{"type":"message","id":"u1","parentId":"sid","timestamp":"2026-05-08T10:00:01Z","message":{"role":"user","content":"hello"}}` + "\n"
@@ -724,7 +753,11 @@ func TestParseFileLeavesChatEnabledWhenCwdExists(t *testing.T) {
 		t.Fatal(err)
 	}
 	path := filepath.Join(root, "session.jsonl")
-	content := `{"type":"session","version":3,"id":"sid","timestamp":"2026-05-06T00:00:00.000Z","cwd":"` + cwd + `"}` + "\n"
+	cwdJSON, err := json.Marshal(cwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content := `{"type":"session","version":3,"id":"sid","timestamp":"2026-05-06T00:00:00.000Z","cwd":` + string(cwdJSON) + `}` + "\n"
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}

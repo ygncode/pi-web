@@ -24,7 +24,7 @@ func writeTreeSessionFile(t *testing.T, root, project, name string) string {
 	if err := os.MkdirAll(cwd, 0755); err != nil {
 		t.Fatal(err)
 	}
-	content := `{"type":"session","version":3,"id":"sid","timestamp":"2026-05-06T00:00:00.000Z","cwd":"` + cwd + `"}` + "\n" +
+	content := `{"type":"session","version":3,"id":"sid","timestamp":"2026-05-06T00:00:00.000Z","cwd":` + jsonString(cwd) + `}` + "\n" +
 		`{"type":"message","id":"a1b2c3d4","parentId":null,"timestamp":"2026-05-06T00:00:01.000Z","message":{"role":"user","content":"hello"}}` + "\n" +
 		`{"type":"message","id":"b2c3d4e5","parentId":"a1b2c3d4","timestamp":"2026-05-06T00:00:02.000Z","message":{"role":"assistant","content":[{"type":"text","text":"Hi!"}]}}` + "\n" +
 		`{"type":"message","id":"c3d4e5f6","parentId":"b2c3d4e5","timestamp":"2026-05-06T00:00:03.000Z","message":{"role":"user","content":"how are you?"}}` + "\n" +

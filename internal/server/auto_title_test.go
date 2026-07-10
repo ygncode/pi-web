@@ -80,7 +80,7 @@ func writeAutoTitleSession(t *testing.T, sessionsDir, userText, name string) str
 	}
 	id := "2026-06-03T00-00-00.000Z_test.jsonl"
 	var b strings.Builder
-	b.WriteString(`{"type":"session","version":3,"id":"test","cwd":"` + project + `"}` + "\n")
+	b.WriteString(`{"type":"session","version":3,"id":"test","cwd":` + jsonString(project) + `}` + "\n")
 	if userText != "" {
 		b.WriteString(`{"type":"message","message":{"role":"user","content":"` + userText + `"}}` + "\n")
 	}
@@ -212,7 +212,7 @@ func TestMaybeAutoTitleEachTurnUsesLatestMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "2026-06-03T00-00-00.000Z_each.jsonl"
-	content := `{"type":"session","version":3,"id":"e","cwd":"` + project + `"}` + "\n" +
+	content := `{"type":"session","version":3,"id":"e","cwd":` + jsonString(project) + `}` + "\n" +
 		`{"type":"message","message":{"role":"user","content":"first task"}}` + "\n" +
 		`{"type":"message","message":{"role":"user","content":"second different task"}}` + "\n"
 	if err := os.WriteFile(filepath.Join(project, id), []byte(content), 0o644); err != nil {
@@ -247,7 +247,7 @@ func TestMaybeAutoTitleReTitlesOwnAutoTitleAcrossRestart(t *testing.T) {
 	}
 	id := "2026-06-03T00-00-00.000Z_restart.jsonl"
 	// Prior auto-title marker + two user messages (a new turn since titling).
-	content := `{"type":"session","version":3,"id":"r","cwd":"` + project + `"}` + "\n" +
+	content := `{"type":"session","version":3,"id":"r","cwd":` + jsonString(project) + `}` + "\n" +
 		`{"type":"message","message":{"role":"user","content":"old task"}}` + "\n" +
 		`{"type":"session_info","name":"Old Task","autoTitle":true}` + "\n" +
 		`{"type":"message","message":{"role":"user","content":"brand new request"}}` + "\n"

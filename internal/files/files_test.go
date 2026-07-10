@@ -1,6 +1,7 @@
 package files
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -163,7 +164,9 @@ func TestWalkScopedMaxDepth(t *testing.T) {
 func TestWalkScopedMaxEntries(t *testing.T) {
 	var seed []string
 	for i := 0; i < 30; i++ {
-		seed = append(seed, "f"+string(rune('a'+i))+".txt")
+		// Numeric names: 'a'+i runs past 'z' into characters like '|' that
+		// are invalid in Windows filenames.
+		seed = append(seed, fmt.Sprintf("f%02d.txt", i))
 	}
 	root := seedTree(t, seed...)
 	entries, err := WalkScoped(root, "", Options{MaxEntries: 7})

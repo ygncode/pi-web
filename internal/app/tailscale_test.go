@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +12,11 @@ import (
 
 func writeFakeTailscale(t *testing.T, dir, script string) string {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		// The fake CLI is a shell script; the code under test is
+		// platform-neutral exec.Command plumbing.
+		t.Skip("fake tailscale CLI requires a Unix shell")
+	}
 	binPath := filepath.Join(dir, "tailscale")
 	if err := os.WriteFile(binPath, []byte(script), 0755); err != nil {
 		t.Fatalf("write fake tailscale: %v", err)

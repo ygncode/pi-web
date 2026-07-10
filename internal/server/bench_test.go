@@ -18,7 +18,7 @@ import (
 
 func generateLargeSessionContent(n int, cwd string) string {
 	var sb strings.Builder
-	sb.WriteString(`{"type":"session","version":3,"id":"bench-session-id","name":"Benchmark Session","timestamp":"2026-01-01T00:00:00Z","cwd":"` + cwd + `"}` + "\n")
+	sb.WriteString(`{"type":"session","version":3,"id":"bench-session-id","name":"Benchmark Session","timestamp":"2026-01-01T00:00:00Z","cwd":` + jsonString(cwd) + `}` + "\n")
 	for i := 0; i < n; i++ {
 		ts := fmt.Sprintf("2026-01-01T%02d:%02d:%02dZ", i/3600, (i/60)%60, i%60)
 		if i%2 == 0 {

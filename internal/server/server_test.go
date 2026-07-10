@@ -29,6 +29,9 @@ func newTestServer(t *testing.T) *Server {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	// Close the server's sqlite handle before TempDir cleanup: Windows cannot
+	// delete a file that is still open.
+	t.Cleanup(s.Shutdown)
 	return s
 }
 
@@ -90,6 +93,7 @@ func TestCustomThemesPublicWhenAuthEnabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	t.Cleanup(s.Shutdown)
 	mux := http.NewServeMux()
 	s.Register(mux)
 

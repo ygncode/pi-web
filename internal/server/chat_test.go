@@ -618,7 +618,9 @@ func TestHandleNewSessionPreinitializesWorker(t *testing.T) {
 		sessionsDir: root,
 		chatSender:  fake,
 	}
-	req := httptest.NewRequest(http.MethodPost, "/api/new-session", strings.NewReader(`{"path":"/tmp/test-project"}`))
+	// A real absolute path: "/tmp/..." is not absolute on Windows.
+	projectPath := filepath.Join(root, "test-project")
+	req := httptest.NewRequest(http.MethodPost, "/api/new-session", strings.NewReader(`{"path":`+jsonString(projectPath)+`}`))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.handleNewSession(w, req)
@@ -653,7 +655,7 @@ func TestHandleNewSessionPreinitializesWorker(t *testing.T) {
 	}
 
 	// Verify file was created
-	projectDir := filepath.Join(root, sessions.EncodeProjectName("/tmp/test-project"))
+	projectDir := filepath.Join(root, sessions.EncodeProjectName(projectPath))
 	entries, err := os.ReadDir(projectDir)
 	if err != nil {
 		t.Fatalf("expected project dir to exist: %v", err)
@@ -669,7 +671,8 @@ func TestHandleNewSessionCopiesSourceModelAndThinking(t *testing.T) {
 	fake := &fakeSender{state: workers.WorkerStatus{State: workers.WorkerStateIdle, ModelProvider: "openai", Model: "gpt-5", ThinkingLevel: "high"}}
 	s := &Server{sessionsDir: root, chatSender: fake}
 
-	req := httptest.NewRequest(http.MethodPost, "/api/new-session", strings.NewReader(`{"path":"/tmp/test-project","sourceSessionId":"source.jsonl"}`))
+	projectPath := filepath.Join(root, "test-project")
+	req := httptest.NewRequest(http.MethodPost, "/api/new-session", strings.NewReader(`{"path":`+jsonString(projectPath)+`,"sourceSessionId":"source.jsonl"}`))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.handleNewSession(w, req)
@@ -693,7 +696,7 @@ func TestHandleNewSessionCopiesSourceModelAndThinking(t *testing.T) {
 	if modelID, thinkingID := fake.modelSessionID(), fake.thinkingSessionID(); modelID != "" || thinkingID != "" {
 		t.Fatalf("new session initialization should not append visible setting changes, got setModel=%q setThinking=%q", modelID, thinkingID)
 	}
-	projectDir := filepath.Join(root, sessions.EncodeProjectName("/tmp/test-project"))
+	projectDir := filepath.Join(root, sessions.EncodeProjectName(projectPath))
 	data, err := os.ReadFile(filepath.Join(projectDir, id))
 	if err != nil {
 		t.Fatal(err)
@@ -710,7 +713,7 @@ func TestHandleNewSessionCopiesSourceModelAndThinking(t *testing.T) {
 func TestHandleNewSessionWithoutChatSender(t *testing.T) {
 	root := t.TempDir()
 	s := &Server{sessionsDir: root}
-	req := httptest.NewRequest(http.MethodPost, "/api/new-session", strings.NewReader(`{"path":"/tmp/no-sender"}`))
+	req := httptest.NewRequest(http.MethodPost, "/api/new-session", strings.NewReader(`{"path":`+jsonString(filepath.Join(root, "no-sender"))+`}`))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	s.handleNewSession(w, req)
