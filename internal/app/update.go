@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -70,7 +71,9 @@ func runInstall(ctx context.Context) error {
 // runRestart restarts the pi-web service so the freshly installed binary takes
 // over. The restart command is detached into its own session so it survives
 // this process being torn down by the service manager. A fallback timer exits
-// the process if the service manager does not replace us promptly.
+// the process if the service manager does not replace us promptly. On Windows
+// there is no service manager: the detached helper waits for this process to
+// exit (the fallback timer guarantees that) and then starts the new binary.
 func runRestart() error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
@@ -78,8 +81,10 @@ func runRestart() error {
 		cmd = exec.Command("sh", "-lc", darwinRestartScript)
 	case "linux":
 		cmd = exec.Command("systemctl", "--user", "restart", "pi-web.service")
+	case "windows":
+		cmd = exec.Command("powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", windowsRestartScript())
 	default:
-		return fmt.Errorf("restart is only supported on macOS and Linux")
+		return fmt.Errorf("restart is not supported on %s", runtime.GOOS)
 	}
 	detachSession(cmd)
 	cmd.Stdout = os.Stderr
@@ -91,6 +96,21 @@ func runRestart() error {
 	// instance), exit so the old process doesn't linger holding the port.
 	time.AfterFunc(5*time.Second, func() { os.Exit(0) })
 	return nil
+}
+
+// windowsRestartScript builds the PowerShell body of the detached restart
+// helper: wait for this process to release the port, then relaunch through the
+// hidden startup launcher written by install.ps1, falling back to the bare
+// executable for manual installs.
+func windowsRestartScript() string {
+	psQuote := func(s string) string { return "'" + strings.ReplaceAll(s, "'", "''") + "'" }
+	exe, _ := os.Executable()
+	home, _ := os.UserHomeDir()
+	launcher := filepath.Join(home, ".config", "pi-web", "pi-web-start.vbs")
+	return fmt.Sprintf(
+		"Wait-Process -Id %d -Timeout 30 -ErrorAction SilentlyContinue; "+
+			"if (Test-Path %s) { Start-Process wscript.exe -ArgumentList %s } else { Start-Process %s }",
+		os.Getpid(), psQuote(launcher), psQuote(`"`+launcher+`"`), psQuote(exe))
 }
 
 // darwinRestartScript mirrors the extension's `/pi-web restart`: re-bootstrap

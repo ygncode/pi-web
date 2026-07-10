@@ -1,15 +1,12 @@
-//go:build !windows
-
 package app
 
 import (
 	"os"
 	"path/filepath"
-	"syscall"
 	"testing"
 )
 
-func TestStateFileFlockBlocksSecondAcquire(t *testing.T) {
+func TestStateFileLockBlocksSecondAcquire(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "state.json")
 
@@ -18,17 +15,18 @@ func TestStateFileFlockBlocksSecondAcquire(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer f1.Close()
-	if err := syscall.Flock(int(f1.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
-		t.Fatalf("first flock should succeed: %v", err)
+	if err := lockStateFile(f1); err != nil {
+		t.Fatalf("first lock should succeed: %v", err)
 	}
 
+	// flock (Unix) and LockFileEx (Windows) both scope the lock to the open
+	// file handle, so a second handle in the same process must be rejected.
 	f2, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer f2.Close()
-	err = syscall.Flock(int(f2.Fd()), syscall.LOCK_EX|syscall.LOCK_NB)
-	if err != syscall.EWOULDBLOCK {
-		t.Fatalf("second flock should return EWOULDBLOCK, got %v", err)
+	if err := lockStateFile(f2); err == nil {
+		t.Fatal("second lock should fail while the first is held")
 	}
 }
