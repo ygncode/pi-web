@@ -16,6 +16,7 @@ import {
   accessSync,
   chmodSync,
   constants as fsConstants,
+  existsSync,
   mkdirSync,
   readFileSync,
   readdirSync,
@@ -211,7 +212,24 @@ async function healthCheck(host: string, port: string): Promise<boolean> {
   }
 }
 
+// windowsLauncher is the hidden startup launcher written by install.ps1; it
+// loads ~/.config/pi-web/env and starts pi-web without a console window.
+function windowsLauncher(): string {
+  return join(homedir(), ".config", "pi-web", "pi-web-start.vbs");
+}
+
 async function startPiWeb(pi: ExtensionAPI): Promise<void> {
+  if (process.platform === "win32") {
+    const launcher = windowsLauncher();
+    if (!existsSync(launcher)) {
+      throw new Error(
+        "pi-web launcher not found; reinstall with: pi install npm:@ygncode/pi-web@beta",
+      );
+    }
+    await pi.exec("wscript.exe", [launcher]);
+    return;
+  }
+
   if (process.platform === "darwin") {
     await pi.exec("sh", [
       "-lc",
@@ -226,11 +244,18 @@ async function startPiWeb(pi: ExtensionAPI): Promise<void> {
   }
 
   throw new Error(
-    "auto-start is only supported on macOS launchd or Linux systemd user services",
+    "auto-start is only supported on macOS launchd, Linux systemd user services, or the Windows launcher",
   );
 }
 
 async function stopPiWeb(pi: ExtensionAPI): Promise<void> {
+  if (process.platform === "win32") {
+    // No service manager on Windows; the Run-key launcher only starts pi-web,
+    // so stopping means killing the process directly (the pkill counterpart).
+    await pi.exec("taskkill", ["/IM", "pi-web.exe", "/F"]).catch(() => {});
+    return;
+  }
+
   if (process.platform === "darwin") {
     await pi.exec("sh", [
       "-lc",
@@ -250,6 +275,12 @@ async function stopPiWeb(pi: ExtensionAPI): Promise<void> {
 }
 
 async function restartPiWeb(pi: ExtensionAPI): Promise<void> {
+  if (process.platform === "win32") {
+    await stopPiWeb(pi);
+    await startPiWeb(pi);
+    return;
+  }
+
   if (process.platform === "darwin") {
     await pi.exec("sh", [
       "-lc",

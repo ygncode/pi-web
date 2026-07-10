@@ -66,6 +66,18 @@ jobs:
       - name: Go vet
         run: go vet ./...
 
+      - name: Parse-check PowerShell installer
+        shell: pwsh
+        run: |
+          $errs = $null
+          foreach ($f in 'install.ps1', 'uninstall.ps1') {
+            [System.Management.Automation.Language.Parser]::ParseFile($f, [ref]$null, [ref]$errs) | Out-Null
+            if ($errs.Count -gt 0) {
+              $errs | ForEach-Object { Write-Error "${f}: $($_.Message)" }
+              exit 1
+            }
+          }
+
   e2e:
     name: E2E (Playwright)
     runs-on: ubuntu-latest
