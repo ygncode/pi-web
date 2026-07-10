@@ -23,9 +23,10 @@
 
 ## Requirements
 
-- [Go](https://go.dev) 1.25+
+- [Go](https://go.dev) 1.25+ (only for building from source)
 - `pi` on your `PATH` for browser chat/model switching
 - Optional: `gh` for sharing
+- On Windows: pi needs a bash shell for its shell tool — [Git for Windows](https://git-scm.com/download/win) is enough (see pi's Windows docs)
 
 ## Install
 
@@ -37,10 +38,10 @@ pi install npm:@ygncode/pi-web@beta
 
 This single command:
 - Installs the npm pi package under pi's package directory
-- Runs the package `postinstall` script (`bash install.sh`)
+- Runs the package `postinstall` script (`install.sh`, or `install.ps1` on Windows)
 - Downloads the matching pi-web binary for your package version and platform from GitHub Releases
-- Installs it to `~/.pi/agent/bin/pi-web`
-- Sets up auto-start on login (launchd on macOS, systemd on Linux)
+- Installs it to `~/.pi/agent/bin/pi-web` (`pi-web.exe` on Windows)
+- Sets up auto-start on login (launchd on macOS, systemd on Linux, a Run-key launcher on Windows)
 - Registers the `/web`, `/remote`, `/refresh`, `/pi-web token`, and `/pi-web set-token` pi commands
 
 Session auto-titling is built into pi-web (not the extension) and configured on the `/settings` page. It's on by default: pi-web names sessions automatically using a free built-in word heuristic (no AI), re-titling on every new message. You can switch to titling once per session, and/or pick a model to write smarter titles instead of the heuristic.
@@ -64,11 +65,19 @@ pi install npm:@ygncode/pi-web@beta
 
 ### Quick install (no build tools needed)
 
+macOS / Linux:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ygncode/pi-web/main/install.sh | bash
 ```
 
-This downloads the latest pi-web binary, installs it to `/usr/local/bin`, and sets up auto-start on login. No Go, Node, or pi required.
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/ygncode/pi-web/main/install.ps1 | iex
+```
+
+This downloads the latest pi-web binary, installs it to `/usr/local/bin` (`~/.pi/agent/bin` on Windows), and sets up auto-start on login. No Go, Node, or pi required.
 
 ### Download binary
 
@@ -90,6 +99,14 @@ chmod +x pi-web
 # Linux (arm64)
 curl -L -o pi-web https://github.com/ygncode/pi-web/releases/latest/download/pi-web-linux-arm64
 chmod +x pi-web
+```
+
+```powershell
+# Windows (x64)
+irm -OutFile pi-web.exe https://github.com/ygncode/pi-web/releases/latest/download/pi-web-windows-amd64.exe
+
+# Windows (ARM64)
+irm -OutFile pi-web.exe https://github.com/ygncode/pi-web/releases/latest/download/pi-web-windows-arm64.exe
 ```
 
 Then move it to your PATH:
@@ -122,13 +139,13 @@ by hand, run `npm --prefix web install && npm --prefix web run build` before
 pi remove npm:@ygncode/pi-web@beta
 ```
 
-This runs the package `preuninstall` script (`bash uninstall.sh`), which stops
-the running instance and removes:
+This runs the package `preuninstall` script (`uninstall.sh`, or `uninstall.ps1`
+on Windows), which stops the running instance and removes:
 
 - the pi-web binary (`~/.pi/agent/bin/pi-web`, or `/usr/local/bin/pi-web` for standalone installs)
 - the version file (`~/.pi/agent/pi-web-version`)
 - the runtime state file (`~/.pi/agent/pi-web/pi-web-state.json`)
-- the auto-start config (launchd plist on macOS, systemd user service on Linux)
+- the auto-start config (launchd plist on macOS, systemd user service on Linux, Run-key entry + launcher scripts on Windows)
 
 Your data is preserved so a later reinstall picks up where you left off:
 `~/.pi/agent/pi-web.sqlite`, `~/.pi/agent/pi-web-memory.sqlite`, your session
@@ -235,3 +252,26 @@ journalctl --user -u pi-web.service -f
 
 > For the service to start at boot (before login), use a system service instead:
 > copy `init/pi-web.service` to `/etc/systemd/system/` and use `sudo systemctl`.
+
+### Windows
+
+The installer configures this automatically, without needing admin rights: a
+`pi-web` entry under `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
+launches `~/.config/pi-web/pi-web-start.vbs` at login, which starts the binary
+hidden (no console window) after loading `~/.config/pi-web/env`
+(`PI_WEB_TOKEN`, `PATH`, ...).
+
+To manage it by hand:
+
+```powershell
+# Start / stop
+wscript.exe "$HOME\.config\pi-web\pi-web-start.vbs"
+taskkill /IM pi-web.exe /F
+
+# Remove auto-start
+Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'pi-web'
+```
+
+There is no service supervision on Windows: if pi-web crashes it stays down
+until the next login (launchd/systemd restart it automatically on the other
+platforms).

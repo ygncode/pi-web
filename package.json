@@ -14,8 +14,8 @@
     ]
   },
   "scripts": {
-    "postinstall": "bash install.sh",
-    "preuninstall": "bash uninstall.sh",
+    "postinstall": "node scripts/run-lifecycle.mjs install",
+    "preuninstall": "node scripts/run-lifecycle.mjs uninstall",
     "test:extensions": "vitest run --config tests/extensions/vitest.config.ts"
   },
   "dependencies": {
