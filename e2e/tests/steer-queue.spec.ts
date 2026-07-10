@@ -312,6 +312,12 @@ test.describe("steer / queue (stubbed pi)", () => {
     });
     const items = await queueThree(page, textarea, testInfo, "enter");
 
+    // The stub echoes the steered message into the JSONL immediately, and the
+    // chip auto-clears on the resulting reload (reconcileSteersAgainstEntries)
+    // — often faster than the assertions below can run. Stall the cleanup so
+    // the steer row is reliably observable, like the other steer-row tests.
+    const release = await suspendChipCleanup(page);
+
     // Skip ahead to the third item.
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
@@ -324,6 +330,8 @@ test.describe("steer / queue (stubbed pi)", () => {
     // The first two are still queued (in order).
     const queuedTexts = await page.locator(".pi-queue-item:not(.pi-queue-item--steer) .pi-queue-item-text").allTextContents();
     expect(queuedTexts).toEqual([items[0], items[1]]);
+
+    await release();
 
     // The sent message also reaches the conversation as a "Stub reply".
     await expect(page.locator("#messages")).toContainText(`Stub reply: ${items[2]}`, {

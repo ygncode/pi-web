@@ -74,6 +74,14 @@ type Manager struct {
 	creating map[string]*createCall
 	factory  Factory
 
+	// pendingSends counts Send calls that have been accepted but whose prompt
+	// has not been acked yet. Spawning a worker (process start + switch_session
+	// + get_state) can take seconds, and the worker only reports Running once
+	// Prompt lands — without this, Status dips to idle mid-send, letting the
+	// queue drainer dispatch queued items into a run that is still starting and
+	// making status polls fire a spurious idle transition.
+	pendingSends map[string]int
+
 	idleTTL    time.Duration
 	reaperStop chan struct{}
 	reaperDone chan struct{}
@@ -97,12 +105,13 @@ func NewManager(factory Factory) *Manager {
 // idle TTL. A non-positive ttl disables reaping.
 func NewManagerWithTTL(factory Factory, ttl time.Duration) *Manager {
 	m := &Manager{
-		workers:    make(map[string]ChatWorker),
-		creating:   make(map[string]*createCall),
-		factory:    factory,
-		idleTTL:    ttl,
-		reaperStop: make(chan struct{}),
-		reaperDone: make(chan struct{}),
+		workers:      make(map[string]ChatWorker),
+		creating:     make(map[string]*createCall),
+		factory:      factory,
+		pendingSends: make(map[string]int),
+		idleTTL:      ttl,
+		reaperStop:   make(chan struct{}),
+		reaperDone:   make(chan struct{}),
 	}
 	if ttl > 0 {
 		go m.reapLoop()
@@ -154,6 +163,19 @@ func (m *Manager) reapOnce(now time.Time) {
 }
 
 func (m *Manager) Send(ctx context.Context, sessionID, sessionPath string, chat chat.Request) error {
+	m.mu.Lock()
+	m.pendingSends[sessionID]++
+	m.mu.Unlock()
+	defer func() {
+		// By the time Prompt returns (acked), the worker itself reports
+		// Running, so the pending mark and the worker status overlap and the
+		// session never observably dips to idle mid-send.
+		m.mu.Lock()
+		if m.pendingSends[sessionID]--; m.pendingSends[sessionID] <= 0 {
+			delete(m.pendingSends, sessionID)
+		}
+		m.mu.Unlock()
+	}()
 	worker, err := m.workerFor(sessionID, sessionPath)
 	if err != nil {
 		return err
@@ -190,12 +212,20 @@ func (m *Manager) Snapshot() []WorkerSnapshot {
 
 func (m *Manager) Status(sessionID string) WorkerStatus {
 	m.mu.Lock()
+	pending := m.pendingSends[sessionID] > 0
 	worker := m.workers[sessionID]
 	m.mu.Unlock()
 	if worker == nil {
+		if pending {
+			return WorkerStatus{State: WorkerStateRunning}
+		}
 		return WorkerStatus{State: WorkerStateIdle}
 	}
-	return worker.Status()
+	status := worker.Status()
+	if pending && status.State == WorkerStateIdle {
+		status.State = WorkerStateRunning
+	}
+	return status
 }
 
 func (m *Manager) SetModel(ctx context.Context, sessionID, sessionPath, provider, modelID string) error {
