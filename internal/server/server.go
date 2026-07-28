@@ -56,39 +56,43 @@ type Deps struct {
 	// RunRestart restarts the pi-web service (detached) so the new binary
 	// takes over. Optional; when nil /api/restart responds 503.
 	RunRestart func() error
+	// DisableBackgroundJobs keeps the development server from duplicating the
+	// installed server's scheduler, queue drainer, auto-titles, and pushes.
+	DisableBackgroundJobs bool
 }
 
 // Server holds runtime state — connected SSE clients and last-seen modtimes
 // per session file. Construct via New; register HTTP routes via Register.
 type Server struct {
-	agentDir            string
-	sessionsDir         string
-	clients             []*sseClient
-	clientsMu           sync.RWMutex
-	fileMod             map[string]time.Time
-	fileModMu           sync.RWMutex
-	chatSender          ChatSender
-	cache               *sessions.Cache
-	auth                *auth.Middleware
-	shareRunner         shareCmdRunner
-	now                 func() time.Time
-	renderExportSession func(s sessions.Session, theme string) string
-	renderAppShell      func(w io.Writer, bootstrap string) error
-	models              func(ctx context.Context) (json.RawMessage, error)
-	lastKnown           map[string]struct{} // session ids currently broadcast as running
-	lastKnownMu         sync.Mutex
-	push                *PushManager
-	stopCh              chan struct{}
-	stopOnce            sync.Once
-	wg                  sync.WaitGroup
-	db                  *sql.DB
-	schedules           *schedules.Store
-	chatQueue           *chatqueue.Store
-	queueDrainer        *queueDrainer
-	updater             *updater.Checker
-	runInstall          func(ctx context.Context) error
-	runRestart          func() error
-	updateMu            sync.Mutex // serializes install/restart operations
+	agentDir              string
+	sessionsDir           string
+	clients               []*sseClient
+	clientsMu             sync.RWMutex
+	fileMod               map[string]time.Time
+	fileModMu             sync.RWMutex
+	chatSender            ChatSender
+	cache                 *sessions.Cache
+	auth                  *auth.Middleware
+	shareRunner           shareCmdRunner
+	now                   func() time.Time
+	renderExportSession   func(s sessions.Session, theme string) string
+	renderAppShell        func(w io.Writer, bootstrap string) error
+	models                func(ctx context.Context) (json.RawMessage, error)
+	lastKnown             map[string]struct{} // session ids currently broadcast as running
+	lastKnownMu           sync.Mutex
+	push                  *PushManager
+	stopCh                chan struct{}
+	stopOnce              sync.Once
+	wg                    sync.WaitGroup
+	db                    *sql.DB
+	schedules             *schedules.Store
+	chatQueue             *chatqueue.Store
+	queueDrainer          *queueDrainer
+	updater               *updater.Checker
+	runInstall            func(ctx context.Context) error
+	runRestart            func() error
+	updateMu              sync.Mutex // serializes install/restart operations
+	disableBackgroundJobs bool
 
 	// fileWalk caches bounded directory listings per cwd for the @mention
 	// autocomplete so rapid keystrokes reuse a single filesystem walk.
@@ -141,25 +145,26 @@ func New(deps Deps) (*Server, error) {
 	}
 
 	s := &Server{
-		agentDir:            agentDir,
-		sessionsDir:         deps.SessionsDir,
-		clients:             make([]*sseClient, 0),
-		fileMod:             make(map[string]time.Time),
-		chatSender:          deps.ChatSender,
-		cache:               deps.Cache,
-		auth:                deps.Auth,
-		now:                 now,
-		renderExportSession: deps.RenderExportSession,
-		renderAppShell:      deps.RenderAppShell,
-		models:              deps.Models,
-		lastKnown:           make(map[string]struct{}),
-		stopCh:              make(chan struct{}),
-		db:                  db,
-		schedules:           schedules.NewStore(db),
-		chatQueue:           chatqueue.NewStore(db),
-		updater:             deps.Updater,
-		runInstall:          deps.RunInstall,
-		runRestart:          deps.RunRestart,
+		agentDir:              agentDir,
+		sessionsDir:           deps.SessionsDir,
+		clients:               make([]*sseClient, 0),
+		fileMod:               make(map[string]time.Time),
+		chatSender:            deps.ChatSender,
+		cache:                 deps.Cache,
+		auth:                  deps.Auth,
+		now:                   now,
+		renderExportSession:   deps.RenderExportSession,
+		renderAppShell:        deps.RenderAppShell,
+		models:                deps.Models,
+		lastKnown:             make(map[string]struct{}),
+		stopCh:                make(chan struct{}),
+		db:                    db,
+		schedules:             schedules.NewStore(db),
+		chatQueue:             chatqueue.NewStore(db),
+		updater:               deps.Updater,
+		runInstall:            deps.RunInstall,
+		runRestart:            deps.RunRestart,
+		disableBackgroundJobs: deps.DisableBackgroundJobs,
 		metrics: metricsState{
 			startedAt: now(),
 			cpuLast:   make(map[int]cpuMark),
@@ -187,15 +192,17 @@ func New(deps Deps) (*Server, error) {
 		defer s.wg.Done()
 		s.runStatusSweeper(s.stopCh, time.Second)
 	}()
-	s.wg.Add(1)
-	go func() {
-		defer s.wg.Done()
-		s.runScheduler(s.stopCh, scheduleTickInterval)
-	}()
-	// Autonomous queue drainer: drains chat_queue items into the worker even
-	// when nobody has the session open in a browser. Stop in Shutdown.
-	s.queueDrainer = newQueueDrainer(s)
-	s.queueDrainer.start()
+	if !s.disableBackgroundJobs {
+		s.wg.Add(1)
+		go func() {
+			defer s.wg.Done()
+			s.runScheduler(s.stopCh, scheduleTickInterval)
+		}()
+		// Autonomous queue drainer: drains chat_queue items into the worker even
+		// when nobody has the session open in a browser. Stop in Shutdown.
+		s.queueDrainer = newQueueDrainer(s)
+		s.queueDrainer.start()
+	}
 	return s, nil
 }
 

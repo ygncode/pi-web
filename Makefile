@@ -67,11 +67,16 @@ test: frontend-test extension-test memory-test go-test install-test
 check: frontend-lint frontend-format-check frontend-knip frontend-test extension-test memory-test frontend-build go-test install-test vet
 
 dev: frontend-setup go-setup
-	@echo "Starting dev mode (frontend watcher + Go hot-reloader)..."
-	@cd $(WEB_DIR) && npm run dev & \
+	@echo "Starting secondary dev instance at http://127.0.0.1:31416 (frontend watcher + Go hot-reloader)..."
+	@rm -f $(WEB_DIR)/dist/.vite/manifest.json; \
+	cd $(WEB_DIR) && npm run dev & \
 	VITE_PID=$$!; \
 	trap "kill $$VITE_PID 2>/dev/null; exit" INT TERM EXIT; \
-	air
+	until [ -f $(WEB_DIR)/dist/.vite/manifest.json ]; do \
+		kill -0 $$VITE_PID 2>/dev/null || exit 1; \
+		sleep 0.1; \
+	done; \
+	PI_WEB_DEV=1 air
 
 version:
 	@echo $(VERSION)

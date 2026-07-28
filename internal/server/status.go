@@ -94,7 +94,7 @@ func (s *Server) recomputeAndBroadcastStatus(sessionID string) {
 	// clients learn the response is ready even when the tab is closed
 	// or the device is locked. Scheduled runs get a schedule-specific push
 	// (shown even in the foreground) instead of the generic one.
-	if was && !now && s.push != nil {
+	if was && !now && s.push != nil && !s.disableBackgroundJobs {
 		if name, ok := s.scheduleNameForSession(sessionID); ok {
 			go s.push.NotifyScheduleDone(name, sessionID)
 		} else {
@@ -105,7 +105,7 @@ func (s *Server) recomputeAndBroadcastStatus(sessionID string) {
 	// Transition running → idle is also the cue for the autonomous queue
 	// drainer: if items are waiting, dispatch the next one now instead of
 	// waiting for the 5-second tick.
-	if was && !now {
+	if was && !now && s.queueDrainer != nil {
 		s.queueDrainer.kick(sessionID)
 	}
 }

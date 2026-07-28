@@ -133,6 +133,36 @@ The frontend bundle is embedded by `web/assets_embed.go`, so `go build` needs
 by hand, run `npm --prefix web install && npm --prefix web run build` before
 `go build ./cmd/pi-web`.
 
+### Develop alongside an installed instance
+
+Leave the installed instance running on port `31415`, then start the source
+checkout in development mode:
+
+```bash
+make dev
+```
+
+Open `http://127.0.0.1:31416`. `make dev` sets the internal `PI_WEB_DEV=1`
+development environment, so the source checkout shares sessions, settings, and
+SQLite data with the installed instance while keeping a separate development
+runtime lock and state file. Regular installed and manually launched instances
+are unchanged and retain the original single-instance behavior.
+
+To prevent duplicate autonomous work, development mode does not run the
+schedule loop, chat-queue drainer, auto-titling, or push notifications. Direct
+requests made through the development UI still work. Do not drive the same
+chat session from both instances at once; each process has its own RPC worker
+manager.
+
+`make dev` requires [Air](https://github.com/air-verse/air) for Go hot reload:
+
+```bash
+go install github.com/air-verse/air@latest
+```
+
+`PI_WEB_DEV` is development harness plumbing, not a supported production
+multi-instance mode.
+
 ## Uninstall
 
 ```bash

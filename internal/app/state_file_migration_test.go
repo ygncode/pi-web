@@ -12,7 +12,6 @@ func TestWriteStateFile_SkipsMigrationWhenNewExists(t *testing.T) {
 	oldPath := filepath.Join(tmp, "pi-web-state.json")
 	newPath := filepath.Join(webDir, "pi-web-state.json")
 
-	// Simulate another instance already holding the new path
 	if err := os.MkdirAll(webDir, 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -23,16 +22,11 @@ func TestWriteStateFile_SkipsMigrationWhenNewExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	path, err := writeStateFile(tmp, "127.0.0.1", "31415", false, "")
+	path, stateFile, err := writeStateFile(tmp, false, "127.0.0.1", "31415", false, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		if stateFile != nil {
-			_ = stateFile.Close()
-			stateFile = nil
-		}
-	}()
+	defer stateFile.Close()
 
 	if path != newPath {
 		t.Fatalf("expected new path %s, got %s", newPath, path)
@@ -48,21 +42,15 @@ func TestWriteStateFile_MigratesOldStateFile(t *testing.T) {
 	oldPath := filepath.Join(tmp, "pi-web-state.json")
 	newPath := filepath.Join(tmp, "pi-web", "pi-web-state.json")
 
-	// Create old state file
 	if err := os.WriteFile(oldPath, []byte(`{"pid":123}`), 0644); err != nil {
 		t.Fatal(err)
 	}
 
-	path, err := writeStateFile(tmp, "127.0.0.1", "31415", false, "")
+	path, stateFile, err := writeStateFile(tmp, false, "127.0.0.1", "31415", false, "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		if stateFile != nil {
-			_ = stateFile.Close()
-			stateFile = nil
-		}
-	}()
+	defer stateFile.Close()
 
 	if path != newPath {
 		t.Fatalf("expected new path %s, got %s", newPath, path)

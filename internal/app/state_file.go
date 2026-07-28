@@ -9,57 +9,61 @@ import (
 	"pi-web/internal/agentdir"
 )
 
-// stateFile is held open for the lifetime of the process so the flock stays
-// in effect. Closing it releases the lock.
-var stateFile *os.File
+func stateFileName(development bool) string {
+	if development {
+		return "pi-web-state-dev.json"
+	}
+	return "pi-web-state.json"
+}
 
-func writeStateFile(agentDir, host, port string, tailscale bool, tailscaleURL string) (string, error) {
+// writeStateFile returns an open file handle that the caller must retain for
+// the process lifetime. Closing it releases the instance lock.
+func writeStateFile(agentDir string, development bool, host, port string, tailscale bool, tailscaleURL string) (string, *os.File, error) {
 	webDir := agentdir.WebDir(agentDir)
 	if err := os.MkdirAll(webDir, 0755); err != nil {
-		return "", err
+		return "", nil, err
 	}
-	path := filepath.Join(webDir, "pi-web-state.json")
+	path := filepath.Join(webDir, stateFileName(development))
 
-	// Migrate old state file from pre-pi-web directory layout.
-	// Only migrate when the new path does not already exist; otherwise
-	// os.Rename would unlink a destination inode that another pi-web
-	// process may already hold a flock on, defeating the single-instance
-	// lock.
-	oldPath := filepath.Join(agentDir, "pi-web-state.json")
-	if _, err := os.Stat(oldPath); err == nil {
-		if _, err := os.Stat(path); os.IsNotExist(err) {
-			_ = os.Rename(oldPath, path)
+	// Only the regular server owns the legacy state path used by extensions.
+	// Development mode gets an independent state file and lock.
+	if !development {
+		oldPath := filepath.Join(agentDir, "pi-web-state.json")
+		if _, err := os.Stat(oldPath); err == nil {
+			if _, err := os.Stat(path); os.IsNotExist(err) {
+				_ = os.Rename(oldPath, path)
+			}
 		}
 	}
 
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0644)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	if err := lockStateFile(f); err != nil {
 		_ = f.Close()
-		return "", err
+		return "", nil, err
 	}
 	data, err := json.Marshal(map[string]any{
 		"pid":          os.Getpid(),
 		"port":         port,
 		"host":         host,
+		"development":  development,
 		"tailscale":    tailscale,
 		"tailscaleUrl": tailscaleURL,
 		"startedAt":    time.Now().UTC().Format(time.RFC3339),
 	})
 	if err != nil {
 		_ = f.Close()
-		return "", err
+		return "", nil, err
 	}
 	if err := f.Truncate(0); err != nil {
 		_ = f.Close()
-		return "", err
+		return "", nil, err
 	}
 	if _, err := f.WriteAt(data, 0); err != nil {
 		_ = f.Close()
-		return "", err
+		return "", nil, err
 	}
-	stateFile = f
-	return path, nil
+	return path, f, nil
 }

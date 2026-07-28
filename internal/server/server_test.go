@@ -110,6 +110,27 @@ func TestCustomThemesPublicWhenAuthEnabled(t *testing.T) {
 	}
 }
 
+func TestDevelopmentModeDisablesAutonomousQueueDrainer(t *testing.T) {
+	dir := t.TempDir()
+	s, err := New(Deps{
+		AgentDir:              dir,
+		SessionsDir:           dir,
+		Auth:                  auth.New(""),
+		Cache:                 sessions.NewCache(),
+		DisableBackgroundJobs: true,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(s.Shutdown)
+	if !s.disableBackgroundJobs {
+		t.Fatal("development server did not retain DisableBackgroundJobs")
+	}
+	if s.queueDrainer != nil {
+		t.Fatal("development server started an autonomous queue drainer")
+	}
+}
+
 func TestShutdownStopsBackgroundGoroutines(t *testing.T) {
 	s := newTestServer(t)
 	done := make(chan struct{})

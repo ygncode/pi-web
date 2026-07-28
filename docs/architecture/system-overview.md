@@ -140,8 +140,9 @@ name, while pi-web itself continues listening only on localhost.
 │   └── …
 ├── pi-web.sqlite           ← scratchpads + annotations + project visibility prefs + user settings + btw registry
 └── pi-web/
-    ├── pi-web-state.json   ← server state file
-    ├── custom-themes.css   ← optional user custom theme
+    ├── pi-web-state.json       ← regular server state + lock
+    ├── pi-web-state-dev.json   ← development state + lock (while running)
+    ├── custom-themes.css       ← optional user custom theme
     ├── vapid.json          ← web-push VAPID keys (when push enabled)
     └── push-subs.json      ← web-push subscriptions (when push enabled)
 ```
@@ -169,7 +170,7 @@ across devices. See `internal/server/projects.go`.
 
 ## Startup Order
 
-1. Parse CLI flags (`-p`, `-host`, `-o`, `-insecure`, `-version`)
+1. Parse CLI flags (`-p`, `-host`, `-o`, `-insecure`, `-version`) and detect internal `PI_WEB_DEV=1` development mode
 2. Validate sessions directory exists
 3. Determine bind host (flag → localhost)
 4. Enforce auth for explicit non-loopback binds
@@ -178,7 +179,14 @@ across devices. See `internal/server/projects.go`.
 7. Register routes on `http.ServeMux`
 8. Load Vite manifest and register static assets
 9. Optionally configure Tailscale Serve HTTPS for localhost
-10. Write state file to `~/.pi/agent/pi-web/pi-web-state.json` (with flock)
+10. Write and lock the regular state file, or `pi-web-state-dev.json` in development mode
 11. Optionally open browser
 12. Warm models cache (async)
 13. Start `http.Server` with timeouts; graceful shutdown on `SIGINT`/`SIGTERM`
+
+The internal development mode shares session files and SQLite data but disables
+the autonomous scheduler, chat-queue drainer, auto-titler, and push delivery.
+This allows `make dev` to run on port `31416` beside the installed server on
+`31415` without duplicating background side effects. Regular release behavior
+and its single-instance lock remain unchanged, and its state file stays
+authoritative for `/web` and `/remote` discovery.

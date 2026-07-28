@@ -27,6 +27,7 @@ import (
 
 const defaultPort = "31415"
 const tokenEnvVar = "PI_WEB_TOKEN"
+const developmentEnvVar = "PI_WEB_DEV"
 
 // Main runs the pi-web application. version is supplied by cmd/pi-web so
 // release builds can set it with -ldflags "-X main.version=...".
@@ -42,6 +43,7 @@ func Main(version string) {
 		fmt.Println(version)
 		os.Exit(0)
 	}
+	developmentMode := os.Getenv(developmentEnvVar) == "1"
 
 	agentDir := agentdir.Path()
 	if err := seedSoundsDir(agentDir); err != nil {
@@ -87,9 +89,10 @@ func Main(version string) {
 		Models: func(ctx context.Context) (json.RawMessage, error) {
 			return defaultModelsCache.get(ctx)
 		},
-		Updater:    versionChecker,
-		RunInstall: runInstall,
-		RunRestart: runRestart,
+		Updater:               versionChecker,
+		RunInstall:            runInstall,
+		RunRestart:            runRestart,
+		DisableBackgroundJobs: developmentMode,
 	})
 	if srvErr != nil {
 		fmt.Fprintf(os.Stderr, "failed to initialize server: %v\n", srvErr)
@@ -140,22 +143,25 @@ func Main(version string) {
 		fmt.Printf("Tailscale HTTPS -> %s\n", tailscaleURL)
 	}
 	fmt.Printf("Serving from: %s\n", sessionsDir)
+	if developmentMode {
+		fmt.Println("Development mode: autonomous jobs disabled")
+	}
 	if authMiddleware.Enabled() {
 		fmt.Println("Auth: enabled (set PI_WEB_TOKEN to require token)")
 	} else {
 		fmt.Printf("Auth: disabled — set %s to require a token for access.\n", tokenEnvVar)
 	}
 
-	stateFilePath, err := writeStateFile(agentDir, bindHost, *port, tailscaleServe, tailscaleURL)
+	stateFilePath, stateFile, err := writeStateFile(agentDir, developmentMode, bindHost, *port, tailscaleServe, tailscaleURL)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
 	defer func() {
-		if stateFile != nil {
-			_ = stateFile.Close()
-		}
+		// Unlink while this process still owns the lock so an exiting instance
+		// cannot remove a successor's newly written state file.
 		_ = os.Remove(stateFilePath)
+		_ = stateFile.Close()
 	}()
 
 	if *open {

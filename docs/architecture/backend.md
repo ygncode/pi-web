@@ -19,7 +19,7 @@ pi-web/
 │   │   ├── browser.go          # Open the default browser at startup
 │   │   ├── sounds.go           # Seed default notification sounds into the agent dir
 │   │   ├── update.go           # runInstall / runRestart for self-update
-│   │   └── state_file_*.go     # pi-web-state.json + flock helpers
+│   │   └── state_file_*.go     # regular/development state files + flock helpers
 │   ├── frontend/
 │   │   └── assets.go           # Vite manifest parsing + static asset handlers
 │   ├── ui/
@@ -149,6 +149,9 @@ type Server struct {
 `ChatSender`, plus the optional `Updater`, `RunInstall`, and `RunRestart`. When
 `Updater` is nil the version/update routes are not registered; when
 `RunInstall`/`RunRestart` are nil the corresponding endpoints respond `503`.
+`DisableBackgroundJobs` marks the internal development server: it still watches
+and serves the shared data, but does not run scheduling, queue draining,
+auto-titling, or push-delivery side effects.
 
 On `New`, the server opens (and migrates) a SQLite database at
 `~/.pi/agent/pi-web.sqlite` with six tables: `scratchpads` (per project path),

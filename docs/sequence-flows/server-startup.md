@@ -65,6 +65,7 @@ port := flag.String("p", "31415", "port to listen on")
 hostOverride := flag.String("host", "", "host/IP to bind; defaults to 127.0.0.1")
 open := flag.Bool("o", false, "auto-open browser")
 insecure := flag.Bool("insecure", false, "allow non-loopback bind without PI_WEB_TOKEN")
+developmentMode := os.Getenv("PI_WEB_DEV") == "1"
 ```
 
 ### 2. Agent & Sessions Directory
@@ -122,7 +123,8 @@ srv, err := server.New(server.Deps{
     Cache:               sessions.NewCache(),
     RenderAppShell:      ui.RenderAppShell,
     RenderExportSession: ui.RenderExportSessionPage,
-    Models:              func(ctx context.Context) (json.RawMessage, error) { … },
+    Models:                func(ctx context.Context) (json.RawMessage, error) { … },
+    DisableBackgroundJobs: developmentMode,
 })
 if err != nil { os.Exit(1) } // agent-dir / SQLite schema init failed
 ```
@@ -165,11 +167,20 @@ Reads Vite manifest to discover the hashed filename of the SPA bundle.
 ### 8. State File
 
 ```go
-writeStateFile(agentDir, bindHost, port, tailscaleServe, tailscaleURL)
-// → ~/.pi/agent/pi-web/pi-web-state.json
+writeStateFile(agentDir, developmentMode, bindHost, port, tailscaleServe, tailscaleURL)
+// regular → ~/.pi/agent/pi-web/pi-web-state.json
+// PI_WEB_DEV=1 → ~/.pi/agent/pi-web/pi-web-state-dev.json
 ```
 
-Contains PID, port, host, Tailscale Serve flag/URL, and start time. Cleaned up on shutdown. On first run, migrates from the old `~/.pi/agent/pi-web-state.json` location.
+The regular state file remains the discovery target for the pi extension.
+`make dev` sets the internal `PI_WEB_DEV=1` environment and uses its own state
+file and lock, allowing the source checkout to share sessions and SQLite data
+with the installed server on another port. Development mode disables
+autonomous scheduling, queue draining, auto-titling, and push delivery to avoid
+duplicate side effects. State files contain the development marker, PID, port,
+host, Tailscale Serve flag/URL, and start time, and are cleaned up on graceful
+shutdown. The regular path still migrates the old
+`~/.pi/agent/pi-web-state.json` location on first run.
 
 ### 9. Model Cache Warming
 
