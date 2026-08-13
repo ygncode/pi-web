@@ -71,6 +71,8 @@ Iyon na — dina-download nito ang katugmang binary, nagse-set up ng auto‑star
 
 Kapag na-install na, buksan ang `http://127.0.0.1:31415` sa iyong browser. Mula sa pi, gamitin ang `/web` upang buksan agad ang kasalukuyang session sa iyong browser. Kung tumatakbo ang Tailscale sa iyong makina, awtomatikong nagpa-publish ang pi-web ng isang HTTPS endpoint sa iyong tailnet — gamitin ang `/remote` mula sa pi upang makakuha ng QR code at URL para sa anumang device sa iyong tailnet.
 
+> **Malayuang access sa macOS:** I-install at buksan ang Tailscale nang interactive, aprubahan ang administrator prompt, at mag-sign in. Pagkatapos ay patakbuhin ang `/pi-web restart`, na susundan ng `/remote`.
+
 Para sa mga manu-manong pag-install, pag-download ng binary, o pagbuo mula sa source, tingnan ang [user-docs/install.md](user-docs/en/install.md).
 
 ## Integrasyon ng Pi

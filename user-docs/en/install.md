@@ -207,6 +207,8 @@ By default, pi-web binds to `127.0.0.1`. If Tailscale is running with MagicDNS, 
 
 Leave pi-web listening locally, then use the printed Tailscale HTTPS URL from your phone or laptop on the tailnet.
 
+On macOS, install and open Tailscale interactively, approve the administrator prompt, and sign in. Then run `/pi-web restart`, followed by `/remote`.
+
 On Linux, allow your user to manage Tailscale before installing/running pi-web, otherwise `tailscale serve` may require sudo and auto-start can fail:
 
 ```bash

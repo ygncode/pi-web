@@ -70,6 +70,8 @@ Itu saja — perintah ini mengunduh biner yang cocok, menyiapkan mulai-otomatis,
 
 Setelah terpasang, buka `http://127.0.0.1:31415` di peramban Anda. Dari pi, gunakan `/web` untuk membuka sesi saat ini di peramban secara instan. Jika Tailscale berjalan di mesin Anda, pi-web secara otomatis mempublikasikan titik akhir HTTPS di tailnet Anda — gunakan `/remote` dari pi untuk mendapatkan kode QR dan URL untuk perangkat apa pun di tailnet Anda.
 
+> **Akses jarak jauh di macOS:** Instal dan buka Tailscale secara interaktif, setujui permintaan administrator, lalu masuk. Kemudian jalankan `/pi-web restart`, diikuti dengan `/remote`.
+
 Untuk pemasangan manual, unduhan biner, atau membangun dari sumber, lihat [user-docs/install.md](user-docs/en/install.md).
 
 ## Integrasi Pi

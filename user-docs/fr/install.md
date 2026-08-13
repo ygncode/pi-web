@@ -160,6 +160,8 @@ Par défaut, pi-web se lie à `127.0.0.1`. Si Tailscale est en cours d'exécutio
 
 Laissez pi-web écouter localement, puis utilisez l'URL HTTPS Tailscale affichée depuis votre téléphone ou ordinateur portable sur le tailnet.
 
+Sous macOS, installez et ouvrez Tailscale de manière interactive, approuvez la demande d’autorisation administrateur, puis connectez-vous. Exécutez ensuite `/pi-web restart`, puis `/remote`.
+
 Sur Linux, autorisez votre utilisateur à gérer Tailscale avant d'installer/exécuter pi-web, sinon `tailscale serve` peut nécessiter sudo et le démarrage automatique peut échouer :
 
 ```bash

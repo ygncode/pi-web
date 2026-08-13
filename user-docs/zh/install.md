@@ -154,6 +154,8 @@ PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web --host 192.168.1.50
 
 让 pi-web 在本地监听，然后在 tailnet 上使用手机或笔记本电脑访问打印出的 Tailscale HTTPS URL。
 
+在 macOS 上，以交互方式安装并打开 Tailscale，批准管理员提示，然后登录。接着运行 `/pi-web restart`，再运行 `/remote`。
+
 在 Linux 上，安装/运行 pi-web 之前，请允许您的用户管理 Tailscale，否则 `tailscale serve` 可能需要 sudo 且自动启动可能会失败：
 
 ```bash

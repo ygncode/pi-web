@@ -70,6 +70,8 @@ Chỉ vậy thôi — nó tải xuống tệp nhị phân phù hợp, thiết l�
 
 Sau khi cài đặt, mở `http://127.0.0.1:31415` trong trình duyệt của bạn. Từ pi, sử dụng `/web` để mở phiên hiện tại trong trình duyệt của bạn ngay lập tức. Nếu Tailscale đang chạy trên máy của bạn, pi-web tự động công bố một điểm cuối HTTPS trên tailnet của bạn — sử dụng `/remote` từ pi để nhận mã QR và URL cho mọi thiết bị trên tailnet của bạn.
 
+> **Truy cập từ xa trên macOS:** Cài đặt và mở Tailscale theo cách tương tác, chấp thuận lời nhắc của quản trị viên rồi đăng nhập. Sau đó chạy `/pi-web restart`, tiếp theo là `/remote`.
+
 Để cài đặt thủ công, tải xuống tệp nhị phân hoặc xây dựng từ mã nguồn, xem [user-docs/install.md](user-docs/en/install.md).
 
 ## Tích hợp Pi

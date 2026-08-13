@@ -160,6 +160,8 @@ Secara default, pi-web bind ke `127.0.0.1`. Jika Tailscale berjalan dengan Magic
 
 Biarkan pi-web mendengarkan secara lokal, lalu gunakan URL HTTPS Tailscale yang tercetak dari ponsel atau laptop Anda di tailnet.
 
+Pada macOS, instal dan buka Tailscale secara interaktif, setujui permintaan administrator, lalu masuk. Kemudian jalankan `/pi-web restart`, diikuti dengan `/remote`.
+
 Di Linux, izinkan pengguna Anda mengelola Tailscale sebelum menginstal/menjalankan pi-web, jika tidak `tailscale serve` mungkin memerlukan sudo dan auto-start dapat gagal:
 
 ```bash

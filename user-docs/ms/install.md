@@ -160,6 +160,8 @@ Secara lalai, pi-web mengikat ke `127.0.0.1`. Jika Tailscale berjalan dengan Mag
 
 Biarkan pi-web mendengar secara setempat, kemudian gunakan URL HTTPS Tailscale yang dicetak dari telefon atau komputer riba anda pada tailnet.
 
+Pada macOS, pasang dan buka Tailscale secara interaktif, luluskan gesaan pentadbir dan log masuk. Kemudian jalankan `/pi-web restart`, diikuti dengan `/remote`.
+
 Pada Linux, benarkan pengguna anda mengurus Tailscale sebelum memasang/menjalankan pi-web, jika tidak `tailscale serve` mungkin memerlukan sudo dan auto-mula boleh gagal:
 
 ```bash

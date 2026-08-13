@@ -160,6 +160,8 @@ PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web --host 192.168.1.50
 
 pi-webをローカルで待ち受けさせたまま、表示されたTailscale HTTPS URLをtailnet上のスマートフォンやノートパソコンから使用します。
 
+macOS では、Tailscale を対話形式でインストールして開き、管理者プロンプトを承認してサインインします。その後、`/pi-web restart` を実行し、続けて `/remote` を実行します。
+
 Linuxでは、pi-webをインストール/実行する前に、ユーザーがTailscaleを管理できるようにしてください。さもなければ `tailscale serve` にsudoが必要になり、自動起動が失敗する可能性があります:
 
 ```bash

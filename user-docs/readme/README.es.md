@@ -70,6 +70,8 @@ Eso es todo — descarga el binario correspondiente, configura el inicio automá
 
 Una vez instalado, abre `http://127.0.0.1:31415` en tu navegador. Desde pi, usa `/web` para abrir la sesión actual en tu navegador al instante. Si Tailscale se está ejecutando en tu máquina, pi-web publica automáticamente un endpoint HTTPS en tu tailnet — usa `/remote` desde pi para obtener un código QR y una URL para cualquier dispositivo en tu tailnet.
 
+> **Acceso remoto en macOS:** Instala y abre Tailscale de forma interactiva, acepta la solicitud del administrador e inicia sesión. Después, ejecuta `/pi-web restart` y, a continuación, `/remote`.
+
 Para instalaciones manuales, descargas de binarios o compilación desde el código fuente, consulta [user-docs/install.md](user-docs/en/install.md).
 
 ## Integración con Pi

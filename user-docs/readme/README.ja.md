@@ -70,6 +70,8 @@ pi install npm:@ygncode/pi-web@beta
 
 インストール後、ブラウザで`http://127.0.0.1:31415`を開いてください。piからは`/web`を使って現在のセッションをブラウザで瞬時に開けます。Tailscaleがマシン上で動作している場合、pi-webは自動的にtailnet上のHTTPSエンドポイントを公開します — piから`/remote`を使うと、tailnet上の任意のデバイス向けのQRコードとURLを取得できます。
 
+> **macOS のリモートアクセス:** Tailscale を対話的にインストールして開き、管理者プロンプトを承認してサインインしてください。その後 `/pi-web restart` を実行し、続けて `/remote` を実行します。
+
 手動インストール、バイナリダウンロード、ソースからのビルドについては、[user-docs/install.md](user-docs/en/install.md)を参照してください。
 
 ## Pi連携

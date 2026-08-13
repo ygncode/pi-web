@@ -160,6 +160,8 @@ PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web --host 192.168.1.50
 
 ទុកឱ្យ pi-web ស្ដាប់នៅក្នុង local បន្ទាប់មកប្រើ Tailscale HTTPS URL ដែលបានបង្ហាញពីទូរសព្ទ ឬកុំព្យូទ័រយួរដៃរបស់អ្នកនៅលើ tailnet។
 
+នៅលើ macOS សូមដំឡើង និងបើក Tailscale ដោយផ្ទាល់ យល់ព្រមតាមសំណើរបស់អ្នកគ្រប់គ្រងប្រព័ន្ធ និងចូលគណនី។ បន្ទាប់មកដំណើរការ `/pi-web restart` រួចបន្តដោយ `/remote`។
+
 នៅលើ Linux អនុញ្ញាតឱ្យ user របស់អ្នកគ្រប់គ្រង Tailscale មុនពេលដំឡើង/ដំណើរការ pi-web បើមិនដូច្នេះទេ `tailscale serve` អាចត្រូវការ sudo ហើយ auto-start អាចបរាជ័យ:
 
 ```bash
