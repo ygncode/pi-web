@@ -1,4 +1,5 @@
 import { test, expect, collapseScratchpad } from "../lib/test";
+import { suspendSteerChipCleanup } from "../lib/chat";
 import {
   buildSession,
   realWorkingDir,
@@ -51,50 +52,6 @@ test.describe("steer / queue (stubbed pi)", () => {
     return { textarea };
   }
 
-  // Blocks the chip auto-clear pipeline until released. steer-queue.js wires
-  // its cleanup off `pi-session-reload` (FIFO pop on new user entries) and
-  // `pi-worker-done` (full sweep at run-end). For events fired at the
-  // window target, listeners fire in registration order regardless of the
-  // capture flag, so an add-on capture listener can't reliably preempt the
-  // already-installed steer-queue listener.
-  //
-  // Instead we monkey-patch `window.dispatchEvent` to swallow the cleanup
-  // events while suspended. The SPA's emitter (live-events.js) calls
-  // `windowImpl.dispatchEvent(...)` which goes through our patched function,
-  // so no listeners ever see the event. Release flips the flag and replays
-  // a fresh `pi-session-reload` so the chip's normal downstream cleanup can
-  // still run.
-  async function suspendChipCleanup(page) {
-    await page.evaluate(() => {
-      const w = window as Window & {
-        __piSuspendChipCleanup?: boolean;
-        __piOriginalDispatch?: typeof window.dispatchEvent;
-      };
-      if (w.__piOriginalDispatch) {
-        w.__piSuspendChipCleanup = true;
-        return;
-      }
-      w.__piSuspendChipCleanup = true;
-      const original = window.dispatchEvent.bind(window);
-      w.__piOriginalDispatch = original;
-      window.dispatchEvent = function (event: Event) {
-        if (
-          w.__piSuspendChipCleanup &&
-          (event.type === "pi-session-reload" || event.type === "pi-worker-done")
-        ) {
-          return true;
-        }
-        return original(event);
-      };
-    });
-    return async () => {
-      await page.evaluate(() => {
-        const w = window as Window & { __piSuspendChipCleanup?: boolean };
-        w.__piSuspendChipCleanup = false;
-        window.dispatchEvent(new Event("pi-session-reload"));
-      });
-    };
-  }
 
   test("steering shows a panel row and delivers the message", async ({
     page,
@@ -110,7 +67,7 @@ test.describe("steer / queue (stubbed pi)", () => {
     });
 
     const steerMsg = `steer-${testInfo.workerIndex}-${Date.now()}`;
-    const release = await suspendChipCleanup(page);
+    const release = await suspendSteerChipCleanup(page);
     await textarea.fill(steerMsg);
     await page.locator("#pi-chat-send").click();
 
@@ -142,7 +99,7 @@ test.describe("steer / queue (stubbed pi)", () => {
     });
 
     const steerMsg = `fast-steer-${testInfo.workerIndex}-${Date.now()}`;
-    const release = await suspendChipCleanup(page);
+    const release = await suspendSteerChipCleanup(page);
     await textarea.fill(steerMsg);
     await page.locator("#pi-chat-send").click();
 
@@ -173,7 +130,7 @@ test.describe("steer / queue (stubbed pi)", () => {
     });
 
     const steerMsg = `dismiss-${testInfo.workerIndex}-${Date.now()}`;
-    const release = await suspendChipCleanup(page);
+    const release = await suspendSteerChipCleanup(page);
     await textarea.fill(steerMsg);
     await page.locator("#pi-chat-send").click();
 
@@ -316,7 +273,7 @@ test.describe("steer / queue (stubbed pi)", () => {
     // chip auto-clears on the resulting reload (reconcileSteersAgainstEntries)
     // — often faster than the assertions below can run. Stall the cleanup so
     // the steer row is reliably observable, like the other steer-row tests.
-    const release = await suspendChipCleanup(page);
+    const release = await suspendSteerChipCleanup(page);
 
     // Skip ahead to the third item.
     await page.keyboard.press("ArrowDown");

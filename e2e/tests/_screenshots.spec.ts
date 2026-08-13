@@ -5,6 +5,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test, expect, collapseScratchpad } from "../lib/test";
+import { suspendSteerChipCleanup } from "../lib/chat";
 import {
   buildSession,
   realWorkingDir,
@@ -39,19 +40,11 @@ test.describe("@screenshots queue + steer panel @screenshots", () => {
     await expect(page.locator("#pi-chat-send")).toHaveText("Steer");
 
     // ── 1. Steer chip mid-flight ─────────────────────────────────────────────
-    // The chip clears the moment pi echoes the user entry back via SSE reload
-    // (steer-queue.js's reconcileSteersAgainstEntries) — which in stub-pi is
-    // ~50ms. Stall the /api/session refetch that the SSE 'reload' triggers so
-    // the chip stays on screen long enough to capture.
-    let stallReloads = true;
-    await page.route("**/api/session?**", async (route) => {
-      while (stallReloads) await new Promise((r) => setTimeout(r, 100));
-      try {
-        await route.continue();
-      } catch {
-        /* route may already be handled if the page navigated away */
-      }
-    });
+    // The stub echoes the steer immediately. Suspend the browser-local cleanup
+    // event instead of stalling the refetch: the reload event is dispatched
+    // after the refetch resolves, so route interception cannot prevent the
+    // chip from being removed before the assertion observes it.
+    const releaseSteerCleanup = await suspendSteerChipCleanup(page);
     await textarea.fill("focus on the integration tests first");
     await page.locator("#pi-chat-send").click();
     await expect(page.locator(".pi-queue-item.pi-queue-item--steer")).toBeVisible();
@@ -59,8 +52,7 @@ test.describe("@screenshots queue + steer panel @screenshots", () => {
       path: path.join(SHOT_DIR, "01-steer-in-flight.png"),
       animations: "disabled",
     });
-    stallReloads = false;
-    await page.unroute("**/api/session?**");
+    await releaseSteerCleanup();
     // Let the deferred reload finish before moving on so subsequent shots see
     // a clean steer-cleared state.
     await expect(page.locator(".pi-queue-item.pi-queue-item--steer")).toHaveCount(0, {
