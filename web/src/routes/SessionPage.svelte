@@ -35,6 +35,7 @@
   let showLoading = $state(false);
   let error = $state('');
   let sessionId = $state('');
+  let sessionUUID = $state('');
   let title = $state('Session');
   let payloadBase64 = $state('');
   let scratchpad = $state('');
@@ -69,6 +70,7 @@
         });
         if (!active) return;
         sessionId = state.sessionId;
+        sessionUUID = state.sessionUUID;
         title = state.title;
         document.title = title;
         cwd = state.cwd;
@@ -136,6 +138,7 @@
     {sessionModel}
     {contentRuntime}
     {sessionId}
+    {sessionUUID}
     {title}
     {scratchpad}
     {cwd}

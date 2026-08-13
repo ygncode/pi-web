@@ -39,7 +39,7 @@ describe('session-page-data', () => {
       btoaImpl,
       data: {
         name: 'Title',
-        header: { cwd: '/tmp/project' },
+        header: { cwd: '/tmp/project', id: '019-session-uuid' },
         entries: [{ id: 'a' }, { id: 'b' }],
         total: 5,
         from: 3,
@@ -50,6 +50,7 @@ describe('session-page-data', () => {
     });
 
     expect(state.title).toBe('Title');
+    expect(state.sessionUUID).toBe('019-session-uuid');
     expect(state.cwd).toBe('/tmp/project');
     expect(state.scratchpad).toBe('notes');
     expect(state.chatAvailable).toBe(false);

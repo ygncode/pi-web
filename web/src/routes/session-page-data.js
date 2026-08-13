@@ -75,6 +75,7 @@ export function buildSessionPageState({
   const entries = Array.isArray(data?.entries) ? data.entries : [];
   const header = data?.header || {};
   const cwd = header.cwd || '';
+  const sessionUUID = data?.sessionUUID || data?.SessionUUID || header.id || '';
   const title = data?.name || sessionId;
   const leafId = newestLeaf(entries);
   const total = Number.isInteger(data?.total) ? data.total : entries.length;
@@ -89,6 +90,7 @@ export function buildSessionPageState({
   const provider = data?.modelProvider || data?.ModelProvider || '';
   return {
     sessionId,
+    sessionUUID,
     title,
     entries,
     cwd,

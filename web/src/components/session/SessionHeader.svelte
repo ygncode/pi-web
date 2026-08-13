@@ -6,7 +6,7 @@
   import { showToast } from '../../shared/toast.js';
   import { copyToClipboard } from '../../shared/clipboard.js';
   import { sessionTitle, setSessionTitle } from '../../session/session-title.svelte.js';
-  let { title = 'Session', cwd = '', sessionId = '' } = $props();
+  let { title = 'Session', cwd = '', sessionId = '', sessionUUID = '' } = $props();
 
   // The title prop seeds the shared store (and re-seeds it on session switch);
   // renames/auto-titling update the store, which this component renders and
@@ -37,7 +37,8 @@
     const newBtn = document.getElementById('new-btn');
 
     const onResume = () => {
-      const resumeSessionArg = document.body.dataset.sessionUuid;
+      const resumeSessionArg = sessionUUID || sessionId;
+      if (!resumeSessionArg) return;
       const command = 'pi --session ' + resumeSessionArg;
       copyText(command, () => showResumeCopiedNotice(command));
     };

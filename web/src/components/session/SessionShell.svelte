@@ -34,6 +34,7 @@
     sessionModel,
     contentRuntime,
     sessionId = '',
+    sessionUUID = '',
     title = 'Session',
     scratchpad = '',
     cwd = '',
@@ -143,7 +144,7 @@
   });
 </script>
 
-<SessionHeader {title} {cwd} {sessionId} />
+<SessionHeader {title} {cwd} {sessionId} {sessionUUID} />
 
 <CommandMenu {sessionId} {runningSessionIds} />
 
