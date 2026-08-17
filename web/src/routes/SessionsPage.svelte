@@ -9,6 +9,7 @@
   import { createStatusEvents } from '../shared/status-events.js';
   import { openSessionPalette, refreshSessionPalette } from '../shared/command-palette-runtime.js';
   import { setupKeyboardNav } from '../shared/keyboard-nav.js';
+  import { matchesAction } from '../shared/keybindings.js';
   import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
   import {
     configureSettingsSync,
@@ -253,14 +254,14 @@
     } catch {}
 
     const keydown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
+      if (matchesAction('toggle-theme', e)) {
         e.preventDefault();
         e.stopPropagation();
         toggleTheme(window, document);
         syncThemeIcons(document);
         return;
       }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      if (matchesAction('open-palette', e)) {
         e.preventDefault();
         openPalette();
         return;

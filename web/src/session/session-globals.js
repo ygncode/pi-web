@@ -10,6 +10,7 @@ import * as doneNotifier from './chat/done-notifier.js';
 import * as sidebarApi from './ui/sidebar.js';
 import { openSessionPalette } from '../shared/command-palette-runtime.js';
 import { setupKeyboardNav } from '../shared/keyboard-nav.js';
+import { matchesAction } from '../shared/keybindings.js';
 import { openShortcuts } from './session-modals.svelte.js';
 import { sessionRuntime } from './session-runtime.js';
 import { toggleTheme, syncThemeIcons } from '../shared/theme.js';
@@ -42,7 +43,7 @@ export function setupSessionGlobals({ windowImpl, documentImpl }) {
   // ── Global keyboard shortcuts ──────────────────────────────────────────────
   // Cmd+K — session list palette
   on(target, 'keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    if (matchesAction('open-palette', e)) {
       e.preventDefault();
       openSessionPalette();
     }
@@ -50,7 +51,7 @@ export function setupSessionGlobals({ windowImpl, documentImpl }) {
 
   // Cmd+B — toggle sidebar/tree
   on(target, 'keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'b') {
+    if (matchesAction('toggle-sidebar', e)) {
       e.preventDefault();
       const sidebar = documentImpl.getElementById('sidebar');
       if (sidebarApi.isMobileLayout({ windowImpl: target })) {
@@ -67,7 +68,7 @@ export function setupSessionGlobals({ windowImpl, documentImpl }) {
 
   // Cmd+T — new session
   on(target, 'keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 't') {
+    if (matchesAction('new-session', e)) {
       e.preventDefault();
       const newBtn = documentImpl.getElementById('new-btn');
       if (newBtn) newBtn.click();
@@ -80,7 +81,7 @@ export function setupSessionGlobals({ windowImpl, documentImpl }) {
     target,
     'keydown',
     (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
+      if (matchesAction('toggle-theme', e)) {
         e.preventDefault();
         e.stopPropagation();
         toggleTheme(target, documentImpl);
@@ -92,7 +93,7 @@ export function setupSessionGlobals({ windowImpl, documentImpl }) {
 
   // Cmd+Shift+N — toggle scratchpad (right sidebar)
   on(target, 'keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
+    if (matchesAction('toggle-scratchpad', e)) {
       e.preventDefault();
       sessionRuntime.rightSidebar?.toggle();
     }
@@ -101,7 +102,7 @@ export function setupSessionGlobals({ windowImpl, documentImpl }) {
   // Cmd+/ — keyboard shortcuts help modal (the <ShortcutsModal> Svelte
   // component, opened via the shared sessionModals store).
   on(target, 'keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === '/') {
+    if (matchesAction('open-shortcuts-help', e)) {
       e.preventDefault();
       openShortcuts();
     }

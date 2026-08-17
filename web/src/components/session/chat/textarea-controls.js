@@ -1,3 +1,5 @@
+import { matchesAction } from '../../../shared/keybindings.js';
+
 export function setupTextareaControls({
   windowImpl = window,
   textarea,
@@ -35,11 +37,11 @@ export function setupTextareaControls({
       event.preventDefault();
       form?.requestSubmit?.();
     }
-    if (event.key === 'Tab' && event.shiftKey) {
+    if (matchesAction('cycle-thinking-level', event)) {
       event.preventDefault();
       getThinkingSelector()?.cycle?.();
     }
-    if (event.ctrlKey && (event.key.toLowerCase() === 'i' || event.key.toLowerCase() === 'l')) {
+    if (matchesAction('open-model-selector', event)) {
       event.preventDefault();
       getModelSelector()?.open?.();
     }

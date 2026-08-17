@@ -1,3 +1,5 @@
+import { matchesAction } from '../../shared/keybindings.js';
+
 export function setupSessionSearchAndFilters({
   documentImpl = document,
   getLeafId,
@@ -68,14 +70,13 @@ export function setupSessionKeyboardShortcuts({
       return;
     }
 
-    const key = e.key.toLowerCase();
-    if (key === 't') {
+    if (matchesAction('toggle-thinking', e)) {
       e.preventDefault();
       toggleThinking();
-    } else if (key === 'o') {
+    } else if (matchesAction('toggle-tools', e)) {
       e.preventDefault();
       toggleToolsVisibility();
-    } else if (key === 'p') {
+    } else if (matchesAction('toggle-tool-outputs', e)) {
       e.preventDefault();
       toggleToolOutputs();
     }

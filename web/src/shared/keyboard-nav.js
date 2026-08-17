@@ -1,4 +1,5 @@
 import { navigate } from './navigation.js';
+import { matchesAction } from './keybindings.js';
 
 const SCROLL_AMOUNT = 300;
 const GG_TIMEOUT = 500; // ms window for double-tap 'gg'
@@ -84,7 +85,7 @@ export function setupKeyboardNav({
   // Cmd/Ctrl+, opens the global settings page (standard macOS preferences
   // shortcut). Works regardless of focus, like a native app.
   documentImpl.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key === ',') {
+    if (matchesAction('open-settings', e)) {
       e.preventDefault();
       navigate('/settings', { windowImpl });
     }
@@ -94,7 +95,7 @@ export function setupKeyboardNav({
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (isEditableTarget(documentImpl.activeElement)) return;
 
-    if (e.key === 'j') {
+    if (matchesAction('scroll-down', e)) {
       e.preventDefault();
       const content =
         typeof documentImpl.getElementById === 'function'
@@ -105,7 +106,7 @@ export function setupKeyboardNav({
       } else {
         windowImpl.scrollBy({ top: SCROLL_AMOUNT, behavior: 'instant' });
       }
-    } else if (e.key === 'k') {
+    } else if (matchesAction('scroll-up', e)) {
       e.preventDefault();
       const content =
         typeof documentImpl.getElementById === 'function'
@@ -137,7 +138,7 @@ export function setupKeyboardNav({
           ggTimer = null;
         }, GG_TIMEOUT);
       }
-    } else if (e.key === 'G') {
+    } else if (matchesAction('scroll-bottom', e)) {
       e.preventDefault();
       const content =
         typeof documentImpl.getElementById === 'function'
@@ -151,7 +152,7 @@ export function setupKeyboardNav({
           behavior: 'instant',
         });
       }
-    } else if (e.key === 'I') {
+    } else if (matchesAction('focus-composer', e)) {
       e.preventDefault();
       const el = documentImpl.querySelector(focusSelector);
       if (el) el.focus();
