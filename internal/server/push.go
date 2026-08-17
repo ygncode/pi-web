@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -141,6 +142,15 @@ func (m *PushManager) handleVapid(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 0, map[string]any{"publicKey": m.PublicKey()})
 }
 
+// validPushEndpoint restricts subscriptions to absolute https:// URLs with a
+// host. The endpoint is later POSTed to when notifying, so this keeps the push
+// sender from being pointed at arbitrary schemes or internal hosts. Real Web
+// Push services (FCM, Mozilla autopush, WNS) are always https.
+func validPushEndpoint(endpoint string) bool {
+	u, err := url.Parse(endpoint)
+	return err == nil && u.Scheme == "https" && u.Host != ""
+}
+
 func (m *PushManager) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -150,7 +160,7 @@ func (m *PushManager) handleSubscribe(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSONBody(w, r, &sub) {
 		return
 	}
-	if sub.Endpoint == "" {
+	if !validPushEndpoint(sub.Endpoint) {
 		writeJSONError(w, http.StatusBadRequest, "invalid subscription")
 		return
 	}

@@ -343,10 +343,17 @@ cross-site browser mutations. `GET`, `HEAD`, and `OPTIONS` are unaffected.
 Origin-less clients such as local CLI scripts remain compatible; a browser
 request explicitly marked `Sec-Fetch-Site: cross-site` is rejected even if it
 omits `Origin`. Tokenless requests also require a recognized `Host`: loopback
-hosts are always accepted, and the configured bind host plus the exact
-Tailscale hostname discovered at startup are added to the allowlist. This prevents DNS rebinding from turning a
-same-origin attacker hostname into access to the local server. The explicitly
-dangerous `--insecure` mode preserves its documented any-host behavior.
+hosts are always accepted, and the configured bind host is added to the
+allowlist. This prevents DNS rebinding from turning a same-origin attacker
+hostname into access to the local server. The explicitly dangerous `--insecure`
+mode preserves its documented any-host behavior.
+
+Tailscale Serve is only configured when `PI_WEB_TOKEN` is set. Serve proxies the
+tailnet to the loopback server, so allowlisting its hostname for tokenless access
+would silently widen a loopback-only deployment into unauthenticated tailnet-wide
+access to the agent — defeating the same non-loopback token guard enforced at
+startup. When no token is set, startup skips Serve and stays loopback-only; the
+discovered Tailscale hostname is added to the allowlist only alongside a token.
 
 JSON handlers share `decodeJSONBody`, which caps request bodies at 2 MiB,
 rejects multiple JSON values, and rejects an explicit media type other than

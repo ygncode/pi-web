@@ -201,7 +201,7 @@ pi-web --host 127.0.0.1
 PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web --host 192.168.1.50
 ```
 
-By default, pi-web binds to `127.0.0.1`. If Tailscale is running with MagicDNS, pi-web also runs `tailscale serve --bg --https=<port> http://127.0.0.1:<port>` and prints the HTTPS tailnet URL. Any explicit non-loopback bind requires `PI_WEB_TOKEN` to be set; pass `--insecure` to override for local testing.
+By default, pi-web binds to `127.0.0.1`. If Tailscale is running with MagicDNS **and `PI_WEB_TOKEN` is set**, pi-web also runs `tailscale serve --bg --https=<port> http://127.0.0.1:<port>` and prints the HTTPS tailnet URL. Without a token, pi-web stays loopback-only and skips Tailscale Serve, so tailnet peers cannot reach the agent unauthenticated. Any explicit non-loopback bind also requires `PI_WEB_TOKEN` to be set; pass `--insecure` to override for local testing.
 
 ## Remote Access
 
@@ -216,11 +216,11 @@ sudo tailscale set --operator=$USER
 ```
 
 ```bash
-# 1. Start pi-web
-pi-web
+# 1. Start pi-web with a token so it publishes the Tailscale HTTPS endpoint
+PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web
 
 # 2. From any other Tailscale-connected device, open the printed
-#    "Tailscale HTTPS" URL.
+#    "Tailscale HTTPS" URL and enter the token once.
 ```
 
 > By default, pi-web refuses to bind to a non-loopback address unless `PI_WEB_TOKEN` is set — anyone who can reach the bound address could otherwise view sessions and send instructions to pi. To override this guard for local-network testing, pass `--insecure`. **Don't use `--insecure` on Tailscale or any address reachable from outside your machine.**

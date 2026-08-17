@@ -74,6 +74,31 @@ func TestAuthAcceptsQueryAndRedirects(t *testing.T) {
 	if !found.HttpOnly {
 		t.Fatal("expected HttpOnly cookie")
 	}
+	if found.Secure {
+		t.Fatal("expected cookie to not be Secure over plain HTTP")
+	}
+}
+
+// Behind Tailscale Serve (X-Forwarded-Proto: https) the cookie must be Secure.
+func TestAuthSetsSecureCookieForForwardedHTTPS(t *testing.T) {
+	a := New("secret")
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/?token=secret", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	a.Wrap(okHandler)(rec, req)
+	var found *http.Cookie
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == TokenCookieName {
+			found = c
+			break
+		}
+	}
+	if found == nil {
+		t.Fatalf("expected %s cookie to be set", TokenCookieName)
+	}
+	if !found.Secure {
+		t.Fatal("expected Secure cookie when forwarded proto is https")
+	}
 }
 
 // Query-based token with other params preserves them in redirect.

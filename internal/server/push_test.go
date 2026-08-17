@@ -42,6 +42,28 @@ func TestNewPushManager_PersistsVapidKeys(t *testing.T) {
 	}
 }
 
+func TestValidPushEndpoint(t *testing.T) {
+	cases := []struct {
+		endpoint string
+		want     bool
+	}{
+		{"https://fcm.googleapis.com/fcm/send/abc123", true},
+		{"https://updates.push.services.mozilla.com/wpush/v2/xyz", true},
+		{"", false},
+		{"http://fcm.googleapis.com/fcm/send/abc", false}, // cleartext
+		{"http://127.0.0.1:31415/api/chat", false},        // SSRF to loopback
+		{"https:///fcm/send/abc", false},                  // no host
+		{"file:///etc/passwd", false},
+		{"ftp://example.com/x", false},
+		{"not a url", false},
+	}
+	for _, c := range cases {
+		if got := validPushEndpoint(c.endpoint); got != c.want {
+			t.Errorf("validPushEndpoint(%q) = %v, want %v", c.endpoint, got, c.want)
+		}
+	}
+}
+
 func TestNewPushManager_MigratesOldWebDir(t *testing.T) {
 	tmp := t.TempDir()
 	oldDir := filepath.Join(tmp, "web")

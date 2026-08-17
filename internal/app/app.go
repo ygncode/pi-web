@@ -127,7 +127,16 @@ func Main(version string) {
 	url := fmt.Sprintf("http://%s", net.JoinHostPort(bindHost, *port))
 	var tailscaleURL string
 	var tailscaleServe bool
-	if *hostOverride == "" {
+	if *hostOverride == "" && !authMiddleware.Enabled() {
+		// Tailscale Serve proxies the tailnet to this loopback server, and its
+		// hostname would be allowlisted for tokenless access below. Without a
+		// token that turns a loopback-only deployment into unauthenticated
+		// tailnet-wide access to the agent, so stay loopback-only instead.
+		fmt.Fprintf(os.Stderr,
+			"Tailscale Serve not configured: set %s to publish an HTTPS tailnet endpoint.\n"+
+				"  Without a token, pi-web stays loopback-only so tailnet peers cannot reach the agent unauthenticated.\n",
+			tokenEnvVar)
+	} else if *hostOverride == "" {
 		tsCtx, tsCancel := context.WithTimeout(context.Background(), tailscaleConfigureTimeout)
 		tsURL, tsOk, tsErr := configureTailscaleServe(tsCtx, *port)
 		tsCancel()

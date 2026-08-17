@@ -132,6 +132,7 @@ func (a *Middleware) Wrap(h http.HandlerFunc) http.HandlerFunc {
 				Value:    got,
 				Path:     "/",
 				HttpOnly: true,
+				Secure:   isTLSRequest(r),
 				SameSite: http.SameSiteLaxMode,
 				MaxAge:   30 * 24 * 60 * 60,
 			})
@@ -165,6 +166,19 @@ func (a *Middleware) allowsTokenlessHost(rawHost string) bool {
 	_, ok := a.allowedHosts[host]
 	a.allowedHostsMu.RUnlock()
 	return ok
+}
+
+// isTLSRequest reports whether the request reached the client over HTTPS. The
+// server itself always listens on loopback HTTP, so a direct connection is
+// never TLS; Tailscale Serve terminates TLS and proxies with
+// X-Forwarded-Proto: https, which is the only HTTPS path in practice. Marking
+// the cookie Secure on that path keeps it off any cleartext request to the same
+// host, while leaving plain loopback HTTP (no such header) unaffected.
+func isTLSRequest(r *http.Request) bool {
+	if r.TLS != nil {
+		return true
+	}
+	return strings.EqualFold(strings.TrimSpace(r.Header.Get("X-Forwarded-Proto")), "https")
 }
 
 func normalizeHostname(hostOrURL string) string {
