@@ -167,6 +167,11 @@ across devices. See `internal/server/projects.go`.
   (no client flash) and is a no-op while the master switch is off. Manage via the
   index menu → **Manage Projects** (search, select/deselect-all, register, and the
   filter switch), backed by `GET/POST /api/projects`.
+- The session sidebar (Projects tab and the Sessions tab's project switcher)
+  requests `GET /api/projects?filtered=1`, which applies the same allowlist
+  server-side — except the current session's project, which is always included so
+  the project you are in never disappears. The Manage Projects modal omits the
+  param and keeps seeing every project.
 
 ## Startup Order
 

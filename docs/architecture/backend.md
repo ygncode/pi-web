@@ -281,7 +281,7 @@ type piRPCWorker struct {
 | `/api/settings` | GET/POST | `handleGetSettings` / `handleSaveSettings` | Server-backed user settings (SQLite) |
 | `/api/btw` | GET | `handleGetBtw` | Resolve the btw scratch-chat session for a parent (SQLite) |
 | `/api/btw/new` | POST | `handleNewBtw` | Create a new btw scratch-chat session (SQLite) |
-| `/api/projects` | GET/POST | `handleApiProjects` / `handleUpdateProject` | List projects + filter state (`limit`/`offset`, optional `current` priority + `sessionLimit` bundled summaries, active session IDs per project); enable/disable/register/remove, bulk enable-all/disable-all, enable-filter/disable-filter (SQLite) |
+| `/api/projects` | GET/POST | `handleApiProjects` / `handleUpdateProject` | List projects + filter state (`limit`/`offset`, optional `current` priority + `sessionLimit` bundled summaries, active session IDs per project, `filtered=1` to apply the enabled-projects allowlist with the current project always kept); enable/disable/register/remove, bulk enable-all/disable-all, enable-filter/disable-filter (SQLite) |
 | `/api/sounds` | GET | `handleApiSounds` | List available notification sounds |
 | `/sounds/` | GET | `handleSounds` | Serve a sound asset (no auth) |
 | `/custom-themes.css` | GET | `handleCustomThemes` | User custom theme CSS |

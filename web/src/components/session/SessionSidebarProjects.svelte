@@ -122,6 +122,7 @@
         offset: projects.length,
         currentProject: cwd,
         currentSessionLimit: sessionPageSize,
+        filtered: true,
       });
       if (destroyed) return;
       const knownProjectPaths = new Set(projects.map((project) => project.path));

@@ -302,6 +302,65 @@ func TestHandleApiProjects(t *testing.T) {
 	}
 }
 
+func TestHandleApiProjectsFiltered(t *testing.T) {
+	sessionsDir := t.TempDir()
+	writeSessionWithCWD(t, filepath.Join(sessionsDir, "sub1"), "a.jsonl", "/home/user/project-a")
+	writeSessionWithCWD(t, filepath.Join(sessionsDir, "sub2"), "b.jsonl", "/home/user/project-b")
+
+	s := &Server{db: newProjectPrefsDB(t), sessionsDir: sessionsDir, cache: sessions.NewCache(), now: time.Now}
+	// Seed both projects, then disable project-b.
+	s.syncProjectPrefs([]string{"/home/user/project-a", "/home/user/project-b"})
+	if _, err := s.db.Exec("UPDATE project_prefs SET enabled = 0 WHERE project_path = ?", "/home/user/project-b"); err != nil {
+		t.Fatal(err)
+	}
+
+	getPaths := func(url string) ([]string, int) {
+		t.Helper()
+		req := httptest.NewRequest(http.MethodGet, url, nil)
+		w := httptest.NewRecorder()
+		s.handleApiProjects(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("status = %d", w.Code)
+		}
+		var payload struct {
+			Projects []projectEntry `json:"projects"`
+			Total    int            `json:"total"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &payload); err != nil {
+			t.Fatal(err)
+		}
+		paths := make([]string, 0, len(payload.Projects))
+		for _, p := range payload.Projects {
+			paths = append(paths, p.Path)
+		}
+		return paths, payload.Total
+	}
+
+	// Master filter off: filtered=1 is a no-op.
+	if paths, total := getPaths("/api/projects?filtered=1"); len(paths) != 2 || total != 2 {
+		t.Fatalf("filter off: got %v (total %d), want both projects", paths, total)
+	}
+
+	s.setProjectFilterEnabled(true)
+
+	// Without filtered=1 (Manage Projects modal) everything still shows.
+	if paths, total := getPaths("/api/projects"); len(paths) != 2 || total != 2 {
+		t.Fatalf("no filtered param: got %v (total %d), want both projects", paths, total)
+	}
+
+	// filtered=1 drops the disabled project and total reflects it.
+	paths, total := getPaths("/api/projects?filtered=1")
+	if len(paths) != 1 || paths[0] != "/home/user/project-a" || total != 1 {
+		t.Fatalf("filtered: got %v (total %d), want only project-a", paths, total)
+	}
+
+	// The current project is kept even when disabled.
+	paths, total = getPaths("/api/projects?filtered=1&current=/home/user/project-b")
+	if len(paths) != 2 || total != 2 || paths[0] != "/home/user/project-b" {
+		t.Fatalf("filtered current: got %v (total %d), want project-b first", paths, total)
+	}
+}
+
 func TestHandleApiProjectsPagination(t *testing.T) {
 	sessionsDir := t.TempDir()
 	for i := range 25 {

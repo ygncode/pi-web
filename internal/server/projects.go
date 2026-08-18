@@ -251,6 +251,19 @@ func (s *Server) handleApiProjects(w http.ResponseWriter, r *http.Request) {
 			RunningSessionIDs: runningByProject[p],
 		})
 	}
+	// filtered=1 applies the Manage Projects allowlist (used by the session
+	// sidebar). The current project is always kept so the project you are in
+	// never disappears; the modal omits the param to keep seeing everything.
+	if q.Get("filtered") == "1" && s.projectFilterEnabled() {
+		kept := make([]projectEntry, 0, len(entries))
+		for _, entry := range entries {
+			if entry.Enabled || entry.Path == currentProject {
+				kept = append(kept, entry)
+			}
+		}
+		entries = kept
+	}
+
 	sort.Slice(entries, func(i, j int) bool {
 		if (entries[i].Path == currentProject) != (entries[j].Path == currentProject) {
 			return entries[i].Path == currentProject

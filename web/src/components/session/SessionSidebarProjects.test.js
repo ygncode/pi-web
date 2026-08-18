@@ -58,6 +58,7 @@ describe('SessionSidebarProjects', () => {
       offset: 0,
       currentProject: '/repo/pi-web',
       currentSessionLimit: 5,
+      filtered: true,
     });
     expect(fetchSessions).toHaveBeenCalledWith({
       project: '/repo/pi-web',
@@ -190,6 +191,7 @@ describe('SessionSidebarProjects', () => {
       offset: 20,
       currentProject: '/repo/current',
       currentSessionLimit: 5,
+      filtered: true,
     });
   });
 

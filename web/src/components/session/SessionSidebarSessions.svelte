@@ -131,7 +131,7 @@
     await tick();
     projectSearchEl?.focus();
     try {
-      const response = await fetchProjects();
+      const response = await fetchProjects({ filtered: true });
       projects = Array.isArray(response.projects) ? response.projects : [];
     } catch (err) {
       projects = [];

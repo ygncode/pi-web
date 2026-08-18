@@ -136,7 +136,13 @@ export function defaultFetchRecent() {
 export function defaultCreateSession(path) {
   return postJSON('/api/new-session', { path });
 }
-export function defaultFetchProjects({ limit, offset, currentProject, currentSessionLimit } = {}) {
+export function defaultFetchProjects({
+  limit,
+  offset,
+  currentProject,
+  currentSessionLimit,
+  filtered,
+} = {}) {
   const params = new URLSearchParams();
   if (Number.isFinite(limit) && limit > 0) params.set('limit', String(limit));
   if (Number.isFinite(offset) && offset > 0) params.set('offset', String(offset));
@@ -144,6 +150,7 @@ export function defaultFetchProjects({ limit, offset, currentProject, currentSes
   if (Number.isFinite(currentSessionLimit) && currentSessionLimit > 0) {
     params.set('sessionLimit', String(currentSessionLimit));
   }
+  if (filtered) params.set('filtered', '1');
   const qs = params.toString();
   return getJSON('/api/projects' + (qs ? '?' + qs : ''));
 }
