@@ -209,14 +209,19 @@ describe('setupKeyboardNav', () => {
     expect(win.history.pushState).toHaveBeenCalledWith({}, '', '/settings');
   });
 
-  it('does not navigate to /settings on Cmd+Shift+,', () => {
+  it('tolerates Shift on layouts where "," is a shifted key', () => {
     const doc = createMockDocument();
     const win = createMockWindow();
 
     setupKeyboardNav({ windowImpl: win, documentImpl: doc });
-    doc._dispatch('keydown', { key: ',', metaKey: true, shiftKey: true });
 
+    // On a US layout Cmd+Shift+, produces '<' — must not navigate.
+    doc._dispatch('keydown', { key: '<', metaKey: true, shiftKey: true });
     expect(win.history.pushState).not.toHaveBeenCalled();
+
+    // On layouts where typing ',' itself requires Shift, the chord works.
+    doc._dispatch('keydown', { key: ',', metaKey: true, shiftKey: true });
+    expect(win.history.pushState).toHaveBeenCalledWith({}, '', '/settings');
   });
 
   it('scrolls down on j', () => {

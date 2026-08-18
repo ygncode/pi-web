@@ -79,6 +79,13 @@ describe('comboMatchesEvent', () => {
   it('is case-insensitive on the key', () => {
     expect(comboMatchesEvent('mod+k', ev('K', { metaKey: true }))).toBe(true);
   });
+
+  it('ignores Shift on punctuation keys (layouts where / requires Shift)', () => {
+    expect(comboMatchesEvent('mod+/', ev('/', { metaKey: true, shiftKey: true }))).toBe(true);
+    expect(comboMatchesEvent('mod+,', ev(',', { ctrlKey: true, shiftKey: true }))).toBe(true);
+    // Letters and named keys still enforce Shift absence.
+    expect(comboMatchesEvent('mod+k', ev('K', { metaKey: true, shiftKey: true }))).toBe(false);
+  });
 });
 
 describe('matchesAction', () => {
@@ -87,6 +94,13 @@ describe('matchesAction', () => {
     expect(matchesAction('toggle-theme', ev('l', { ctrlKey: true, shiftKey: true }))).toBe(true);
     expect(matchesAction('open-settings', ev(',', { metaKey: true }))).toBe(true);
     expect(matchesAction('cycle-thinking-level', ev('Tab', { shiftKey: true }))).toBe(true);
+  });
+
+  it('opens shortcuts help on layouts where / is a shifted key', () => {
+    expect(matchesAction('open-shortcuts-help', ev('/', { metaKey: true, shiftKey: true }))).toBe(
+      true,
+    );
+    expect(matchesAction('open-shortcuts-help', ev('/', { metaKey: true }))).toBe(true);
   });
 
   it('honors alias bindings (Ctrl+L still opens the model selector)', () => {

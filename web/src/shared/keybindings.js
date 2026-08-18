@@ -101,7 +101,15 @@ export function comboMatchesEvent(combo, event) {
     // Plain chords (no command modifier requested) must not carry ⌘/Ctrl/Alt.
     return false;
   }
-  if (want.shift !== Boolean(event.shiftKey)) return false;
+  // Shift is only enforced where it changes meaning. For letters (compared
+  // case-insensitively) and named keys like Tab, event.key is the same with or
+  // without Shift, so `mod+k` must reject Cmd+Shift+K. For punctuation,
+  // event.key is already the shifted result — some layouts need Shift to type
+  // `/` at all — so an unrequested Shift there is layout noise, not a
+  // different chord.
+  const shiftChangesMeaning = /^[a-z]$/.test(want.key) || want.key.length > 1;
+  if (want.shift && !event.shiftKey) return false;
+  if (!want.shift && event.shiftKey && shiftChangesMeaning) return false;
   if (want.alt !== Boolean(event.altKey)) return false;
   return String(event.key).toLowerCase() === want.key;
 }
