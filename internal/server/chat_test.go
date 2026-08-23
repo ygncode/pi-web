@@ -47,6 +47,10 @@ type fakeSender struct {
 	setModelID              string
 	setThinkingSessionID    string
 	setThinkingLevel        string
+	compactSessionID        string
+	compactSessionPath      string
+	compactInstructions     string
+	compactErr              error
 	getCommandsCalls        int
 }
 
@@ -77,6 +81,15 @@ func (f *fakeSender) SetThinkingLevel(ctx context.Context, sessionID, sessionPat
 	f.setThinkingLevel = level
 	f.mu.Unlock()
 	return nil
+}
+
+func (f *fakeSender) Compact(ctx context.Context, sessionID, sessionPath, customInstructions string) error {
+	f.mu.Lock()
+	f.compactSessionID = sessionID
+	f.compactSessionPath = sessionPath
+	f.compactInstructions = customInstructions
+	f.mu.Unlock()
+	return f.compactErr
 }
 
 func (f *fakeSender) Abort(ctx context.Context, sessionID string) error {
@@ -155,6 +168,12 @@ func (f *fakeSender) thinkingSessionID() string {
 	return f.setThinkingSessionID
 }
 
+func (f *fakeSender) compactInfo() (sessionID, sessionPath, instructions string) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.compactSessionID, f.compactSessionPath, f.compactInstructions
+}
+
 func TestHandleChatQueuesResolvedSession(t *testing.T) {
 	root := t.TempDir()
 	wantPath := writeSessionFile(t, root, "--tmp--project--", "session.jsonl")
@@ -227,6 +246,45 @@ func TestHandleChatRejectsBrokenSession(t *testing.T) {
 	}
 	if !strings.Contains(w.Body.String(), "working directory no longer exists") {
 		t.Fatalf("body = %q", w.Body.String())
+	}
+}
+
+func TestHandleCompactUsesResolvedSession(t *testing.T) {
+	root := t.TempDir()
+	wantPath := writeSessionFile(t, root, "--tmp--project--", "session.jsonl")
+	fake := &fakeSender{}
+	s := &Server{sessionsDir: root, chatSender: fake}
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/compact?id=session.jsonl",
+		strings.NewReader(`{"customInstructions":"  keep:3  "}`),
+	)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	s.handleCompact(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("status = %d body = %s", w.Code, w.Body.String())
+	}
+	gotID, gotPath, gotInstructions := fake.compactInfo()
+	if gotID != "session.jsonl" || gotPath != wantPath || gotInstructions != "keep:3" {
+		t.Fatalf("compact id=%q path=%q instructions=%q, want path %q", gotID, gotPath, gotInstructions, wantPath)
+	}
+}
+
+func TestHandleCompactRejectsBusyWorker(t *testing.T) {
+	root := t.TempDir()
+	writeSessionFile(t, root, "--tmp--project--", "session.jsonl")
+	s := &Server{sessionsDir: root, chatSender: &fakeSender{compactErr: workers.ErrWorkerBusy}}
+	req := httptest.NewRequest(http.MethodPost, "/api/compact?id=session.jsonl", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	s.handleCompact(w, req)
+
+	if w.Code != http.StatusConflict {
+		t.Fatalf("status = %d, want 409; body=%s", w.Code, w.Body.String())
 	}
 }
 

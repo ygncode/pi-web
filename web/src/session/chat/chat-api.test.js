@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   cancelChat,
   chatUrl,
+  compactSession,
   getCommands,
   getFiles,
   getWorkerStatus,
@@ -22,6 +23,7 @@ describe('chat api helpers', () => {
 
     await sendChat('s.jsonl', body, { fetchImpl });
     await cancelChat('s.jsonl', { fetchImpl });
+    await compactSession('s.jsonl', { customInstructions: 'keep:3' }, { fetchImpl });
     await getWorkerStatus('s.jsonl', { fetchImpl });
     await listModels({ fetchImpl });
     await setModel('s.jsonl', { provider: 'p', modelId: 'm' }, { fetchImpl });
@@ -29,14 +31,19 @@ describe('chat api helpers', () => {
 
     expect(fetchImpl).toHaveBeenNthCalledWith(1, '/api/chat?id=s.jsonl', { method: 'POST', body });
     expect(fetchImpl).toHaveBeenNthCalledWith(2, '/api/chat/cancel?id=s.jsonl', { method: 'POST' });
-    expect(fetchImpl).toHaveBeenNthCalledWith(3, '/api/worker-status?id=s.jsonl');
-    expect(fetchImpl).toHaveBeenNthCalledWith(4, '/api/models');
-    expect(fetchImpl).toHaveBeenNthCalledWith(5, '/api/set-model?id=s.jsonl', {
+    expect(fetchImpl).toHaveBeenNthCalledWith(3, '/api/compact?id=s.jsonl', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customInstructions: 'keep:3' }),
+    });
+    expect(fetchImpl).toHaveBeenNthCalledWith(4, '/api/worker-status?id=s.jsonl');
+    expect(fetchImpl).toHaveBeenNthCalledWith(5, '/api/models');
+    expect(fetchImpl).toHaveBeenNthCalledWith(6, '/api/set-model?id=s.jsonl', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ provider: 'p', modelId: 'm' }),
     });
-    expect(fetchImpl).toHaveBeenNthCalledWith(6, '/api/set-thinking-level?id=s.jsonl', {
+    expect(fetchImpl).toHaveBeenNthCalledWith(7, '/api/set-thinking-level?id=s.jsonl', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ level: 'medium' }),

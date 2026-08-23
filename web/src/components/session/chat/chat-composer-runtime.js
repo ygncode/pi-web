@@ -247,6 +247,7 @@ export function runChatComposer({
       documentImpl: document,
       windowImpl: window,
       updateContextUsage,
+      onCompact: () => submission.compactSession(''),
     });
     positionPopover = contextPopover.position;
 

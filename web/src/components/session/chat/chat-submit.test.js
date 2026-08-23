@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { JSDOM } from 'jsdom';
-import { setupChatSubmission } from './chat-submit.js';
+import { setupChatSubmission, parseCompactCommand } from './chat-submit.js';
 
 function setupDom() {
   const dom = new JSDOM(
@@ -27,6 +27,16 @@ function createAttachments({ files = [], textAttachments = [], message = '' } = 
 }
 
 describe('chat submit', () => {
+  it('parses only complete compact commands', () => {
+    expect(parseCompactCommand('/compact')).toEqual({ customInstructions: '' });
+    expect(parseCompactCommand('/compact keep:3')).toEqual({ customInstructions: 'keep:3' });
+    expect(parseCompactCommand('/compact focus on changes')).toEqual({
+      customInstructions: 'focus on changes',
+    });
+    expect(parseCompactCommand('/compact-now')).toBeNull();
+    expect(parseCompactCommand('please /compact')).toBeNull();
+  });
+
   it('sends a composed message and dispatches the live preview event', async () => {
     const { dom, form, textarea, sendButton, cancelButton } = setupDom();
     textarea.value = ' hello ';
@@ -68,6 +78,78 @@ describe('chat submit', () => {
     expect(setStatus).toHaveBeenCalledWith('queued', 'running');
     expect(sendButton.disabled).toBe(false);
     expect(updateSendEnabled).toHaveBeenCalled();
+  });
+
+  it('routes /compact through the compact API instead of chat', async () => {
+    const { dom, form, textarea, sendButton, cancelButton } = setupDom();
+    textarea.value = '/compact keep:3';
+    const attachments = createAttachments({ message: '/compact keep:3' });
+    const compactSession = vi.fn(() =>
+      Promise.resolve(new Response('{"status":"compacted"}', { status: 200 })),
+    );
+    const sendChat = vi.fn();
+    const setStatus = vi.fn();
+
+    setupChatSubmission({
+      windowImpl: dom.window,
+      form,
+      textarea,
+      sendButton,
+      cancelButton,
+      attachments,
+      chatApi: { sendChat, compactSession, cancelChat: vi.fn() },
+      sessionId: 's1',
+      setStatus,
+      autoResizeTextarea: vi.fn(),
+      updateSendEnabled: vi.fn(),
+      FormDataImpl: dom.window.FormData,
+      CustomEventImpl: dom.window.CustomEvent,
+    });
+
+    form.dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(compactSession).toHaveBeenCalledWith('s1', { customInstructions: 'keep:3' });
+    expect(sendChat).not.toHaveBeenCalled();
+    expect(textarea.value).toBe('');
+    expect(setStatus).toHaveBeenCalledWith('compacting', 'running');
+    expect(setStatus).toHaveBeenCalledWith('compacted', '');
+  });
+
+  it('keeps /compact as chat when attachments are present', async () => {
+    const { dom, form, textarea, sendButton, cancelButton } = setupDom();
+    textarea.value = '/compact';
+    const textAttachment = { original: 'quote', note: '' };
+    const attachments = createAttachments({
+      textAttachments: [textAttachment],
+      message: '> quote\n\n/compact',
+    });
+    const sendChat = vi.fn(() =>
+      Promise.resolve(new Response('{"status":"queued"}', { status: 200 })),
+    );
+    const compactSession = vi.fn();
+
+    setupChatSubmission({
+      windowImpl: dom.window,
+      form,
+      textarea,
+      sendButton,
+      cancelButton,
+      attachments,
+      chatApi: { sendChat, compactSession, cancelChat: vi.fn() },
+      sessionId: 's1',
+      setStatus: vi.fn(),
+      autoResizeTextarea: vi.fn(),
+      updateSendEnabled: vi.fn(),
+      FormDataImpl: dom.window.FormData,
+      CustomEventImpl: dom.window.CustomEvent,
+    });
+
+    form.dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(sendChat).toHaveBeenCalled();
+    expect(compactSession).not.toHaveBeenCalled();
   });
 
   it('restores the draft and attachments when send fails', async () => {

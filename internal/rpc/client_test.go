@@ -59,6 +59,17 @@ func TestBuildGetCommandsCommand(t *testing.T) {
 	}
 }
 
+func TestBuildCompactCommand(t *testing.T) {
+	cmd := BuildCompactCommand("req-8", "keep:3")
+	if cmd["id"] != "req-8" || cmd["type"] != "compact" || cmd["customInstructions"] != "keep:3" {
+		t.Fatalf("cmd = %#v", cmd)
+	}
+	cmd = BuildCompactCommand("req-9", "")
+	if _, ok := cmd["customInstructions"]; ok {
+		t.Fatalf("customInstructions present for default compact command")
+	}
+}
+
 func TestWriteRPCCommandWritesJSONLine(t *testing.T) {
 	var buf bytes.Buffer
 	if err := WriteCommand(&buf, map[string]any{"type": "get_state"}); err != nil {

@@ -6,6 +6,18 @@ export function cancelChat(sessionId, { fetchImpl = fetch } = {}) {
   return fetchImpl(chatUrl('/api/chat/cancel', sessionId), { method: 'POST' });
 }
 
+export function compactSession(
+  sessionId,
+  { customInstructions = '' } = {},
+  { fetchImpl = fetch } = {},
+) {
+  return fetchImpl(chatUrl('/api/compact', sessionId), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ customInstructions }),
+  });
+}
+
 export function sendChat(sessionId, body, { fetchImpl = fetch } = {}) {
   return fetchImpl(chatUrl('/api/chat', sessionId), { method: 'POST', body });
 }

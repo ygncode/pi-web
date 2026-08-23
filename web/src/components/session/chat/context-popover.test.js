@@ -11,6 +11,7 @@ function renderDom() {
       <button id="pi-chat-context-usage">usage</button>
       <div id="pi-chat-context-popover" style="display:none">
         <button class="pi-popover-close"></button>
+        <button id="pi-context-compact"></button>
         <div class="pi-popover-arrow"></div>
       </div>
     </div>
@@ -66,6 +67,39 @@ describe('setupContextPopover', () => {
     document.getElementById('pi-chat-context-usage').click();
     document.body.click();
     expect(popover.style.display).toBe('none');
+  });
+
+  it('runs compaction once and closes after success', async () => {
+    renderDom();
+    const onCompact = vi.fn(() => Promise.resolve(true));
+    setupContextPopover({ documentImpl: document, windowImpl: window, onCompact });
+    const popover = document.getElementById('pi-chat-context-popover');
+    const button = document.getElementById('pi-context-compact');
+    document.getElementById('pi-chat-context-usage').click();
+
+    button.click();
+    expect(button.disabled).toBe(true);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(onCompact).toHaveBeenCalledTimes(1);
+    expect(button.disabled).toBe(false);
+    expect(popover.style.display).toBe('none');
+  });
+
+  it('keeps the popover open when compaction fails', async () => {
+    renderDom();
+    setupContextPopover({
+      documentImpl: document,
+      windowImpl: window,
+      onCompact: () => Promise.resolve(false),
+    });
+    const popover = document.getElementById('pi-chat-context-popover');
+    document.getElementById('pi-chat-context-usage').click();
+
+    document.getElementById('pi-context-compact').click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(popover.style.display).toBe('block');
   });
 
   it('repositions while visible on resize', () => {

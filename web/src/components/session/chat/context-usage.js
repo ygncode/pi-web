@@ -77,6 +77,7 @@ export function collectContextUsage(entries = []) {
   let contextTokens = 0;
   for (let i = entries.length - 1; i >= 0; i -= 1) {
     const entry = entries[i];
+    if (entry?.type === 'compaction') break;
     if (entry?.type !== 'message' || !entry.message) continue;
     const msg = entry.message;
     if (msg.role === 'assistant' && msg.usage) {

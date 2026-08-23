@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"pi-web/internal/chat"
@@ -17,6 +18,7 @@ import (
 
 type ChatSender interface {
 	Send(ctx context.Context, sessionID, sessionPath string, chat chat.Request) error
+	Compact(ctx context.Context, sessionID, sessionPath, customInstructions string) error
 	SetModel(ctx context.Context, sessionID, sessionPath, provider, modelID string) error
 	SetThinkingLevel(ctx context.Context, sessionID, sessionPath, level string) error
 	Abort(ctx context.Context, sessionID string) error
@@ -132,6 +134,46 @@ func (s *Server) handleCancelChat(w http.ResponseWriter, r *http.Request) {
 	s.recomputeAndBroadcastStatus(resolved.Session.ID)
 	s.broadcast(resolved.Session.ID, "reload")
 	writeJSON(w, 0, map[string]any{"ok": true, "status": "cancelled"})
+}
+
+func (s *Server) handleCompact(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
+		return
+	}
+	resolved, err := sessions.ResolveByID(s.sessionsDir, r.URL.Query().Get("id"))
+	if resolveOrWriteError(w, err) {
+		return
+	}
+	if !resolved.Session.ChatAvailable {
+		writeJSONError(w, http.StatusConflict, resolved.Session.ChatDisabledReason)
+		return
+	}
+	if s.chatSender == nil {
+		writeJSONError(w, http.StatusServiceUnavailable, "chat unavailable")
+		return
+	}
+	var body struct {
+		CustomInstructions string `json:"customInstructions"`
+	}
+	if !decodeJSONBody(w, r, &body) {
+		return
+	}
+	if err := s.chatSender.Compact(
+		r.Context(),
+		resolved.Session.ID,
+		resolved.Path,
+		strings.TrimSpace(body.CustomInstructions),
+	); err != nil {
+		if errors.Is(err, workers.ErrWorkerBusy) {
+			writeJSONError(w, http.StatusConflict, err.Error())
+			return
+		}
+		writeJSONError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	s.broadcast(resolved.Session.ID, "reload")
+	writeJSON(w, 0, map[string]any{"ok": true, "status": "compacted"})
 }
 
 func (s *Server) handleWorkerStatus(w http.ResponseWriter, r *http.Request) {

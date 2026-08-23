@@ -127,6 +127,25 @@ func (w *piRPCWorker) Prompt(ctx context.Context, chat chat.Request) error {
 	return nil
 }
 
+func (w *piRPCWorker) Compact(ctx context.Context, customInstructions string) error {
+	w.touch()
+	w.mu.Lock()
+	if w.status.State == workers.WorkerStateRunning || w.hasRecentStreamActivityLocked(time.Now()) {
+		w.mu.Unlock()
+		return workers.ErrWorkerBusy
+	}
+	w.status.State = workers.WorkerStateRunning
+	w.status.Error = ""
+	w.mu.Unlock()
+
+	err := w.sendAndAwait(ctx, BuildCompactCommand(w.nextID(), customInstructions))
+	w.mu.Lock()
+	w.status.State = workers.WorkerStateIdle
+	w.status.Error = ""
+	w.mu.Unlock()
+	return err
+}
+
 func (w *piRPCWorker) SetModel(ctx context.Context, provider, modelID string) error {
 	w.touch()
 	id := w.nextID()

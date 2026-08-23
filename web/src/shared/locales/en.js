@@ -302,6 +302,10 @@ export default {
   'composer.focusShortcut': 'Shift + i to focus',
   'composer.cancelRunning': 'Cancel running response',
   'composer.contextDetails': 'Click for details',
+  'composer.compactContext': 'Compact context',
+  'composer.compactContextHint': 'Summarize older messages and keep recent context',
+  'composer.compacting': 'compacting',
+  'composer.compacted': 'compacted',
   'composer.pathCopied': 'Path copied',
 
   // ── Share / export ──

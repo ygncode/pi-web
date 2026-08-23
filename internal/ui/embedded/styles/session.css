@@ -6469,6 +6469,33 @@
       color: var(--error, #cc6666);
     }
 
+    .pi-chat-context-popover .pi-context-compact {
+      width: 100%;
+      min-height: 30px;
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--dim));
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      color: var(--text);
+      font-size: 10px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .pi-chat-context-popover .pi-context-compact:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--accent) 20%, transparent);
+      border-color: var(--accent);
+    }
+
+    .pi-chat-context-popover .pi-context-compact:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
     /* ===================================================================
        Cat Gatekeeper — focus/break + bedtime overlay (live app only).
        The overlay DOM is created by web/src/session/cat-gatekeeper/.

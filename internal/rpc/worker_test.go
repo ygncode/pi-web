@@ -30,6 +30,40 @@ func waitForPending(t *testing.T, w *piRPCWorker, id string) {
 	t.Fatalf("pending request %q never registered", id)
 }
 
+func TestCompactWritesRPCCommandAndReturnsIdle(t *testing.T) {
+	var buf bytes.Buffer
+	w := &piRPCWorker{
+		stdin:   nopWriteCloser{&buf},
+		status:  workers.WorkerStatus{State: workers.WorkerStateIdle},
+		pending: make(map[string]chan response),
+	}
+	done := make(chan error, 1)
+	go func() { done <- w.Compact(context.Background(), "keep:3") }()
+
+	waitForPending(t, w, "req-1")
+	w.handleRPCLine(`{"type":"response","id":"req-1","command":"compact","success":true,"data":{}}`)
+
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.TrimSpace(buf.String()); got != `{"customInstructions":"keep:3","id":"req-1","type":"compact"}` {
+		t.Fatalf("command = %s", got)
+	}
+	if got := w.Status(); got.State != workers.WorkerStateIdle {
+		t.Fatalf("status = %q, want idle", got.State)
+	}
+}
+
+func TestCompactRejectsRunningWorker(t *testing.T) {
+	w := &piRPCWorker{
+		status:  workers.WorkerStatus{State: workers.WorkerStateRunning},
+		pending: make(map[string]chan response),
+	}
+	if err := w.Compact(context.Background(), ""); err != workers.ErrWorkerBusy {
+		t.Fatalf("error = %v, want ErrWorkerBusy", err)
+	}
+}
+
 func TestStatusReportsRunningDuringRecentStreamActivity(t *testing.T) {
 	w := &piRPCWorker{
 		status:  workers.WorkerStatus{State: workers.WorkerStateIdle},

@@ -14,6 +14,7 @@ type fakeChatWorker struct {
 	mu              sync.Mutex
 	streaming       bool
 	prompts         []map[string]any
+	compactions     []string
 	commands        []SlashCommand
 	getCommandsCall int
 }
@@ -37,6 +38,13 @@ func (f *fakeChatWorker) Status() WorkerStatus {
 		return WorkerStatus{State: WorkerStateRunning}
 	}
 	return WorkerStatus{State: WorkerStateIdle}
+}
+
+func (f *fakeChatWorker) Compact(ctx context.Context, customInstructions string) error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.compactions = append(f.compactions, customInstructions)
+	return nil
 }
 
 func (f *fakeChatWorker) SetModel(ctx context.Context, provider, modelID string) error { return nil }
@@ -75,6 +83,21 @@ func TestManagerCreatesOneWorkerPerSession(t *testing.T) {
 	}
 	if created != 2 {
 		t.Fatalf("created workers = %d, want 2", created)
+	}
+}
+
+func TestManagerCompactsCurrentSessionWorker(t *testing.T) {
+	worker := &fakeChatWorker{}
+	manager := NewManager(func(string, string) (ChatWorker, error) { return worker, nil })
+
+	if err := manager.Compact(context.Background(), "a.jsonl", "/tmp/a.jsonl", "keep:3"); err != nil {
+		t.Fatal(err)
+	}
+
+	worker.mu.Lock()
+	defer worker.mu.Unlock()
+	if len(worker.compactions) != 1 || worker.compactions[0] != "keep:3" {
+		t.Fatalf("compactions = %#v", worker.compactions)
 	}
 }
 
@@ -206,6 +229,7 @@ type reapableWorker struct {
 }
 
 func (r *reapableWorker) Prompt(ctx context.Context, chat chat.Request) error          { return nil }
+func (r *reapableWorker) Compact(ctx context.Context, customInstructions string) error { return nil }
 func (r *reapableWorker) SetModel(ctx context.Context, provider, modelID string) error { return nil }
 func (r *reapableWorker) SetThinkingLevel(ctx context.Context, level string) error     { return nil }
 func (r *reapableWorker) Abort(ctx context.Context) error                              { return nil }
@@ -270,6 +294,7 @@ func TestManagerDoesNotReapRunningWorker(t *testing.T) {
 type runningReapable struct{}
 
 func (runningReapable) Prompt(ctx context.Context, chat chat.Request) error          { return nil }
+func (runningReapable) Compact(ctx context.Context, customInstructions string) error { return nil }
 func (runningReapable) SetModel(ctx context.Context, provider, modelID string) error { return nil }
 func (runningReapable) SetThinkingLevel(ctx context.Context, level string) error     { return nil }
 func (runningReapable) Abort(ctx context.Context) error                              { return nil }
@@ -284,6 +309,7 @@ func (runningReapable) IdleSince(now time.Time) time.Duration                   
 type erroredWorker struct{}
 
 func (erroredWorker) Prompt(ctx context.Context, chat chat.Request) error          { return nil }
+func (erroredWorker) Compact(ctx context.Context, customInstructions string) error { return nil }
 func (erroredWorker) SetModel(ctx context.Context, provider, modelID string) error { return nil }
 func (erroredWorker) SetThinkingLevel(ctx context.Context, level string) error     { return nil }
 func (erroredWorker) Abort(ctx context.Context) error                              { return nil }
@@ -306,6 +332,7 @@ type inspectableWorker struct {
 }
 
 func (w *inspectableWorker) Prompt(context.Context, chat.Request) error     { return nil }
+func (w *inspectableWorker) Compact(context.Context, string) error          { return nil }
 func (w *inspectableWorker) SetModel(context.Context, string, string) error { return nil }
 func (w *inspectableWorker) SetThinkingLevel(context.Context, string) error { return nil }
 func (w *inspectableWorker) Abort(context.Context) error                    { return nil }

@@ -1,3 +1,12 @@
+import { t } from '../../../shared/i18n.js';
+
+export function parseCompactCommand(message) {
+  if (typeof message !== 'string') return null;
+  const match = message.trim().match(/^\/compact(?:\s+([\s\S]*))?$/i);
+  if (!match) return null;
+  return { customInstructions: (match[1] || '').trim() };
+}
+
 export function setupChatSubmission({
   windowImpl = window,
   form,
@@ -61,11 +70,35 @@ export function setupChatSubmission({
     }
   }
 
+  async function compactSession(customInstructions = '') {
+    sendButton.dataset.sending = '1';
+    sendButton.disabled = true;
+    setStatus(t('composer.compacting'), 'running');
+    try {
+      const response = await chatApi.compactSession(sessionId, { customInstructions });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'compact request failed');
+      setStatus(t('composer.compacted'), '');
+      return true;
+    } catch (error) {
+      setStatus(error.message || String(error), 'error');
+      return false;
+    } finally {
+      delete sendButton.dataset.sending;
+      sendButton.disabled = false;
+      updateSendEnabled();
+    }
+  }
+
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const typed = textarea.value.trim();
     const filesToSend = attachments.files().slice();
     const textAttachmentsToSend = attachments.textAttachments().slice();
+    const compactCommand =
+      filesToSend.length === 0 && textAttachmentsToSend.length === 0
+        ? parseCompactCommand(typed)
+        : null;
     const message = attachments.composeMessage(typed);
     if (!message && filesToSend.length === 0) {
       setStatus('message or image required', 'error');
@@ -79,7 +112,9 @@ export function setupChatSubmission({
     autoResizeTextarea();
     updateSendEnabled();
 
-    const sent = await sendChatMessage(message, filesToSend);
+    const sent = compactCommand
+      ? await compactSession(compactCommand.customInstructions)
+      : await sendChatMessage(message, filesToSend);
     if (!sent) {
       textarea.value = typed;
       attachments.restore({ files: filesToSend, textAttachments: textAttachmentsToSend });
@@ -90,6 +125,7 @@ export function setupChatSubmission({
 
   return {
     sendChatMessage,
+    compactSession,
     setRefreshWorkerStatus: (fn) => {
       refreshWorkerStatus = typeof fn === 'function' ? fn : async () => {};
     },
