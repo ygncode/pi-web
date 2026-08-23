@@ -73,6 +73,19 @@ describe('context usage helpers', () => {
     expect(usage.totalIOTokens).toBe(4300);
     expect(usage.contextTokens).toBe(1800);
   });
+
+  it('clears stale context pressure after compaction until the next assistant response', () => {
+    const usage = collectContextUsage([
+      {
+        type: 'message',
+        message: { role: 'assistant', usage: { input: 90000, output: 1000 } },
+      },
+      { type: 'compaction', tokensBefore: 91000 },
+    ]);
+
+    expect(usage.totalIOTokens).toBe(91000);
+    expect(usage.contextTokens).toBe(0);
+  });
 });
 
 describe('updateContextUsage', () => {

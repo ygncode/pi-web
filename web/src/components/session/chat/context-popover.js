@@ -2,9 +2,11 @@ export function setupContextPopover({
   documentImpl = document,
   windowImpl = window,
   updateContextUsage = () => {},
+  onCompact = async () => false,
 } = {}) {
   const usageCapsule = documentImpl.getElementById('pi-chat-context-usage');
   const popover = documentImpl.getElementById('pi-chat-context-popover');
+  const compactButton = documentImpl.getElementById('pi-context-compact');
 
   function position() {
     if (!usageCapsule || !popover) return;
@@ -58,8 +60,22 @@ export function setupContextPopover({
     else show();
   };
 
-  const onPopoverClick = (event) => {
-    if (event.target.closest('.pi-popover-close')) hide();
+  const onPopoverClick = async (event) => {
+    if (event.target.closest('.pi-popover-close')) {
+      hide();
+      event.stopPropagation();
+      return;
+    }
+    if (event.target.closest('#pi-context-compact')) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (!compactButton || compactButton.disabled) return;
+      compactButton.disabled = true;
+      const compacted = await onCompact();
+      compactButton.disabled = false;
+      if (compacted) hide();
+      return;
+    }
     event.stopPropagation();
   };
 

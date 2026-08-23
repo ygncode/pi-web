@@ -54,6 +54,14 @@ func BuildAbortCommand(id string) map[string]any {
 	return map[string]any{"id": id, "type": "abort"}
 }
 
+func BuildCompactCommand(id, customInstructions string) map[string]any {
+	cmd := map[string]any{"id": id, "type": "compact"}
+	if customInstructions != "" {
+		cmd["customInstructions"] = customInstructions
+	}
+	return cmd
+}
+
 func BuildSetThinkingLevelCommand(id, level string) map[string]any {
 	return map[string]any{"id": id, "type": "set_thinking_level", "level": level}
 }

@@ -24,5 +24,15 @@ describe('ContextUsage', () => {
     expect(document.getElementById('pi-popover-val-cache-write')?.textContent).toBe('0');
     expect(document.getElementById('pi-popover-val-output')?.textContent).toBe('0');
     expect(document.getElementById('pi-popover-val-total')?.textContent).toBe('0');
+    expect(document.getElementById('pi-context-compact')?.textContent).toContain('Compact context');
+  });
+
+  it('disables compact when chat is unavailable or the worker is running', () => {
+    const { unmount } = render(ContextUsage, { props: { popover: true, chatAvailable: false } });
+    expect(document.getElementById('pi-context-compact')).toBeDisabled();
+    unmount();
+
+    render(ContextUsage, { props: { popover: true, isRunning: true } });
+    expect(document.getElementById('pi-context-compact')).toBeDisabled();
   });
 });

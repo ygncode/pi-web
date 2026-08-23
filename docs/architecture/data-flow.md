@@ -143,6 +143,31 @@ Browser POST /api/chat?id=<id>
            └──▶ Return {"ok": true, "status": "accepted"}
 ```
 
+## Data Flow: Compact Current Session
+
+```
+Browser POST /api/compact?id=<id>
+           │
+           ▼
+    server.handleCompact
+           │
+           ├──▶ sessions.ResolveByID → Session + Path
+           ├──▶ workers.Manager.Compact(ctx, sessionID, sessionPath, instructions)
+           │         ├──▶ Reuse or create the session's ChatWorker
+           │         └──▶ worker.Compact
+           │               ├──▶ Reject while the worker is running
+           │               ├──▶ Write {"type":"compact"} JSONL to pi stdin
+           │               └──▶ Await the correlated RPC response
+           ├──▶ Broadcast "reload" to the session SSE clients
+           └──▶ Return {"ok": true, "status": "compacted"}
+```
+
+The context popover button sends an empty instruction string so Pi or an installed
+compaction extension can apply its defaults. An attachment-free composer message
+matching `/compact [instructions]` is intercepted and sent to this endpoint; it is
+never forwarded as a normal prompt. With pi-vcc installed, `keep:N` is supported by
+passing it as `customInstructions`.
+
 ## Data Flow: Rename Session
 
 ```

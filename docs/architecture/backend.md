@@ -255,6 +255,7 @@ type piRPCWorker struct {
 | `/api/sessions` | GET | `handleApiSessions` | JSON list of session summaries |
 | `/api/chat` | POST | `handleChat` | Send chat message (multipart) |
 | `/api/chat/cancel` | POST | `handleCancelChat` | Abort running chat worker |
+| `/api/compact` | POST | `handleCompact` | Compact the current session through its RPC worker |
 | `/api/set-model` | POST | `handleSetModel` | Change model for session |
 | `/api/set-thinking-level` | POST | `handleSetThinkingLevel` | Change thinking level |
 | `/api/models` | GET | `handleAvailableModels` | List available AI models |

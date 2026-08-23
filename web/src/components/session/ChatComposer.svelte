@@ -127,7 +127,7 @@
     <div id="pi-chat-attachments" class="pi-chat-attachments"></div>
     <ChatSelectorPopups />
     <ChatToolbar {chatAvailable} {toolbar} {modelLabel} />
-    <ContextUsage popover />
+    <ContextUsage popover {chatAvailable} isRunning={toolbar.isRunning} />
   </div>
   <TextAttachmentModal />
   <GitFooter {sessionId} />

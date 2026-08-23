@@ -9,6 +9,8 @@ import (
 	"pi-web/internal/chat"
 )
 
+var ErrWorkerBusy = errors.New("worker is busy")
+
 type State string
 
 const (
@@ -57,6 +59,7 @@ type inspector interface {
 
 type ChatWorker interface {
 	Prompt(ctx context.Context, chat chat.Request) error
+	Compact(ctx context.Context, customInstructions string) error
 	SetModel(ctx context.Context, provider, modelID string) error
 	SetThinkingLevel(ctx context.Context, level string) error
 	Abort(ctx context.Context) error
@@ -234,6 +237,14 @@ func (m *Manager) SetModel(ctx context.Context, sessionID, sessionPath, provider
 		return err
 	}
 	return worker.SetModel(ctx, provider, modelID)
+}
+
+func (m *Manager) Compact(ctx context.Context, sessionID, sessionPath, customInstructions string) error {
+	worker, err := m.workerFor(sessionID, sessionPath)
+	if err != nil {
+		return err
+	}
+	return worker.Compact(ctx, customInstructions)
 }
 
 func (m *Manager) SetThinkingLevel(ctx context.Context, sessionID, sessionPath, level string) error {

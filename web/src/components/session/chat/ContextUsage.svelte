@@ -1,8 +1,8 @@
 <script>
   import { t } from '../../../shared/i18n.js';
-  import { icon, X } from '../../../shared/icons.js';
+  import { icon, Minimize2, X } from '../../../shared/icons.js';
 
-  let { popover = false } = $props();
+  let { popover = false, chatAvailable = true, isRunning = false } = $props();
 </script>
 
 <!-- eslint-disable svelte/no-at-html-tags -- trusted: Lucide icon SVG and rendered session markdown -->
@@ -66,6 +66,16 @@
           <span class="pi-row-value" id="pi-popover-val-total">0</span>
         </div>
       </div>
+      <button
+        type="button"
+        id="pi-context-compact"
+        class="pi-context-compact"
+        title={t('composer.compactContextHint')}
+        disabled={!chatAvailable || isRunning}
+      >
+        {@html icon(Minimize2, { size: 13 })}
+        <span>{t('composer.compactContext')}</span>
+      </button>
     </div>
   </div>
 {/if}
