@@ -203,7 +203,9 @@ export function openBrowser(pi: ExtensionAPI, url: string): Promise<void> {
 async function healthCheck(host: string, port: string): Promise<boolean> {
   try {
     const res = await fetch(`http://${host}:${port}`, {
-      signal: AbortSignal.timeout(1000),
+      // 1s was tight enough that a busy machine reported a healthy server as
+      // down. A false negative here is expensive: it triggers service restarts.
+      signal: AbortSignal.timeout(4000),
     });
     // 401/403 means pi-web is running with auth enabled.
     return res.ok || res.status === 401 || res.status === 403;
@@ -218,7 +220,17 @@ function windowsLauncher(): string {
   return join(homedir(), ".config", "pi-web", "pi-web-start.vbs");
 }
 
-async function startPiWeb(pi: ExtensionAPI): Promise<void> {
+// startPiWeb must only ever *start* the service. It used to run
+// `launchctl kickstart -k`, which SIGTERMs a running instance (pi-web exits 0
+// on SIGTERM). This function is reached from the opportunistic load-time check
+// that every pi process runs, so one transient health-check failure killed a
+// healthy server, which then made every other concurrent check fail and kickstart
+// too -- a self-sustaining restart storm. Killing is left to /pi-web restart.
+async function startPiWeb(
+  pi: ExtensionAPI,
+  host = "127.0.0.1",
+  port = "31415",
+): Promise<void> {
   if (process.platform === "win32") {
     const launcher = windowsLauncher();
     if (!existsSync(launcher)) {
@@ -233,7 +245,11 @@ async function startPiWeb(pi: ExtensionAPI): Promise<void> {
   if (process.platform === "darwin") {
     await pi.exec("sh", [
       "-lc",
-      `plist="$HOME/Library/LaunchAgents/com.pi-web.plist"; if [ ! -f "$plist" ]; then exit 127; fi; launchctl bootstrap "gui/$(id -u)" "$plist" 2>/dev/null || launchctl load "$plist" 2>/dev/null || true; launchctl kickstart -k "gui/$(id -u)/com.pi-web" 2>/dev/null || launchctl start com.pi-web`,
+      `plist="$HOME/Library/LaunchAgents/com.pi-web.plist"; if [ ! -f "$plist" ]; then exit 127; fi; ` +
+        `launchctl bootstrap "gui/$(id -u)" "$plist" 2>/dev/null || launchctl load "$plist" 2>/dev/null || true; ` +
+        // Something already bound to the port is not "not running"; leave it alone.
+        `if nc -z '${host}' '${port}' 2>/dev/null; then exit 0; fi; ` +
+        `launchctl start com.pi-web 2>/dev/null || true`,
     ]);
     return;
   }
@@ -318,8 +334,13 @@ async function ensurePiWebRunning(
 ): Promise<boolean> {
   if (await healthCheck(host, port)) return true;
 
+  // Confirm before touching a service other processes may be using: concurrent
+  // pi starts amplify a single slow response into restarts of a healthy server.
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  if (await healthCheck(host, port)) return true;
+
   try {
-    await startPiWeb(pi);
+    await startPiWeb(pi, host, port);
   } catch {
     return false;
   }
@@ -825,7 +846,7 @@ export default function (pi: ExtensionAPI) {
           return;
         }
         try {
-          await startPiWeb(pi);
+          await startPiWeb(pi, host, port);
           let started = false;
           for (let i = 0; i < 10; i++) {
             await new Promise((resolve) => setTimeout(resolve, 300));
