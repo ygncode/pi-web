@@ -89,6 +89,84 @@ func TestFireScheduleCreatesSessionAndSends(t *testing.T) {
 	}
 }
 
+// A scheduled session has no messages yet, so pi cannot restore the model from
+// its history. The runner must apply the schedule's configured model and
+// thinking level to the worker explicitly.
+func TestFireScheduleAppliesConfiguredModel(t *testing.T) {
+	s, sender := newScheduleTestServer(t)
+
+	sc, err := s.schedules.Create(schedules.Schedule{
+		ID:            "sched-model",
+		Name:          "Model run",
+		Instructions:  "go",
+		ModelProvider: "opencode-go",
+		ModelID:       "deepseek-v4.1-flash",
+		ThinkingLevel: "high",
+		ProjectPath:   t.TempDir(),
+		Enabled:       true,
+	})
+	if err != nil {
+		t.Fatalf("create schedule: %v", err)
+	}
+
+	sessionID, err := s.fireSchedule(sc)
+	if err != nil {
+		t.Fatalf("fireSchedule: %v", err)
+	}
+
+	sender.mu.Lock()
+	provider, modelID := sender.setModelProvider, sender.setModelID
+	modelSession := sender.setModelSessionID
+	thinking, thinkingSession := sender.setThinkingLevel, sender.setThinkingSessionID
+	sender.mu.Unlock()
+
+	if provider != "opencode-go" || modelID != "deepseek-v4.1-flash" {
+		t.Errorf("SetModel = %s/%s, want opencode-go/deepseek-v4.1-flash", provider, modelID)
+	}
+	if modelSession != sessionID {
+		t.Errorf("SetModel session = %q, want %q", modelSession, sessionID)
+	}
+	if thinking != "high" {
+		t.Errorf("SetThinkingLevel = %q, want high", thinking)
+	}
+	if thinkingSession != sessionID {
+		t.Errorf("SetThinkingLevel session = %q, want %q", thinkingSession, sessionID)
+	}
+}
+
+// Without explicit settings the schedule must keep pi's defaults, so the runner
+// must not call SetModel/SetThinkingLevel.
+func TestFireScheduleKeepsDefaultsWhenUnset(t *testing.T) {
+	s, sender := newScheduleTestServer(t)
+
+	sc, err := s.schedules.Create(schedules.Schedule{
+		ID:           "sched-default",
+		Name:         "Default run",
+		Instructions: "go",
+		ProjectPath:  t.TempDir(),
+		Enabled:      true,
+	})
+	if err != nil {
+		t.Fatalf("create schedule: %v", err)
+	}
+
+	if _, err := s.fireSchedule(sc); err != nil {
+		t.Fatalf("fireSchedule: %v", err)
+	}
+
+	sender.mu.Lock()
+	provider, modelID := sender.setModelProvider, sender.setModelID
+	thinking := sender.setThinkingLevel
+	sender.mu.Unlock()
+
+	if provider != "" || modelID != "" {
+		t.Errorf("SetModel called with %s/%s, want no call", provider, modelID)
+	}
+	if thinking != "" {
+		t.Errorf("SetThinkingLevel called with %q, want no call", thinking)
+	}
+}
+
 func TestEvaluateSchedulesSkipsMissedRuns(t *testing.T) {
 	s, sender := newScheduleTestServer(t)
 	// A daily 09:00 schedule; "now" is 08:00. First evaluation must only arm the

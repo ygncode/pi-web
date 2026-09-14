@@ -172,6 +172,24 @@ func (s *Server) fireScheduleContext(ctx context.Context, sc schedules.Schedule)
 		_ = s.schedules.FailRun(runID, err.Error())
 		return sessionID, fmt.Errorf("ensure worker: %w", err)
 	}
+	// pi restores a session's model and thinking level from its history only
+	// once the session has at least one message. A freshly created schedule
+	// session has none, so the implicit settings written by
+	// CreateSessionFileWithSettings are ignored and pi would run with its global
+	// default model. Apply the schedule's explicit settings to the worker here
+	// so the run uses the model the user configured.
+	if sc.ModelProvider != "" && sc.ModelID != "" {
+		if err := s.chatSender.SetModel(ctx, sessionID, resolved.Path, sc.ModelProvider, sc.ModelID); err != nil {
+			_ = s.schedules.FailRun(runID, err.Error())
+			return sessionID, fmt.Errorf("set model: %w", err)
+		}
+	}
+	if sc.ThinkingLevel != "" {
+		if err := s.chatSender.SetThinkingLevel(ctx, sessionID, resolved.Path, sc.ThinkingLevel); err != nil {
+			_ = s.schedules.FailRun(runID, err.Error())
+			return sessionID, fmt.Errorf("set thinking level: %w", err)
+		}
+	}
 	if err := s.chatSender.Send(ctx, sessionID, resolved.Path, chat.Request{Message: sc.Instructions}); err != nil {
 		_ = s.schedules.FailRun(runID, err.Error())
 		return sessionID, fmt.Errorf("send: %w", err)
