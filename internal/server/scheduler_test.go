@@ -89,9 +89,6 @@ func TestFireScheduleCreatesSessionAndSends(t *testing.T) {
 	}
 }
 
-// A scheduled session has no messages yet, so pi cannot restore the model from
-// its history. The runner must apply the schedule's configured model and
-// thinking level to the worker explicitly.
 func TestFireScheduleAppliesConfiguredModel(t *testing.T) {
 	s, sender := newScheduleTestServer(t)
 
@@ -134,8 +131,6 @@ func TestFireScheduleAppliesConfiguredModel(t *testing.T) {
 	}
 }
 
-// Without explicit settings the schedule must keep pi's defaults, so the runner
-// must not call SetModel/SetThinkingLevel.
 func TestFireScheduleKeepsDefaultsWhenUnset(t *testing.T) {
 	s, sender := newScheduleTestServer(t)
 

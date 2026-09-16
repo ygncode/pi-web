@@ -172,12 +172,7 @@ func (s *Server) fireScheduleContext(ctx context.Context, sc schedules.Schedule)
 		_ = s.schedules.FailRun(runID, err.Error())
 		return sessionID, fmt.Errorf("ensure worker: %w", err)
 	}
-	// pi restores a session's model and thinking level from its history only
-	// once the session has at least one message. A freshly created schedule
-	// session has none, so the implicit settings written by
-	// CreateSessionFileWithSettings are ignored and pi would run with its global
-	// default model. Apply the schedule's explicit settings to the worker here
-	// so the run uses the model the user configured.
+	// Empty sessions skip history restore, so implicit file entries are ignored.
 	if sc.ModelProvider != "" && sc.ModelID != "" {
 		if err := s.chatSender.SetModel(ctx, sessionID, resolved.Path, sc.ModelProvider, sc.ModelID); err != nil {
 			_ = s.schedules.FailRun(runID, err.Error())

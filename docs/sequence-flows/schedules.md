@@ -56,13 +56,15 @@ the chat workers and SSE broadcast.
      │── RecordRun(running) ────────────▶│                 │               │
      │── SetLastRun ────────────────────▶│                 │               │
      │── CreateSessionFileWithSettings ───────────────────▶│               │
-     │   (project dir or home; model/thinking as implicit entries)        │
+     │   (project dir or home; implicit model/thinking     │               │
+     │    entries are not restored on an empty session)    │               │
      │◀── filename ──────────────────────────────────────│               │
      │── ResolveByID ────────────────────────────────────▶│               │
      │◀── session UUID + path ───────────│                 │               │
      │── AttachSession(runID, uuid) ────▶│                 │               │
      │                │                  │                 │               │
      │── EnsureWorker(uuid, path) ───────────────────────▶│               │
+     │── SetModel / SetThinkingLevel (when configured) ──▶│               │
      │── Send(uuid, path, {instructions}) ───────────────▶│─── pi runs ──▶│
      │                │                  │                 │               │
      │  (file watcher sees the new .jsonl → broadcasts `new-session`)     │
