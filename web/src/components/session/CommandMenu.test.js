@@ -61,6 +61,19 @@ describe('CommandMenu', () => {
     expect(sessionTitle.name).toBe('Old');
   });
 
+  it('includes a schedules link in the actions menu', async () => {
+    const pushState = vi.spyOn(window.history, 'pushState');
+    render(CommandMenu, { props: { sessionId: 's' } });
+    await tick();
+
+    const links = [...document.querySelectorAll('a[href="/schedules"]')];
+    expect(links.length).toBeGreaterThan(0);
+    expect(links[0].textContent).toContain('Schedules');
+
+    await fireEvent.click(links[0]);
+    expect(pushState).toHaveBeenCalledWith({}, '', '/schedules');
+  });
+
   it('opens model usage via the modal store + the session-list palette runtime', async () => {
     const openPalette = vi.fn();
     render(CommandMenu, { props: { sessionId: 's' } });

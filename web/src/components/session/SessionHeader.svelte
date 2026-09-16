@@ -1,6 +1,13 @@
 <script>
   import { onMount } from 'svelte';
-  import { icon, PanelLeft, Plus, SquarePen, MoreHorizontal } from '../../shared/icons.js';
+  import {
+    icon,
+    CalendarClock,
+    PanelLeft,
+    Plus,
+    SquarePen,
+    MoreHorizontal,
+  } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
   import { navigate, handleNavClick } from '../../shared/navigation.js';
   import { showToast } from '../../shared/toast.js';
@@ -109,6 +116,17 @@
   </div>
   <span class="session-header-title" id="session-header-title">{sessionTitle.name || title}</span>
   <div class="session-header-right">
+    <a
+      href="/schedules"
+      class="session-header-schedules"
+      data-schedules-btn
+      title={t('schedules.navTitle')}
+      aria-label={t('schedules.navTitle')}
+      onclick={(event) => handleNavClick(event, '/schedules')}
+      ><span class="session-header-schedules-icon" aria-hidden="true"
+        >{@html icon(CalendarClock, { size: 14 })}</span
+      ><span class="session-header-schedules-label">{t('schedules.navTitle')}</span></a
+    >
     <button
       id="new-session-header-btn"
       class="session-header-new"

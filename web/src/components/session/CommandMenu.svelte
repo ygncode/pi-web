@@ -19,12 +19,13 @@
     ChartColumn,
     BookOpen,
     Send,
+    CalendarClock,
     Settings,
     Tag,
   } from '../../shared/icons.js';
   import * as sidebarApi from '../../session/ui/sidebar.js';
   import { openVersionModal } from '../../shared/version.js';
-  import { navigate } from '../../shared/navigation.js';
+  import { navigate, handleNavClick } from '../../shared/navigation.js';
   import { openSessionPalette } from '../../shared/command-palette-runtime.js';
   import { openModelUsage, openFork, openDiff } from '../../session/session-modals.svelte.js';
   import { showToast } from '../../shared/toast.js';
@@ -68,6 +69,7 @@
       icon: Send,
       label: 'common.telegram',
     },
+    { kind: 'link', href: '/schedules', icon: CalendarClock, label: 'schedules.navTitle' },
     { kind: 'link', href: '/settings', icon: Settings, label: 'common.settings', kbd: '⌘,' },
     { kind: 'version', action: 'version', icon: Tag, label: 'common.version', desktopOnly: true },
   ];
@@ -283,6 +285,10 @@
             role="menuitem"
             target={item.external ? '_blank' : undefined}
             rel={item.external ? 'noreferrer' : undefined}
+            onclick={(event) => {
+              if (item.external) return;
+              handleNavClick(event, item.href);
+            }}
             >{@render label(item)}{#if desktop && item.kbd}<kbd>{item.kbd}</kbd>{/if}</a
           >
         {:else if item.kind === 'version'}

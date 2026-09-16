@@ -46,6 +46,19 @@ test.describe("schedules (stubbed pi)", () => {
     expect(maxWidth).toBe("880px");
   });
 
+  test("session header button opens the schedules page", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("[data-sessions-content].index-layout-ready").waitFor();
+    await page
+      .locator(".session-card", { hasText: "add deepseek-v4-pro" })
+      .click();
+    await expect(page).toHaveURL(/\/session\?id=/);
+
+    await page.locator(".session-header-bar [data-schedules-btn]").click();
+    await expect(page).toHaveURL(/\/schedules$/);
+    await expect(page.locator(".schedules-page")).toBeVisible();
+  });
+
   test("create, run now, view run log, and delete a schedule", async ({
     page,
   }, testInfo) => {

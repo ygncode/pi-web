@@ -30,6 +30,7 @@ Browser routes served by the SPA shell:
 
 - `/` → `web/src/routes/SessionsPage.svelte`
 - `/session?id=…` → `web/src/routes/SessionPage.svelte`
+- `/schedules` → `web/src/routes/SchedulesPage.svelte`
 - `/settings` → `web/src/routes/SettingsPage.svelte`
 - `/login` → `web/src/routes/LoginPage.svelte`
 
