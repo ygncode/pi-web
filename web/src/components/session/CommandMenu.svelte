@@ -79,6 +79,11 @@
   const clickHidden = (id) => document.getElementById(id)?.click();
   const isMobile = () => sidebarApi.isMobileLayout();
 
+  // Filled in onMount. Footer links call this before SPA navigation so the
+  // popover does not linger if the session page ever stops unmounting
+  // (HomeMenu closes the same way).
+  let closeMenu = () => {};
+
   onMount(() => {
     const menuBtn = document.getElementById('command-menu-btn');
     const desktopPopover = document.getElementById('command-menu-popover');
@@ -127,12 +132,13 @@
       if (isMobile()) openMobilePanel();
       else openDesktopPopover();
     };
-    const closeMenu = () => {
+    const hideMenu = () => {
       open = false;
       menuBtn.setAttribute('aria-expanded', 'false');
       closeMobilePanel();
       closeDesktopPopover();
     };
+    closeMenu = hideMenu;
 
     function handleAction(action) {
       switch (action) {
@@ -246,14 +252,15 @@
     const containers = [mobilePanel, desktopPopover].filter(Boolean);
 
     menuBtn.addEventListener('click', onMenuBtnClick);
-    mobileBackdrop?.addEventListener('click', closeMenu);
+    mobileBackdrop?.addEventListener('click', hideMenu);
     document.addEventListener('click', onDocClick);
     document.addEventListener('keydown', onKey);
     containers.forEach((c) => c.addEventListener('click', onContainerClick));
 
     return () => {
+      closeMenu = () => {};
       menuBtn.removeEventListener('click', onMenuBtnClick);
-      mobileBackdrop?.removeEventListener('click', closeMenu);
+      mobileBackdrop?.removeEventListener('click', hideMenu);
       document.removeEventListener('click', onDocClick);
       document.removeEventListener('keydown', onKey);
       containers.forEach((c) => c.removeEventListener('click', onContainerClick));
@@ -287,6 +294,7 @@
             rel={item.external ? 'noreferrer' : undefined}
             onclick={(event) => {
               if (item.external) return;
+              closeMenu();
               handleNavClick(event, item.href);
             }}
             >{@render label(item)}{#if desktop && item.kbd}<kbd>{item.kbd}</kbd>{/if}</a
