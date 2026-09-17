@@ -13,6 +13,7 @@
     sessionId = '',
     runningSessionIds = null,
     runningSessionProjects = null,
+    projectsRevision = 0,
   } = $props();
 
   const SIDEBAR_TAB_KEY = 'pi-web:v1:left-sidebar-tab';
@@ -108,12 +109,16 @@
     hidden={activeTab !== 'projects'}
   >
     {#if projectsMounted}
-      <SessionSidebarProjects
-        {cwd}
-        currentSessionId={sessionId}
-        {runningSessionIds}
-        {runningSessionProjects}
-      />
+      <!-- Remounted whenever the manage-projects sheet changes the registry, so
+           the list reflects the new enabled set. -->
+      {#key projectsRevision}
+        <SessionSidebarProjects
+          {cwd}
+          currentSessionId={sessionId}
+          {runningSessionIds}
+          {runningSessionProjects}
+        />
+      {/key}
     {/if}
   </div>
 

@@ -18,6 +18,9 @@
   import LoadEarlier from './LoadEarlier.svelte';
   import SessionTree from './SessionTree.svelte';
   import ShareDialog from './ShareDialog.svelte';
+  import ProjectsModal from '../index/ProjectsModal.svelte';
+  import { defaultFetchProjects, defaultUpdateProject } from '../../index/sessions.js';
+  import { t } from '../../shared/i18n.js';
   import {
     sessionModals,
     hasDiffUrlParam,
@@ -43,6 +46,60 @@
     modelLabel = '',
     dataEl = $bindable(null),
   } = $props();
+
+  // Manage-projects sheet, opened from the header. Enabling/disabling a project
+  // changes what the sidebar's PROJECTS tab lists, so every successful update
+  // bumps projectsRevision, which remounts <SessionSidebarProjects>.
+  let projects = $state([]);
+  let projectsFilterEnabled = $state(false);
+  let projectsBusy = $state(false);
+  let projectsError = $state('');
+  let projectsRevision = $state(0);
+
+  async function refreshProjectsList() {
+    projectsError = '';
+    projectsBusy = true;
+    try {
+      const response = await defaultFetchProjects();
+      projects = Array.isArray(response.projects) ? response.projects : [];
+      projectsFilterEnabled = !!response.filterEnabled;
+    } catch (error) {
+      projectsError = error.message || t('index.failedLoadProjects');
+    } finally {
+      projectsBusy = false;
+    }
+  }
+
+  async function updateProject(path, action) {
+    projectsBusy = true;
+    projectsError = '';
+    try {
+      await defaultUpdateProject(path, action);
+      projectsRevision += 1;
+      await refreshProjectsList();
+    } catch (error) {
+      projectsError = error.message || t('index.failedUpdateProject');
+    } finally {
+      projectsBusy = false;
+    }
+  }
+
+  $effect(() => {
+    if (!sessionModals.projects) return;
+    document.body.classList.add('modal-sheet-open');
+    refreshProjectsList();
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      sessionModals.projects = false;
+    };
+    window.addEventListener('keydown', onKey, { capture: true });
+    return () => {
+      document.body.classList.remove('modal-sheet-open');
+      window.removeEventListener('keydown', onKey, { capture: true });
+    };
+  });
 
   const runtime = getSessionRuntime();
   const runningSessionIds = new SvelteSet();
@@ -154,7 +211,7 @@
 
 <div id="sidebar-overlay"></div>
 <div id="app">
-  <SessionTree {cwd} {sessionId} {runningSessionIds} {runningSessionProjects} />
+  <SessionTree {cwd} {sessionId} {runningSessionIds} {runningSessionProjects} {projectsRevision} />
   <div id="content-container" class="content-container">
     <main id="content">
       <div id="header-container"><SessionInfoHeader model={sessionModel} /></div>
@@ -188,6 +245,20 @@
   onSave={sessionModals.label.onSave}
 />
 <DiffModal bind:open={sessionModals.diff.open} sessionId={sessionModals.diff.sessionId} />
+
+<ProjectsModal
+  open={sessionModals.projects}
+  {projects}
+  filterEnabled={projectsFilterEnabled}
+  error={projectsError}
+  busy={projectsBusy}
+  onClose={() => (sessionModals.projects = false)}
+  onToggleProject={(path, enabled) => updateProject(path, enabled ? 'enable' : 'disable')}
+  onToggleAll={(enabled) => updateProject('', enabled ? 'enable-all' : 'disable-all')}
+  onToggleFilter={(enabled) => updateProject('', enabled ? 'enable-filter' : 'disable-filter')}
+  onRegister={(path) => updateProject(path, 'register')}
+  onRemove={(path) => updateProject(path, 'remove')}
+/>
 
 <ShareDialog {sessionId} />
 <CatGatekeeper />

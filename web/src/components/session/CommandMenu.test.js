@@ -75,7 +75,7 @@ describe('CommandMenu', () => {
     expect(link.textContent).toContain('Schedules');
 
     await fireEvent.click(link);
-    expect(pushState).toHaveBeenCalledWith({}, '', '/schedules');
+    expect(pushState).toHaveBeenCalledWith({ back: '/' }, '', '/schedules');
     expect(menuBtn.getAttribute('aria-expanded')).toBe('false');
   });
 

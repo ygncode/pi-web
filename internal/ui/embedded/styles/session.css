@@ -2609,7 +2609,8 @@
     }
 
     .session-header-new,
-    .session-header-schedules {
+    .session-header-schedules,
+    .session-header-projects {
       height: 24px;
       padding: 0 9px 0 7px;
       font-size: 11px;
@@ -2641,7 +2642,8 @@
       opacity: 0.85;
     }
 
-    .session-header-schedules {
+    .session-header-schedules,
+    .session-header-projects {
       background: color-mix(in srgb, var(--surface) 54%, transparent);
       color: var(--muted);
       border: 1px solid color-mix(in srgb, var(--dim) 76%, transparent);
@@ -2649,14 +2651,22 @@
       transition: color 0.12s, background 0.12s, border-color 0.12s;
     }
 
-    .session-header-schedules-icon {
+    /* Sits in the left group, which already supplies its own gap. */
+    .session-header-projects {
+      margin-right: 0;
+    }
+
+    .session-header-schedules-icon,
+    .session-header-projects-icon {
       display: inline-flex;
       align-items: center;
       color: var(--accent);
     }
 
     .session-header-schedules:hover,
-    .session-header-schedules:active {
+    .session-header-schedules:active,
+    .session-header-projects:hover,
+    .session-header-projects:active {
       color: var(--text);
       background: var(--pi-menu-bg);
       border-color: var(--pi-menu-border);
@@ -2690,7 +2700,8 @@
 
     @media (max-width: 900px) {
       .session-header-new,
-      .session-header-schedules {
+      .session-header-schedules,
+      .session-header-projects {
         padding: 0;
         width: 28px;
         height: 28px;
@@ -2699,7 +2710,8 @@
       }
 
       .session-header-new-label,
-      .session-header-schedules-label {
+      .session-header-schedules-label,
+      .session-header-projects-label {
         display: none;
       }
 

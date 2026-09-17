@@ -327,6 +327,14 @@
   function freqLabel(schedule) {
     return describeFrequency(schedule, t);
   }
+
+  // /schedules is reachable from the index and from a session view, so the back
+  // button follows the origin recorded in history state (see backState) and
+  // falls back to the index for direct deep links.
+  const backHref =
+    typeof window !== 'undefined' && typeof window.history.state?.back === 'string'
+      ? window.history.state.back
+      : '/';
 </script>
 
 <!-- eslint-disable svelte/no-at-html-tags -- trusted: Lucide icon SVG from icons.js -->
@@ -334,12 +342,12 @@
 <div class="session-header-bar">
   <div class="session-header-left">
     <a
-      href="/"
+      href={backHref}
       class="session-header-back"
       onclick={(e) => {
         e.preventDefault();
-        navigate('/');
-      }}><span>←</span> {t('session.back')}</a
+        navigate(backHref);
+      }}><span>←</span> {backHref === '/' ? t('session.back') : t('common.back')}</a
     >
   </div>
   <span class="session-header-title">{t('schedules.title')}</span>

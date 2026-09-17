@@ -36,9 +36,11 @@ Browser routes served by the SPA shell:
 
 API, SSE, PWA, sound, and static asset routes remain server-handled and are not intercepted by the SPA fallback.
 
+`/schedules` is reachable from the index and from a session view, so its entry points push `{ back: <origin url> }` as history state (`backState()` in `web/src/shared/navigation.js`) and the Schedules back button returns there; a direct deep link has no state and falls back to `/`.
+
 ## Sessions Index (`/`)
 
-`SessionsPage.svelte` owns the page shell and orchestrates Svelte components for the sessions list, session cards, command palette, home menu, new-session modal, and project management modal. `web/src/index/` now contains pure data/API helpers (`sessions.js`) for normalization, grouping, filtering, and API calls.
+`SessionsPage.svelte` owns the page shell and orchestrates Svelte components for the sessions list, session cards, command palette, home menu, new-session modal, and project management modal. The same `ProjectsModal` is also mounted by the session viewer, opened from the Manage Projects control in its header. `web/src/index/` now contains pure data/API helpers (`sessions.js`) for normalization, grouping, filtering, and API calls.
 
 Data comes from existing APIs such as `/api/sessions`, `/api/new-session`, `/api/projects`, `/api/recent-locations`, and `/events?id=__all__`. Running-session status is pushed through the shared SSE helpers and reflected reactively in the cards/counts.
 

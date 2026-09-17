@@ -57,6 +57,10 @@ test.describe("schedules (stubbed pi)", () => {
     await page.locator(".session-header-bar [data-schedules-btn]").click();
     await expect(page).toHaveURL(/\/schedules$/);
     await expect(page.locator(".schedules-page")).toBeVisible();
+
+    // Back returns to the session it was opened from, not the index.
+    await page.locator(".session-header-back").click();
+    await expect(page).toHaveURL(/\/session\?id=/);
   });
 
   test("create, run now, view run log, and delete a schedule", async ({

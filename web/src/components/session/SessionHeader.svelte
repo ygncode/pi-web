@@ -3,13 +3,15 @@
   import {
     icon,
     CalendarClock,
+    FolderGit2,
     PanelLeft,
     Plus,
     SquarePen,
     MoreHorizontal,
   } from '../../shared/icons.js';
   import { t } from '../../shared/i18n.js';
-  import { navigate, handleNavClick } from '../../shared/navigation.js';
+  import { navigate, handleNavClick, backState } from '../../shared/navigation.js';
+  import { openProjects } from '../../session/session-modals.svelte.js';
   import { showToast } from '../../shared/toast.js';
   import { copyToClipboard } from '../../shared/clipboard.js';
   import { sessionTitle, setSessionTitle } from '../../session/session-title.svelte.js';
@@ -113,6 +115,17 @@
       aria-label={t('session.toggleTree')}
       aria-pressed="true">{@html icon(PanelLeft, { size: 14 })}</button
     >
+    <button
+      type="button"
+      class="session-header-projects"
+      data-manage-projects-btn
+      title={t('index.manageProjectsTitle')}
+      aria-label={t('index.manageProjectsTitle')}
+      onclick={openProjects}
+      ><span class="session-header-projects-icon" aria-hidden="true"
+        >{@html icon(FolderGit2, { size: 14 })}</span
+      ><span class="session-header-projects-label">{t('index.manageProjects')}</span></button
+    >
   </div>
   <span class="session-header-title" id="session-header-title">{sessionTitle.name || title}</span>
   <div class="session-header-right">
@@ -122,7 +135,7 @@
       data-schedules-btn
       title={t('schedules.navTitle')}
       aria-label={t('schedules.navTitle')}
-      onclick={(event) => handleNavClick(event, '/schedules')}
+      onclick={(event) => handleNavClick(event, '/schedules', { state: backState() })}
       ><span class="session-header-schedules-icon" aria-hidden="true"
         >{@html icon(CalendarClock, { size: 14 })}</span
       ><span class="session-header-schedules-label">{t('schedules.navTitle')}</span></a

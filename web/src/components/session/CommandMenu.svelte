@@ -25,7 +25,7 @@
   } from '../../shared/icons.js';
   import * as sidebarApi from '../../session/ui/sidebar.js';
   import { openVersionModal } from '../../shared/version.js';
-  import { navigate, handleNavClick } from '../../shared/navigation.js';
+  import { navigate, handleNavClick, backState } from '../../shared/navigation.js';
   import { openSessionPalette } from '../../shared/command-palette-runtime.js';
   import { openModelUsage, openFork, openDiff } from '../../session/session-modals.svelte.js';
   import { showToast } from '../../shared/toast.js';
@@ -295,7 +295,11 @@
             onclick={(event) => {
               if (item.external) return;
               closeMenu();
-              handleNavClick(event, item.href);
+              handleNavClick(
+                event,
+                item.href,
+                item.href === '/schedules' ? { state: backState() } : {},
+              );
             }}
             >{@render label(item)}{#if desktop && item.kbd}<kbd>{item.kbd}</kbd>{/if}</a
           >

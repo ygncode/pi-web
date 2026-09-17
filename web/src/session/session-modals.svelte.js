@@ -14,6 +14,7 @@ export const sessionModals = $state({
   catSettings: { open: false, controller: null, onChange: () => {} },
   label: { open: false, entryId: '', currentLabel: '', onSave: null },
   diff: { open: false, sessionId: '' },
+  projects: false,
 });
 
 export function openShortcuts() {
@@ -22,6 +23,10 @@ export function openShortcuts() {
 
 export function openModelUsage() {
   sessionModals.modelUsage = true;
+}
+
+export function openProjects() {
+  sessionModals.projects = true;
 }
 
 // Returns false (and does not open) when there are no user messages to fork
@@ -96,4 +101,5 @@ export function resetSessionModals() {
   sessionModals.label.onSave = null;
   sessionModals.diff.open = false;
   sessionModals.diff.sessionId = '';
+  sessionModals.projects = false;
 }

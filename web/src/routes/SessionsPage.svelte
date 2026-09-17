@@ -18,7 +18,7 @@
     hydrateSettings,
     writeSetting,
   } from '../shared/settings-store.js';
-  import { navigate } from '../shared/navigation.js';
+  import { navigate, backState } from '../shared/navigation.js';
   import { t } from '../shared/i18n.js';
   import { SvelteSet, SvelteMap } from 'svelte/reactivity';
   import {
@@ -313,7 +313,7 @@
   onSearch={openPalette}
   onToggleMenu={toggleMenu}
   onLayoutChange={setLayout}
-  onSchedules={() => navigate('/schedules')}
+  onSchedules={() => navigate('/schedules', { state: backState() })}
 />
 
 <HomeMenu
