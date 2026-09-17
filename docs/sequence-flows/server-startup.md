@@ -202,4 +202,6 @@ httpServer := &http.Server{
 httpServer.ListenAndServe()
 ```
 
-Blocks until interrupted. On `SIGINT`/`SIGTERM` the server performs a graceful shutdown (5s timeout) and calls `srv.Shutdown()` to stop background goroutines.
+Blocks until interrupted. On `SIGINT`/`SIGTERM` the server logs `shutting down: received <signal>`, performs a graceful shutdown (5s timeout), and calls `srv.Shutdown()` to stop background goroutines.
+
+It then exits `128+signum` (`130` for `SIGINT`, `143` for `SIGTERM`) rather than `0`, so a supervisor can tell a kill from a voluntary quit — exiting `0` on `SIGTERM` is what made the restart storm in #112 read as a clean exit in launchd's `last exit code`. `init/pi-web.service` sets `SuccessExitStatus=130 143` so systemd still treats those as a clean stop.

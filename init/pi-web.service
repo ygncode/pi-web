@@ -9,6 +9,9 @@ Type=simple
 ExecStart=/usr/local/bin/pi-web
 Restart=on-failure
 RestartSec=5
+# pi-web exits 128+signum on SIGTERM/SIGINT so a kill is distinguishable from a
+# voluntary quit; systemd should still treat those as a clean stop.
+SuccessExitStatus=130 143
 
 # Pass PI_WEB_TOKEN from the environment if set
 EnvironmentFile=-%h/.config/pi-web/env

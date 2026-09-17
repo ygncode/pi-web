@@ -171,12 +171,15 @@ func Main(version string) {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
 	}
-	defer func() {
+	// Shared with the signal path below, which exits via os.Exit and so does not
+	// run deferred functions.
+	releaseStateFile := func() {
 		// Unlink while this process still owns the lock so an exiting instance
 		// cannot remove a successor's newly written state file.
 		_ = os.Remove(stateFilePath)
 		_ = stateFile.Close()
-	}()
+	}
+	defer releaseStateFile()
 
 	if *open {
 		go func() {
@@ -195,18 +198,35 @@ func Main(version string) {
 		// WriteTimeout intentionally 0 — SSE streams are long-lived.
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	// signal.NotifyContext would hide which signal arrived, and returning
+	// normally afterwards made a SIGTERM kill indistinguishable from a clean
+	// quit in launchd's "last exit code = 0" (#119). Name the signal and exit
+	// 128+signum so a supervisor can tell the two apart.
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(signals)
+
+	ctx, cancelCtx := context.WithCancel(context.Background())
+	defer cancelCtx()
 
 	go versionChecker.Start(ctx)
 
+	shutdownCode := make(chan int, 1)
 	go func() {
-		<-ctx.Done()
+		sig := <-signals
+		fmt.Fprintf(os.Stderr, "shutting down: received %s\n", sig)
+		cancelCtx()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		_ = httpServer.Shutdown(shutdownCtx)
 		srv.Shutdown()
 		_ = manager.Close()
+		releaseStateFile()
+		code := 0
+		if num, ok := sig.(syscall.Signal); ok {
+			code = 128 + int(num)
+		}
+		shutdownCode <- code
 	}()
 
 	serveErr := httpServer.ListenAndServe()
@@ -214,4 +234,7 @@ func Main(version string) {
 		fmt.Fprintf(os.Stderr, "server error: %v\n", serveErr)
 		os.Exit(1)
 	}
+	// ErrServerClosed only reaches here via the signal handler above, which is
+	// the sole Shutdown caller; wait so cleanup is not cut short by exiting.
+	os.Exit(<-shutdownCode)
 }
