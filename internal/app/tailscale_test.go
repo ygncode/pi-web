@@ -68,6 +68,10 @@ exit 2
 	}
 }
 
+// The serve status fixture here is the real ipn.ServeConfig shape: the port is
+// a bare key only under TCP (which holds no proxy), while our proxy lives under
+// Web["<magicdns-name>:<port>"]. Matching the port as a JSON key reported this
+// as a conflict on every start (#118).
 func TestConfigureTailscaleServeDoesNothingWhenSameRuleExists(t *testing.T) {
 	dir := t.TempDir()
 	logPath := filepath.Join(dir, "tailscale-args.log")
@@ -77,7 +81,7 @@ if [ "$1" = "status" ] && [ "$2" = "--json" ]; then
   exit 0
 fi
 if [ "$1" = "serve" ] && [ "$2" = "status" ] && [ "$3" = "--json" ]; then
-  printf '%s\n' '{"HTTPS":{"31415":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:31415"}}}}}'
+  printf '%s\n' '{"TCP":{"31415":{"HTTPS":true}},"Web":{"macbook.tailnet.ts.net:31415":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:31415"}}}}}'
   exit 0
 fi
 if [ "$1" = "serve" ]; then
@@ -111,7 +115,7 @@ if [ "$1" = "status" ] && [ "$2" = "--json" ]; then
   exit 0
 fi
 if [ "$1" = "serve" ] && [ "$2" = "status" ] && [ "$3" = "--json" ]; then
-  printf '%s\n' '{"HTTPS":{"31415":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:9000"}}}}}'
+  printf '%s\n' '{"TCP":{"31415":{"HTTPS":true}},"Web":{"macbook.tailnet.ts.net:31415":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:9000"}}}}}'
   exit 0
 fi
 if [ "$1" = "serve" ]; then
@@ -130,6 +134,73 @@ exit 2
 	}
 	if _, err := os.Stat(logPath); !os.IsNotExist(err) {
 		t.Fatalf("tailscale serve was run despite conflicting existing rule")
+	}
+}
+
+func TestConfigureTailscaleServeDoesNotOverwriteRawTCPForward(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "tailscale-args.log")
+	writeFakeTailscale(t, dir, `#!/bin/sh
+if [ "$1" = "status" ] && [ "$2" = "--json" ]; then
+  printf '%s\n' '{"BackendState":"Running","Self":{"DNSName":"macbook.tailnet.ts.net."}}'
+  exit 0
+fi
+if [ "$1" = "serve" ] && [ "$2" = "status" ] && [ "$3" = "--json" ]; then
+  printf '%s\n' '{"TCP":{"31415":{"TCPForward":"127.0.0.1:9000"}}}'
+  exit 0
+fi
+if [ "$1" = "serve" ]; then
+  printf '%s\n' "$*" > "`+logPath+`"
+  exit 0
+fi
+exit 2
+`)
+
+	_, ok, err := configureTailscaleServe(context.Background(), "31415")
+	if err == nil || !strings.Contains(err.Error(), "already configured") {
+		t.Fatalf("configureTailscaleServe error = %v, want conflict", err)
+	}
+	if ok {
+		t.Fatalf("ok = true, want false")
+	}
+	if _, err := os.Stat(logPath); !os.IsNotExist(err) {
+		t.Fatalf("tailscale serve was run despite an existing TCP forward")
+	}
+}
+
+func TestConfigureTailscaleServeIgnoresRulesOnOtherPorts(t *testing.T) {
+	dir := t.TempDir()
+	logPath := filepath.Join(dir, "tailscale-args.log")
+	writeFakeTailscale(t, dir, `#!/bin/sh
+if [ "$1" = "status" ] && [ "$2" = "--json" ]; then
+  printf '%s\n' '{"BackendState":"Running","Self":{"DNSName":"macbook.tailnet.ts.net."}}'
+  exit 0
+fi
+if [ "$1" = "serve" ] && [ "$2" = "status" ] && [ "$3" = "--json" ]; then
+  printf '%s\n' '{"TCP":{"443":{"HTTPS":true}},"Web":{"macbook.tailnet.ts.net:443":{"Handlers":{"/":{"Proxy":"http://127.0.0.1:8080"}}}}}'
+  exit 0
+fi
+if [ "$1" = "serve" ]; then
+  printf '%s\n' "$*" > "`+logPath+`"
+  exit 0
+fi
+exit 2
+`)
+
+	_, ok, err := configureTailscaleServe(context.Background(), "31415")
+	if err != nil {
+		t.Fatalf("configureTailscaleServe returned error: %v", err)
+	}
+	if !ok {
+		t.Fatalf("ok = false, want true")
+	}
+	logged, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("read fake tailscale log: %v", err)
+	}
+	want := "serve --bg --https=31415 http://127.0.0.1:31415"
+	if got := strings.TrimSpace(string(logged)); got != want {
+		t.Fatalf("tailscale serve args = %q, want %q", got, want)
 	}
 }
 

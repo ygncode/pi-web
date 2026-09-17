@@ -117,6 +117,23 @@ func configureTailscaleServe(ctx context.Context, port string) (string, bool, er
 	return url, true, nil
 }
 
+// tailscaleServeConfig is the subset of `tailscale serve status --json`
+// (ipn.ServeConfig) that decides whether our rule is already in place. The
+// port appears as a bare key only under TCP, which holds no proxy target; the
+// proxy lives under Web, keyed "<magicdns-name>:<port>".
+type tailscaleServeConfig struct {
+	TCP map[string]struct {
+		HTTPS      bool   `json:"HTTPS"`
+		HTTP       bool   `json:"HTTP"`
+		TCPForward string `json:"TCPForward"`
+	} `json:"TCP"`
+	Web map[string]struct {
+		Handlers map[string]struct {
+			Proxy string `json:"Proxy"`
+		} `json:"Handlers"`
+	} `json:"Web"`
+}
+
 func tailscaleServeRuleState(ctx context.Context, bin, port, target string) (serveRuleState, error) {
 	cmdCtx, cancel := context.WithTimeout(ctx, tailscaleCommandTimeout)
 	defer cancel()
@@ -124,61 +141,30 @@ func tailscaleServeRuleState(ctx context.Context, bin, port, target string) (ser
 	if err != nil {
 		return serveRuleMissing, fmt.Errorf("tailscale serve status failed: %w", err)
 	}
-	var status any
-	if err := json.Unmarshal(out, &status); err != nil {
+	var cfg tailscaleServeConfig
+	if err := json.Unmarshal(out, &cfg); err != nil {
 		return serveRuleMissing, fmt.Errorf("parse tailscale serve status: %w", err)
 	}
-	rule, ok := findJSONKey(status, port)
-	if !ok {
-		return serveRuleMissing, nil
-	}
-	strings := collectJSONStrings(rule)
-	for _, s := range strings {
-		if s == target {
-			return serveRuleSame, nil
-		}
-	}
-	return serveRuleConflict, nil
-}
 
-func findJSONKey(v any, key string) (any, bool) {
-	switch x := v.(type) {
-	case map[string]any:
-		if child, ok := x[key]; ok {
-			return child, true
+	claimed := false
+	for hostPort, web := range cfg.Web {
+		if !strings.HasSuffix(hostPort, ":"+port) {
+			continue
 		}
-		for _, child := range x {
-			if found, ok := findJSONKey(child, key); ok {
-				return found, true
-			}
-		}
-	case []any:
-		for _, child := range x {
-			if found, ok := findJSONKey(child, key); ok {
-				return found, true
+		claimed = true
+		for _, handler := range web.Handlers {
+			if handler.Proxy == target {
+				return serveRuleSame, nil
 			}
 		}
 	}
-	return nil, false
-}
-
-func collectJSONStrings(v any) []string {
-	var out []string
-	var walk func(any)
-	walk = func(x any) {
-		switch y := x.(type) {
-		case string:
-			out = append(out, y)
-		case map[string]any:
-			for _, child := range y {
-				walk(child)
-			}
-		case []any:
-			for _, child := range y {
-				walk(child)
-			}
-		}
+	if claimed {
+		return serveRuleConflict, nil
 	}
-	walk(v)
-	return out
+	// A TCP entry with no matching Web proxy is someone else's rule (a raw
+	// TCPForward, or an HTTPS terminator we did not create): do not overwrite it.
+	if _, ok := cfg.TCP[port]; ok {
+		return serveRuleConflict, nil
+	}
+	return serveRuleMissing, nil
 }
