@@ -136,7 +136,7 @@ name, while pi-web itself continues listening only on localhost.
 │   │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl
 │   │   ├── 2026-01-15T11-00-00.000Z_e5f6g7h8.jsonl
 │   │   └── …
-│   └── --another--project--/
+│   └── --home-me-other--/
 │       └── …
 ├── session-status/
 │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here

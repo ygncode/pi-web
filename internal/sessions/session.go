@@ -589,24 +589,23 @@ func sessionHeaderKey(raw map[string]any) string {
 	return id + "\x00" + timestamp + "\x00" + cwd
 }
 
-// cleanProjectName reverses EncodeProjectName for display purposes.
-// It handles both the new escape-based encoding (using _ as sentinel) and
-// the legacy encoding (where - stood for /).
+// cleanProjectName reverses EncodeProjectName for display purposes. The
+// mapping is lossy, so this is only a fallback when a session has no cwd in
+// its header (see applySummaryContext), which is authoritative.
 func cleanProjectName(dirName string) string {
 	s := strings.TrimPrefix(dirName, "--")
 	s = strings.TrimSuffix(s, "--")
 	if win, ok := decodeWindowsBody(s); ok {
 		return win
 	}
-	s = decodeProjectBody(s)
-	return s
+	return decodeProjectBody(s)
 }
 
-// decodeWindowsBody reverses the Windows dash encoding (see
-// EncodeProjectName): both : and \ became -, so a drive letter is always
-// followed by two dashes. C--Users-me → C:\Users\me. Paths with literal
-// hyphens decode wrongly, exactly like the legacy Unix encoding; callers
-// recover via the session-header cwd (see resolveLocation).
+// decodeWindowsBody reverses the Windows body of EncodeProjectName: both :
+// and \ became -, so a drive letter is always followed by two dashes.
+// C--Users-me → C:\Users\me. Paths with literal hyphens decode wrongly, just
+// like Unix paths; callers recover via the session-header cwd (see
+// resolveLocation).
 func decodeWindowsBody(s string) (string, bool) {
 	if len(s) >= 3 && s[1] == '-' && s[2] == '-' &&
 		(('A' <= s[0] && s[0] <= 'Z') || ('a' <= s[0] && s[0] <= 'z')) {
@@ -615,50 +614,35 @@ func decodeWindowsBody(s string) (string, bool) {
 	return "", false
 }
 
-// EncodeProjectName converts an absolute filesystem path into a safe
-// directory name by escaping / and _. The result is wrapped with "--"
-// so callers can recognise encoded project directories.
+// EncodeProjectName returns the session directory name pi itself uses for an
+// absolute cwd, mirroring dist/core/session-manager.js:
 //
-//	/home/user/my-project → --home_-user_-my-project--
-//	/home/user/_cache    → --home_-user_-__cache--
+//	`--${resolvedCwd.replace(/^[/\\]/, "").replace(/[/\\:]/g, "-")}--`
 //
-// Windows-shaped paths (drive letter or backslashes) instead mirror pi's own
-// encoding (dist/core/session-manager.js: strip one leading separator, then
-// map every /, \ and : to -), because the escape-based scheme would leave
-// : and \ in the name — both invalid in Windows directory names.
+// One leading separator is stripped and every /, \ and : becomes -. Writing
+// the same directory pi writes keeps current-project session discovery
+// working for pi and for SDK clients that scan the sessions tree.
 //
-//	C:\Users\me\proj → --C--Users-me-proj--
+//	/home/neven/code/xyz.net → --home-neven-code-xyz.net--
+//	C:\Users\me\proj        → --C--Users-me-proj--
+//
+// The mapping is lossy: a literal hyphen is indistinguishable from a
+// separator, so it cannot be reversed exactly. The session header cwd is the
+// source of truth for recovering a path (see resolveLocation).
 func EncodeProjectName(path string) string {
 	s := strings.TrimSpace(path)
-	if isWindowsPath(s) {
-		if len(s) > 0 && (s[0] == '/' || s[0] == '\\') {
-			s = s[1:]
-		}
-		s = strings.NewReplacer("/", "-", `\`, "-", ":", "-").Replace(s)
-		return "--" + s + "--"
+	if len(s) > 0 && (s[0] == '/' || s[0] == '\\') {
+		s = s[1:]
 	}
-	s = strings.Trim(s, "/")
-	// Escape _ first, then /.  Order matters: we must double _ before we
-	// introduce any new _ in the / escape sequence.
-	s = strings.ReplaceAll(s, "_", "__")
-	s = strings.ReplaceAll(s, "/", "_-")
+	s = strings.NewReplacer("/", "-", `\`, "-", ":", "-").Replace(s)
 	return "--" + s + "--"
 }
 
-// isWindowsPath reports whether path is Windows-shaped: a drive letter
-// ("C:...") or any backslash separator. Keying off the path's shape rather
-// than runtime.GOOS keeps the encoding deterministic and testable everywhere.
-func isWindowsPath(path string) bool {
-	if len(path) >= 2 && path[1] == ':' &&
-		(('A' <= path[0] && path[0] <= 'Z') || ('a' <= path[0] && path[0] <= 'z')) {
-		return true
-	}
-	return strings.Contains(path, `\`)
-}
-
-// DecodeProjectName reverses EncodeProjectName.  It accepts both the
-// new escape-based encoding and the legacy encoding (where - meant /)
-// so that existing session directories continue to work.
+// DecodeProjectName is the best-effort inverse of EncodeProjectName, used only
+// when no session header cwd is available. It accepts every encoding pi-web has
+// written: pi's native dash encoding and pi-web's older escape encoding
+// (__ → _, _- → /). Native names are ambiguous, so the header cwd wins when it
+// exists.
 func DecodeProjectName(dirName string) string {
 	s := strings.TrimPrefix(dirName, "--")
 	s = strings.TrimSuffix(s, "--")
@@ -672,19 +656,18 @@ func DecodeProjectName(dirName string) string {
 	return s
 }
 
-// decodeProjectBody decodes the content between the "--" wrappers.
-// New format (contains _):  __ → _,  _- → /
-// Legacy format (no _):     -  → /
+// decodeProjectBody decodes the content between the "--" wrappers. The old
+// pi-web escape encoding is tried first when its markers are present; otherwise
+// every - was a separator (pi's native encoding and the pre-escape legacy
+// encoding, which are identical).
 func decodeProjectBody(s string) string {
-	if strings.Contains(s, "_") {
-		// New escape-based encoding.  Order: unescape / first, then _.
+	if strings.Contains(s, "_-") || strings.Contains(s, "__") {
+		// Escape-based encoding. Order: unescape / first, then _.
 		s = strings.ReplaceAll(s, "_-", "/")
 		s = strings.ReplaceAll(s, "__", "_")
-	} else {
-		// Legacy encoding: every - was a /.
-		s = strings.ReplaceAll(s, "-", "/")
+		return s
 	}
-	return s
+	return strings.ReplaceAll(s, "-", "/")
 }
 
 const maxRecentLocations = 10
@@ -730,39 +713,36 @@ func ListRecentLocations(sessionsDir string) ([]string, error) {
 	return locations, nil
 }
 
-// resolveLocation returns the projects absolute path for the given
-// project directory name.  It first tries DecodeProjectName; if the
-// result exists on disk it is returned directly.  Otherwise it falls
-// back to reading the cwd from a session JSONL file inside the
-// directory — this recovers legacy-encoded directories whose names
-// contain literal hyphens that DecodeProjectName misinterprets as
-// path separators.
+// resolveLocation returns the project's absolute path for the given project
+// directory name. The session header cwd is authoritative because
+// EncodeProjectName is lossy (a literal hyphen looks like a separator). Only
+// when the directory has no valid session header does it fall back to decoding
+// the directory name.
 func resolveLocation(sessionsDir, dirName string) string {
-	loc := DecodeProjectName(dirName)
-	if loc != "" {
-		if info, err := os.Stat(loc); err == nil && info.IsDir() {
-			return loc
-		}
-	}
-	// Decoded path doesn't exist (or decoded to empty).  Try to recover
-	// the real cwd from a session file inside the project directory.
-	cwd := readSessionCWD(filepath.Join(sessionsDir, dirName))
-	if cwd != "" {
+	if cwd := readSessionCWD(filepath.Join(sessionsDir, dirName)); cwd != "" {
 		return cwd
 	}
-	return loc
+	return DecodeProjectName(dirName)
 }
 
-// readSessionCWD opens a *.jsonl file in dir, reads its session header
-// line, and returns the cwd field.  Returns "" on any error.  Any file
-// in the directory will do — all sessions in the same project share
-// the same cwd.
+// readSessionCWD returns the cwd from the first valid session header found in
+// any *.jsonl file in dir, or "" when none exists. The header cwd is the only
+// lossless record of a project path, so it is preferred over decoding dir.
 func readSessionCWD(dir string) string {
 	matches, err := filepath.Glob(filepath.Join(dir, "*.jsonl"))
-	if err != nil || len(matches) == 0 {
+	if err != nil {
 		return ""
 	}
-	f, err := os.Open(matches[0])
+	for _, match := range matches {
+		if cwd := sessionHeaderCWD(match); cwd != "" {
+			return cwd
+		}
+	}
+	return ""
+}
+
+func sessionHeaderCWD(path string) string {
+	f, err := os.Open(path)
 	if err != nil {
 		return ""
 	}
@@ -781,11 +761,14 @@ func readSessionCWD(dir string) string {
 		if err := json.Unmarshal([]byte(line), &raw); err != nil {
 			continue
 		}
+		// Session headers belong at the start. Once the first parseable
+		// record is not a valid header, the file has no usable header; a later
+		// session-shaped line (e.g. a pasted transcript) must not win, and we
+		// must not scan the rest of a potentially huge headerless file.
 		if raw.Type == "session" && raw.CWD != "" {
 			return raw.CWD
 		}
-		// Only the first (session) line matters.
-		break
+		return ""
 	}
 	return ""
 }

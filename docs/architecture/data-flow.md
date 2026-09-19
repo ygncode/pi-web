@@ -40,12 +40,23 @@ Sessions are stored as **JSONL** files (one JSON object per line):
 
 ### Project Directory Encoding
 
-Project names are filesystem-safe encoded:
+New sessions are written to the same directory pi itself uses, so pi and SDK
+clients that scan for the current project find them. `EncodeProjectName` mirrors
+pi's `dist/core/session-manager.js`: strip one leading separator, then map every
+`/`, `\` and `:` to `-`:
 
 ```go
-EncodeProjectName("/Users/me/project") → "--Users-me-project--"
-DecodeProjectName("--Users-me-project--") → "/Users/me/project"
+EncodeProjectName("/home/neven/code/xyz.net") → "--home-neven-code-xyz.net--"
+EncodeProjectName(`C:\Users\me\proj`)        → "--C--Users-me-proj--"
 ```
+
+The mapping is lossy — a literal hyphen is indistinguishable from a separator —
+so a directory name is not a reliable source for the path. Reads prefer the
+`cwd` in the session JSONL header (`resolveLocation`, `ParseSummary`), the only
+lossless record, and fall back to `DecodeProjectName` only for directories with
+no valid session header. `DecodeProjectName` still understands the escape
+encoding (`__` → `_`, `_-` → `/`) that older pi-web builds wrote, as well as the
+pre-escape legacy encoding, so existing directories keep working.
 
 ## Parse Flow
 
