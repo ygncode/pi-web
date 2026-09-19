@@ -226,7 +226,7 @@ PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web
 
 > By default, pi-web refuses to bind to a non-loopback address unless `PI_WEB_TOKEN` is set — anyone who can reach the bound address could otherwise view sessions and send instructions to pi. To override this guard for local-network testing, pass `--insecure`. **Don't use `--insecure` on Tailscale or any address reachable from outside your machine.**
 >
-> Clients can pass the token via the `Authorization: Bearer <token>` header, the `X-Pi-Token` header, or once via `?token=<token>` (which sets a `pi_token` cookie for subsequent requests). Tokens passed via `?token=` end up in browser history, server access logs, and `Referer` headers from any links on the page — prefer the header form for anything beyond the initial bookmark.
+> Clients can pass the token via the `Authorization: Bearer <token>` header, the `X-Pi-Token` header, or once via `?token=<token>` (or the login prompt). When the token arrives through the query string, pi-web sets a `pi_token` cookie and redirects to the same URL with the token stripped, so it does not linger in the address bar or browser history. Prefer the header form for scripts and automation.
 
 ## Browser Chat
 

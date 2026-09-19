@@ -26,7 +26,7 @@ pi-web/
 │   │   ├── spa_page.go         # Live SPA shell renderer (RenderAppShell)
 │   │   ├── app_script.go       # SPA Vite module URL path + script tag
 │   │   ├── session_page.go     # Session page data prep (bootstrap base64 + CSS)
-│   │   ├── live_page.go        # Live document shell + theme/font providers
+│   │   ├── live_page.go        # Shared live document head + theme/font providers
 │   │   ├── export.go           # Static export renderer
 │   │   ├── auth_page.go        # Auth/token entry page
 │   │   ├── pwa.go              # PWA routes: manifest, sw.js, icons, css, cat.webm
@@ -35,6 +35,8 @@ pi-web/
 │   │   └── auth.go             # Token-based HTTP middleware
 │   ├── chat/
 │   │   └── request.go          # Multipart chat request parser (text + images)
+│   ├── chatqueue/
+│   │   └── chatqueue.go        # SQLite-backed per-session chat queue (items + paused state)
 │   ├── files/
 │   │   └── files.go            # Bounded read-only dir listing for @mention autocomplete
 │   ├── render/
@@ -53,7 +55,10 @@ pi-web/
 │   ├── server/
 │   │   ├── server.go           # Server type, deps, SSE registry, route registration, SQLite open
 │   │   ├── handlers.go         # index, session, api/session(s), new, fork/clone, rename, locations, models, custom-themes
+│   │   ├── request.go          # Shared JSON body decoding + request-size caps
 │   │   ├── chat.go             # Chat, set-model, set-thinking, worker-status, commands handlers
+│   │   ├── chat_queue.go       # /api/chat/queue handler (list/add/delete/pause)
+│   │   ├── chat_queue_drainer.go # Autonomous queue dispatcher (running → idle, 5s tick, mutation kick)
 │   │   ├── new_session.go      # New-session creation logic
 │   │   ├── git.go              # /api/git/info, /api/git/rename-branch handlers
 │   │   ├── diff.go             # /api/git/diff, /api/diff/reviews handlers
@@ -119,28 +124,32 @@ type Server struct {
     lastKnown     map[string]struct{} // sessions currently broadcast as running
     lastKnownMu   sync.Mutex
     push          *PushManager    // web-push subscriptions + done notifications
-    db            *sql.DB         // SQLite (~/.pi/agent/pi-web.sqlite)
-    updater       *updater.Checker // optional; nil disables /api/version etc.
-    runInstall    func(ctx context.Context) error // optional self-update install
-    runRestart    func() error                    // optional self-update restart
-    updateMu      sync.Mutex      // serializes install/restart
     stopCh        chan struct{}
     stopOnce      sync.Once
     wg            sync.WaitGroup
 
+    taskMu     sync.Mutex      // shuts out new tasks and owns taskCtx
+    taskCtx    context.Context // server lifecycle context for background work
+    taskCancel context.CancelFunc
+    stopping   bool
+
+    db            *sql.DB          // SQLite (~/.pi/agent/pi-web.sqlite)
+    schedules     *schedules.Store // cron definitions + run history
+    chatQueue     *chatqueue.Store // per-session queue items + paused state
+    queueDrainer  *queueDrainer    // autonomous queue dispatcher
+    updater       *updater.Checker // optional; nil disables /api/version etc.
+    runInstall    func(ctx context.Context) error // optional self-update install
+    runRestart    func() error                    // optional self-update restart
+    updateMu      sync.Mutex      // serializes install/restart
+    disableBackgroundJobs bool    // development server: no scheduler/drainer/auto-title/push
+
     fileWalk     *fileWalkCache  // bounded dir-listing cache for @mention autocomplete
     fileWalkOnce sync.Once
 
-    startedAt      time.Time      // process uptime for the metrics dashboard
-    metricsSampler processSampler // swappable in tests
-    metricsCPUMu   sync.Mutex
-    metricsCPULast map[int]cpuMark // per-PID CPU baselines for delta %CPU
-
-    titleMu        sync.Mutex             // auto-title bookkeeping (see auto_title.go)
-    titleInFlight  map[string]bool
-    titledName     map[string]string      // sessID -> title pi-web last set
-    titledCount    map[string]int         // sessID -> user-msg count at last titling
-    titleUserOwned map[string]bool        // sessID -> user named it; never auto-title
+    // Metrics dashboard (see metrics.go) and auto-title bookkeeping (see
+    // auto_title.go), grouped so each subsystem owns its fields + lock.
+    metrics   metricsState
+    autoTitle autoTitleState
 }
 ```
 
@@ -154,12 +163,16 @@ and serves the shared data, but does not run scheduling, queue draining,
 auto-titling, or push-delivery side effects.
 
 On `New`, the server opens (and migrates) a SQLite database at
-`~/.pi/agent/pi-web.sqlite` with six tables: `scratchpads` (per project path),
+`~/.pi/agent/pi-web.sqlite` with eleven tables: `scratchpads` (per project path),
 `settings` (server-backed user settings key/value), `project_prefs` (which
 projects are enabled), `app_settings` (the project-filter master switch, default
-off), `btw_sessions` (the btw scratch-chat registry), and `annotations`
-(per-session review notes keyed by session id; see `annotations.go`). See
-`projects.go`, `settings.go`, and `btw.go`. The pool is capped to a single
+off), `btw_sessions` (the btw scratch-chat registry), `annotations` (per-session
+review notes keyed by session id; see `annotations.go`), `schedules` +
+`schedule_runs` (definitions and firing history; see `internal/schedules`),
+`review_comments` (per-session diff review notes; see `diff.go`), and
+`chat_queue_items` + `chat_queue_state` (queued messages and per-session pause
+state; see `internal/chatqueue`). See `projects.go`, `settings.go`, `btw.go`,
+`schedules.go`, and `chat_queue.go`. The pool is capped to a single
 connection (`SetMaxOpenConns(1)`) so concurrent writers queue instead of failing
 with "database is locked". A `PushManager` (when configured) persists web-push
 subscriptions and VAPID keys under the agent dir.
@@ -200,13 +213,14 @@ Manages `pi --mode rpc` subprocesses per session.
 
 ```go
 type Manager struct {
-    mu         sync.Mutex
-    workers    map[string]ChatWorker  // sessionID → worker
-    creating   map[string]*createCall // single-flight: coalesce concurrent creates per session
-    factory    Factory                // (sessionID, sessionPath) → ChatWorker
-    idleTTL    time.Duration          // default 10m
-    reaperStop chan struct{}
-    reaperDone chan struct{}
+    mu           sync.Mutex
+    workers      map[string]ChatWorker  // sessionID → worker
+    creating     map[string]*createCall // single-flight: coalesce concurrent creates per session
+    factory      Factory                // (sessionID, sessionPath) → ChatWorker
+    pendingSends map[string]int         // accepted Sends not yet acked; keeps Status from dipping to idle
+    idleTTL      time.Duration          // default 10m
+    reaperStop   chan struct{}
+    reaperDone   chan struct{}
 }
 ```
 
@@ -250,11 +264,11 @@ type piRPCWorker struct {
 | `/` | GET | `handleIndex` | Render SPA shell for the sessions route |
 | `/session` | GET | `handleSession` | Render SPA shell for the session route |
 | `/settings` | GET | `handleSettingsPage` | Render SPA shell for the settings route |
-| `/login` | GET | `handleAppShell` | Render SPA shell for the login route |
 | `/api/session` | GET | `handleApiSession` | JSON session data |
 | `/api/sessions` | GET | `handleApiSessions` | JSON list of session summaries |
 | `/api/chat` | POST | `handleChat` | Send chat message (multipart) |
 | `/api/chat/cancel` | POST | `handleCancelChat` | Abort running chat worker |
+| `/api/chat/queue` | GET/POST/DELETE/PATCH | `handleChatQueue` | Per-session queued messages + pause state (SQLite) |
 | `/api/set-model` | POST | `handleSetModel` | Change model for session |
 | `/api/set-thinking-level` | POST | `handleSetThinkingLevel` | Change thinking level |
 | `/api/models` | GET | `handleAvailableModels` | List available AI models |
@@ -301,7 +315,7 @@ PWA / static asset routes (registered outside `Server.Register`):
 
 | Route | Source |
 |-------|--------|
-| `/manifest.webmanifest`, `/sw.js`, `/icon.svg`, `/icon-maskable.svg`, `/pi-logo.svg`, `/cat.webm`, `/theme.css`, `/index.css`, `/menu.css`, `/palette.css` | `internal/ui/pwa.go` (embedded assets) |
+| `/manifest.webmanifest`, `/sw.js`, `/icon.svg`, `/icon-maskable.svg`, `/pi-logo.svg`, `/cat.webm` | `internal/ui/pwa.go` (embedded assets) |
 | `/static/assets/app-*.js`, `/static/assets/...` | Embedded Vite SPA bundle and chunks (`internal/app/app.go` + `internal/frontend`) |
 
 ## Auth Flow
@@ -386,6 +400,6 @@ Three signals are OR'd together to determine if a session is "running":
 
 1. **session-status file** (`~/.pi/agent/session-status/<id>`): written by the terminal pi process
 2. **In-process chat worker**: `chatSender.Status(id).State == running`
-3. **Recent file activity**: modtime within 3 seconds
+3. **Recent file activity**: JSONL file modtime within 800 ms
 
 Status changes are broadcast as SSE `status-delta` events to `__all__` subscribers. A 1-second sweeper periodically revalidates all known running sessions to clean up stale states.

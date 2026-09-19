@@ -141,7 +141,7 @@ Polling scans all `.jsonl` files and compares modtimes against `fileMod` map.
 
 1. **session-status file** exists and has `state: "running"` and `updatedAt` within 10s TTL
 2. **Chat worker** status is `running` (in-process)
-3. **Recent file activity**: JSONL file modtime within 3 seconds
+3. **Recent file activity**: JSONL file modtime within 800 ms
 
 ### Status Sweeper
 

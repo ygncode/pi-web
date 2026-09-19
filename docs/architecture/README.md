@@ -8,7 +8,7 @@ This directory contains the architecture documentation for **pi-web**, a local w
 |----------|-------------|
 | [system-overview.md](./system-overview.md) | High-level system architecture, component diagram, and tech stack |
 | [backend.md](./backend.md) | Go backend: packages, responsibilities, and key types |
-| [frontend.md](./frontend.md) | Frontend architecture: embedded templates, Vite build, and vanilla JS |
+| [frontend.md](./frontend.md) | Frontend architecture: Svelte SPA, Vite build, embedded shell, and static export |
 | [data-flow.md](./data-flow.md) | Session file format, data model, and storage layout |
 
 ## Architecture at a Glance
@@ -17,9 +17,9 @@ This directory contains the architecture documentation for **pi-web**, a local w
 ┌─────────────────────────────────────────────────────────────────────┐
 │                           Browser                                    │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────────────┐  │
-│  │  / (index)  │  │ /session?id │  │      SSE /events            │  │
-│  │  vanilla JS │  │  Embedded   │  │   Live reload + status      │  │
-│  │   (Vite)    │  │   HTML/CSS  │  │        updates              │  │
+│  │ / /session  │  │ /settings   │  │      SSE /events            │  │
+│  │ /schedules  │  │  Svelte SPA │  │   Live reload + status      │  │
+│  │ Svelte SPA  │  │             │  │        updates              │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────────┘
                                   │
@@ -46,14 +46,12 @@ This directory contains the architecture documentation for **pi-web**, a local w
 
 ## Key Design Decisions
 
-1. **Append-only session metadata**: pi-web reads from `~/.pi/agent/sessions/` and avoids rewriting session history. New sessions can be created via the web UI, and browser rename appends a `session_info` metadata line to the existing JSONL file.
+1. **Append-only session metadata**: pi-web reads from `~/.pi/agent/sessions/` and avoids rewriting session history. New sessions can be created via the web UI; rename and auto-title append a `session_info` metadata line, and entry labels append a `label` line, to the existing JSONL file.
 
 2. **Live updates via SSE**: The browser opens an EventSource connection. The server watches session files via `fsnotify` (with polling fallback) and pushes `reload` events; session pages fetch `/api/session` to reconcile canonical JSONL entries. Browser chat can also receive best-effort `chat-preview` SSE events before JSONL reconciliation.
 
 3. **Chat via RPC workers**: Each session gets a dedicated `pi --mode rpc` subprocess. Workers are cached and reaped after 10 minutes of idle time.
 
-4. **Dual frontend strategy**:
-   - **Index page** (`/`): Built with Vite + vanilla JS, served from embedded `web/dist`
-   - **Session page** (`/session`): Server-rendered HTML shell with Vite-built session JS
+4. **Single Svelte SPA + static export**: All live browser routes (`/`, `/session`, `/settings`, `/schedules`) are Svelte 5 components built by Vite and served by one embedded shell (`internal/ui/embedded/app.html`). Sharing/export renders a separate self-contained snapshot (`internal/ui/export.go`). The pre-auth token prompt is the only other HTML page, rendered by the Go auth middleware.
 
 5. **Security**: Token-based auth (`PI_WEB_TOKEN`) is required when binding to non-loopback addresses (e.g., Tailscale).

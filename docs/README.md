@@ -6,6 +6,8 @@
 | How the system is built (packages, data flow, frontend/backend) | [architecture/](architecture/) |
 | What happens at runtime (startup, chat, live reload, sharing) | [sequence-flows/](sequence-flows/) |
 | Frontend build details (templates vs. web, export design) | [dev/](dev/) |
+| Design system (themes, CSS tokens, custom themes) | [design/design-system.md](design/design-system.md) |
+| Worker metrics dashboard | [dev/metrics-dashboard.md](dev/metrics-dashboard.md) |
 | End-to-end browser testing (Playwright) | [dev/e2e-testing.md](dev/e2e-testing.md) |
 | Keyboard shortcuts | [../user-docs/en/keyboard-shortcuts.md](../user-docs/en/keyboard-shortcuts.md) |
 | Why this exists | [../user-docs/en/why.md](../user-docs/en/why.md) |

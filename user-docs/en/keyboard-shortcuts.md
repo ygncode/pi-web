@@ -19,6 +19,7 @@ Same vim-style shortcuts work on all pages when focus is **not** in an input, te
 | Shortcut | Context | Action |
 |----------|---------|--------|
 | `⌘K` / `Ctrl+K` | Page-level | Open search/sessions palette |
+| `⌘,` / `Ctrl+,` | Page-level | Open settings |
 | `⌘⇧L` / `Ctrl+Shift+L` | Page-level | Toggle system theme (light/dark) |
 | `Escape` | Page-level | Close palette, menu, or modal |
 | `Enter` | New-session path input | Create new session |
@@ -47,6 +48,8 @@ These work on both index and session pages when focus is **not** in an input, te
 | `⌘B` / `Ctrl+B` | Page-level | Toggle sidebar visibility |
 | `⌘K` / `Ctrl+K` | Page-level | Open session list palette |
 | `⌘T` / `Ctrl+T` | Page-level | New session |
+| `⌘/` / `Ctrl+/` | Page-level | Show the keyboard shortcuts modal |
+| `⌘,` / `Ctrl+,` | Page-level | Open settings |
 | `⌘⇧L` / `Ctrl+Shift+L` | Page-level | Toggle system theme (light/dark) |
 | `⌘⇧N` / `Ctrl+Shift+N` | Page-level | Toggle scratchpad / notes sidebar |
 

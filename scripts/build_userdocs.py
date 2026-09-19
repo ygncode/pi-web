@@ -177,8 +177,39 @@ def _set(obj, path, value):
     obj[path[-1]] = value
 
 
+def parse_args(argv: list[str]) -> tuple[list[str], list[str]]:
+    """Split argv into (languages, docs).
+
+      build_userdocs.py                        # all languages, all docs + hero
+      build_userdocs.py es ja                  # selected languages
+      build_userdocs.py --docs install         # all languages, selected docs
+      build_userdocs.py es --docs install      # both filters
+
+    Hero translation only runs when no --docs filter is given.
+    """
+    langs: list[str] = []
+    docs: list[str] = []
+    in_docs = False
+    for arg in argv:
+        if arg == "--docs":
+            in_docs = True
+        elif in_docs:
+            docs.append(arg)
+        else:
+            langs.append(arg)
+    return langs, docs
+
+
 def main():
-    only = sys.argv[1:]  # optional list of lang codes
+    only, only_docs = parse_args(sys.argv[1:])
+    unknown = [doc for doc in only_docs if doc not in DOCS]
+    if unknown:
+        print(
+            f"unknown doc(s): {', '.join(unknown)} (known: {', '.join(DOCS)})",
+            file=sys.stderr,
+        )
+        sys.exit(2)
+    docs = only_docs or DOCS
     for code, name in LANGS:
         if code == "en":
             continue
@@ -186,13 +217,16 @@ def main():
             continue
         out_dir = DOCS_DIR / code
         out_dir.mkdir(parents=True, exist_ok=True)
-        for doc in DOCS:
+        for doc in docs:
             print(f"[{code}] {doc}…", flush=True)
             if doc == "README":
                 content = build_readme(code, name)
             else:
                 content = build_doc(doc, code)
             (out_dir / f"{doc}.md").write_text(content)
+        if only_docs:
+            print(f"[{code}] done ({len(docs)} docs)", flush=True)
+            continue
         print(f"[{code}] hero…", flush=True)
         (out_dir / "hero.json").write_text(build_hero(code))
         print(f"[{code}] done ({len(DOCS)} docs + hero)", flush=True)

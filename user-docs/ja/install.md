@@ -1,31 +1,33 @@
-# インストールと使い方
+# インストールと使用方法
 
 ## 機能
 
 ### リモート操作
 
-- ブラウザからテキストや画像添付で任意のセッションを継続
-- 任意のプロジェクトパスに対して新しいセッションをWeb UIから直接開始
-- ブラウザ内でのモデル切り替えと思考レベル選択（セッションごと）
-- セッションごとのワーカーステータス（idle / running / error）とクラッシュ時の自動復旧
-- 複数セッションを並列実行 — ある作業を開始しつつ、別のストリームを監視
-- `PI_WEB_TOKEN` による安全なLAN公開 — 明示的な非ループバックバインドではデフォルトで必須
+- ブラウザからテキストまたは画像添付付きで任意のセッションを継続できます
+- Web UIから直接、任意のプロジェクトパスに対して新しいセッションを開始できます
+- セッションごとに、ブラウザ内でモデル切り替えと思考レベルセレクターが使えます
+- セッションごとのワーカーステータス（idle / running / error）と、クラッシュ時の自動復旧
+- 複数のセッションを並列実行 — 1つで作業を開始し、別のセッションのストリームを監視できます
+- 安全なLAN公開のための `PI_WEB_TOKEN` — 明示的な非ループバックバインドではデフォルトで必須
 
 ### セッションの閲覧
 
-- プロジェクトをまたいだセッションの閲覧（フィルター、検索、ブランチナビゲーション付き）
-- piの実行中もライブな差分更新（fsnotify経由、〜ミリ秒のレイテンシ）
-- アクティブセッションを追跡するフォローモード
-- 個別メッセージへのディープリンク
+- フィルター、検索、完全なブランチナビゲーションでプロジェクトをまたいでセッションを閲覧できます
+- piの実行中もライブで増分更新（fsnotify経由、約ミリ秒の遅延）
+- アクティブなセッションを追尾するフォローモード
+- 個々のメッセージへのディープリンク
 - セッションをJSONLとしてダウンロード
 - 静的スナップショットをシークレットGitHub Gistとして共有
-- セッションを開く・リモートQR・セッション同期・トークン管理のための `/web`、`/remote`、`/refresh`、`/pi-web token`、`/pi-web set-token` pi拡張
+- セッションのオープン、リモートQR、セッション同期、トークン管理のための `/web`、`/remote`、`/refresh`、`/pi-web token`、`/pi-web set-token` pi拡張機能
+- セッションがスケジュール、プロジェクトのスクラッチパッド、設定を自然言語で管理できるようにする `/skill:pi-web-schedule`、`/skill:pi-web-notes`、`/skill:pi-web-settings`（`pi-web-ctl`）
 
 ## 要件
 
-- [Go](https://go.dev) 1.25+
-- ブラウザチャット/モデル切り替えのために `pi` が `PATH` 上に存在すること
-- オプション: 共有用に `gh`
+- [Go](https://go.dev) 1.25+（ソースからのビルドのみに必要）
+- ブラウザチャット/モデル切り替えには `pi` が `PATH` 上にある必要があります
+- オプション: 共有には `gh`
+- Windowsの場合: piのシェルツールにはbashシェルが必要です — [Git for Windows](https://git-scm.com/download/win) で十分です（piのWindowsドキュメントを参照）
 
 ## インストール
 
@@ -35,27 +37,28 @@
 pi install npm:@ygncode/pi-web@beta
 ```
 
-この単一コマンドで以下を実行します:
-- piのパッケージディレクトリにnpm piパッケージをインストール
-- パッケージの `postinstall` スクリプト（`bash install.sh`）を実行
-- パッケージバージョンとプラットフォームに対応するpi-webバイナリをGitHub Releasesからダウンロード
-- `~/.pi/agent/bin/pi-web` にインストール
-- ログイン時の自動起動を設定（macOSではlaunchd、Linuxではsystemd）
-- `/web`、`/remote`、`/refresh`、`/pi-web token`、`/pi-web set-token` piコマンドを登録
+この1つのコマンドで:
 
-セッション自動タイトル付けはpi-webに組み込まれており（拡張機能ではありません）、`/settings` ページで設定します。デフォルトでオンです: pi-webは無料の組み込み単語ヒューリスティック（AI不使用）を使ってセッションに自動で名前を付け、新しいメッセージごとに再タイトル付けします。セッションごとに1回だけのタイトル付けに切り替えたり、ヒューリスティックの代わりにより賢いタイトルを生成するモデルを選択したりすることもできます。
+- npm piパッケージをpiのパッケージディレクトリ配下にインストールします
+- パッケージの `postinstall` スクリプトを実行します（`install.sh`、Windowsでは `install.ps1`）
+- パッケージのバージョンとプラットフォームに一致するpi-webバイナリをGitHub Releasesからダウンロードします
+- `~/.pi/agent/bin/pi-web`（Windowsでは `pi-web.exe`）にインストールします
+- ログイン時の自動起動を設定します（macOSではlaunchd、Linuxではsystemd、WindowsではRunキーのランチャー）
+- `/web`、`/remote`、`/refresh`、`/pi-web token`、`/pi-web set-token` のpiコマンドを登録します
 
-Linuxでは、自動起動はユーザーsystemdサービスとして `~/.config/systemd/user/pi-web.service` に設定されます。インストーラーはその `ExecStart` を実際のインストール済みバイナリパスに書き換えます。実行時にTailscaleが利用可能な場合、pi-webはローカルホストサーバーをTailscale Serve HTTPSで公開します。ユーザーsystemdが利用できない場合は、`~/.pi/agent/bin/pi-web -o` で手動実行してください。
+セッションの自動タイトル付けはpi-webに組み込まれており（拡張機能ではありません）、`/settings` ページで設定します。デフォルトで有効です。pi-webは無料の組み込み単語ヒューリスティック（AIなし）を使ってセッションに自動的に名前を付け、新しいメッセージごとにタイトルを付け直します。セッションごとに1回だけタイトルを付けるように切り替えたり、ヒューリスティックの代わりにより賢いタイトルを書くモデルを選択したりできます。
 
-特定のプロジェクトのみにインストールする場合（`.pi/settings.json` 経由でチームと共有）:
+Linuxでは、自動起動は `~/.config/systemd/user/pi-web.service` のユーザーsystemdサービスとして設定されます。インストーラーはその `ExecStart` を実際にインストールされたバイナリパスに書き換えます。実行時にTailscaleが利用可能な場合、pi-webはTailscale Serve HTTPSでlocalhostサーバーを公開します。ユーザーsystemdが利用できない場合は、`~/.pi/agent/bin/pi-web -o` で手動実行してください。
+
+特定のプロジェクトにのみインストールする場合（`.pi/settings.json` 経由でチームと共有）:
 
 ```bash
 pi install -l npm:@ygncode/pi-web@beta
 ```
 
-その後piを再起動（または `/reload` を実行）し、`/web`、`/pi-web`、`/remote`、`/refresh` を使用します。アクセストークンは `/pi-web token` と `/pi-web set-token` で管理します。
+その後、piを再起動し（または `/reload` を実行）、`/web`、`/pi-web`、`/remote`、`/refresh` を使用します。アクセストークンは `/pi-web token` と `/pi-web set-token` で管理します。
 
-npmが `@ygncode/pi-web` のリネーム中に `ENOTEMPTY` で中断した場合は、npmの古い隠しバックアップディレクトリを削除してbetaチャンネルを再インストールしてください:
+`@ygncode/pi-web` のリネーム中にnpmが `ENOTEMPTY` で中断した場合は、npmの古い隠しバックアップディレクトリを削除して、betaチャネルを再インストールしてください:
 
 ```bash
 rm -rf ~/.pi/agent/npm/node_modules/@ygncode/.pi-web-*
@@ -64,11 +67,19 @@ pi install npm:@ygncode/pi-web@beta
 
 ### クイックインストール（ビルドツール不要）
 
+macOS / Linux:
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ygncode/pi-web/main/install.sh | bash
 ```
 
-最新のpi-webバイナリをダウンロードし、`/usr/local/bin` にインストールして、ログイン時の自動起動を設定します。Go、Node、piは不要です。
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/ygncode/pi-web/main/install.ps1 | iex
+```
+
+これは最新のpi-webバイナリをダウンロードし、`/usr/local/bin`（Windowsでは `~/.pi/agent/bin`）にインストールし、ログイン時の自動起動を設定します。Go、Node、piは不要です。
 
 ### バイナリのダウンロード
 
@@ -92,29 +103,54 @@ curl -L -o pi-web https://github.com/ygncode/pi-web/releases/latest/download/pi-
 chmod +x pi-web
 ```
 
-その後、PATH上に移動します:
+```powershell
+# Windows (x64)
+irm -OutFile pi-web.exe https://github.com/ygncode/pi-web/releases/latest/download/pi-web-windows-amd64.exe
+
+# Windows (ARM64)
+irm -OutFile pi-web.exe https://github.com/ygncode/pi-web/releases/latest/download/pi-web-windows-arm64.exe
+```
+
+その後、PATHに移動します:
 
 ```bash
 cp pi-web ~/.pi/agent/bin/
-# またはシステム全体:
+# or system-wide:
 sudo cp pi-web /usr/local/bin/
 ```
 
-### ソースからビルド
+### ソースからのビルド
 
 ```bash
 git clone https://github.com/ygncode/pi-web.git
 cd pi-web
-make build   # Viteバンドルをビルドし、Goバイナリに埋め込みます
+make build   # builds the Vite bundle, then embeds it into the Go binary
 
-# オプション: PATHに追加
+# optional: put it on PATH
 cp pi-web ~/.pi/agent/bin/
 ```
 
-フロントエンドバンドルは `web/assets_embed.go` によって埋め込まれるため、`go build` には
-事前に `web/dist` が存在している必要があります。`make build` は両方のステップを順に実行します。
-手動でビルドする場合は、`go build ./cmd/pi-web` の前に
-`npm --prefix web install && npm --prefix web run build` を実行してください。
+フロントエンドバンドルは `web/assets_embed.go` によって埋め込まれるため、`go build` にはまず `web/dist` が存在する必要があります。`make build` は両方の手順を順番に実行します。手動でビルドする場合は、`go build ./cmd/pi-web` の前に `npm --prefix web install && npm --prefix web run build` を実行してください。
+
+### インストール済みインスタンスと並行した開発
+
+インストール済みインスタンスをポート `31415` で実行したままにして、ソースチェックアウトを開発モードで起動します:
+
+```bash
+make dev
+```
+
+`http://127.0.0.1:31416` を開きます。`make dev` は内部の `PI_WEB_DEV=1` 開発環境を設定するため、ソースチェックアウトはインストール済みインスタンスとセッション、設定、SQLiteデータを共有しつつ、別の開発用ランタイムロックとステートファイルを保持します。通常のインストール済みおよび手動起動インスタンスは変更されず、元の単一インスタンス動作を維持します。
+
+自律的な作業の重複を防ぐため、開発モードではスケジュールループ、チャットキューのドレイナー、自動タイトル付け、プッシュ通知は実行されません。開発UIを通じた直接のリクエストは引き続き機能します。同じチャットセッションを両方のインスタンスから同時に操作しないでください。各プロセスには独自のRPCワーカーマネージャーがあります。
+
+`make dev` にはGoのホットリロードに [Air](https://github.com/air-verse/air) が必要です:
+
+```bash
+go install github.com/air-verse/air@latest
+```
+
+`PI_WEB_DEV` は開発ハーネスのための内部機構であり、サポート対象の本番用マルチインスタンスモードではありません。
 
 ## アンインストール
 
@@ -122,83 +158,81 @@ cp pi-web ~/.pi/agent/bin/
 pi remove npm:@ygncode/pi-web@beta
 ```
 
-これはパッケージの `preuninstall` スクリプト（`bash uninstall.sh`）を実行し、
-実行中のインスタンスを停止して以下を削除します:
+これはパッケージの `preuninstall` スクリプト（`uninstall.sh`、Windowsでは `uninstall.ps1`）を実行し、実行中のインスタンスを停止して以下を削除します:
 
-- pi-webバイナリ（`~/.pi/agent/bin/pi-web`、またはスタンドアロンインストールの場合は `/usr/local/bin/pi-web`）
+- pi-webバイナリ（`~/.pi/agent/bin/pi-web`、スタンドアロンインストールの場合は `/usr/local/bin/pi-web`）
 - バージョンファイル（`~/.pi/agent/pi-web-version`）
-- ランタイム状態ファイル（`~/.pi/agent/pi-web/pi-web-state.json`）
-- 自動起動設定（macOSではlaunchd plist、Linuxではsystemdユーザーサービス）
+- ランタイムステートファイル（`~/.pi/agent/pi-web/pi-web-state.json`）
+- 自動起動設定（macOSではlaunchd plist、Linuxではsystemdユーザーサービス、WindowsではRunキーのエントリ＋ランチャースクリプト）
 
-データは保持されるため、後で再インストールすれば中断したところから再開できます:
-`~/.pi/agent/pi-web.sqlite`、`~/.pi/agent/pi-web-memory.sqlite`、
-`~/.pi/agent/sessions/` 以下のセッションファイル、および `~/.config/pi-web/env`
-（`PI_WEB_TOKEN` を含む）。クリーンな状態にしたい場合はこれらを手動で削除してください。
+データは保持されるため、後で再インストールすれば中断したところから再開できます。`~/.pi/agent/pi-web.sqlite`、`~/.pi/agent/pi-web-memory.sqlite`、`~/.pi/agent/sessions/` 配下のセッションファイル、`~/.config/pi-web/env`（`PI_WEB_TOKEN` を含む）です。白紙の状態にしたい場合は、これらを手動で削除してください。
 
-## 使い方
+## 使用方法
 
 ```bash
-# デフォルトポート（31415）で起動
+# Start on the default port (31415)
 pi-web
 
-# 起動してブラウザを開く
+# Start and open a browser
 pi-web -o
 
-# カスタムポート
+# Custom port
 pi-web -p 8080
 
-# バインドホストを上書き（ループバックはデフォルトで認証不要）
+# Override bind host (loopback is unauthenticated by default)
 pi-web --host 127.0.0.1
 
-# 非ループバックバインドにはトークンが必要 — さもなければpi-webは起動を拒否します
+# Non-loopback bind requires a token — pi-web refuses to start otherwise
 PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web --host 192.168.1.50
 ```
 
-デフォルトでは、pi-webは `127.0.0.1` にバインドします。TailscaleがMagicDNS付きで実行中の場合、pi-webは `tailscale serve --bg --https=<port> http://127.0.0.1:<port>` も実行し、HTTPS tailnet URLを表示します。明示的な非ループバックバインドには `PI_WEB_TOKEN` の設定が必要です。ローカルテスト用に上書きするには `--insecure` を渡してください。
+デフォルトでは、pi-webは `127.0.0.1` にバインドします。TailscaleがMagicDNSで実行中 **かつ `PI_WEB_TOKEN` が設定されている** 場合、pi-webは `tailscale serve --bg --https=<port> http://127.0.0.1:<port>` も実行し、HTTPSのtailnet URLを表示します。トークンがない場合、pi-webはループバックのみのままでTailscale Serveをスキップするため、tailnetのピアは認証なしにエージェントへ到達できません。明示的な非ループバックバインドも `PI_WEB_TOKEN` の設定を必要とします。ローカルテスト用に上書きするには `--insecure` を渡します。
 
 ## リモートアクセス
 
-pi-webをローカルで待ち受けさせたまま、表示されたTailscale HTTPS URLをtailnet上のスマートフォンやノートパソコンから使用します。
+pi-webをローカルでリッスンしたままにして、tailnet上のスマートフォンまたはラップトップから表示されたTailscale HTTPS URLを使用します。
 
-macOS では、Tailscale を対話形式でインストールして開き、管理者プロンプトを承認してサインインします。その後、`/pi-web restart` を実行し、続けて `/remote` を実行します。
+macOSでは、Tailscaleを対話的にインストールして開き、管理者プロンプトを承認してサインインします。その後 `/pi-web restart` を実行し、続けて `/remote` を実行します。
 
-Linuxでは、pi-webをインストール/実行する前に、ユーザーがTailscaleを管理できるようにしてください。さもなければ `tailscale serve` にsudoが必要になり、自動起動が失敗する可能性があります:
+Linuxでは、pi-webのインストール/実行前にユーザーがTailscaleを管理できるようにしてください。そうしないと `tailscale serve` がsudoを必要とし、自動起動が失敗する可能性があります:
 
 ```bash
 sudo tailscale set --operator=$USER
 ```
 
 ```bash
-# 1. pi-webを起動
-pi-web
+# 1. Start pi-web with a token so it publishes the Tailscale HTTPS endpoint
+PI_WEB_TOKEN=$(openssl rand -hex 16) pi-web
 
-# 2. Tailscale接続された任意のデバイスから、表示された
-#    "Tailscale HTTPS" URLを開きます。
+# 2. From any other Tailscale-connected device, open the printed
+#    "Tailscale HTTPS" URL and enter the token once.
 ```
 
-> デフォルトでは、pi-webは `PI_WEB_TOKEN` が設定されていない限り非ループバックアドレスへのバインドを拒否します — バインドされたアドレスに到達できる誰もがセッションを閲覧し、piに指示を送信できてしまうためです。ローカルネットワークテスト用にこのガードを上書きするには `--insecure` を渡してください。**Tailscaleやマシン外部から到達可能なアドレスでは `--insecure` を使用しないでください。**
+> デフォルトでは、`PI_WEB_TOKEN` が設定されていない限り、pi-webは非ループバックアドレスへのバインドを拒否します。そうしないと、バインドされたアドレスに到達できる誰もがセッションを閲覧し、piに指示を送ることができてしまうためです。ローカルネットワークのテスト用にこのガードを上書きするには、`--insecure` を渡します。**Tailscaleやマシン外部から到達可能なアドレスでは `--insecure` を使用しないでください。**
 >
-> クライアントは `Authorization: Bearer <token>` ヘッダー、`X-Pi-Token` ヘッダー、または初回のみ `?token=<token>`（後続リクエスト用に `pi_token` クッキーを設定）でトークンを渡せます。`?token=` で渡されたトークンはブラウザ履歴、サーバーアクセスログ、ページ上のリンクからの `Referer` ヘッダーに残ります — 初回ブックマーク以降はヘッダー形式を推奨します。
+> クライアントはトークンを `Authorization: Bearer <token>` ヘッダー、`X-Pi-Token` ヘッダー、または一度だけ `?token=<token>`（またはログインプロンプト）経由で渡せます。トークンがクエリ文字列経由で届いた場合、pi-webは `pi_token` クッキーを設定し、トークンを除去した同じURLへリダイレクトするため、アドレスバーやブラウザ履歴に残りません。スクリプトや自動化ではヘッダー形式を優先してください。
 
 ## ブラウザチャット
 
 セッションページを開き、下部のコンポーザーを使ってそのセッションを正確に継続します。
 
 - `Enter` で送信、`Shift+Enter` で改行を挿入
-- 画像をコンポーザーに直接ドラッグ＆ドロップまたはペースト
-- モデルピッカーと思考レベルセレクターはヘッダーにあり — 変更は基盤のpiワーカーに即座に適用されます
-- 各アクティブセッションには専用の `pi --mode rpc` ワーカーが割り当てられるため、異なるセッションが互いをブロックしません
+- 画像をコンポーザーに直接ドラッグ＆ドロップまたは貼り付けできます
+- モデルピッカーと思考レベルセレクターはヘッダーにあり、変更は基盤のpiワーカーに即座に適用されます
+- 各アクティブセッションには専用の `pi --mode rpc` ワーカーが割り当てられるため、異なるセッションが互いにブロックすることはありません
 
 ## セッションの共有
 
-セッションページで **共有** をクリックすると、シークレットGitHub Gistを作成します。
+セッションページで **共有** をクリックすると、シークレットGitHub Gistを作成できます。
 
 要件:
+
 - `gh` がインストールされていること
 - `gh auth login` が完了していること
 
-共有の結果:
-- シークレットgist URL
+共有すると以下が返されます:
+
+- シークレットgistのURL
 - `https://pi.dev/session/#<gistId>` のプレビューURL
 
 共有されたgistはスナップショットであり、ライブ更新はされません。
@@ -212,28 +246,44 @@ cp init/com.pi-web.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.pi-web.plist
 ```
 
-### Linux（systemd）
+### Linux (systemd)
 
 ```bash
-# systemdユーザーサービスをインストール
+# Install the systemd user service
 mkdir -p ~/.config/systemd/user
 cp init/pi-web.service ~/.config/systemd/user/
 
-# オプション: 非ループバックバインド用にPI_WEB_TOKENを設定
-# （またはpi内から /pi-web set-token <token> を使用）
+# Optional: set your PI_WEB_TOKEN for non-loopback binds
+# (or use /pi-web set-token <token> from inside pi)
 mkdir -p ~/.config/pi-web
 echo 'PI_WEB_TOKEN=your-token-here' > ~/.config/pi-web/env
 
-# 有効化して起動
+# Enable and start
 systemctl --user daemon-reload
 systemctl --user enable --now pi-web.service
 
-# ステータス確認
+# Check status
 systemctl --user status pi-web.service
 
-# ログの表示
+# View logs
 journalctl --user -u pi-web.service -f
 ```
 
-> ブート時（ログイン前）にサービスを開始するには、代わりにシステムサービスを使用してください:
-> `init/pi-web.service` を `/etc/systemd/system/` にコピーし、`sudo systemctl` を使用します。
+> ブート時（ログイン前）にサービスを起動するには、代わりにシステムサービスを使用します。`init/pi-web.service` を `/etc/systemd/system/` にコピーし、`sudo systemctl` を使用してください。
+
+### Windows
+
+インストーラーは管理者権限なしでこれを自動的に設定します。`HKCU\Software\Microsoft\Windows\CurrentVersion\Run` 配下の `pi-web` エントリが、ログイン時に `~/.config/pi-web/pi-web-start.vbs` を起動し、`~/.config/pi-web/env`（`PI_WEB_TOKEN`、`PATH`、...）を読み込んだ後にバイナリを非表示（コンソールウィンドウなし）で開始します。
+
+手動で管理するには:
+
+```powershell
+# Start / stop
+wscript.exe "$HOME\.config\pi-web\pi-web-start.vbs"
+taskkill /IM pi-web.exe /F
+
+# Remove auto-start
+Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' -Name 'pi-web'
+```
+
+Windowsではサービスの監視はありません。pi-webがクラッシュすると、次回ログインまで停止したままになります（他のプラットフォームではlaunchd/systemdが自動的に再起動します）。

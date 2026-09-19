@@ -14,8 +14,8 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 | Styling | Custom CSS (multi-theme: dark/light/nord/dracula/custom) |
 | Live Updates | Server-Sent Events (SSE) |
 | Chat RPC | JSONL over stdin/stdout via `pi --mode rpc` |
-| Session Storage | JSONL files on disk; pi-web creates new session files and appends `session_info` for browser rename |
-| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads, per-session review annotations, project visibility prefs, server-backed user settings, and the btw scratch-chat registry |
+| Session Storage | JSONL files on disk; pi-web creates new session files and only appends metadata (`session_info` for rename/auto-title, `label` for entry labels) |
+| Local DB | SQLite (`~/.pi/agent/pi-web.sqlite`) for per-project scratchpads, per-session review annotations, project visibility prefs, server-backed user settings, the btw scratch-chat registry, schedules + run history, the chat queue, and diff review comments |
 | Auth | Token cookie/query/header (optional on localhost) |
 
 ## Component Diagram
@@ -32,7 +32,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   │  /session → SessionPage (Svelte       │  │  • new-session (index)  │  │
 │   │     components + reactive model)      │  │  • status-delta         │  │
 │   │  /settings → SettingsPage (Svelte)    │  │  • status-snapshot      │  │
-│   │  /login → LoginPage                   │  │  • annotations, btw…    │  │
+│   │  /schedules → SchedulesPage (Svelte)  │  │  • annotations, btw…    │  │
 │   │  shared: CommandPalette, Version UI   │  │                         │  │
 │   └──────────────────────────────────────┘  └─────────────────────────┘  │
 └──────────────────────────────────────────────────────────────────────────┘
@@ -45,10 +45,12 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   GET  /              →  handleIndex      (SPA shell)                    │
 │   GET  /session       →  handleSession    (SPA shell)                    │
 │   GET  /settings      →  handleSettingsPage (SPA shell)                  │
+│   GET  /schedules     →  handleAppShell   (SPA shell, catch-all route)   │
 │   GET  /api/session   →  handleApiSession  (JSON)                        │
 │   GET  /api/sessions  →  handleApiSessions (JSON list)                   │
 │   POST /api/chat      →  handleChat        (multipart or JSON)           │
 │   POST /api/chat/cancel → handleCancelChat                               │
+│   GET/POST/DELETE/PATCH /api/chat/queue → handleChatQueue (SQLite)       │
 │   POST /api/set-model →  handleSetModel                                  │
 │   POST /api/set-thinking-level → handleSetThinkingLevel                  │
 │   POST /api/new-session / fork-session / clone-session                   │
@@ -64,6 +66,7 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
 │   GET/POST/DELETE /api/diff/reviews → diff review comments (SQLite)      │
 │   GET/POST /api/scratchpad → scratchpad (SQLite)                         │
 │   GET/POST/DELETE /api/annotations → review annotations (SQLite, SSE)    │
+│   GET/POST /api/schedules /api/schedule(/run|/runs) → schedules (SQLite) │
 │   GET/POST /api/settings → user settings (SQLite, write-through cache)   │
 │   GET/POST /api/projects → project visibility prefs (SQLite)             │
 │   GET  /api/sounds  /  GET /sounds/…   (notification sounds)             │
@@ -115,8 +118,8 @@ pi-web is a local HTTP server that lets you browse and interact with your pi cod
    Non-loopback →  PI_WEB_TOKEN required  (or --insecure)
    Loopback     →  Auth optional
 
-When no --host override is supplied and Tailscale is running, pi-web also
-configures Tailscale Serve:
+When no --host override is supplied, Tailscale is running, and
+`PI_WEB_TOKEN` is set, pi-web also configures Tailscale Serve:
 
     tailscale serve --bg --https=<port> http://127.0.0.1:<port>
 
@@ -138,7 +141,7 @@ name, while pi-web itself continues listening only on localhost.
 ├── session-status/
 │   ├── 2026-01-15T10-30-00.000Z_a1b2c3d4.jsonl   ← terminal writes here
 │   └── …
-├── pi-web.sqlite           ← scratchpads + annotations + project visibility prefs + user settings + btw registry
+├── pi-web.sqlite           ← scratchpads, annotations, review comments, project prefs, settings, btw registry, schedules, chat queue
 └── pi-web/
     ├── pi-web-state.json       ← regular server state + lock
     ├── pi-web-state-dev.json   ← development state + lock (while running)
@@ -180,7 +183,7 @@ across devices. See `internal/server/projects.go`.
 3. Determine bind host (flag → localhost)
 4. Enforce auth for explicit non-loopback binds
 5. Build `server.Deps` (renderers, cache, workers, auth)
-6. Create `Server` → starts file watcher + status watcher + sweeper
+6. Create `Server` → opens SQLite, starts file watcher + status watcher + sweeper, and (unless in development mode) the schedule loop + chat-queue drainer
 7. Register routes on `http.ServeMux`
 8. Load Vite manifest and register static assets
 9. Optionally configure Tailscale Serve HTTPS for localhost

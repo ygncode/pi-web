@@ -24,7 +24,8 @@ internal/ui/embedded/app.html
         ├── routes/SessionsPage.svelte  (/)
         ├── routes/SessionPage.svelte   (/session?id=…)
         ├── routes/SettingsPage.svelte  (/settings)
-        └── routes/LoginPage.svelte     (/login)
+        ├── routes/SchedulesPage.svelte (/schedules)
+        └── routes/NotFoundPage.svelte  (any other path)
 ```
 
 The Go shell intentionally preserves the current PWA-first boot path:
@@ -49,11 +50,14 @@ The live SPA shell inlines the core CSS needed by all migrated routes:
 - `styles/theme.css`
 - `styles/index.css`
 - `styles/settings.css`
+- `styles/schedules.css`
 - `styles/session.css`
 - `styles/menu.css`
 - `styles/palette.css`
 
-Some CSS is also exposed as PWA/static routes by `internal/ui/pwa.go` (`/theme.css`, `/index.css`, `/menu.css`, `/palette.css`, `/settings.css`) for compatibility and install/offline behavior.
+The inlined CSS is the only delivery path for these files: `internal/ui/pwa.go` serves just the manifest, service worker, icons, and `cat.webm`. The one standalone stylesheet route is `/custom-themes.css` (user CSS).
+
+The pre-auth token prompt is not part of the SPA shell: the auth middleware renders the standalone `embedded/auth.html` page (`internal/ui/auth_page.go`).
 
 ---
 

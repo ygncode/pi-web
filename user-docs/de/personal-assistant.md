@@ -1,14 +1,14 @@
 # pi-web als dein persönlicher Assistent
 
-pi-web ist nicht nur zum Programmieren da — du kannst es in einen **persönlichen KI-Assistenten** verwandeln, der auf deinem Computer lebt, wie dein eigener OpenClaw oder Hermes.
+pi-web ist nicht nur zum Programmieren da — du kannst es in einen **persönlichen KI-Assistenten** verwandeln, der auf deinem Computer lebt, so als hättest du dein eigenes OpenClaw oder Hermes.
 
-## So funktioniert's
+## So funktioniert es
 
-Du erstellst einen eigenen Ordner auf deinem Rechner — dort lebt dein Assistent. Darin legst du eine `APPEND_SYSTEM.md`-Datei ab, die festlegt, wer dein Assistent ist, was er weiß und wie er sich verhält. pi-web bietet dir eine schöne Chat-Oberfläche, um von jedem Gerät aus mit ihm zu sprechen.
+Du legst auf deinem Rechner einen eigenen Ordner an — dort lebt dein Assistent. Darin legst du eine Datei `APPEND_SYSTEM.md` ab, die festlegt, wer dein Assistent ist, was er weiß und wie er sich verhält. pi-web bietet dir eine schöne Chat-Oberfläche, um von jedem Gerät aus mit ihm zu sprechen.
 
 ## Schritt für Schritt
 
-### 1. Erstelle deinen Assistent-Ordner
+### 1. Erstelle deinen Assistenten-Ordner
 
 Wähle einen Ordner auf deinem Computer. Zum Beispiel:
 
@@ -18,7 +18,7 @@ Wähle einen Ordner auf deinem Computer. Zum Beispiel:
 
 ### 2. Definiere deinen Assistenten
 
-Erstelle eine `APPEND_SYSTEM.md`-Datei in diesem Ordner. Hier sagst du pi, wer dein Assistent ist:
+Erstelle in diesem Ordner eine Datei `APPEND_SYSTEM.md`. Hier teilst du pi mit, wer dein Assistent ist:
 
 ```markdown
 # My Personal Assistant
@@ -49,7 +49,7 @@ pi hängt dies automatisch an den System-Prompt jeder Unterhaltung an, sodass de
 
 ### 3. Starte eine Sitzung in diesem Ordner
 
-Erstelle in pi-web eine neue Sitzung, die auf `~/my-assistant/` (oder wie auch immer du sie genannt hast) verweist. Das war's — du sprichst mit deinem persönlichen Assistenten.
+Erstelle in pi-web eine neue Sitzung, die auf `~/my-assistant/` zeigt (oder wie auch immer du sie genannt hast). Das war's — du sprichst mit deinem persönlichen Assistenten.
 
 ### 4. Nutze ihn von überall
 
@@ -57,24 +57,39 @@ Installiere pi-web als PWA auf deinem Handy, Tablet oder Laptop. Dein Assistent 
 
 ## Ideen für deinen Assistenten
 
-| Rolle | Was in die APPEND_SYSTEM.md gehört |
+| Rolle | Was du in APPEND_SYSTEM.md schreibst |
 |---|---|
-| 🧠 **Life-Coach** | Deine Ziele, Gewohnheiten, an denen du arbeitest, Anregungen zum Tagebuchschreiben |
-| 🏠 **Haushaltsmanager** | Einkaufslisten-Format, Vorlieben der Familienmitglieder, Essensplanung |
-| 💼 **Arbeits-Buddy** | Deine Rolle, aktuelle Projekte, Format für Besprechungsnotizen, Unternehmenskontext |
-| 📚 **Lernpartner** | Was du lernst, bevorzugter Erklärstil, Prüf-mich-Modus |
-| ✍️ **Schreibassistent** | Dein Schreibstil, bevorzugter Ton, häufig genutzte Formate |
+| 🧠 **Life-Coach** | Deine Ziele, Gewohnheiten, an denen du arbeitest, Journaling-Anregungen |
+| 🏠 **Haushaltsmanager** | Format der Einkaufsliste, Vorlieben der Familienmitglieder, Essensplanung |
+| 💼 **Arbeitsbuddy** | Deine Rolle, aktuelle Projekte, Format für Meeting-Notizen, Unternehmenskontext |
+| 📚 **Lernpartner** | Was du lernst, bevorzugter Erklärstil, Quiz-Modus |
+| ✍️ **Schreibassistent** | Dein Schreibstil, Tonvorlieben, gängige Formate, die du verwendest |
 
 ## Füge mehr Kontext hinzu
 
-Du kannst alles in deinen Assistent-Ordner legen, was pi nützlicher macht:
+Du kannst alles in deinen Assistenten-Ordner legen, was pi nützlicher macht:
 
 - `notes/` — Referenzdateien, die dein Assistent lesen kann
 - `context.md` — Hintergrundinformationen über dein Leben oder deine Arbeit
-- `projects.md` — aktuelle Projekte und deren Status
+- `projects.md` — aktuelle Projekte und ihr Status
 
-pi kann Dateien im Ordner lesen. Je mehr Kontext du gibst, desto besser wird es.
+pi kann Dateien im Ordner lesen — je mehr Kontext du gibst, desto besser wird es.
+
+## Lass pi-web Dinge erledigen
+
+Nach `pi install npm:@ygncode/pi-web@beta` können Sitzungen mit pi-web selbst sprechen.
+Probiere es aus:
+
+- „Lege einen Zeitplan um 2 Uhr Singapur-Zeit an, um meinen Posteingang zusammenzufassen“
+- „Liste meine pi-web-Zeitpläne auf“
+- „Pausiere den Posteingangs-Zeitplan“
+- „Schreib das in die Notizen“
+- „Stelle pi-web auf den dunklen Modus um / schalte die automatische Titelvergabe aus“
+
+Der mitgelieferte Skill **/skill:pi-web-schedule** macht daraus einen echten pi-web-Zeitplan (dieselben, die du unter `/schedules` bearbeitest). Jede Ausführung startet eine **neue** Sitzung, daher müssen die Anweisungen für sich allein stehen — „fasse ungelesene E-Mails in ~/inbox zusammen“ funktioniert; „mach weiter, wo wir aufgehört haben“ nicht.
+
+Zeitpläne laufen nur, während pi-web läuft.
 
 ---
 
-> 💡 **Tipp:** Fang einfach an. Nur ein paar Zeilen darüber, wer du bist und wie sich der Assistent verhalten soll. Entwickle es mit der Zeit weiter, wenn du herausfindest, was funktioniert.
+> 💡 **Tipp:** Fang einfach an. Nur ein paar Zeilen darüber, wer du bist und wie sich der Assistent verhalten soll. Verbessere es mit der Zeit, wenn du merkst, was funktioniert.

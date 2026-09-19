@@ -87,13 +87,13 @@ Priority:
 1. `--host` flag (explicit override)
 2. `127.0.0.1` (default)
 
-If no `--host` override is supplied and Tailscale is running, startup also runs:
+If no `--host` override is supplied, Tailscale is available, and `PI_WEB_TOKEN` is set, startup also runs:
 
 ```bash
 tailscale serve --bg --https=<port> http://127.0.0.1:<port>
 ```
 
-This gives the user a Tailscale HTTPS endpoint without making pi-web bind to a Tailscale interface or manage TLS certificates itself.
+This gives the user a Tailscale HTTPS endpoint without making pi-web bind to a Tailscale interface or manage TLS certificates itself. Without a token, pi-web stays loopback-only and skips Tailscale Serve — the Serve hostname would otherwise be allowlisted as a tokenless host, exposing the agent to the whole tailnet.
 
 ### 4. Auth Enforcement
 
@@ -133,11 +133,16 @@ if err != nil { os.Exit(1) } // agent-dir / SQLite schema init failed
 SQLite schema (`initDB`) can't be initialized, rather than running with a
 half-initialized database that fails opaquely on first use.
 
-On success, server creation immediately spawns three background goroutines:
+On success, server creation immediately spawns three watcher goroutines:
 
 1. **`watchFiles()`** — watches `sessionsDir` for changes (fsnotify + polling fallback)
 2. **`startSessionStatusWatcher()`** — watches `session-status/` for terminal activity
 3. **`runStatusSweeper()`** — revalidates running status every second
+
+Unless `DisableBackgroundJobs` is set (internal development mode), `New` also
+starts the autonomous work: the 30-second schedule loop (`runScheduler`) and the
+chat-queue drainer. Development mode skips those so `make dev` cannot duplicate
+the installed server's side effects.
 
 ### 6. Route Registration
 

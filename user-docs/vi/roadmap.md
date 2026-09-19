@@ -2,38 +2,44 @@
 
 pi-web được xây dựng cho hai nhóm người dùng:
 
-- **Dành cho lập trình viên** — những người sống trong terminal nhưng muốn tiếp tục phiên làm việc từ thiết bị di động, chuyển giao cho máy chủ từ xa, hoặc theo dõi các tác vụ chạy dài từ bất kỳ đâu.
-- **Dành cho người không chuyên** — những người chỉ muốn một ứng dụng AI đẹp mắt và hoạt động trơn tru. Mở lên, gõ, tận hưởng. Không terminal, không SSH, không rắc rối. Giống như những công cụ AI thân thiện nhất, nhưng có thêm quyền tự do chọn mô hình và mã nguồn mở.
+- **Cho nhà phát triển** — những người sống trong terminal nhưng muốn tiếp tục phiên làm việc từ điện thoại, bàn giao cho một máy chủ từ xa, hoặc theo dõi các tác vụ chạy lâu từ bất kỳ đâu.
+- **Cho người dùng phổ thông** — những người chỉ muốn một ứng dụng AI đẹp và hoạt động tốt. Mở nó ra, gõ, tận hưởng. Không terminal, không SSH, không phức tạp. Giống như những công cụ AI thân thiện nhất, nhưng có thêm lựa chọn model và sự tự do của mã nguồn mở.
 
-Dưới đây là những gì sắp ra mắt.
+Đây là những gì sắp ra mắt.
 
 ---
 
-## Hiện tại (đã ra mắt)
+## Hiện tại (đã phát hành)
 
-Mọi thứ được liệt kê trong [bảng tính năng](README.md#what-you-can-do-with-pi-web) đều đã có mặt hôm nay.
+Mọi thứ liệt kê trong [bảng tính năng](README.md#what-you-can-do-with-pi-web) hiện đã hoạt động.
+
+Các tính năng từng nằm trong lộ trình này và nay đã được phát hành:
+
+| Tính năng | Chức năng |
+|---|---|
+| **Điều hướng / hàng đợi** ([#46](https://github.com/ygncode/pi-web/issues/46)) | Gửi chỉ dẫn bổ sung trong khi pi vẫn đang chạy, hoặc xếp hàng các tin nhắn cho lượt tiếp theo. |
+| **Bộ lập lịch** ([#44](https://github.com/ygncode/pi-web/issues/44)) | Lên lịch để prompt chạy tự động — họp standup hằng ngày, tóm tắt buổi sáng, các tác vụ định kỳ — từ trang `/schedules`. |
+| **Tùy chỉnh hiển thị mặc định** ([#48](https://github.com/ygncode/pi-web/issues/48)) | Đặt mức hiển thị ưa thích cho phần suy nghĩ (thinking), công cụ và đầu ra của công cụ trên tất cả các phiên. |
+| **Git diff** (một phần của [#47](https://github.com/ygncode/pi-web/issues/47)) | Xem các thay đổi chưa commit trong working tree ở modal diff của phiên, kèm theo nhận xét đánh giá. |
 
 ---
 
 ## Sắp tới
 
-| # | Tính năng | Mô tả |
+| # | Tính năng | Chức năng |
 |---|---|---|
-| [#50](https://github.com/ygncode/pi-web/issues/50) | **Bot Telegram & Discord** | Trò chuyện với pi qua Telegram hoặc Discord — lý tưởng cho các quy trình trợ lý cá nhân khi đang di chuyển. |
-| [#49](https://github.com/ygncode/pi-web/issues/49) | **Thông tin sử dụng** | Theo dõi token, ước tính chi phí, phân tích phiên — hiểu rõ cách bạn đang sử dụng pi. |
-| [#48](https://github.com/ygncode/pi-web/issues/48) | **Mặc định tùy chỉnh** | Đặt chế độ hiển thị ưa thích cho suy nghĩ (thinking), công cụ (tools) và kết quả công cụ trên tất cả phiên. |
-| [#46](https://github.com/ygncode/pi-web/issues/46) | **Điều hướng / hàng đợi** | Gửi chỉ dẫn bổ sung khi pi đang chạy — điều hướng giữa chừng. |
-| [#41](https://github.com/ygncode/pi-web/issues/41) | **Lệnh `/compact`** | Thu gọn hội thoại dài ngay từ giao diện web, không cần terminal. |
+| [#50](https://github.com/ygncode/pi-web/issues/50) | **Bot Telegram & Discord** | Trò chuyện với pi qua Telegram hoặc Discord — hoàn hảo cho quy trình trợ lý cá nhân khi đang di chuyển. |
+| [#49](https://github.com/ygncode/pi-web/issues/49) | **Thông tin chi tiết về mức sử dụng** | Theo dõi token xuyên phiên, ước tính chi phí và phân tích — vượt xa bảng phân tích theo từng phiên trong menu phiên. |
+| [#41](https://github.com/ygncode/pi-web/issues/41) | **Lệnh `/compact`** | Rút gọn các cuộc hội thoại dài ngay từ giao diện web, không cần terminal. |
 
 ---
 
-## Kế hoạch
+## Trong kế hoạch
 
-| # | Tính năng | Mô tả |
+| # | Tính năng | Chức năng |
 |---|---|---|
-| [#47](https://github.com/ygncode/pi-web/issues/47) | **Trình duyệt tệp & Git Diff** | Duyệt cây thư mục dự án và xem thay đổi git trực tiếp trong pi-web. Tùy chọn tham gia, nên không làm phiền bạn. |
-| [#44](https://github.com/ygncode/pi-web/issues/44) | **Lập lịch** | Lên lịch prompt chạy tự động — họp standup hàng ngày, tóm tắt buổi sáng, tác vụ định kỳ. Cần quyền admin để đảm bảo an toàn. |
-| [#43](https://github.com/ygncode/pi-web/issues/43) | **Phím tắt tùy chỉnh** | Tùy chỉnh lại mọi phím tắt để phù hợp với thói quen của bạn. |
+| [#47](https://github.com/ygncode/pi-web/issues/47) | **Trình quản lý tệp** | Duyệt cây tệp của dự án trực tiếp trong pi-web. Tùy chọn bật, nên nó không gây phiền. |
+| [#43](https://github.com/ygncode/pi-web/issues/43) | **Phím tắt tùy chỉnh** | Gán lại mọi phím tắt theo thói quen của bạn. |
 
 ---
 
@@ -41,10 +47,10 @@ Mọi thứ được liệt kê trong [bảng tính năng](README.md#what-you-ca
 
 Mục tiêu dài hạn: pi-web nên là **giao diện cho pi** — dành cho tất cả mọi người.
 
-- **Người không chuyên** mở nó như bất kỳ ứng dụng nào khác. Chọn mô hình. Gõ. Xong. Không bao giờ cần dòng lệnh.
-- **Lập trình viên** nhận được tích hợp sâu — chuyển giao từ xa, bảng điều khiển đa phiên, duyệt tệp git, bot nhắn tin.
-- **Mọi người** đều có tự do chọn mô hình, minh bạch mã nguồn mở, và giao diện được chăm chút đến từng chi tiết.
+- **Người dùng phổ thông** mở nó như bất kỳ ứng dụng nào khác. Chọn model. Gõ. Xong. Không bao giờ phải dùng dòng lệnh.
+- **Nhà phát triển** có được tích hợp sâu — bàn giao từ xa, bảng điều khiển đa phiên, duyệt tệp nhận biết Git, bot nhắn tin.
+- **Tất cả mọi người** có được tự do chọn model, sự minh bạch của mã nguồn mở và một giao diện chu đáo ở mọi ngóc ngách.
 
 ---
 
-> 💡 Có ý tưởng? [Mở issue](https://github.com/ygncode/pi-web/issues/new) hoặc tham gia thảo luận.
+> 💡 Có ý tưởng? [Mở một issue](https://github.com/ygncode/pi-web/issues/new) hoặc tham gia thảo luận.

@@ -140,7 +140,7 @@ Browser POST /api/chat?id=<id>
            │               ├──▶ Await response on pending channel
            │               └──▶ Update status → running
            │
-           └──▶ Return {"ok": true, "status": "accepted"}
+           └──▶ Return {"ok": true, "status": "queued"}
 ```
 
 ## Data Flow: Rename Session
@@ -160,7 +160,11 @@ Browser POST /api/rename-session?id=<id>
            └──▶ Return {"ok": true, "name": "New Name"}
 ```
 
-Rename is the only intentional pi-web write to an existing session JSONL file. It appends metadata history; it does not rewrite existing entries. Creating a new session is the other direct write path, but it only creates a fresh JSONL file.
+pi-web only ever **appends** metadata to an existing session JSONL file — it never
+rewrites existing entries. There are three append paths: browser rename
+(`session_info`), auto-titling (`session_info`, marked so a user rename always
+wins), and entry labels (`label`). Creating new sessions (including btw, fork,
+clone, and schedule runs) writes fresh JSONL files instead.
 
 ## Data Flow: Live Reload
 

@@ -76,7 +76,7 @@ This flow covers a user typing a message (with optional image attachment) in the
      │             │              │                  │                  │               │
      │             │◀───────────── nil ──────────────│                  │               │
      │             │              │                  │                  │               │
-     │◀──────────── {ok: true, status: "accepted"} ─│                  │               │
+     │◀──────── {ok: true, status: "queued"} ───────│                  │               │
      │             │              │                  │                  │               │
      │             │              │                  │                  │               │
      │             │              │                  │                  │               │
@@ -137,7 +137,8 @@ Content-Type: image/png
 ### 3. Worker Resolution
 
 After parsing succeeds, the server registers the send as server-owned
-background work and immediately returns `202 Accepted`. The task uses the
+background work and immediately returns `202 Accepted` with
+`{"ok": true, "status": "queued"}`. The task uses the
 server lifecycle context: graceful shutdown cancels an in-flight RPC wait and
 waits for the task to exit before closing shared resources.
 
