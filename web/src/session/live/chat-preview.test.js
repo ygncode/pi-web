@@ -17,6 +17,7 @@ describe('chat preview', () => {
     expect(
       renderChatPreview({ content: 'hello', done: false }, state, {
         documentImpl: dom.window.document,
+        windowImpl: null,
         renderMarkdown: (text) => `<p>${text}</p>`,
         shouldFollow: () => true,
         forceFollowToBottom,
@@ -82,6 +83,7 @@ describe('chat preview', () => {
     renderChatPreview({ content: 'final answer', done: false }, state, {
       documentImpl: dom.window.document,
       renderMarkdown: (text) => text,
+      windowImpl: null,
     });
 
     expect(finishChatPreview(state)).toBe(true);
