@@ -10,7 +10,7 @@
   --palette-surface: var(--surface);
   --palette-surface-2: var(--surface-2);
   --palette-text-soft: var(--text-soft);
-  --viewport-height: 100svh;
+  --viewport-height: var(--zc-svh, 100svh);
 }
 
     :root, [data-theme="dark"] {
@@ -412,7 +412,7 @@
       align-items: center;
       justify-content: center;
       gap: 14px;
-      min-height: var(--viewport-height, 100vh);
+      min-height: var(--viewport-height, var(--zc-vh, 100vh));
       padding: 24px;
       text-align: center;
       color: var(--text-soft);
@@ -479,7 +479,7 @@
       line-height: var(--line-height);
       color: var(--text);
       background: var(--body-bg);
-      min-height: 100vh;
+      min-height: var(--zc-vh, 100vh);
     }
 
     body.pi-sheet-open {
@@ -500,7 +500,7 @@
     #app {
       display: flex;
       align-items: stretch;
-      height: calc(100vh - 52px);
+      height: calc(var(--zc-vh, 100vh) - 52px);
       margin-top: 52px;
       /* Chrome shell behind the resizer gutters so no body-bg slivers show
          beside the darker composer / sidebars. The content column re-lights
@@ -1372,7 +1372,7 @@
       width: min(640px, 90vw) !important;
       min-width: min(640px, 90vw) !important;
       max-width: min(640px, 90vw) !important;
-      height: calc(100vh - 52px);
+      height: calc(var(--zc-vh, 100vh) - 52px);
       z-index: 198;
       border-left: 1px solid var(--dim);
       box-shadow: -4px 0 24px rgba(0, 0, 0, 0.4);
@@ -2720,6 +2720,96 @@
       }
     }
 
+    /* Narrow header (phones, and any width once the UI scale zooms the page:
+       390px at 150% is only 260 CSS px). A container query — unlike a media
+       query, which still sees the unzoomed 390px viewport — reacts to the real
+       layout width, so every action (incl. the + new-session button) shrinks
+       instead of being pushed off-screen. The title and owner badge give way
+       first; buttons never shrink below a 26px tap target. */
+    .session-header-bar {
+      container-type: inline-size;
+      container-name: session-header;
+    }
+
+    @container session-header (max-width: 560px) {
+      .session-header-right {
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+
+      .session-header-left {
+        gap: 4px;
+      }
+
+      .session-header-back-label {
+        display: none;
+      }
+
+      .session-header-back {
+        min-width: 26px;
+        height: 28px;
+        justify-content: center;
+      }
+
+      /* basis 0: the title only takes space the buttons don't need. */
+      .session-header-bar .session-header-title {
+        flex: 1 1 0;
+        min-width: 0;
+        margin: 0 4px;
+      }
+
+      .session-header-left {
+        flex-shrink: 0;
+      }
+
+      .session-header-right > :not(.session-owner-badge) {
+        flex-shrink: 0;
+      }
+
+      .session-header-right .session-owner-badge {
+        flex-shrink: 1;
+        min-width: 0;
+        max-width: 96px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-right: 4px;
+      }
+
+      .session-header-actions,
+      .session-header-new,
+      .session-header-schedules,
+      .session-header-projects {
+        width: 28px;
+        height: 28px;
+        min-width: 26px;
+        margin-right: 0;
+      }
+
+      .session-header-right {
+        gap: 2px;
+      }
+    }
+
+    @container session-header (max-width: 300px) {
+      .session-header-bar .session-header-title {
+        display: none;
+      }
+
+      /* No room left for a readable owner name; the sidebar/People switcher
+         still shows it. */
+      .session-header-right .session-owner-badge {
+        display: none;
+      }
+
+      .session-header-actions,
+      .session-header-new,
+      .session-header-schedules,
+      .session-header-projects {
+        width: 26px;
+        height: 26px;
+      }
+    }
+
     .working-dots::after {
       content: '';
       display: inline-block;
@@ -3741,12 +3831,12 @@
 
     @media (min-width: 901px) {
       html.pi-session-page, body.pi-session-page {
-        height: 100vh;
+        height: var(--zc-vh, 100vh);
         overflow: hidden;
       }
 
       #app {
-        height: calc(100vh - 52px);
+        height: calc(var(--zc-vh, 100vh) - 52px);
         margin-top: 52px;
         overflow: hidden;
       }
@@ -3783,26 +3873,26 @@
         width: 100%;
         display: flex;
         flex-direction: column;
-        height: 100vh;
-        height: var(--viewport-height, 100svh);
-        /* The base body rule sets min-height:100vh. On iOS 100vh is the LARGE
+        height: var(--zc-vh, 100vh);
+        height: var(--viewport-height, var(--zc-svh, 100svh));
+        /* The base body rule sets min-height:var(--zc-vh, 100vh). On iOS var(--zc-vh, 100vh) is the LARGE
            viewport (full screen, behind the keyboard), and min-height beats
            height — so without this override the body stays full-height and the
            bottom-docked composer is buried under the keyboard. Track the
            visible viewport here too. */
-        min-height: var(--viewport-height, 100svh);
+        min-height: var(--viewport-height, var(--zc-svh, 100svh));
         overflow: hidden;
       }
 
       #app {
         flex: 1;
         min-height: 0;
-        /* Track the visible viewport, not 100vh. The base #app rule sizes to
-           calc(100vh - 52px); on iOS 100vh is the LARGE viewport (keyboard
+        /* Track the visible viewport, not var(--zc-vh, 100vh). The base #app rule sizes to
+           calc(var(--zc-vh, 100vh) - 52px); on iOS var(--zc-vh, 100vh) is the LARGE viewport (keyboard
            excluded), so when the keyboard opens #app stays full-height and its
            bottom-docked composer is pushed under the keyboard even though the
            fixed body already shrank to --viewport-height. Mirror the body fix. */
-        height: calc(var(--viewport-height, 100svh) - 52px);
+        height: calc(var(--viewport-height, var(--zc-svh, 100svh)) - 52px);
       }
 
       #sidebar {
@@ -3813,8 +3903,8 @@
         max-width: min(var(--sidebar-width), 100vw);
         top: 0;
         bottom: 0;
-        height: 100vh;
-        height: 100svh;
+        height: var(--zc-vh, 100vh);
+        height: var(--zc-svh, 100svh);
         z-index: 99;
         transform: translateX(-100%);
         transition: transform 0.3s;
@@ -3901,8 +3991,8 @@
         width: min(320px, 85vw) !important;
         min-width: min(320px, 85vw) !important;
         max-width: min(320px, 85vw) !important;
-        height: 100vh !important;
-        height: var(--viewport-height, 100svh) !important;
+        height: var(--zc-vh, 100vh) !important;
+        height: var(--viewport-height, var(--zc-svh, 100svh)) !important;
         z-index: 1200 !important;
         background: var(--surface) !important;
         border-left: 1px solid var(--dim) !important;
@@ -3946,7 +4036,7 @@
         width: 100% !important;
         min-width: 0 !important;
         max-width: 100% !important;
-        height: var(--viewport-height, 100svh) !important;
+        height: var(--viewport-height, var(--zc-svh, 100svh)) !important;
         max-height: none !important;
         border-radius: 0 !important;
         resize: none !important;
@@ -4158,7 +4248,7 @@
       max-width: calc(100vw - 24px);
       height: 420px;
       min-height: 220px;
-      max-height: calc(100vh - 24px);
+      max-height: calc(var(--zc-vh, 100vh) - 24px);
       background: var(--container-bg, var(--surface));
       border: 1px solid var(--dim);
       border-radius: 8px;
@@ -5495,10 +5585,10 @@
     .pi-sheet-panel.pi-sheet-mobile {
       max-width: 100%;
       width: 100%;
-      height: 100vh;
-      height: 100svh;
-      max-height: 100vh;
-      max-height: 100svh;
+      height: var(--zc-vh, 100vh);
+      height: var(--zc-svh, 100svh);
+      max-height: var(--zc-vh, 100vh);
+      max-height: var(--zc-svh, 100svh);
       border-radius: 0;
       border: none;
       transform: translateY(100%);
@@ -5527,8 +5617,8 @@
     .pi-sheet-panel.diff-sheet-panel {
       max-width: none;
       width: 100vw;
-      height: 100vh;
-      max-height: 100vh;
+      height: var(--zc-vh, 100vh);
+      max-height: var(--zc-vh, 100vh);
       border-radius: 0;
       border: none;
       background: var(--container-bg);
@@ -5832,8 +5922,8 @@
       display: flex;
       flex-direction: column;
       height: min(64vh, 520px);
-      min-height: min(360px, calc(100vh - 120px));
-      max-height: calc(100vh - 120px);
+      min-height: min(360px, calc(var(--zc-vh, 100vh) - 120px));
+      max-height: calc(var(--zc-vh, 100vh) - 120px);
     }
 
     .fork-search-wrap {
@@ -6118,8 +6208,8 @@
       display: flex;
       flex-direction: column;
       height: min(64vh, 520px);
-      min-height: min(360px, calc(100vh - 120px));
-      max-height: calc(100vh - 120px);
+      min-height: min(360px, calc(var(--zc-vh, 100vh) - 120px));
+      max-height: calc(var(--zc-vh, 100vh) - 120px);
     }
 
     .shortcuts-search-wrap {
@@ -6553,7 +6643,7 @@
       position: absolute;
       inset: 0;
       width: 100vw;
-      height: 100vh;
+      height: var(--zc-vh, 100vh);
       line-height: 0;
     }
 
@@ -6763,3 +6853,378 @@
       font-size: 12px;
       color: var(--text-soft, var(--muted));
     }
+
+    /* ── zcode/Codex-style collapsible rows (thinking + tool calls) ── */
+    .zc-row { --zc-act: var(--accent); }
+    .zc-row-head {
+      all: unset;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+      font-size: 12.5px;
+      line-height: 20px;
+    }
+    .zc-row-head:focus-visible { outline: 1px solid var(--zc-act); outline-offset: 2px; border-radius: 4px; }
+    .zc-chevron {
+      flex: 0 0 auto;
+      width: 7px; height: 7px;
+      border-right: 1.6px solid var(--zc-act);
+      border-bottom: 1.6px solid var(--zc-act);
+      transform: rotate(-45deg);
+      transition: transform .18s ease;
+      margin: 0 3px 0 1px;
+    }
+    .zc-open > .zc-row-head .zc-chevron { transform: rotate(45deg); margin-top: -3px; }
+    .zc-label { flex: 0 0 auto; font-weight: 650; color: var(--zc-act); }
+    .zc-arg {
+      flex: 1 1 auto; min-width: 0;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+      color: var(--muted);
+      font-family: var(--font-code);
+      font-size: 12px;
+    }
+    .thinking-block .zc-arg { font-family: inherit; font-style: italic; }
+    .zc-open > .zc-row-head .zc-arg { opacity: .55; }
+    .zc-status { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: transparent; }
+    .zc-status-pending { background: var(--warning); animation: zc-pulse 1.2s ease-in-out infinite; }
+    .zc-status-error { background: var(--error); }
+    @keyframes zc-pulse { 50% { opacity: .3; } }
+    .zc-collapsed > .zc-row-body { display: none; }
+    .zc-open > .zc-row-body { margin-top: 6px; animation: zc-reveal .16s ease-out; }
+    @keyframes zc-reveal { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+    .tool-execution.zc-row.zc-collapsed { padding-top: 6px; padding-bottom: 6px; }
+
+    /* ── zcode theme picker ── */
+    html[data-zcode-preset] { background-color: var(--body-bg) !important; }
+    .zc-picker-backdrop {
+      position: fixed; inset: 0; z-index: 1200;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+    }
+    .zc-picker-sheet {
+      position: fixed; z-index: 1201;
+      left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: min(720px, calc(100vw - 32px));
+      max-height: min(80vh, 760px);
+      display: flex; flex-direction: column;
+      background: var(--surface); color: var(--text);
+      border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+      border-radius: 18px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.45);
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+      animation: zc-sheet-in .18s ease-out;
+    }
+    @keyframes zc-sheet-in { from { opacity: 0; transform: translate(-50%, -48%); } }
+    .zc-picker-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px 6px 20px; }
+    .zc-picker-title { font-size: 17px; font-weight: 650; letter-spacing: -0.01em; }
+    .zc-picker-close {
+      width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 10px; border: 0; background: transparent; color: var(--muted); cursor: pointer;
+    }
+    .zc-picker-close:hover { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+    .zc-picker-body { overflow-y: auto; padding: 4px 16px 16px; -webkit-overflow-scrolling: touch; }
+    .zc-picker { font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif; }
+    .zc-picker-inline { width: 100%; margin-top: 10px; }
+    .zc-settings-presets { flex-direction: column; align-items: stretch; }
+    .zc-picker-filters { display: flex; gap: 6px; margin: 4px 0 12px; }
+    .zc-picker-filter {
+      border: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
+      background: transparent; color: var(--muted);
+      border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .zc-picker-filter.active { background: var(--accent); border-color: var(--accent); color: var(--body-bg); font-weight: 600; }
+    .zc-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+    .zc-swatch {
+      all: unset; box-sizing: border-box; cursor: pointer;
+      display: flex; flex-direction: column; gap: 6px;
+      padding: 6px; border-radius: 14px;
+      border: 1.5px solid transparent;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform .12s, border-color .12s;
+    }
+    .zc-swatch:hover { transform: translateY(-1px); }
+    .zc-swatch:active { transform: scale(.97); }
+    .zc-swatch:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    .zc-swatch.active { border-color: var(--accent); }
+    .zc-swatch-preview {
+      position: relative; display: block; height: 78px; border-radius: 10px; overflow: hidden;
+      background: var(--body-bg);
+      border: 1px solid color-mix(in srgb, var(--text) 12%, transparent);
+    }
+    .zc-swatch-bubble {
+      position: absolute; right: 8px; top: 8px; width: 46%; height: 14px; border-radius: 8px 8px 3px 8px;
+      background: var(--surface-2);
+      border: 1px solid color-mix(in srgb, var(--text) 10%, transparent);
+    }
+    .zc-swatch-line { position: absolute; left: 9px; height: 5px; border-radius: 3px; background: var(--text); opacity: .85; }
+    .zc-l1 { top: 32px; width: 62%; }
+    .zc-l2 { top: 42px; width: 44%; background: var(--muted); }
+    .zc-swatch-dots { position: absolute; left: 9px; right: 9px; bottom: 9px; display: flex; gap: 4px; }
+    .zc-swatch-dots i { flex: 1; height: 7px; border-radius: 4px; }
+    .zc-swatch-name {
+      display: flex; align-items: center; gap: 4px; padding: 0 2px;
+      font-size: 13px; font-weight: 550; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* names sit outside the preview but inside the swatch, which carries the
+       preset's own --text; keep them in the surrounding UI colour instead. */
+    .zc-picker .zc-swatch-name { color: inherit; }
+    .zc-swatch-check { display: inline-flex; color: var(--accent); }
+    .zc-picker-footer { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 14px; }
+    .zc-picker-reset {
+      border: 1px solid color-mix(in srgb, var(--text) 14%, transparent); background: transparent;
+      color: var(--text); border-radius: 10px; padding: 7px 12px; font-size: 13px; cursor: pointer; font-family: inherit;
+    }
+    .zc-picker-reset.active { border-color: var(--accent); color: var(--accent); }
+    .zc-size-row { display: flex; align-items: center; gap: 8px; margin: 6px 0 8px; }
+    .zc-size-btn { min-width: 52px; height: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface, transparent); color: var(--text); font-weight: 600; cursor: pointer; display: inline-flex; align-items: baseline; justify-content: center; gap: 1px; }
+    .zc-size-btn:disabled { opacity: .4; cursor: default; }
+    .zc-size-btn:not(:disabled):hover { border-color: var(--accent); }
+    .zc-size-val { min-width: 52px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .zc-size-reset { margin-left: auto; height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+    .zc-size-reset.active { color: var(--accent); border-color: var(--accent); }
+    .zc-size-steps { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px; }
+    .zc-size-steps button { flex: 1; min-width: 34px; height: 26px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
+    .zc-size-steps button.active { background: var(--accent); color: var(--body-bg, #000); border-color: var(--accent); }
+    .zc-picker-hint { font-size: 12px; color: var(--muted); }
+    .zc-picker-empty { color: var(--muted); font-size: 13px; }
+    @media (max-width: 640px) {
+      .zc-picker-sheet {
+        left: 0; right: 0; bottom: 0; top: auto; transform: none;
+        width: 100%; max-height: 82vh; border-radius: 20px 20px 0 0;
+        padding-bottom: env(safe-area-inset-bottom);
+        animation: zc-sheet-up .22s ease-out;
+      }
+      @keyframes zc-sheet-up { from { transform: translateY(40px); opacity: 0; } }
+      .zc-picker-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .zc-swatch-preview { height: 70px; }
+    }
+
+    /* ── zcode v3 fallbacks (sem preset): ícones, badges, tabelas/código ── */
+    .zc-icon { flex: 0 0 auto; display: inline-flex; align-items: center; color: var(--zc-act); }
+    .zc-file { font-family: var(--font-code); font-size: 12px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 45%; }
+    .zc-diffstat { display: inline-flex; gap: 6px; font-family: var(--font-code); font-size: 12px; }
+    .zc-add { color: var(--success); }
+    .zc-del { color: var(--error); }
+    .zc-progress { font-family: var(--font-code); font-size: 11.5px; color: var(--zc-act); }
+    .zc-worked { display: flex; align-items: center; gap: 10px; margin: 4px 0 10px; color: var(--muted); font-size: 12px; }
+    .zc-worked::before, .zc-worked::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--text) 12%, transparent); }
+    .zc-mdbar { display: flex; justify-content: flex-end; gap: 2px; }
+    .zc-code { position: relative; }
+    .zc-mdbar-code { position: absolute; top: 4px; right: 4px; }
+    .zc-mdbtn { all: unset; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 24px; border-radius: 6px; color: var(--muted); }
+    .zc-mdbtn:hover { color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); }
+    .zc-table-scroll { overflow-x: auto; }
+    .zc-table.zc-expanded { position: fixed; inset: 5vh 4vw; z-index: 1300; background: var(--body-bg); overflow: auto; padding: 8px; box-shadow: 0 30px 90px rgba(0,0,0,.55); }
+
+/* ── Multi-user hub: people switcher + session owner badge ── */
+
+  .people-switcher {
+    position: relative;
+    padding: 6px 8px 4px;
+  }
+  .people-switcher-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: var(--container-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+    color: var(--text, inherit);
+    font: inherit;
+    font-size: 0.86em;
+    text-align: left;
+  }
+  .people-switcher.others .people-switcher-btn {
+    border-color: var(--accent, #fb923c);
+    background: color-mix(in srgb, var(--accent, #fb923c) 14%, transparent);
+  }
+  .people-switcher-label {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .people-switcher-icon,
+  .people-switcher-chev,
+  .people-check {
+    display: inline-flex;
+    opacity: 0.85;
+  }
+  .people-switcher-menu {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: calc(100% - 2px);
+    z-index: 50;
+    max-height: 60vh;
+    overflow: auto;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--body-bg, #111);
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  }
+  .people-switcher-menu button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text, inherit);
+    font: inherit;
+    font-size: 0.86em;
+    cursor: pointer;
+    text-align: left;
+  }
+  .people-switcher-menu button:hover,
+  .people-switcher-menu button[aria-selected='true'] {
+    background: var(--hover, rgba(255, 255, 255, 0.07));
+  }
+  .people-switcher-section {
+    padding: 6px 8px 2px;
+    font-size: 0.72em;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.55;
+  }
+  .people-switcher-sep {
+    height: 1px;
+    margin: 4px 6px;
+    background: var(--border, rgba(255, 255, 255, 0.1));
+  }
+  .people-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .people-count {
+    font-size: 0.85em;
+    opacity: 0.6;
+    font-variant-numeric: tabular-nums;
+  }
+  .people-avatar {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72em;
+    font-weight: 700;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--accent, #fb923c) 30%, transparent);
+    color: var(--text, inherit);
+  }
+  .people-empty {
+    padding: 6px 8px;
+    font-size: 0.8em;
+    opacity: 0.6;
+  }
+
+
+  .session-owner-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-right: 6px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.75em;
+    white-space: nowrap;
+    flex-shrink: 0;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+    opacity: 0.85;
+  }
+  .session-owner-badge.others {
+    opacity: 1;
+    font-weight: 600;
+    border-color: var(--accent, #fb923c);
+    background: color-mix(in srgb, var(--accent, #fb923c) 16%, transparent);
+  }
+  .session-owner-source {
+    opacity: 0.6;
+    font-weight: 400;
+  }
+
+
+/* ── Message footer (copy / rating / link / time) + changed-files cards ── */
+.msg-footer { display: flex; align-items: center; gap: 2px; margin: 6px 0 2px; color: var(--dim); }
+.msg-act {
+  display: inline-flex; align-items: center; gap: 4px; min-width: 30px; height: 28px; padding: 0 6px;
+  border: 0; border-radius: 6px; background: transparent; color: var(--dim); cursor: pointer; font: inherit; font-size: 11px;
+}
+.msg-act:hover { color: var(--text); background: var(--hover); }
+.msg-act.on { color: var(--accent); }
+.msg-act-note { color: var(--success, var(--accent)); }
+.msg-time { margin-left: 6px; font-size: 11px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.msg-files { margin: 10px 0 4px; border: 1px solid color-mix(in srgb, var(--dim) 28%, transparent); border-radius: 10px; overflow: hidden; }
+.msg-files-head {
+  width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0; background: transparent;
+  color: var(--text); font: inherit; font-size: 12px; cursor: pointer; text-align: left;
+}
+.msg-files-head:hover { background: var(--hover); }
+.msg-files-chev { display: inline-flex; transition: transform 0.15s; color: var(--dim); }
+.msg-files.open .msg-files-chev { transform: rotate(90deg); }
+.msg-add { color: var(--success, #4ade80); font-variant-numeric: tabular-nums; }
+.msg-del { color: var(--error, #f87171); font-variant-numeric: tabular-nums; }
+.msg-files-list { display: flex; flex-direction: column; gap: 6px; padding: 0 8px 8px; }
+.msg-file-card {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px;
+  background: var(--container-bg); border: 1px solid color-mix(in srgb, var(--dim) 28%, transparent);
+}
+.msg-file-icon { display: inline-flex; color: var(--accent); }
+.msg-file-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.msg-file-name { font-size: 12.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg-file-type { font-size: 11px; color: var(--dim); }
+.msg-file-open {
+  border: 1px solid color-mix(in srgb, var(--dim) 28%, transparent); background: transparent; color: var(--text); border-radius: 6px;
+  padding: 4px 10px; font: inherit; font-size: 11.5px; cursor: pointer;
+}
+.msg-file-open:hover { background: var(--hover); }
+@media (max-width: 700px) { .msg-act { min-width: 36px; height: 34px; } }
+.msg-file-type .msg-add, .msg-file-type .msg-del { margin-left: 4px; }
+
+/* ── Voice input mic ── */
+.pi-chat-mic-button.recording { color: var(--error, #f87171); animation: pi-mic-pulse 1.2s ease-in-out infinite; }
+@keyframes pi-mic-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+
+/* ── Subagent (pi subagent extension) cards ── */
+.subagent-runs { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 2px; }
+.subagent-run { border: 1px solid color-mix(in srgb, var(--dim) 70%, transparent); border-radius: 8px; padding: 6px 9px; background: color-mix(in srgb, var(--surface) 50%, transparent); min-width: 0; }
+.subagent-run[data-status="running"] { border-color: color-mix(in srgb, var(--accent) 55%, transparent); }
+.subagent-run[data-status="failed"], .subagent-run[data-status="aborted"] { border-color: color-mix(in srgb, var(--error, #f87171) 60%, transparent); }
+.subagent-run-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; min-width: 0; }
+.subagent-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); flex-shrink: 0; }
+.subagent-dot-running { background: var(--accent); animation: subagent-pulse 1.1s ease-in-out infinite; }
+.subagent-dot-completed { background: var(--success, #4ade80); }
+.subagent-dot-failed, .subagent-dot-aborted { background: var(--error, #f87171); }
+@keyframes subagent-pulse { 50% { opacity: 0.35; } }
+.subagent-step { color: var(--muted); font-variant-numeric: tabular-nums; }
+.subagent-agent { font-weight: 600; color: var(--text); }
+.subagent-status { color: var(--muted); }
+.subagent-model, .subagent-usage { color: var(--muted); opacity: 0.8; font-size: 11px; overflow-wrap: anywhere; }
+.subagent-task { color: var(--muted); font-size: 12px; margin-top: 3px; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.subagent-items { list-style: none; margin: 4px 0 0; padding: 0; font-size: 11px; color: var(--muted); }
+.subagent-item { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.subagent-item-name { color: var(--accent); margin-right: 5px; }
+.subagent-error { color: var(--error, #f87171); font-size: 12px; margin-top: 3px; white-space: pre-wrap; }
+.subagent-out-toggle { margin-top: 4px; background: none; border: 0; padding: 2px 0; color: var(--accent); font: inherit; font-size: 11px; cursor: pointer; }
+.subagent-output { margin: 4px 0 0; max-height: 320px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }

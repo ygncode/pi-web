@@ -1,5 +1,12 @@
 import { mount } from 'svelte';
 import App from './App.svelte';
+import { bootUiScale } from './shared/ui-scale.js';
+
+try {
+  bootUiScale(document);
+} catch {
+  // ignore
+}
 
 function defaultTarget() {
   if (typeof document === 'undefined') return null;

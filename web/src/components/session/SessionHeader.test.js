@@ -23,8 +23,10 @@ describe('SessionHeader', () => {
     expect(link.textContent).toContain('Schedules');
 
     const right = document.querySelector('.session-header-right');
-    expect(right?.children[0]).toBe(link);
-    expect(right?.children[1]?.id).toBe('new-session-header-btn');
+    // zcode patch: the theme (palette) button sits before Schedules.
+    const kids = [...(right?.children || [])].filter((el) => !el.classList.contains('zc-theme-btn'));
+    expect(kids[0]).toBe(link);
+    expect(kids[1]?.id).toBe('new-session-header-btn');
 
     await user.click(link);
     expect(pushState).toHaveBeenCalledWith({ back: '/' }, '', '/schedules');

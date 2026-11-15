@@ -1,9 +1,12 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
+
 	"os"
+	"pi-web/internal/render"
 	"strconv"
 	"strings"
 	"time"
@@ -22,16 +25,26 @@ func (s *Server) handleAppShell(w http.ResponseWriter, r *http.Request, bootstra
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// The shell references content-hashed asset paths, so it must never be
-	// cached: a stale shell would point at old (now-404) chunks and pin the
-	// browser to an outdated bundle after a rebuild.
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	if err := s.renderAppShell(w, bootstrap); err != nil {
+	// Render to a buffer so the response can be hashed. no-cache (not
+	// no-store) keeps the browser holding a copy that must be revalidated on
+	// every use: an unchanged shell costs a 304, and a rebuilt one still
+	// updates because its ETag changes - the stale shell is never served.
+	var buf bytes.Buffer
+	if err := s.renderAppShell(&buf, bootstrap); err != nil {
 		if !isBrokenPipe(err) {
 			fmt.Fprintf(os.Stderr, "app shell template error: %v\n", err)
 		}
+		return
 	}
+	etag := render.ETagOf(buf.Bytes())
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("ETag", etag)
+	if render.MatchesETag(r.Header.Get("If-None-Match"), etag) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+	_, _ = w.Write(buf.Bytes())
 }
 
 // settingDefaults defines the server-backed user settings and their default
@@ -42,6 +55,9 @@ func (s *Server) handleAppShell(w http.ResponseWriter, r *http.Request, bootstra
 // listed here — it stays in localStorage only.
 var settingDefaults = map[string]string{
 	"pi-web-theme":                  "dark",
+	"pi-web:v1:zcode-preset":        "",
+	"pi-web:v1:zcode-act":           "",
+	"pi-web:v1:ui-scale":            "100",
 	"pi-web:v1:locale":              "en",
 	"pi-web:v1:custom-languages":    "",
 	"pi-web:v1:font-ui":             "mono",
@@ -119,6 +135,24 @@ func (s *Server) getSetting(key, fallback string) string {
 // the page paints the correct theme before any JS runs.
 func (s *Server) ThemeSetting() string {
 	return s.getSetting("pi-web-theme", "dark")
+}
+
+// ZcodePresetSetting returns the persisted zcode colour preset (empty = none),
+// injected server-side as <html data-zcode-preset> so every device paints the
+// chosen preset on first load.
+func (s *Server) ZcodePresetSetting() string {
+	return s.getSetting("pi-web:v1:zcode-preset", "")
+}
+
+// UIScaleSetting returns the persisted whole-UI scale in percent (80–150).
+func (s *Server) UIScaleSetting() string {
+	return s.getSetting("pi-web:v1:ui-scale", "100")
+}
+
+// ZcodeActSetting returns the persisted action-colour scheme ("" = follow the
+// preset), injected as <html data-zcode-act>.
+func (s *Server) ZcodeActSetting() string {
+	return s.getSetting("pi-web:v1:zcode-act", "")
 }
 
 // fontKeywords maps a curated font name to a full CSS font-family stack. The

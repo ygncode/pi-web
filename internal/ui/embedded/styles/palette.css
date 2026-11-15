@@ -175,7 +175,7 @@ body.pi-palette-open { overflow: hidden; }
     }
     .command-palette {
         width: 100%;
-        /* Fill the fixed overlay instead of 100svh; iOS can report svh shorter and leave a top gap. */
+        /* Fill the fixed overlay instead of var(--zc-svh, 100svh); iOS can report svh shorter and leave a top gap. */
         height: 100%;
         max-height: none;
         margin: 0;

@@ -121,6 +121,13 @@ export function groupSessionsByDate(sessions = [], now = Date.now()) {
     .map((bucket) => byBucket.get(bucket));
 }
 
+// First page of the plain (unfiltered) list is served from a short client
+// cache: on slow links (phone over the tailnet) the index re-requested it on
+// every navigation. TTL is short so genuinely new sessions still appear fast;
+// live updates arrive via SSE regardless.
+const SESSIONS_CACHE_TTL = 10_000;
+let sessionsCache = { at: 0, promise: null };
+
 export function defaultFetchSessions({ limit, offset, query, project } = {}) {
   const params = new URLSearchParams();
   if (Number.isFinite(limit) && limit > 0) params.set('limit', String(limit));
@@ -128,7 +135,16 @@ export function defaultFetchSessions({ limit, offset, query, project } = {}) {
   if (query) params.set('q', query);
   if (project) params.set('project', project);
   const qs = params.toString();
-  return getJSON('/api/sessions' + (qs ? '?' + qs : ''));
+  const url = '/api/sessions' + (qs ? '?' + qs : '');
+  if (!offset && !query && !project && params.get('limit') === '100') {
+    const now = Date.now();
+    if (sessionsCache.promise && now - sessionsCache.at < SESSIONS_CACHE_TTL) {
+      return sessionsCache.promise;
+    }
+    sessionsCache = { at: now, promise: getJSON(url) };
+    return sessionsCache.promise;
+  }
+  return getJSON(url);
 }
 export function defaultFetchRecent() {
   return getJSON('/api/recent-locations');

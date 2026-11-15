@@ -43,6 +43,13 @@
   const runningStatuses = new SvelteMap();
   let newSessionOpen = $state(false);
   let newSessionPath = $state('');
+  // Deep link: /?new=1&path=/home/symetrix/shared/henrique opens the
+  // new-session modal pre-filled with that folder (used to hand someone a
+  // direct link to their own folder).
+  const deepLink = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const deepLinkPath = deepLink.get('path') || '';
+  const deepLinkNew = deepLink.get('new') === '1';
+  let suggestedPath = $state('');
   let recentLocations = $state([]);
   let creating = $state(false);
   let newSessionError = $state('');
@@ -130,16 +137,28 @@
     writeSetting(layoutStorageKey, layout, { storage: localStorage });
   }
 
+  onMount(() => {
+    if (deepLinkNew && deepLinkPath) {
+      openNewSessionModal();
+    }
+  });
+
   async function openNewSessionModal() {
     closeMenu();
     projectsOpen = false;
     newSessionOpen = true;
-    newSessionPath = '';
+    newSessionPath = deepLinkNew && deepLinkPath ? deepLinkPath : suggestedPath;
     newSessionError = '';
     document.body?.classList.add('modal-sheet-open');
     try {
-      const response = await defaultFetchRecent();
-      recentLocations = (response.locations || []).slice(0, 10);
+      const [recentResponse, suggestedResponse] = await Promise.all([
+        defaultFetchRecent(),
+        fetch('/api/suggested-path', { headers: { Accept: 'application/json' } }),
+      ]);
+      recentLocations = (recentResponse.locations || []).slice(0, 10);
+      const suggested = (await suggestedResponse.json())?.path;
+      suggestedPath = typeof suggested === 'string' && suggested ? suggested : '';
+      if (suggestedPath && !newSessionPath) newSessionPath = suggestedPath;
     } catch {
       recentLocations = [];
     }

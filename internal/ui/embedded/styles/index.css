@@ -22,7 +22,7 @@ body {
     line-height: var(--line-height);
     color: var(--text-soft);
     background: var(--body-bg);
-    min-height: 100vh;
+    min-height: var(--zc-vh, 100vh);
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -842,7 +842,10 @@ body.modal-sheet-open { overflow: hidden; }
         right: calc(18px + env(safe-area-inset-right));
         bottom: calc(18px + env(safe-area-inset-bottom));
     }
-    .nav-search-btn { min-width: auto; }
+    .nav-search-btn { min-width: 0; flex: 0 1 auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .header-top { gap: 8px; min-width: 0; }
+    .header-top h1 { flex: 0 0 auto; }
+    .header-actions { min-width: 0; flex: 0 1 auto; }
     .nav-search-btn kbd { display: none; }
     .workspace-summary {
         align-items: flex-start;
@@ -868,7 +871,7 @@ body.modal-sheet-open { overflow: hidden; }
         min-width: 0;
         max-width: 100vw;
         overflow-x: hidden;
-        /* Fill the fixed overlay instead of 100svh; iOS can report svh shorter and leave a top gap. */
+        /* Fill the fixed overlay instead of var(--zc-svh, 100svh); iOS can report svh shorter and leave a top gap. */
         height: 100%;
         max-height: none;
         display: flex;
@@ -980,3 +983,7 @@ body.modal-sheet-open { overflow: hidden; }
         -webkit-backdrop-filter: none;
     }
 }
+
+/* No sideways page growth now that pinch-zoom is allowed (no maximum-scale):
+   an overflowing child must not widen the layout viewport on phones. */
+html, body { overflow-x: clip; }

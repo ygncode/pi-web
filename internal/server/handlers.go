@@ -105,6 +105,7 @@ func (s *Server) handleApiForkSession(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	s.claimForCaller(r, id, "")
 	writeJSON(w, 0, map[string]any{"ok": true, "id": id})
 }
 
@@ -154,11 +155,12 @@ func (s *Server) handleApiCloneSession(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	s.claimForCaller(r, id, "")
 	writeJSON(w, 0, map[string]any{"ok": true, "id": id})
 }
 
 func (s *Server) handleApiSessions(w http.ResponseWriter, r *http.Request) {
-	summaries, err := s.loadSummaries()
+	summaries, err := s.scopedSummaries(r)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -189,7 +191,7 @@ func (s *Server) handleApiSessions(w http.ResponseWriter, r *http.Request) {
 	total := len(summaries)
 	summaries = paginateSummaries(summaries, q.Get("offset"), q.Get("limit"))
 
-	writeJSON(w, 0, map[string]any{"sessions": summaries, "total": total})
+	writeJSONConditional(w, r, map[string]any{"sessions": summaries, "total": total})
 }
 
 // filterSummariesByQuery keeps summaries whose name, project, model, or UUID
@@ -268,23 +270,14 @@ func (s *Server) handleApiSession(w http.ResponseWriter, r *http.Request) {
 		entries, total, from = paginatedEntries(resolved.Session.Entries)
 	}
 
-	writeJSON(w, 0, sessionResponseMap(resolved.Session, entries, total, from))
+	writeJSONConditional(w, r, sessionResponseMap(resolved.Session, entries, total, from))
 }
 
 // paginatedEntries returns the tail window embedded on the initial session load
 // for huge sessions (mirrors the ?paginate=1 API path). `total` is always the
 // full count; `from` is the index the returned window starts at.
 func paginatedEntries(entries []map[string]any) (out []map[string]any, total, from int) {
-	total = len(entries)
-	out = entries
-	if total > ui.LargeSessionThreshold {
-		from = total - ui.LargeSessionTailEntries
-		if from < 0 {
-			from = 0
-		}
-		out = entries[from:]
-	}
-	return out, total, from
+	return ui.WindowEntries(entries)
 }
 
 // sessionResponseMap is the JSON shape the SPA consumes for a session, shared by
@@ -368,6 +361,7 @@ func (s *Server) handleNewSession(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	s.claimForCaller(r, id, "")
 	writeJSON(w, 0, map[string]any{"ok": true, "id": id})
 }
 

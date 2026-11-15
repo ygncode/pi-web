@@ -8,6 +8,7 @@ import (
 )
 
 func TestSessionCacheReusesParsedSessions(t *testing.T) {
+
 	root := t.TempDir()
 	writeSessionFile(t, root, "--tmp--project--", "session.jsonl")
 
@@ -24,6 +25,7 @@ func TestSessionCacheReusesParsedSessions(t *testing.T) {
 		t.Fatalf("after first call: parses=%d hits=%d, want 1/0", c.parses, c.hits)
 	}
 
+	c.Invalidate()
 	second, err := c.LoadAll(root)
 	if err != nil {
 		t.Fatalf("second loadAll: %v", err)
@@ -40,6 +42,7 @@ func TestSessionCacheReusesParsedSessions(t *testing.T) {
 }
 
 func TestSessionCacheReparsesOnModTimeChange(t *testing.T) {
+
 	root := t.TempDir()
 	path := writeSessionFile(t, root, "--tmp--project--", "session.jsonl")
 
@@ -54,6 +57,7 @@ func TestSessionCacheReparsesOnModTimeChange(t *testing.T) {
 		t.Fatalf("chtimes: %v", err)
 	}
 
+	c.Invalidate()
 	if _, err := c.LoadAll(root); err != nil {
 		t.Fatalf("second loadAll: %v", err)
 	}
@@ -66,6 +70,7 @@ func TestSessionCacheReparsesOnModTimeChange(t *testing.T) {
 }
 
 func TestSessionCacheEvictsRemovedFiles(t *testing.T) {
+
 	root := t.TempDir()
 	path := writeSessionFile(t, root, "--tmp--project--", "session.jsonl")
 
@@ -81,6 +86,7 @@ func TestSessionCacheEvictsRemovedFiles(t *testing.T) {
 		t.Fatalf("remove: %v", err)
 	}
 
+	c.Invalidate()
 	got, err := c.LoadAll(root)
 	if err != nil {
 		t.Fatalf("after remove: %v", err)
@@ -94,6 +100,7 @@ func TestSessionCacheEvictsRemovedFiles(t *testing.T) {
 }
 
 func TestSessionCachePicksUpNewFiles(t *testing.T) {
+
 	root := t.TempDir()
 	writeSessionFile(t, root, "--tmp--project--", "first.jsonl")
 
@@ -104,6 +111,7 @@ func TestSessionCachePicksUpNewFiles(t *testing.T) {
 
 	writeSessionFile(t, root, "--tmp--project--", "second.jsonl")
 
+	c.Invalidate()
 	got, err := c.LoadAll(root)
 	if err != nil {
 		t.Fatalf("second loadAll: %v", err)

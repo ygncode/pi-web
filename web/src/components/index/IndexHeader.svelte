@@ -1,5 +1,6 @@
 <script>
-  import { icon, MoreHorizontal, CalendarClock } from '../../shared/icons.js';
+  import { icon, MoreHorizontal, CalendarClock, Palette } from '../../shared/icons.js';
+  import { openThemePicker } from '../../shared/zcode-preset.js';
   import { t } from '../../shared/i18n.js';
 
   let {
@@ -28,6 +29,13 @@
           aria-haspopup="dialog"
           aria-controls="sessionPalette"
           onclick={onSearch}><span>{t('index.searchSessions')}</span><kbd>⌘K</kbd></button
+        >
+        <button
+          class="nav-menu-btn zc-theme-btn"
+          type="button"
+          title="Temas"
+          aria-label="Temas"
+          onclick={openThemePicker}>{@html icon(Palette, { size: 16 })}</button
         >
         <button
           class="nav-menu-btn"

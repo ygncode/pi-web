@@ -162,7 +162,7 @@ func (s *Server) handleApiProjects(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, http.StatusMethodNotAllowed, "method not allowed")
 		return
 	}
-	summaries, err := s.loadSummaries()
+	summaries, err := s.scopedSummaries(r)
 	if err != nil {
 		writeJSONError(w, http.StatusInternalServerError, err.Error())
 		return

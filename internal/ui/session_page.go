@@ -41,7 +41,54 @@ var livePaletteCss string
 var (
 	LargeSessionThreshold   = envInt("PI_WEB_LARGE_SESSION_THRESHOLD", 1500)
 	LargeSessionTailEntries = envInt("PI_WEB_LARGE_SESSION_TAIL_ENTRIES", 1000)
+	// LargeSessionMaxBytes caps the serialized size of the embedded window.
+	// Entry-count windowing alone misses byte-heavy sessions (few messages
+	// with huge tool outputs): a 500-message session can embed megabytes of
+	// base64 in the initial HTML and stall the browser for tens of seconds.
+	// When the tail window exceeds this budget it is shrunk further, from
+	// the front, until it fits. At least one entry is always kept.
+	LargeSessionMaxBytes = envInt("PI_WEB_LARGE_SESSION_MAX_BYTES", 400*1024)
 )
+
+// WindowEntries returns the tail window of entries to embed on first paint,
+// bounded by both entry count (LargeSessionThreshold / LargeSessionTailEntries)
+// and serialized bytes (LargeSessionMaxBytes). total is the full entry count;
+// from is the index the returned window starts at. The frontend derives
+// truncated = len(entries) < total and offers "Load earlier" for the rest.
+func WindowEntries(entries []map[string]any) (out []map[string]any, total, from int) {
+	total = len(entries)
+	out = entries
+	if total > LargeSessionThreshold {
+		from = total - LargeSessionTailEntries
+		if from < 0 {
+			from = 0
+		}
+		out = entries[from:]
+	}
+	if LargeSessionMaxBytes > 0 && len(out) > 1 {
+		size := 0
+		cut := 0
+		for i := len(out) - 1; i >= 0; i-- {
+			b, err := json.Marshal(out[i])
+			if err != nil {
+				continue
+			}
+			size += len(b) + 1
+			if size > LargeSessionMaxBytes {
+				cut = i + 1
+				break
+			}
+		}
+		if cut >= len(out) {
+			cut = len(out) - 1 // keep at least the newest entry
+		}
+		if cut > 0 {
+			from += cut
+			out = out[cut:]
+		}
+	}
+	return out, total, from
+}
 
 func envInt(name string, def int) int {
 	if v := os.Getenv(name); v != "" {
@@ -71,15 +118,8 @@ func prepareSessionPageData(session sessions.Session, cssTemplate string) (dataB
 		}
 	}
 
-	total := len(session.Entries)
-	entries := session.Entries
-	from := 0
-	truncated := false
-	if total > LargeSessionThreshold {
-		from = total - LargeSessionTailEntries
-		entries = session.Entries[from:]
-		truncated = true
-	}
+	entries, total, from := WindowEntries(session.Entries)
+	truncated := from > 0
 
 	sessionData := map[string]any{
 		"header":        session.Header,

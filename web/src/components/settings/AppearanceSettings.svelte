@@ -1,4 +1,5 @@
 <script>
+  import ThemePicker from '../shared/ThemePicker.svelte';
   import { t } from '../../shared/i18n.js';
   import { applyTheme } from '../../shared/theme.js';
   import { applyFonts } from '../../shared/fonts.js';
@@ -125,6 +126,15 @@
         ></select
       >
     </div>
+  </div>
+
+  <div class="settings-row zc-settings-presets">
+    <div class="settings-row-label">
+      <span class="name">Temas de cores (zcode)</span><span class="hint"
+        >Toque num tema para aplicar na hora. Fica salvo e vale no Mac e no iPhone.</span
+      >
+    </div>
+    <ThemePicker inline={true} />
   </div>
 
   {#each [{ kind: 'ui', name: t('settings.interfaceFont'), hint: t('settings.interfaceFontHint') }, { kind: 'content', name: t('settings.contentFont'), hint: t('settings.contentFontHint') }, { kind: 'code', name: t('settings.codeFont'), hint: t('settings.codeFontHint') }] as item (item.kind)}

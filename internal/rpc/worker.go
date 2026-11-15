@@ -38,6 +38,7 @@ type piRPCWorker struct {
 	lastStreamActivity   atomic.Int64 // unix nanos; stream/turn events keep worker visually running
 	streamSink           StreamEventSink
 	streamPreview        *streamPreviewAccumulator
+	toolThrottle         *toolProgressThrottle
 }
 
 func (w *piRPCWorker) touch() {
@@ -471,6 +472,9 @@ func (w *piRPCWorker) handleRPCLine(line string) {
 			w.emitStreamPreview(msg.AssistantMessageEvent)
 		}
 		w.noteStreamActivity()
+	case "tool_execution_update":
+		w.noteStreamActivity()
+		w.emitToolProgress(line)
 	case "message_end", "turn_end":
 		w.noteStreamActivity()
 		w.completeStreamPreview()
@@ -500,6 +504,26 @@ func (w *piRPCWorker) emitStreamPreview(event assistantMessageEvent) {
 	if preview, ok := w.streamPreview.handleAssistantEvent(event); ok {
 		w.streamSink(preview)
 	}
+}
+
+func (w *piRPCWorker) emitToolProgress(line string) {
+	if w.streamSink == nil {
+		return
+	}
+	tp := parseToolProgress(line)
+	if tp == nil {
+		return
+	}
+	w.mu.Lock()
+	if w.toolThrottle == nil {
+		w.toolThrottle = newToolProgressThrottle()
+	}
+	th := w.toolThrottle
+	w.mu.Unlock()
+	if !th.allow(tp.ToolCallID) {
+		return
+	}
+	w.streamSink(StreamPreview{Tool: tp})
 }
 
 func (w *piRPCWorker) completeStreamPreview() {

@@ -6,6 +6,7 @@
   import SchedulesPage from './routes/SchedulesPage.svelte';
   import NotFoundPage from './routes/NotFoundPage.svelte';
   import VersionController from './components/shared/VersionController.svelte';
+  import ThemePicker from './components/shared/ThemePicker.svelte';
 
   let {
     path: initialPath = typeof window !== 'undefined' ? window.location.pathname : '/',
@@ -79,3 +80,5 @@
 {/if}
 
 <VersionController />
+
+<ThemePicker />

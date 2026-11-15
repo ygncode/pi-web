@@ -30,9 +30,9 @@ func newShareTestServer(t *testing.T, runner shareCmdRunner) (*Server, string) {
 	root := t.TempDir()
 	writeSessionFile(t, root, "--tmp--project--", "session.jsonl")
 	s := &Server{
-		sessionsDir:   root,
-		cache:         sessions.NewCache(),
-		shareRunner:   runner,
+		sessionsDir:         root,
+		cache:               sessions.NewCache(),
+		shareRunner:         runner,
 		renderExportSession: func(sess sessions.Session, theme string) string { return "<html></html>" },
 	}
 	return s, root

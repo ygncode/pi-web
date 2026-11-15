@@ -54,11 +54,13 @@ export function setupThinkingLevelSelector({
     thinkingPopup.style.display = 'flex';
     renderThinkingList(getKnownThinkingLevel());
     const rect = thinkingLabelBtn.getBoundingClientRect();
+    const k = windowImpl.__zcLenFactor || 1; // whole-UI zoom (ui-scale.js)
     const minW = 120;
-    let left = rect.right - minW;
+    const vw = windowImpl.innerWidth / k;
+    let left = rect.right / k - minW;
     if (left < 4) left = 4;
-    if (left + minW > windowImpl.innerWidth - 4) left = windowImpl.innerWidth - minW - 4;
-    thinkingPopup.style.bottom = windowImpl.innerHeight - rect.top + 4 + 'px';
+    if (left + minW > vw - 4) left = vw - minW - 4;
+    thinkingPopup.style.bottom = (windowImpl.innerHeight - rect.top) / k + 4 + 'px';
     thinkingPopup.style.left = left + 'px';
     thinkingPopup.style.right = '';
   }

@@ -27,6 +27,26 @@ type Cache struct {
 
 	parses int // diagnostic: number of ParseSummary calls
 	hits   int // diagnostic: number of cache hits
+
+	// Whole-scan result cache (see resultCacheTTL).
+	resDir       string
+	resAt        time.Time
+	resSummaries []SessionSummary
+	resErr       error
+}
+
+// resultCacheTTL bounds how long a full LoadAll scan is reused. Directory
+// listings over NFS cost ~1 stat per project dir per call (800+ dirs here);
+// without it every index poll re-walked them all (~0.8s server-side). New
+// sessions appear within the TTL window, which is fine for a UI that polls.
+const resultCacheTTL = 1500 * time.Millisecond
+
+// Invalidate drops the whole-scan result cache so the next LoadAll re-walks
+// the tree (used by tests and by anything that writes sessions directly).
+func (c *Cache) Invalidate() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.resDir = ""
 }
 
 func NewCache() *Cache {
@@ -42,6 +62,14 @@ func NewCache() *Cache {
 // that are new or modified are re-parsed; files that have disappeared are
 // evicted. It also maintains a path index for O(1) lookup by filename.
 func (c *Cache) LoadAll(dir string) ([]SessionSummary, error) {
+	c.mu.Lock()
+	if c.resDir == dir && time.Since(c.resAt) < resultCacheTTL {
+		out, err := c.resSummaries, c.resErr
+		c.mu.Unlock()
+		return out, err
+	}
+	c.mu.Unlock()
+
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -172,6 +200,14 @@ func (c *Cache) LoadAll(dir string) ([]SessionSummary, error) {
 	c.mu.Unlock()
 
 	SortSummariesByActivity(summaries)
+
+	c.mu.Lock()
+	c.resDir = dir
+	c.resAt = time.Now()
+	c.resSummaries = summaries
+	c.resErr = nil
+	c.mu.Unlock()
+
 	return summaries, nil
 }
 

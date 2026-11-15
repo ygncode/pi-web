@@ -200,6 +200,7 @@ export function renderPendingChatState(
     forceFollowToBottom = () => {},
     scrollAfterLayout = () => {},
     setIntervalImpl = setInterval,
+    setTimeoutImpl = (typeof globalThis !== 'undefined' && globalThis.setTimeout) || setTimeout,
   } = {},
 ) {
   const text = String(message || '').trim();
@@ -259,6 +260,36 @@ export function renderChatPreviewState(
     state.activePreviewMessage = activeMsg;
     const textEl = state.chatPreviewEl.querySelector('.preview-text');
     if (textEl) textEl.textContent = activeMsg;
+  }
+
+  // The worker emits a preview event per token batch, each carrying the FULL
+  // accumulated markdown. Re-parsing it on every event starves the main thread
+  // on weak devices (typing stutters while the model generates). Coalesce:
+  // keep only the latest payload and render at most once per frame.
+  if (!payload.done) {
+    state.pendingPreview = payload;
+    if (!state.previewScheduled) {
+      state.previewScheduled = true;
+      const flush = () => {
+        state.previewScheduled = false;
+        const latest = state.pendingPreview;
+        state.pendingPreview = null;
+        if (!latest) return;
+        const content = state.chatPreviewEl?.querySelector('.message-content');
+        if (content) setMarkdownContent(content, renderMarkdown(latest.content));
+        if (shouldFollow()) {
+          forceFollowToBottom(false);
+          scrollAfterLayout(false, state.chatPreviewEl);
+        }
+      };
+      if (windowImpl && typeof windowImpl.requestAnimationFrame === 'function') {
+        windowImpl.requestAnimationFrame(flush);
+      } else {
+        // No rAF (tests, exotic environments): render synchronously.
+        flush();
+      }
+    }
+    return true;
   }
 
   state.chatPreviewEl.classList.remove('chat-preview-waiting');

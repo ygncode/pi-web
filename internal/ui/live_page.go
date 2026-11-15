@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"html/template"
+	"strconv"
 	"strings"
 )
 
@@ -17,6 +18,66 @@ type liveDocumentData struct {
 // the HTML shell before any JS runs (no flash of the wrong theme). It defaults
 // to "dark"; app wiring overrides it via SetThemeProvider to read the DB.
 var themeProvider = func() string { return "dark" }
+
+// presetProvider returns the server-persisted zcode colour preset ("" = none).
+var presetProvider = func() string { return "" }
+
+// SetPresetProvider installs the function used to resolve the zcode preset.
+func SetPresetProvider(fn func() string) {
+	if fn != nil {
+		presetProvider = fn
+	}
+}
+
+// actProvider returns the server-persisted action-colour scheme ("" = preset's own).
+var actProvider = func() string { return "" }
+
+// SetActProvider installs the function used to resolve the action-colour scheme.
+func SetActProvider(fn func() string) {
+	if fn != nil {
+		actProvider = fn
+	}
+}
+
+// scaleProvider returns the server-persisted whole-UI scale in percent.
+var scaleProvider = func() string { return "100" }
+
+// SetScaleProvider installs the function used to resolve the UI scale.
+func SetScaleProvider(fn func() string) {
+	if fn != nil {
+		scaleProvider = fn
+	}
+}
+
+// uiScale returns the clamped scale (80..150, step 10).
+func uiScale() int {
+	n := 0
+	for _, r := range scaleProvider() {
+		if r < '0' || r > '9' {
+			return 100
+		}
+		n = n*10 + int(r-'0')
+		if n > 1000 {
+			return 100
+		}
+	}
+	n = (n + 5) / 10 * 10
+	if n < 80 || n > 150 {
+		return 100
+	}
+	return n
+}
+
+// safePreset keeps only [a-z0-9-] so the value is safe inside an attribute.
+func safePreset(v string) string {
+	var b strings.Builder
+	for _, r := range v {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
 
 // SetThemeProvider installs the function used to resolve the current
 // server-backed theme for server-side injection.
@@ -53,12 +114,12 @@ func SetFontProvider(fn func() (string, string, string, string, string)) {
 // /custom-themes.css — so a parser-blocking <script> guarantees those styles are
 // loaded and getComputedStyle can resolve the custom theme's --body-bg.
 // It does two things:
-//   1. Sets data-theme + an inline background-color on <html> matching the
-//      current theme and WCO state so the correct colour is present from the
-//      very first paint, eliminating the white/gray flash in the title-bar
-//      area. Built-in themes use the hardcoded maps; the custom theme reads
-//      its --body-bg from the loaded stylesheet.
-//   2. Toggles the `wco` class when Window Controls Overlay is active.
+//  1. Sets data-theme + an inline background-color on <html> matching the
+//     current theme and WCO state so the correct colour is present from the
+//     very first paint, eliminating the white/gray flash in the title-bar
+//     area. Built-in themes use the hardcoded maps; the custom theme reads
+//     its --body-bg from the loaded stylesheet.
+//  2. Toggles the `wco` class when Window Controls Overlay is active.
 const wcoBootScript = `<script>
 (function(){
   var chromeBgs = {dark:'#0f0f14',light:'#ddddda',nord:'#292f3a',dracula:'#242631'};
@@ -91,7 +152,7 @@ const wcoBootScript = `<script>
     // follows in <head> and therefore waits for — resolve the active theme.
     if(!document.documentElement.dataset.theme){ document.documentElement.dataset.theme = t; }
     var map = isWCO() ? chromeBgs : bodyBgs;
-    var color = map[t];
+    var color = document.documentElement.dataset.zcodePreset ? '' : map[t];
     if(!color){
       // User-defined custom theme: its background lives in /custom-themes.css
       // as the --body-bg variable rather than this hardcoded map.
@@ -111,9 +172,25 @@ const wcoBootScript = `<script>
 
 func renderLiveDocumentStart(data liveDocumentData) string {
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\"")
+	if preset := safePreset(presetProvider()); preset != "" {
+		b.WriteString(" data-zcode-preset=\"")
+		b.WriteString(preset)
+		b.WriteString("\"")
+	}
+	if act := safePreset(actProvider()); act != "" {
+		b.WriteString(" data-zcode-act=\"")
+		b.WriteString(act)
+		b.WriteString("\"")
+	}
+	if sc := uiScale(); sc != 100 {
+		f := strconv.FormatFloat(float64(sc)/100, 'f', 2, 64)
+		b.WriteString(" data-ui-scale=\"" + strconv.Itoa(sc) + "\" style=\"zoom:" + f +
+			";--zc-vh:calc(100vh / " + f + ");--zc-svh:calc(100svh / " + f + ");--zc-dvh:calc(100dvh / " + f + ")\"")
+	}
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\">\n")
-	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, interactive-widget=resizes-content\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, interactive-widget=resizes-content\">\n")
 	b.WriteString("<title>")
 	b.WriteString(template.HTMLEscapeString(data.Title))
 	b.WriteString("</title>\n")
@@ -122,12 +199,13 @@ func renderLiveDocumentStart(data liveDocumentData) string {
 		b.WriteByte('\n')
 	}
 	b.WriteString("<link rel=\"icon\" type=\"image/svg+xml\" href=\"/icon.svg\">\n")
-	b.WriteString("<link rel=\"apple-touch-icon\" href=\"/icon.svg\">\n")
+	b.WriteString("<link rel=\"apple-touch-icon\" sizes=\"180x180\" href=\"/apple-touch-icon.png\">\n")
 	b.WriteString("<link rel=\"manifest\" href=\"/manifest.webmanifest\">\n")
 	b.WriteString("<meta name=\"theme-color\" content=\"#0e0e13\">\n")
 	b.WriteString("<meta name=\"mobile-web-app-capable\" content=\"yes\">\n")
+	b.WriteString("<meta name=\"apple-mobile-web-app-capable\" content=\"yes\">\n")
 	b.WriteString("<meta name=\"apple-mobile-web-app-status-bar-style\" content=\"black-translucent\">\n")
-	b.WriteString("<meta name=\"apple-mobile-web-app-title\" content=\"Pi Sessions\">\n")
+	b.WriteString("<meta name=\"apple-mobile-web-app-title\" content=\"pi\">\n")
 	b.WriteString("<meta name=\"pi-web-theme\" content=\"")
 	b.WriteString(template.HTMLEscapeString(themeProvider()))
 	b.WriteString("\">\n")

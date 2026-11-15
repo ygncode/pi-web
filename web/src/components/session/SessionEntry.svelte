@@ -11,6 +11,16 @@
   import { formatTimestamp } from '../../session/render/entry-format.js';
   import ToolCall from './ToolCall.svelte';
   import ToolOutput from './ToolOutput.svelte';
+  import MessageFooter from './MessageFooter.svelte';
+  import {
+    isOpen,
+    toggleOpen,
+    thinkingPreview,
+    kindIcon,
+    turnDuration,
+    formatDuration,
+  } from '../../session/ui/collapse-state.js';
+  import { enhanceMarkdownHtml } from '../../session/ui/zc-markdown.js';
 
   // `live` (passed from <SessionContent>) gates the fork/label buttons, which
   // need the chat composer; copy-link is always shown. The static export passes
@@ -19,7 +29,12 @@
   let { entry, model = null, live = false } = $props();
 
   const ts = $derived(formatTimestamp(entry?.timestamp));
-  const md = (text) => safeMarkedParse(text, { marked });
+  const md = (text) => enhanceMarkdownHtml(safeMarkedParse(text, { marked }));
+  const worked = $derived(
+    msg?.role === 'assistant' && msg.content?.some?.((b) => b.type === 'text' && b.text.trim())
+      ? turnDuration(entry, model?.entries)
+      : null,
+  );
 
   const msg = $derived(entry?.type === 'message' ? entry.message : null);
   const userText = $derived.by(() => {
@@ -70,20 +85,49 @@
 {:else if msg && msg.role === 'assistant'}
   <div class="assistant-message" id={`entry-${entry.id}`}>
     {@render actions(entry.id)}{@render timestamp()}
+    {#if worked}<div class="zc-worked" role="separator">
+        <span class="zc-worked-text"
+          >Trabalhou por {formatDuration(worked.ms)}{#if worked.tools}<span class="zc-worked-sub">
+              · {worked.tools} {worked.tools === 1 ? 'ação' : 'ações'}</span
+            >{/if}</span
+        >
+      </div>{/if}
     {#each msg.content as block, blockIndex (blockIndex)}
       {#if block.type === 'text' && block.text.trim()}<div class="assistant-text markdown-content">
           {@html md(block.text)}
-        </div>{:else if block.type === 'thinking' && block.thinking.trim()}<div
-          class="thinking-block"
+        </div>{:else if block.type === 'thinking' && block.thinking.trim()}{@const tkey = `think:${entry.id}:${blockIndex}`}{@const topen =
+          isOpen(tkey, false)}
+        <div
+          class="thinking-block zc-row {topen ? 'zc-open' : 'zc-collapsed'}"
+          data-tool="thinking"
         >
-          <div class="thinking-text">{block.thinking}</div>
-          <div class="thinking-collapsed">Thinking ...</div>
+          <button
+            type="button"
+            class="zc-row-head"
+            aria-expanded={topen}
+            onclick={(e) => {
+              e.stopPropagation();
+              toggleOpen(tkey, false);
+            }}
+            ><span class="zc-chevron" aria-hidden="true"></span><span
+              class="zc-icon"
+              aria-hidden="true"
+              >{@html icon(kindIcon('thinking'), { size: 14, strokeWidth: 2 })}</span
+            ><span class="zc-label">Raciocínio</span><span class="zc-arg"
+              >{thinkingPreview(block.thinking)}</span
+            ></button
+          >
+          <div class="zc-row-body">
+            <div class="thinking-text">{block.thinking}</div>
+            <div class="thinking-collapsed">Thinking ...</div>
+          </div>
         </div>{/if}
     {/each}
     {#each msg.content as block, toolBlockIndex (toolBlockIndex)}{#if block.type === 'toolCall'}<ToolCall
           call={block}
           {model}
         />{/if}{/each}
+    <MessageFooter {entry} {model} {live} />
     {#if msg.stopReason === 'aborted'}<div class="error-text">
         Aborted
       </div>{:else if msg.stopReason === 'error'}<div class="error-text">
@@ -92,6 +136,7 @@
   </div>
 {:else if msg && msg.role === 'bashExecution'}
   <div
+    data-tool="bash"
     class="tool-execution {msg.cancelled || (msg.exitCode !== 0 && msg.exitCode !== null)
       ? 'error'
       : 'success'}"
