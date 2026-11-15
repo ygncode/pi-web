@@ -523,3 +523,9 @@ func writeJSONError(w http.ResponseWriter, status int, message string) {
 func writeJSON(w http.ResponseWriter, status int, payload any) {
 	render.WriteJSON(w, status, payload)
 }
+
+// writeJSONConditional writes payload as JSON with ETag/304 revalidation so
+// unchanged GET payloads cost a header round trip instead of a full transfer.
+func writeJSONConditional(w http.ResponseWriter, r *http.Request, payload any) {
+	render.WriteJSONConditional(w, r, payload)
+}

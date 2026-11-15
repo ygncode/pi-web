@@ -191,7 +191,7 @@ func (s *Server) handleApiSessions(w http.ResponseWriter, r *http.Request) {
 	total := len(summaries)
 	summaries = paginateSummaries(summaries, q.Get("offset"), q.Get("limit"))
 
-	writeJSON(w, 0, map[string]any{"sessions": summaries, "total": total})
+	writeJSONConditional(w, r, map[string]any{"sessions": summaries, "total": total})
 }
 
 // filterSummariesByQuery keeps summaries whose name, project, model, or UUID
@@ -270,7 +270,7 @@ func (s *Server) handleApiSession(w http.ResponseWriter, r *http.Request) {
 		entries, total, from = paginatedEntries(resolved.Session.Entries)
 	}
 
-	writeJSON(w, 0, sessionResponseMap(resolved.Session, entries, total, from))
+	writeJSONConditional(w, r, sessionResponseMap(resolved.Session, entries, total, from))
 }
 
 // paginatedEntries returns the tail window embedded on the initial session load
