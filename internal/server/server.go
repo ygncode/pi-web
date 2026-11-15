@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"pi-web/internal/identity"
 	"sync"
 	"time"
 
@@ -59,6 +60,11 @@ type Deps struct {
 	// DisableBackgroundJobs keeps the development server from duplicating the
 	// installed server's scheduler, queue drainer, auto-titles, and pushes.
 	DisableBackgroundJobs bool
+	// MultiUser enables per-person session ownership (sidebar shows only the
+	// caller's sessions; a people switcher opens colleagues'). Identity
+	// resolves the caller; when nil a tailscale-whois resolver is used.
+	MultiUser bool
+	Identity  *identity.Resolver
 }
 
 // Server holds runtime state — connected SSE clients and last-seen modtimes
@@ -97,6 +103,9 @@ type Server struct {
 	runRestart            func() error
 	updateMu              sync.Mutex // serializes install/restart operations
 	disableBackgroundJobs bool
+	multiUser             bool
+	identity              *identity.Resolver
+	whisperBase           string // test override for PI_WEB_WHISPER_URL
 
 	// fileWalk caches bounded directory listings per cwd for the @mention
 	// autocomplete so rapid keystrokes reuse a single filesystem walk.
@@ -172,6 +181,8 @@ func New(deps Deps) (*Server, error) {
 		runInstall:            deps.RunInstall,
 		runRestart:            deps.RunRestart,
 		disableBackgroundJobs: deps.DisableBackgroundJobs,
+		multiUser:             deps.MultiUser,
+		identity:              deps.Identity,
 		metrics: metricsState{
 			startedAt: now(),
 			cpuLast:   make(map[int]cpuMark),
@@ -268,6 +279,8 @@ func initDB(agentDir string) (*sql.DB, error) {
 		{"chat_queue_items table", chatqueue.ItemsTableDDL},
 		{"chat_queue_items index", chatqueue.ItemsSessionIndexDDL},
 		{"chat_queue_state table", chatqueue.StateTableDDL},
+		{"session_owners table", sessionOwnersSchema},
+		{"message_ratings table", messageRatingsSchema},
 	}
 	for _, s := range schema {
 		if _, err := db.Exec(s.stmt); err != nil {
@@ -343,6 +356,10 @@ func (s *Server) Register(mux *http.ServeMux) {
 	mux.HandleFunc("/share", s.auth.Wrap(s.handleShare))
 	mux.HandleFunc("/events", s.auth.Wrap(s.handleEvents))
 	mux.HandleFunc("/api/new-session", s.auth.Wrap(s.handleNewSession))
+	mux.HandleFunc("/api/people", s.auth.Wrap(s.handleApiPeople))
+	mux.HandleFunc("/api/message-rating", s.auth.Wrap(s.handleMessageRating))
+	mux.HandleFunc("/api/transcribe", s.auth.Wrap(s.handleTranscribe))
+	mux.HandleFunc("/api/session-owner", s.auth.Wrap(s.handleApiSessionOwner))
 	mux.HandleFunc("/api/fork-session", s.auth.Wrap(s.handleApiForkSession))
 	mux.HandleFunc("/api/clone-session", s.auth.Wrap(s.handleApiCloneSession))
 	mux.HandleFunc("/api/rename-session", s.auth.Wrap(s.handleRenameSession))
@@ -375,6 +392,7 @@ func (s *Server) Register(mux *http.ServeMux) {
 		s.push.Register(mux, s.auth.Wrap)
 	}
 	mux.HandleFunc("/api/sounds", s.auth.Wrap(s.handleApiSounds))
+	mux.HandleFunc("/api/suggested-path", s.auth.Wrap(s.handleApiSuggestedPath))
 	mux.HandleFunc("/sounds/", s.handleSounds)
 	if s.updater != nil {
 		mux.HandleFunc("/api/version", s.auth.Wrap(s.handleVersion))
@@ -454,6 +472,12 @@ func (s *Server) removeClient(target *sseClient) {
 
 func (s *Server) BroadcastChatPreview(sessionID string, preview rpc.StreamPreview) {
 	if sessionID == "" || sessionID == globalSessID {
+		return
+	}
+	if preview.Tool != nil {
+		if msg, err := formatSSEJSONEvent("tool-progress", preview.Tool); err == nil {
+			s.broadcast(sessionID, msg)
+		}
 		return
 	}
 	msg, err := formatSSEJSONEvent("chat-preview", preview)

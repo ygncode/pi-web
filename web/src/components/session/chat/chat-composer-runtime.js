@@ -19,6 +19,7 @@ import { setupCwdCopy } from './cwd-copy.js';
 import { setupComposerHeightVar } from './composer-height.js';
 import { createComposerSendState } from './composer-send-state.js';
 import { getComposerStorage } from './composer-storage.js';
+import { takeRetry } from '../../../session/ui/message-footer.js';
 import { navigateInitialChatLeaf } from './initial-navigation.js';
 import { ChatToolbarState } from './chat-toolbar-state.svelte.js';
 import { setupChatSubmission } from './chat-submit.js';
@@ -237,6 +238,11 @@ export function runChatComposer({
       CustomEventImpl: CustomEvent,
     });
     submission.setRefreshWorkerStatus(workerStatus.refresh);
+
+    // Retry from a message footer: the fork was created on the previous page,
+    // which stashed the original prompt for this session — send it once.
+    const pendingRetry = takeRetry(sessionId);
+    if (pendingRetry) submission.sendChatMessage(pendingRetry, []);
 
     // Focus the message textarea on page load so the user can start typing immediately.
     if (textarea && typeof textarea.focus === 'function') {

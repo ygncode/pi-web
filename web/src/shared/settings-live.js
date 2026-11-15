@@ -1,5 +1,6 @@
 import { applyFonts } from './fonts.js';
 import { applySettingsFromServer } from './settings-store.js';
+import { applyUiScale, currentScale, UI_SCALE_KEY } from './ui-scale.js';
 
 const LOCALE_KEY = 'pi-web:v1:locale';
 const CUSTOM_LANGUAGES_KEY = 'pi-web:v1:custom-languages';
@@ -45,6 +46,15 @@ export function applyRemoteSettings(
       uiSize: applied['pi-web:v1:font-ui-size'],
       contentSize: applied['pi-web:v1:font-content-size'],
     });
+  }
+
+  const scale = applied[UI_SCALE_KEY];
+  if (scale != null && documentImpl?.documentElement) {
+    try {
+      if (Number(scale) !== currentScale(documentImpl)) applyUiScale(scale, { doc: documentImpl, persist: false });
+    } catch {
+      // ignore
+    }
   }
 
   const nextLocale = applied[LOCALE_KEY];

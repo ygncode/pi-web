@@ -19,6 +19,18 @@ var iconSVG string
 //go:embed embedded/assets/icon-maskable.svg
 var iconMaskableSVG string
 
+//go:embed embedded/assets/apple-touch-icon.png
+var appleTouchPNG []byte
+
+//go:embed embedded/assets/icon-192.png
+var icon192PNG []byte
+
+//go:embed embedded/assets/icon-512.png
+var icon512PNG []byte
+
+//go:embed embedded/assets/icon-maskable-512.png
+var iconMaskable512PNG []byte
+
 //go:embed embedded/assets/pi-logo.svg
 var piLogoSVG string
 
@@ -33,6 +45,7 @@ var catWebm []byte
 
 // indexCSS and settingsCSS are inlined into the SPA shell by
 // appStylesheets() (spa_page.go); they are not served as standalone routes.
+//
 //go:embed embedded/styles/index.css
 var indexCSS string
 
@@ -69,6 +82,20 @@ func RegisterPWAHandlers(mux *http.ServeMux) {
 		w.Header().Set("Cache-Control", "public, max-age=86400")
 		_, _ = w.Write([]byte(iconMaskableSVG))
 	})
+	for path, data := range map[string][]byte{
+		"/apple-touch-icon.png":             appleTouchPNG,
+		"/apple-touch-icon-precomposed.png": appleTouchPNG,
+		"/icon-192.png":                     icon192PNG,
+		"/icon-512.png":                     icon512PNG,
+		"/icon-maskable-512.png":            iconMaskable512PNG,
+	} {
+		png := data
+		mux.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "image/png")
+			w.Header().Set("Cache-Control", "public, max-age=86400")
+			_, _ = w.Write(png)
+		})
+	}
 	mux.HandleFunc("/pi-logo.svg", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "image/svg+xml")
 		w.Header().Set("Cache-Control", "public, max-age=86400")

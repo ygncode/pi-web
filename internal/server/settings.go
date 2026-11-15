@@ -42,6 +42,9 @@ func (s *Server) handleAppShell(w http.ResponseWriter, r *http.Request, bootstra
 // listed here — it stays in localStorage only.
 var settingDefaults = map[string]string{
 	"pi-web-theme":                  "dark",
+	"pi-web:v1:zcode-preset":        "",
+	"pi-web:v1:zcode-act":           "",
+	"pi-web:v1:ui-scale":            "100",
 	"pi-web:v1:locale":              "en",
 	"pi-web:v1:custom-languages":    "",
 	"pi-web:v1:font-ui":             "mono",
@@ -119,6 +122,24 @@ func (s *Server) getSetting(key, fallback string) string {
 // the page paints the correct theme before any JS runs.
 func (s *Server) ThemeSetting() string {
 	return s.getSetting("pi-web-theme", "dark")
+}
+
+// ZcodePresetSetting returns the persisted zcode colour preset (empty = none),
+// injected server-side as <html data-zcode-preset> so every device paints the
+// chosen preset on first load.
+func (s *Server) ZcodePresetSetting() string {
+	return s.getSetting("pi-web:v1:zcode-preset", "")
+}
+
+// UIScaleSetting returns the persisted whole-UI scale in percent (80–150).
+func (s *Server) UIScaleSetting() string {
+	return s.getSetting("pi-web:v1:ui-scale", "100")
+}
+
+// ZcodeActSetting returns the persisted action-colour scheme ("" = follow the
+// preset), injected as <html data-zcode-act>.
+func (s *Server) ZcodeActSetting() string {
+	return s.getSetting("pi-web:v1:zcode-act", "")
 }
 
 // fontKeywords maps a curated font name to a full CSS font-family stack. The

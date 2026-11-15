@@ -3,6 +3,8 @@ package rpc
 type StreamPreview struct {
 	Content string `json:"content"`
 	Done    bool   `json:"done"`
+	// Tool, when set, is a live tool progress update (not text preview).
+	Tool *ToolProgress `json:"tool,omitempty"`
 }
 
 type StreamEventSink func(StreamPreview)

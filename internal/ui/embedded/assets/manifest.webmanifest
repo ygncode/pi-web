@@ -1,14 +1,40 @@
 {
-  "name": "Pi Sessions",
-  "short_name": "Pi",
-  "description": "Browse and chat with Pi/Claude Code sessions on your machine.",
+  "name": "pi",
+  "short_name": "pi",
+  "description": "pi — agente de código (sessões, chat, temas)",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["window-controls-overlay", "standalone"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone"
+  ],
   "background_color": "#0e0e13",
   "theme_color": "#0e0e13",
   "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
     {
       "src": "/icon.svg",
       "sizes": "any",
@@ -21,5 +47,6 @@
       "type": "image/svg+xml",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "id": "/"
 }

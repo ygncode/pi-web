@@ -32,6 +32,8 @@ type summaryLine struct {
 	Provider  string      `json:"provider"`
 	ModelID   string      `json:"modelId"`
 	AutoTitle bool        `json:"autoTitle"`
+	Owner     string      `json:"owner"`
+	Source    string      `json:"source"`
 	Message   *summaryMsg `json:"message"`
 }
 
@@ -66,6 +68,12 @@ type SessionSummary struct {
 	ModelProvider      string
 	ChatAvailable      bool
 	ChatDisabledReason string
+	// Owner is the tailnet login that owns the session (multi-user hub). It is
+	// read from the optional "owner" field of the session header and may be
+	// overridden by the server's owner registry. Empty means unassigned.
+	Owner string
+	// Source tags imported sessions (e.g. "claude-code", "opencode", "pi").
+	Source string
 }
 
 type Session struct {
@@ -236,6 +244,12 @@ func ParseSummary(path, dirName, fileName string) (SessionSummary, error) {
 			}
 			if raw.ID != "" {
 				s.SessionUUID = raw.ID
+			}
+			if raw.Owner != "" {
+				s.Owner = raw.Owner
+			}
+			if raw.Source != "" {
+				s.Source = raw.Source
 			}
 		case "session_info":
 			if raw.Name != "" {
@@ -523,6 +537,12 @@ func ParseFile(path, dirName, fileName string) (Session, error) {
 			}
 			if sid, _ := raw["id"].(string); sid != "" {
 				s.SessionUUID = sid
+			}
+			if o, _ := raw["owner"].(string); o != "" {
+				s.Owner = o
+			}
+			if src, _ := raw["source"].(string); src != "" {
+				s.Source = src
 			}
 		case "session_info":
 			if n, _ := raw["name"].(string); n != "" {

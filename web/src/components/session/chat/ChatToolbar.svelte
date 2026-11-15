@@ -3,6 +3,7 @@
   import { t } from '../../../shared/i18n.js';
   import { ChatToolbarState } from './chat-toolbar-state.svelte.js';
   import ContextUsage from './ContextUsage.svelte';
+  import MicButton from './MicButton.svelte';
 
   let { chatAvailable = true, toolbar = new ChatToolbarState(), modelLabel = '' } = $props();
 
@@ -23,6 +24,7 @@
       aria-label={t('composer.attachPhotos')}
       disabled={!chatAvailable}>{@html icon(Paperclip, { size: 15 })}</button
     >
+    <MicButton disabled={!chatAvailable} />
     <span id="pi-chat-status" class="pi-chat-status {toolbar.statusClass}">{statusText}</span>
     <button
       type="button"

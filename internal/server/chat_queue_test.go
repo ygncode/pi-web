@@ -195,4 +195,3 @@ func TestChatQueueRejectsMissingPositionOnDelete(t *testing.T) {
 		t.Fatalf("want 400, got %d", w.Code)
 	}
 }
-

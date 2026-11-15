@@ -128,14 +128,18 @@ export function setupSessionGlobals({ windowImpl, documentImpl }) {
   // virtual keyboard opens.
   if (target.visualViewport) {
     const handleVisualViewportChange = () => {
-      const height = target.visualViewport.height;
+      // Under the whole-UI zoom (ui-scale.js) CSS px render bigger, so convert
+      // the visual-viewport size back into CSS px.
+      const k = target.__zcLenFactor || 1;
+      const height = target.visualViewport.height / k;
       documentImpl.documentElement.style.setProperty('--viewport-height', `${height}px`);
-      const offsetTop = Math.max(0, target.visualViewport.offsetTop);
+      const offsetTop = Math.max(0, target.visualViewport.offsetTop) / k;
       const header = documentImpl.querySelector('.session-header-bar');
       if (header) header.style.transform = `translateY(${offsetTop}px)`;
     };
     on(target.visualViewport, 'resize', handleVisualViewportChange);
     on(target.visualViewport, 'scroll', handleVisualViewportChange);
+    on(target, 'pi:ui-scale-change', handleVisualViewportChange);
     handleVisualViewportChange();
   }
 

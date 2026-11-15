@@ -78,8 +78,8 @@ func TestDrainerSkipsWhenPaused(t *testing.T) {
 
 func TestDrainerSkipsWhenWorkerBusy(t *testing.T) {
 	fake := &fakeSender{
-		status:  workers.WorkerStatus{State: workers.WorkerStateRunning},
-		sendCh:  make(chan struct{}, 1),
+		status: workers.WorkerStatus{State: workers.WorkerStateRunning},
+		sendCh: make(chan struct{}, 1),
 	}
 	s, d, id := newDrainerServer(t, fake)
 	s.chatQueue.Add(id, "wait your turn", "wait your turn")

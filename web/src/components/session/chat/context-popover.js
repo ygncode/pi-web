@@ -8,10 +8,12 @@ export function setupContextPopover({
 
   function position() {
     if (!usageCapsule || !popover) return;
-    const capsuleRect = usageCapsule.getBoundingClientRect();
+    const k = windowImpl.__zcLenFactor || 1; // whole-UI zoom (ui-scale.js)
+    const sc = (r) => ({ left: r.left / k, top: r.top / k, bottom: r.bottom / k, width: r.width / k });
+    const capsuleRect = sc(usageCapsule.getBoundingClientRect());
     const shell = documentImpl.querySelector('.pi-chat-shell');
     if (!shell) return;
-    const shellRect = shell.getBoundingClientRect();
+    const shellRect = sc(shell.getBoundingClientRect());
 
     const capsuleCenter = capsuleRect.left + capsuleRect.width / 2;
     let popoverLeft = capsuleCenter - shellRect.left - 100;

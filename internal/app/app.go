@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"pi-web/internal/identity"
+	"strings"
 	"syscall"
 	"time"
 
@@ -97,6 +99,8 @@ func Main(version string) {
 		RunInstall:            runInstall,
 		RunRestart:            runRestart,
 		DisableBackgroundJobs: developmentMode,
+		MultiUser:             os.Getenv("PI_WEB_MULTIUSER") == "1",
+		Identity:              newIdentityResolver(),
 	})
 	if srvErr != nil {
 		fmt.Fprintf(os.Stderr, "failed to initialize server: %v\n", srvErr)
@@ -104,11 +108,17 @@ func Main(version string) {
 	}
 
 	ui.SetThemeProvider(srv.ThemeSetting)
+	ui.SetPresetProvider(srv.ZcodePresetSetting)
+	ui.SetActProvider(srv.ZcodeActSetting)
+	ui.SetScaleProvider(srv.UIScaleSetting)
 	ui.SetFontProvider(srv.FontStyles)
 
 	mux := http.NewServeMux()
 	srv.Register(mux)
 	ui.RegisterPWAHandlers(mux)
+	// Compress HTML/JSON responses for slow links (mobile, remote desktops).
+	// SSE and already-compressed assets are skipped inside the handler itself.
+	gzMux := server.GzipMiddleware(mux)
 	dfs := web.DistFS()
 	if scripts, err := frontend.LoadScripts(dfs, frontend.AppEntry); err == nil {
 		for _, script := range scripts {
@@ -192,7 +202,7 @@ func Main(version string) {
 
 	httpServer := &http.Server{
 		Addr:              addr,
-		Handler:           mux,
+		Handler:           gzMux,
 		ReadHeaderTimeout: 10 * time.Second,
 		IdleTimeout:       120 * time.Second,
 		// WriteTimeout intentionally 0 — SSE streams are long-lived.
@@ -229,6 +239,21 @@ func Main(version string) {
 		shutdownCode <- code
 	}()
 
+	// PI_WEB_EXTRA_LISTEN (e.g. "100.67.73.47:31416") serves the same app on a
+	// second address — used on the Symetrix hub to keep a plain tailnet-IP URL
+	// alive next to the `tailscale serve` HTTPS one. Callers there are
+	// identified by `tailscale whois`, never by headers.
+	if extra := strings.TrimSpace(os.Getenv("PI_WEB_EXTRA_LISTEN")); extra != "" {
+		authMiddleware.AllowHost(extra)
+		extraServer := &http.Server{Addr: extra, Handler: gzMux, ReadHeaderTimeout: 10 * time.Second, IdleTimeout: 120 * time.Second}
+		go func() {
+			if err := extraServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				fmt.Fprintf(os.Stderr, "extra listener %s: %v\n", extra, err)
+			}
+		}()
+		fmt.Printf("Also listening on http://%s\n", extra)
+	}
+
 	serveErr := httpServer.ListenAndServe()
 	if serveErr != nil && serveErr != http.ErrServerClosed {
 		fmt.Fprintf(os.Stderr, "server error: %v\n", serveErr)
@@ -237,4 +262,14 @@ func Main(version string) {
 	// ErrServerClosed only reaches here via the signal handler above, which is
 	// the sole Shutdown caller; wait so cleanup is not cut short by exiting.
 	os.Exit(<-shutdownCode)
+}
+
+// newIdentityResolver builds the multi-user identity resolver from env:
+// PI_WEB_FALLBACK_OWNER (login for non-tailnet callers; empty = no access) and
+// PI_WEB_TRUST_SERVE_HEADERS=1 (trust Tailscale-User-Login from loopback; only
+// for a 127.0.0.1 bind behind `tailscale serve` in HTTP proxy mode).
+func newIdentityResolver() *identity.Resolver {
+	r := identity.NewResolver(os.Getenv("PI_WEB_FALLBACK_OWNER"))
+	r.TrustServeHeaders = os.Getenv("PI_WEB_TRUST_SERVE_HEADERS") == "1"
+	return r
 }

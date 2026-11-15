@@ -1,3 +1,4 @@
+import { recordToolProgress } from '../ui/subagent-view.js';
 export function getSessionIdFromLocation({ locationImpl = location } = {}) {
   return locationImpl.search.split('id=')[1]?.split('&')[0] || '';
 }
@@ -10,6 +11,7 @@ export async function handleSessionReload({
   sessionId,
   fetchImpl = fetch,
   entryState,
+  knownEntries = null,
   clearChatPreview = () => {},
   appendEntry,
   upsertEntry,
@@ -24,8 +26,26 @@ export async function handleSessionReload({
   onReloaded = () => {},
   onNewEntries = null,
 } = {}) {
-  const response = await fetchImpl('/api/session?id=' + encodeURIComponent(sessionId));
-  const data = await response.json();
+  // Incremental reload: sessions are append-only, so the client asks only for
+  // the entries it does not have yet (index = knownEntries.length) instead of
+  // re-downloading the whole session on every stream event — on weak devices
+  // (iPhone) the full refetch re-rendered the whole list each time and made
+  // typing stutter while the model was generating.
+  let data;
+  const known = Array.isArray(knownEntries) ? knownEntries : null;
+  if (known && known.length > 0) {
+    const tail = await fetchImpl(
+      '/api/session?id=' + encodeURIComponent(sessionId) + '&from=' + known.length + '&count=999999',
+    );
+    data = await tail.json();
+    if (Number.isInteger(data.from) && data.from === known.length && Array.isArray(data.entries)) {
+      data = { ...data, entries: known.concat(data.entries) };
+    }
+    // else: server trimmed/clamped — the payload already covers everything.
+  } else {
+    const response = await fetchImpl('/api/session?id=' + encodeURIComponent(sessionId));
+    data = await response.json();
+  }
   const entries = data.entries || [];
   onReloaded({ ...data, entries });
   if (typeof data.name === 'string' && data.name.trim()) {
@@ -164,6 +184,13 @@ export function wireSessionEvents({
       try {
         windowImpl.dispatchEvent(new CustomEventImpl('pi-queue-event'));
       } catch (_) {}
+    }
+  });
+  eventSource.addEventListener('tool-progress', (event) => {
+    try {
+      recordToolProgress(JSON.parse(event.data));
+    } catch (error) {
+      onError(error);
     }
   });
   eventSource.onerror = onError;

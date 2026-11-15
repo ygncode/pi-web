@@ -206,3 +206,60 @@ describe('live events', () => {
     expect(dispatched.length).toBe(1);
   });
 });
+
+describe('tool progress events', () => {
+  it('forwards tool-progress payloads to the subagent live store', async () => {
+    const { wireSessionEvents } = await import('./live-events.js');
+    const { liveProgress } = await import('../ui/subagent-view.js');
+    const handlers = {};
+    const eventSource = { addEventListener: (n, h) => (handlers[n] = h) };
+    wireSessionEvents({ eventSource, onReload: () => {}, onChatPreview: () => {}, onError: () => {} });
+    handlers['tool-progress']({ data: JSON.stringify({ toolCallId: 'tp1', details: { mode: 'single', results: [] } }) });
+    expect(liveProgress('tp1')).toEqual({ mode: 'single', results: [] });
+  });
+});
+
+// Incremental reload: with knownEntries the client fetches only the missing
+// tail (index = known.length) and merges it — the full session is not
+// re-downloaded on every stream event.
+it('handleSessionReload fetches only the missing tail when knownEntries is given', async () => {
+  const seenEntries = Array.from({ length: 3 }, (_, i) => ({ id: `old-${i}` }));
+  const tail = [{ id: 'new-0' }, { id: 'new-1' }];
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    return {
+      json: async () => ({ entries: tail, total: 5, from: 3 }),
+    };
+  };
+  const onReloaded = vi.fn();
+  await handleSessionReload({
+    sessionId: 's.jsonl',
+    fetchImpl,
+    entryState: { seen: new Set(seenEntries.map((e) => e.id)) },
+    knownEntries: seenEntries,
+    onReloaded,
+  });
+  expect(calls).toHaveLength(1);
+  expect(calls[0]).toContain('from=3');
+  expect(calls[0]).toContain('count=999999');
+  const merged = onReloaded.mock.calls[0][0].entries;
+  expect(merged).toHaveLength(5);
+  expect(merged[0].id).toBe('old-0');
+  expect(merged[4].id).toBe('new-1');
+});
+
+// When the server trims (from !== known.length) the payload is used as-is.
+it('handleSessionReload falls back to the full payload when the server trims', async () => {
+  const full = [{ id: 'a' }, { id: 'b' }];
+  const fetchImpl = async () => ({ json: async () => ({ entries: full, total: 2, from: 0 }) });
+  const onReloaded = vi.fn();
+  await handleSessionReload({
+    sessionId: 's.jsonl',
+    fetchImpl,
+    entryState: { seen: new Set(['a', 'b']) },
+    knownEntries: [{ id: 'stale-0' }, { id: 'stale-1' }, { id: 'stale-2' }],
+    onReloaded,
+  });
+  expect(onReloaded.mock.calls[0][0].entries).toEqual(full);
+});

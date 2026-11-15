@@ -7,6 +7,7 @@
   import SessionSidebarProjects from './SessionSidebarProjects.svelte';
   import SessionSidebarSessions from './SessionSidebarSessions.svelte';
   import SessionTreeNodes from './SessionTreeNodes.svelte';
+  import PeopleSwitcher from '../shared/PeopleSwitcher.svelte';
 
   let {
     cwd = '',
@@ -100,6 +101,8 @@
       aria-label={t('session.closeSidebar')}>{@html icon(X, { size: 14 })}</button
     >
   </div>
+
+  {#if activeTab !== 'outline'}<PeopleSwitcher />{/if}
 
   <div
     id="sidebar-projects-panel"

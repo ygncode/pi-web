@@ -155,6 +155,7 @@
     // ── Reload (fetch /api/session → reconcile the model) ──────────────────────
     function triggerReload() {
       return handleSessionReload({
+        knownEntries: model.entries,
         sessionId: sessId,
         fetchImpl,
         entryState: LIVE_ENTRY_STATE,

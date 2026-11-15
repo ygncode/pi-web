@@ -16,6 +16,9 @@
 // internal/server/settings.go.
 export const SERVER_SETTING_KEYS = [
   'pi-web-theme',
+  'pi-web:v1:zcode-preset',
+  'pi-web:v1:zcode-act',
+  'pi-web:v1:ui-scale',
   'pi-web:v1:locale',
   'pi-web:v1:custom-languages',
   'pi-web:v1:font-ui',

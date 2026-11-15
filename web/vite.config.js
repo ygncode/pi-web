@@ -18,7 +18,11 @@ export default defineConfig({
       },
       output: {
         manualChunks(id) {
-          if (id.includes('highlight.js')) return 'hljs';
+          // NOTE: highlight.js is deliberately NOT forced into a manual chunk.
+          // It is only ever imported dynamically (lazy-highlight.js,
+          // ArtifactPanel), and forcing it into a named chunk made Vite hoist
+          // its modulepreload helper there — pulling ~900 KB of highlight.js
+          // into the entry's static graph on every first paint.
           // NOTE: do NOT force @pierre/diffs / shiki into a single manual chunk.
           // The dynamic import('@pierre/diffs') already splits it off, and shiki
           // lazy-loads individual language grammars as separate chunks. Grouping

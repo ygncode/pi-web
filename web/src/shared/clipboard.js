@@ -18,8 +18,18 @@ export async function copyToClipboard(
     ta.value = text;
     ta.style.position = 'fixed';
     ta.style.opacity = '0';
+    ta.style.top = '0';
+    ta.style.fontSize = '16px'; // avoid iOS zoom-on-focus
+    ta.setAttribute('readonly', '');
     documentImpl.body.appendChild(ta);
     ta.select();
+    // iOS Safari (and the home-screen app over plain http, where
+    // navigator.clipboard is unavailable) needs an explicit selection range.
+    try {
+      ta.setSelectionRange(0, text.length);
+    } catch {
+      /* ignore */
+    }
     const ok = documentImpl.execCommand('copy');
     documentImpl.body.removeChild(ta);
     return ok;

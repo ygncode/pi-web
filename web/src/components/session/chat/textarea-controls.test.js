@@ -31,24 +31,39 @@ describe('setupTextareaControls', () => {
     expect(updateComposerHeight).toHaveBeenCalled();
   });
 
-  it('submits on desktop Enter but not mobile Enter', () => {
+  it('submits on Enter everywhere and inserts a newline on Ctrl/Cmd+Enter', () => {
     const desktop = createParts();
-    setupTextareaControls({ ...desktop, isMobileTextInputMode: () => false });
-    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
-    desktop.textarea.dispatchEvent(enter);
-    expect(desktop.form.requestSubmit).toHaveBeenCalled();
-    expect(enter.defaultPrevented).toBe(true);
+    setupTextareaControls(desktop);
+    desktop.textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+    );
+    expect(desktop.form.requestSubmit).toHaveBeenCalledTimes(1);
 
     const mobile = createParts();
-    setupTextareaControls({ ...mobile, isMobileTextInputMode: () => true });
-    const mobileEnter = new KeyboardEvent('keydown', {
-      key: 'Enter',
-      bubbles: true,
-      cancelable: true,
-    });
-    mobile.textarea.dispatchEvent(mobileEnter);
-    expect(mobile.form.requestSubmit).not.toHaveBeenCalled();
-    expect(mobileEnter.defaultPrevented).toBe(false);
+    setupTextareaControls(mobile);
+    mobile.textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }),
+    );
+    expect(mobile.form.requestSubmit).toHaveBeenCalledTimes(1);
+
+    const ctrl = createParts();
+    setupTextareaControls(ctrl);
+    ctrl.textarea.value = 'ab';
+    ctrl.textarea.setSelectionRange(1, 1);
+    ctrl.textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', ctrlKey: true, bubbles: true, cancelable: true }),
+    );
+    expect(ctrl.form.requestSubmit).not.toHaveBeenCalled();
+    expect(ctrl.textarea.value).toBe('a\nb');
+    expect(ctrl.textarea.selectionStart).toBe(2);
+
+    const cmd = createParts();
+    setupTextareaControls(cmd);
+    cmd.textarea.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', metaKey: true, bubbles: true, cancelable: true }),
+    );
+    expect(cmd.form.requestSubmit).not.toHaveBeenCalled();
+    expect(cmd.textarea.value).toBe('\n');
   });
 
   it('delegates palette keys before submit handling', () => {

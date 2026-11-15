@@ -29,11 +29,28 @@ export function setupTextareaControls({
     updateSendEnabled();
   };
 
+
+  const insertNewline = (el) => {
+    if (!el) return;
+    const { selectionStart, selectionEnd, value } = el;
+    el.value = `${value.slice(0, selectionStart)}\n${value.slice(selectionEnd)}`;
+    const caret = selectionStart + 1;
+    el.setSelectionRange(caret, caret);
+    autoResize();
+    updateSendEnabled();
+  };
+
   const onKeydown = (event) => {
     if (getSlashSelector()?.handleKeydown?.(event)) return;
     if (getMentionSelector()?.handleKeydown?.(event)) return;
-    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
-      if (isMobileTextInputMode()) return;
+    if (event.key === 'Enter' && !event.isComposing) {
+      // Enter sends everywhere (desktop and mobile); Ctrl/Cmd+Enter inserts a
+      // newline. Previously Shift+Enter was the newline and mobile Enter did
+      // nothing but insert one, forcing a tap on Send every message.
+      if (event.ctrlKey || event.metaKey) {
+        insertNewline(textarea);
+        return;
+      }
       event.preventDefault();
       form?.requestSubmit?.();
     }
