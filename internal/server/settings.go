@@ -1,9 +1,12 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
+
 	"os"
+	"pi-web/internal/render"
 	"strconv"
 	"strings"
 	"time"
@@ -22,16 +25,26 @@ func (s *Server) handleAppShell(w http.ResponseWriter, r *http.Request, bootstra
 		http.NotFound(w, r)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// The shell references content-hashed asset paths, so it must never be
-	// cached: a stale shell would point at old (now-404) chunks and pin the
-	// browser to an outdated bundle after a rebuild.
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	if err := s.renderAppShell(w, bootstrap); err != nil {
+	// Render to a buffer so the response can be hashed. no-cache (not
+	// no-store) keeps the browser holding a copy that must be revalidated on
+	// every use: an unchanged shell costs a 304, and a rebuilt one still
+	// updates because its ETag changes - the stale shell is never served.
+	var buf bytes.Buffer
+	if err := s.renderAppShell(&buf, bootstrap); err != nil {
 		if !isBrokenPipe(err) {
 			fmt.Fprintf(os.Stderr, "app shell template error: %v\n", err)
 		}
+		return
 	}
+	etag := render.ETagOf(buf.Bytes())
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("ETag", etag)
+	if render.MatchesETag(r.Header.Get("If-None-Match"), etag) {
+		w.WriteHeader(http.StatusNotModified)
+		return
+	}
+	_, _ = w.Write(buf.Bytes())
 }
 
 // settingDefaults defines the server-backed user settings and their default
