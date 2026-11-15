@@ -14,8 +14,27 @@ export function getWorkerStatus(sessionId, { fetchImpl = fetch } = {}) {
   return fetchImpl(chatUrl('/api/worker-status', sessionId));
 }
 
+// The model list is server-static for the lifetime of the page: cache the
+// first response so every session navigation (and the toolbar) reuses it
+// instead of paying another round trip on slow links.
+let modelsCache = null;
+
 export function listModels({ fetchImpl = fetch } = {}) {
-  return fetchImpl('/api/models');
+  if (modelsCache) return modelsCache;
+  modelsCache = fetchImpl('/api/models').then(
+    (r) => {
+      if (!r.ok) {
+        modelsCache = null;
+        return r;
+      }
+      return r;
+    },
+    (err) => {
+      modelsCache = null;
+      throw err;
+    },
+  );
+  return modelsCache;
 }
 
 export function getCommands(sessionId, { load = false } = {}, { fetchImpl = fetch } = {}) {
